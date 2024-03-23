@@ -29,9 +29,6 @@ class BolusViewController: UIViewController {
             return
         }
         
-        // Replace all occurrences of ',' with '.'
-        bolusText = bolusText.replacingOccurrences(of: ",", with: ".")
-        
         guard let bolusValue = Double(bolusText) else {
             print("Error: Bolus amount conversion failed")
             return
