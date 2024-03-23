@@ -240,6 +240,23 @@ extension MainViewController {
         lineSensor.valueFormatter = ChartYDataValueFormatter()
         lineSensor.drawValuesEnabled = false
         
+        // Pump Change
+        var chartEntryPump = [ChartDataEntry]()
+        let linePump = LineChartDataSet(entries:chartEntryPump, label: "")
+        linePump.circleRadius = CGFloat(globalVariables.dotOther)
+
+        linePump.circleColors = [NSUIColor.white.withAlphaComponent(0.75)]
+
+        linePump.drawCircleHoleEnabled = false
+        linePump.setDrawHighlightIndicators(false)
+        linePump.setColor(NSUIColor.systemGray3, alpha: 1.0)
+        linePump.drawCirclesEnabled = true
+        linePump.lineWidth = 0
+        linePump.highlightEnabled = true
+        linePump.axisDependency = YAxis.AxisDependency.right
+        linePump.valueFormatter = ChartYDataValueFormatter()
+        linePump.drawValuesEnabled = false
+        
         // Notes
         let chartEntryNote = [ChartDataEntry]()
         let lineNote = LineChartDataSet(entries:chartEntryNote, label: "")
