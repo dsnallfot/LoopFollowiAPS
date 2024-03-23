@@ -271,7 +271,9 @@ extension MainViewController {
         var chartEntryPump = [ChartDataEntry]()
         let linePump = LineChartDataSet(entries:chartEntryPump, label: "")
         linePump.circleRadius = CGFloat(globalVariables.dotOther)
+
         linePump.circleColors = [NSUIColor.white.withAlphaComponent(0.75)]
+
         linePump.drawCircleHoleEnabled = false
         linePump.setDrawHighlightIndicators(false)
         linePump.setColor(NSUIColor.systemGray3, alpha: 1.0)
