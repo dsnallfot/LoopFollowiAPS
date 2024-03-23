@@ -475,7 +475,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             isEnabled = false
         }
         
-        LoopStatusLabel.isHidden = isHidden
+        //LoopStatusLabel.isHidden = isHidden
         PredictionLabel.isHidden = isHidden
         infoTable.isHidden = isHidden
         
