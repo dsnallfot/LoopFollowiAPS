@@ -85,28 +85,28 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("Remote Meal"){ row in
             row.title = ""
-            row.value = "Remote Meal • mealtoenact_carbs25fat15protein10noteTestmeal"
+            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("Remote Bolus"){ row in
             row.title = ""
-            row.value = "Remote Bolus • bolustoenact_0.6"
+            row.value = "Remote Bolus • Bolus_0.6"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("Remote Override"){ row in
             row.title = ""
-            row.value = "Remote Override • overridetoenact_Partytime"
+            row.value = "Remote Override • Override_Partytime"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("Remote Temp Target"){ row in
             row.title = ""
-            row.value = "Remote Temp Target • temptargettoenact_Exercise"
+            row.value = "Remote Temp Target • TempTarget_Exercise"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
