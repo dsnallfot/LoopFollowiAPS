@@ -107,11 +107,16 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         
         // Use combinedString as the text in the URL
         if method != "SMS API" {
-            let urlString = "shortcuts://run-shortcut?name=Remote Override&input=text&text=\(combinedString)"
-            if let url = URL(string: urlString) {
-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-            }
-        } else {
+                // URL encode combinedString
+                guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                    print("Failed to encode URL string")
+                    return
+                }
+                let urlString = "shortcuts://run-shortcut?name=Remote%20Override&input=text&text=\(encodedString)"
+                if let url = URL(string: urlString) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
+            } else {
             // If method is "SMS API", proceed with sending the request
             let twilioSID = UserDefaultsRepository.twilioSIDString.value
             let twilioSecret = UserDefaultsRepository.twilioSecretString.value

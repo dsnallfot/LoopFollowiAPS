@@ -137,12 +137,16 @@ class MealViewController: UIViewController {
         let method = UserDefaultsRepository.method.value
         
         if method != "SMS API" {
-            let urlString = "shortcuts://run-shortcut?name=Remote Meal&input=text&text=\(combinedString)"
-            if let url = URL(string: urlString) {
-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-            }
-        } else {
-            // If method is "SMS API", proceed with sending the request
+                // URL encode combinedString
+                guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                    print("Failed to encode URL string")
+                    return
+                }
+                let urlString = "shortcuts://run-shortcut?name=Remote%20Meal&input=text&text=\(encodedString)"
+                if let url = URL(string: urlString) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
+            } else {            // If method is "SMS API", proceed with sending the request
 
             let twilioSID = UserDefaultsRepository.twilioSIDString.value
             let twilioSecret = UserDefaultsRepository.twilioSecretString.value
