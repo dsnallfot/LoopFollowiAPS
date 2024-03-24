@@ -86,7 +86,11 @@ class MealViewController: UIViewController {
         let method = UserDefaultsRepository.method.value
         
         // Construct and return the combinedString
-        let combinedString = "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)"
+        let combinedString = "Mealtime\nCarbs \(carbs)g\nFat \(fats)g\nProtein \(proteins)g \nNote \(cleanedMealNotes)"
+        
+        //Alterntive string formatting below, to present the meal like a menu in imessage.
+        //let combinedString = "Mealtime\nCarbs \(carbs)g\nFat \(fats)g\nProtein \(proteins)g \nNote \(cleanedMealNotes)"
+        
         return combinedString
     }
 
