@@ -59,10 +59,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
             return
         }
         
-        // Remove emojis and blank spaces from the selected temp target (not neccessary works in both iOS Shortcuts and Twilio API)
-        //let cleanedOverride = removeEmojisAndBlankSpaces(from: selectedOverride)
-        
-        let combinedString = "overridetoenact_\(selectedOverride)"
+        let combinedString = "Override_\(selectedOverride)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
@@ -77,28 +74,6 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         
         present(confirmationAlert, animated: true, completion: nil)
     }
-
-    /*func removeEmojisAndBlankSpaces(from text: String) -> String {
-        // Remove emojis
-        let cleanedText = removeEmojis(from: text)
-        
-        // Remove all whitespace characters
-        let trimmedAndCleanedText = cleanedText.replacingOccurrences(of: "\\s+", with: "", options: .regularExpression)
-        
-        return trimmedAndCleanedText
-    }
-
-    func removeEmojis(from text: String) -> String {
-        let emojiPattern = "\\p{Emoji}"
-        do {
-            let regex = try NSRegularExpression(pattern: emojiPattern, options: [])
-            let range = NSRange(location: 0, length: text.utf16.count)
-            return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
-        } catch {
-            print("Error removing emojis: \(error)")
-            return text
-        }
-    }*/
     
     func sendOverrideRequest(combinedString: String) {
         
