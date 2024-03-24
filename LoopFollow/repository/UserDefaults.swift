@@ -452,8 +452,8 @@ class UserDefaultsRepository {
     static let method = UserDefaultsValue<String>(key: "method", default: "SMS API")
     static let maxCarbs = UserDefaultsValue<Int>(key: "maxCarbs", default: 30)
     static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
-    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "👻 Resistance, 🤧 Sick day, 🏃‍♂️ Exercise, 😴 Nightmode")
-    static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "Exercise, Eating soon, Low treatment")
+    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "🚫 Avbryt Override, ⬇️ 75%, 🤢 Magsjuka, 🍬 Efter dextro, 🍬😴 Efter dextro natt, 🏃‍♂️ Hög aktivitet, ⬇️ 90%, ❌ Blocka SMB, ⚽️ Gympa, 😴 Nattläge, 🍇 Vindruvor, 🍭 Godisdag, 🐌 Ledig dag, 🤧 Förkyld, 👻 Resistens, 🥯 Sen frukost")
+    static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "🚫 Avbryt Temp Target, 🏃‍♂️ Hög aktivitet, 🍬 Efter dextro, 🍽️ Äter snart, ❌ Blocka SMB, ⬆️ Boost, ⚽️ Gympa, 🍬😴 Efter dextro natt, 😴 Nattläge")
 
     // API settings
     static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "EnterTheSID")
