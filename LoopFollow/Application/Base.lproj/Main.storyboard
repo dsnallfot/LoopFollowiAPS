@@ -572,9 +572,9 @@
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Srr-Hj-3UX">
                                         <rect key="frame" x="4" y="0.0" width="327" height="82.333333333333329"/>
                                         <state key="normal" title="Button"/>
-                                        <buttonConfiguration key="configuration" style="plain" image="hand.tap.fill" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
+                                        <buttonConfiguration key="configuration" style="plain" image="wand.and.stars" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
                                             <backgroundConfiguration key="background">
-                                                <color key="backgroundColor" systemColor="systemGrayColor"/>
+                                                <color key="backgroundColor" red="0.91435842803030298" green="0.59119451089502217" blue="0.79194502393264143" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             </backgroundConfiguration>
                                             <attributedString key="attributedTitle">
                                                 <fragment content="Förval">
@@ -761,7 +761,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <stackView opaque="NO" contentMode="scaleToFill" spacing="85" translatesAutoresizingMaskIntoConstraints="NO" id="Huo-kW-2V8">
-                                <rect key="frame" x="6" y="70" width="363.33333333333337" height="34.333333333333343"/>
+                                <rect key="frame" x="6" y="70" width="363.33333333333331" height="34.333333333333343"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Sei-VM-hc2">
                                         <rect key="frame" x="0.0" y="0.0" width="70.333333333333329" height="34.333333333333336"/>
@@ -1282,7 +1282,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="BEz-I9-sPs" userLabel="Override">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="wxu-lS-OVn">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jzQ-mu-Jca">
@@ -1408,7 +1408,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="RtX-oO-1fw" userLabel="Temp Target">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="znN-mf-lmp">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hXU-kG-KPd">
@@ -1502,7 +1502,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ijq-aN-c3Y" userLabel="Temp Target">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="TAK-9Y-biG">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="CBe-w4-hJR">
@@ -1561,12 +1561,12 @@
         <image name="gear" catalog="system" width="128" height="122"/>
         <image name="gearshape" catalog="system" width="128" height="123"/>
         <image name="gearshape.fill" catalog="system" width="128" height="123"/>
-        <image name="hand.tap.fill" catalog="system" width="115" height="128"/>
         <image name="house" catalog="system" width="128" height="104"/>
         <image name="list.bullet.clipboard" catalog="system" width="98" height="128"/>
         <image name="person.fill" catalog="system" width="128" height="120"/>
         <image name="safari" catalog="system" width="128" height="123"/>
         <image name="target" catalog="system" width="128" height="123"/>
+        <image name="wand.and.stars" catalog="system" width="128" height="115"/>
         <image name="zzz" catalog="system" width="119" height="128"/>
         <namedColor name="Insulin">
             <color red="0.11800000071525574" green="0.58799999952316284" blue="0.98799997568130493" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
