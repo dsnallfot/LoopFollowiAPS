@@ -101,14 +101,22 @@ class RemoteSettingsViewController: FormViewController {
         }
         <<< TextRow("Remote Override"){ row in
             row.title = ""
-            row.value = "Remote Override • Override_Partytime"
+            row.value = "Remote Override • Override_🎉 Partytime"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("Remote Temp Target"){ row in
             row.title = ""
-            row.value = "Remote Temp Target • TempTarget_Exercise"
+            row.value = "Remote Temp Target • TempTarget_🏃‍♂️ Exercise"
+            row.cellSetup { cell, row in
+                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
+            }
+        }
+        
+        <<< TextRow("Remote Presets"){ row in
+            row.title = ""
+            row.value = "Remote Prest • Preset_🍿 Popcorn"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -130,7 +138,7 @@ class RemoteSettingsViewController: FormViewController {
         
         +++ shortcutsSection
         
-        +++ Section(header: "Remote Settings", footer: "Add the overrides and/or temp targets you would like to be able to choose from in the remote override/temp target pickers. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
+        +++ Section(header: "Remote Settings", footer: "Add the overrides, temp targets and meal presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
         
         <<< StepperRow("maxCarbs") { row in
             row.title = "Max Carbs (g)"

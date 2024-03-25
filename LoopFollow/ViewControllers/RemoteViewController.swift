@@ -49,22 +49,8 @@ class RemoteViewController: UIViewController {
         self.present(remoteSettingsViewController, animated: true, completion: nil)
     }
     
-    @IBAction func pillButtonTapped(_ sender: Any) {
-        let urlString = "shortcuts://run-shortcut?name=Remote%20Dextro"
-        if let url = URL(string: urlString) {
-            UIApplication.shared.open(url, options: [:], completionHandler: nil)
-        }
-    }
-    
     @IBAction func calendarButtonTapped(_ sender: Any) {
         let urlString = "shortcuts://run-shortcut?name=Healthlog"
-        if let url = URL(string: urlString) {
-            UIApplication.shared.open(url, options: [:], completionHandler: nil)
-        }
-    }
-    
-    @IBAction func menuButtonTapped(_ sender: Any) {
-        let urlString = "shortcuts://run-shortcut?name=Carbcount"
         if let url = URL(string: urlString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }

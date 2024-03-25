@@ -566,19 +566,20 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" alignment="center" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="ns4-YC-Awz">
-                                <rect key="frame" x="20" y="150" width="335" height="539"/>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" alignment="center" spacing="17" translatesAutoresizingMaskIntoConstraints="NO" id="ns4-YC-Awz">
+                                <rect key="frame" x="20" y="150" width="335" height="479"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Srr-Hj-3UX">
-                                        <rect key="frame" x="4" y="0.0" width="327" height="66.666666666666671"/>
+                                        <rect key="frame" x="4" y="0.0" width="327" height="82.333333333333329"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="hand.tap.fill" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
                                             <backgroundConfiguration key="background">
-                                                <color key="backgroundColor" red="0.81679875983132255" green="0.64959034005216532" blue="0.6961279107167031" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                <color key="backgroundColor" systemColor="systemGrayColor"/>
                                             </backgroundConfiguration>
                                             <attributedString key="attributedTitle">
-                                                <fragment content="Förvalda Måltider">
+                                                <fragment content="Förval">
                                                     <attributes>
+                                                        <color key="NSColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                                         <font key="NSFont" size="22" name="HelveticaNeue-Medium"/>
                                                         <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
                                                     </attributes>
@@ -591,14 +592,14 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Kbc-y8-Yyv">
-                                        <rect key="frame" x="4" y="78.666666666666657" width="327" height="66.666666666666657"/>
+                                        <rect key="frame" x="4" y="99.333333333333343" width="327" height="82"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="fork.knife" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
                                             <backgroundConfiguration key="background">
                                                 <color key="backgroundColor" red="0.89778440230808076" green="0.74218895159348386" blue="0.27540259944969314" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             </backgroundConfiguration>
                                             <attributedString key="attributedTitle">
-                                                <fragment content="Manuell Måltid">
+                                                <fragment content="Måltid">
                                                     <attributes>
                                                         <font key="NSFont" size="22" name="HelveticaNeue-Medium"/>
                                                         <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
@@ -612,7 +613,7 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2Vg-R6-0Rz">
-                                        <rect key="frame" x="4" y="157.33333333333331" width="327" height="66.666666666666686"/>
+                                        <rect key="frame" x="4" y="198.33333333333331" width="327" height="82.333333333333314"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="drop.fill" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
                                             <backgroundConfiguration key="background">
@@ -633,7 +634,7 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="p4l-1b-Z8k">
-                                        <rect key="frame" x="4" y="236" width="327" height="67"/>
+                                        <rect key="frame" x="4" y="297.66666666666669" width="327" height="82"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="person.fill" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
                                             <backgroundConfiguration key="background">
@@ -653,7 +654,7 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="eWa-bY-PRf">
-                                        <rect key="frame" x="4" y="315" width="327" height="66.666666666666686"/>
+                                        <rect key="frame" x="4" y="396.66666666666663" width="327" height="82.333333333333314"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="target" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
                                             <backgroundConfiguration key="background">
@@ -672,89 +673,6 @@
                                             <action selector="tempTargetButtonPressed:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="4YQ-V0-CKv"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="rGf-9p-ojZ">
-                                        <rect key="frame" x="153.66666666666666" y="393.66666666666663" width="27.666666666666657" height="66.666666666666686"/>
-                                        <state key="normal" title="Button"/>
-                                        <buttonConfiguration key="configuration" style="plain" subtitle=" " cornerStyle="large">
-                                            <backgroundConfiguration key="background">
-                                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                                            </backgroundConfiguration>
-                                            <attributedString key="attributedTitle">
-                                                <fragment content=" ">
-                                                    <attributes>
-                                                        <color key="NSColor" name="textColor" catalog="System" colorSpace="catalog"/>
-                                                        <font key="NSFont" metaFont="smallSystem"/>
-                                                        <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
-                                                    </attributes>
-                                                </fragment>
-                                            </attributedString>
-                                        </buttonConfiguration>
-                                    </button>
-                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="40" translatesAutoresizingMaskIntoConstraints="NO" id="ODT-WE-u0w">
-                                        <rect key="frame" x="20" y="472.33333333333337" width="295" height="66.666666666666629"/>
-                                        <subviews>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KhR-eR-dZb">
-                                                <rect key="frame" x="0.0" y="0.0" width="71.666666666666671" height="66.666666666666671"/>
-                                                <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="filled" image="pills.fill" catalog="system" cornerStyle="capsule">
-                                                    <attributedString key="attributedTitle">
-                                                        <fragment content=" "/>
-                                                    </attributedString>
-                                                    <color key="baseForegroundColor" systemColor="systemGrayColor"/>
-                                                    <color key="baseBackgroundColor" systemColor="secondarySystemBackgroundColor"/>
-                                                </buttonConfiguration>
-                                                <connections>
-                                                    <action selector="pillButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="uLQ-hi-lLe"/>
-                                                </connections>
-                                            </button>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OA5-8m-SSK">
-                                                <rect key="frame" x="111.66666666666666" y="0.0" width="71.666666666666657" height="66.666666666666671"/>
-                                                <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="filled" image="calendar.badge.plus" catalog="system" cornerStyle="capsule">
-                                                    <attributedString key="attributedTitle">
-                                                        <fragment content=" ">
-                                                            <attributes>
-                                                                <font key="NSFont" metaFont="smallSystem"/>
-                                                                <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
-                                                            </attributes>
-                                                        </fragment>
-                                                    </attributedString>
-                                                    <attributedString key="attributedSubtitle">
-                                                        <fragment content=" ">
-                                                            <attributes>
-                                                                <font key="NSFont" metaFont="smallSystem"/>
-                                                                <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
-                                                            </attributes>
-                                                        </fragment>
-                                                    </attributedString>
-                                                    <color key="baseForegroundColor" systemColor="systemGrayColor"/>
-                                                    <color key="baseBackgroundColor" systemColor="secondarySystemBackgroundColor"/>
-                                                </buttonConfiguration>
-                                                <connections>
-                                                    <action selector="calendarButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="vhj-8O-N3H"/>
-                                                </connections>
-                                            </button>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Jms-cN-AzO">
-                                                <rect key="frame" x="223.33333333333329" y="0.0" width="71.666666666666657" height="66.666666666666671"/>
-                                                <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="filled" image="list.bullet.clipboard" catalog="system" cornerStyle="capsule">
-                                                    <attributedString key="attributedTitle">
-                                                        <fragment content=" ">
-                                                            <attributes>
-                                                                <font key="NSFont" metaFont="smallSystem"/>
-                                                                <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
-                                                            </attributes>
-                                                        </fragment>
-                                                    </attributedString>
-                                                    <color key="baseForegroundColor" systemColor="systemGrayColor"/>
-                                                    <color key="baseBackgroundColor" systemColor="secondarySystemBackgroundColor"/>
-                                                </buttonConfiguration>
-                                                <connections>
-                                                    <action selector="menuButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="9bV-aM-htf"/>
-                                                </connections>
-                                            </button>
-                                        </subviews>
-                                    </stackView>
                                 </subviews>
                                 <constraints>
                                     <constraint firstItem="2Vg-R6-0Rz" firstAttribute="leading" secondItem="ns4-YC-Awz" secondAttribute="leading" constant="4" id="1gk-sp-Sar"/>
@@ -772,39 +690,57 @@
                                     <constraint firstAttribute="trailing" secondItem="eWa-bY-PRf" secondAttribute="trailing" constant="4" id="cjM-8P-itu"/>
                                     <constraint firstItem="eWa-bY-PRf" firstAttribute="height" secondItem="Srr-Hj-3UX" secondAttribute="height" id="kml-SF-IJ5"/>
                                     <constraint firstItem="eWa-bY-PRf" firstAttribute="leading" secondItem="ns4-YC-Awz" secondAttribute="leading" constant="4" id="luN-D8-qlT"/>
-                                    <constraint firstAttribute="trailing" secondItem="ODT-WE-u0w" secondAttribute="trailing" constant="20" id="nJi-3b-OdH"/>
                                     <constraint firstItem="p4l-1b-Z8k" firstAttribute="width" secondItem="Srr-Hj-3UX" secondAttribute="width" id="oPx-Kr-i0l"/>
-                                    <constraint firstItem="ODT-WE-u0w" firstAttribute="leading" secondItem="ns4-YC-Awz" secondAttribute="leading" constant="20" id="pJQ-2g-aJT"/>
                                     <constraint firstAttribute="trailing" secondItem="p4l-1b-Z8k" secondAttribute="trailing" constant="4" id="uCH-Eq-k3z"/>
                                 </constraints>
                             </stackView>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AuC-IH-cun">
-                                <rect key="frame" x="312" y="50" width="51" height="34.333333333333343"/>
-                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                <state key="normal" title="Button">
-                                    <attributedString key="attributedTitle"/>
-                                    <color key="titleColor" systemColor="systemGrayColor"/>
-                                    <imageReference key="image" image="gearshape.fill" catalog="system" symbolScale="large"/>
-                                </state>
-                                <buttonConfiguration key="configuration" style="plain" title="" subtitle="">
-                                    <imageReference key="image" image="gearshape" catalog="system" symbolScale="large"/>
-                                    <color key="baseForegroundColor" systemColor="systemGrayColor"/>
-                                </buttonConfiguration>
-                                <connections>
-                                    <action selector="remoteSettingsButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="3d2-Ep-Zn3"/>
-                                </connections>
-                            </button>
+                            <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="b3T-o4-ESN">
+                                <rect key="frame" x="268.66666666666669" y="49" width="98.333333333333314" height="34.333333333333343"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Cs-mt-7ke">
+                                        <rect key="frame" x="0.0" y="0.0" width="47.333333333333336" height="34.333333333333336"/>
+                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                        <state key="normal" title="Button">
+                                            <attributedString key="attributedTitle"/>
+                                            <color key="titleColor" systemColor="systemGrayColor"/>
+                                            <imageReference key="image" image="gearshape.fill" catalog="system" symbolScale="large"/>
+                                        </state>
+                                        <buttonConfiguration key="configuration" style="plain" title="" subtitle="">
+                                            <imageReference key="image" image="list.bullet.clipboard" catalog="system" symbolScale="large"/>
+                                            <color key="baseForegroundColor" systemColor="systemGrayColor"/>
+                                        </buttonConfiguration>
+                                        <connections>
+                                            <action selector="calendarButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="JFn-f7-KEp"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AuC-IH-cun">
+                                        <rect key="frame" x="47.333333333333314" y="0.0" width="51" height="34.333333333333336"/>
+                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                        <state key="normal" title="Button">
+                                            <attributedString key="attributedTitle"/>
+                                            <color key="titleColor" systemColor="systemGrayColor"/>
+                                            <imageReference key="image" image="gearshape.fill" catalog="system" symbolScale="large"/>
+                                        </state>
+                                        <buttonConfiguration key="configuration" style="plain" title="" subtitle="">
+                                            <imageReference key="image" image="gearshape" catalog="system" symbolScale="large"/>
+                                            <color key="baseForegroundColor" systemColor="systemGrayColor"/>
+                                        </buttonConfiguration>
+                                        <connections>
+                                            <action selector="remoteSettingsButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="3d2-Ep-Zn3"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                            </stackView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="qde-S1-0zf"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
+                            <constraint firstAttribute="trailing" secondItem="b3T-o4-ESN" secondAttribute="trailing" constant="8" id="42U-e4-3n4"/>
                             <constraint firstItem="qde-S1-0zf" firstAttribute="trailing" secondItem="ns4-YC-Awz" secondAttribute="trailing" constant="20" id="Hby-Md-VcH"/>
-                            <constraint firstItem="AuC-IH-cun" firstAttribute="top" secondItem="qde-S1-0zf" secondAttribute="top" id="I97-VF-O3r"/>
+                            <constraint firstItem="ns4-YC-Awz" firstAttribute="top" secondItem="b3T-o4-ESN" secondAttribute="bottom" constant="66.666666666666657" id="KWH-Ae-126"/>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="leading" secondItem="qde-S1-0zf" secondAttribute="leading" constant="20" id="Lxf-Mg-SV4"/>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="top" secondItem="qde-S1-0zf" secondAttribute="top" constant="100" id="MKZ-4o-aUj"/>
-                            <constraint firstItem="qde-S1-0zf" firstAttribute="trailing" secondItem="AuC-IH-cun" secondAttribute="trailing" constant="12" id="PDf-VX-rV6"/>
-                            <constraint firstItem="qde-S1-0zf" firstAttribute="bottom" secondItem="ns4-YC-Awz" secondAttribute="bottom" constant="40" id="SgO-Lo-oHR"/>
-                            <constraint firstItem="AuC-IH-cun" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="qde-S1-0zf" secondAttribute="leading" symbolic="YES" id="aPj-IA-K2k"/>
+                            <constraint firstItem="qde-S1-0zf" firstAttribute="bottom" secondItem="ns4-YC-Awz" secondAttribute="bottom" constant="100" id="SgO-Lo-oHR"/>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="centerX" secondItem="C1V-fP-B5M" secondAttribute="centerX" id="byz-Xb-czv"/>
                         </constraints>
                     </view>
@@ -824,8 +760,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <stackView opaque="NO" contentMode="scaleToFill" spacing="46" translatesAutoresizingMaskIntoConstraints="NO" id="Huo-kW-2V8">
-                                <rect key="frame" x="14.666666666666657" y="70" width="345.66666666666674" height="34.333333333333343"/>
+                            <stackView opaque="NO" contentMode="scaleToFill" spacing="85" translatesAutoresizingMaskIntoConstraints="NO" id="Huo-kW-2V8">
+                                <rect key="frame" x="7.3333333333333428" y="70" width="360.66666666666663" height="34.333333333333343"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Sei-VM-hc2">
                                         <rect key="frame" x="0.0" y="0.0" width="70.333333333333329" height="34.333333333333336"/>
@@ -837,14 +773,14 @@
                                             <action selector="presetButtonTapped:" destination="vZZ-Gp-n6j" eventType="touchUpInside" id="Zog-p7-Nfq"/>
                                         </connections>
                                     </button>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Remote Måltid" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WzJ-Kc-ZMy">
-                                        <rect key="frame" x="116.33333333333331" y="0.0" width="110" height="34.333333333333336"/>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Måltid" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WzJ-Kc-ZMy">
+                                        <rect key="frame" x="155.33333333333331" y="0.0" width="47" height="34.333333333333336"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SYt-3I-rWk">
-                                        <rect key="frame" x="272.33333333333331" y="0.0" width="73.333333333333314" height="34.333333333333336"/>
+                                        <rect key="frame" x="287.33333333333337" y="0.0" width="73.333333333333314" height="34.333333333333336"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" title="Avbryt" cornerStyle="capsule">
                                             <fontDescription key="titleFontDescription" type="system" pointSize="17"/>
@@ -1132,7 +1068,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ebE-KC-hR4" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1753" y="1422"/>
+            <point key="canvasLocation" x="-1754.4000000000001" y="1421.6748768472908"/>
         </scene>
         <!--Remote Bolus-->
         <scene sceneID="1oS-JQ-Aks">
@@ -1142,8 +1078,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Remote Bolus" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Tdy-xg-Qvc">
-                                <rect key="frame" x="135" y="70" width="105.33333333333331" height="34.333333333333343"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Bolus" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Tdy-xg-Qvc">
+                                <rect key="frame" x="166.33333333333334" y="70" width="42.333333333333343" height="34.333333333333343"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
@@ -1346,7 +1282,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="BEz-I9-sPs" userLabel="Override">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="wxu-lS-OVn">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jzQ-mu-Jca">
@@ -1360,7 +1296,7 @@
                                     </visualEffectView>
                                 </subviews>
                             </stackView>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Remote Override" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vfU-vF-dYf">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Override" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vfU-vF-dYf">
                                 <rect key="frame" x="107.33333333333333" y="70" width="160.33333333333337" height="34.333333333333343"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
@@ -1412,7 +1348,7 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Remote Settings" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="CTt-Px-Glh">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Inställningar" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="CTt-Px-Glh">
                                 <rect key="frame" x="125" y="50" width="126" height="34.333333333333258"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
@@ -1454,7 +1390,7 @@
                                 <state key="normal" title="Button"/>
                                 <buttonConfiguration key="configuration" style="filled">
                                     <attributedString key="attributedTitle">
-                                        <fragment content="Skicka Temp Target">
+                                        <fragment content="Skicka Tillfälligt Mål">
                                             <attributes>
                                                 <font key="NSFont" size="20" name="HelveticaNeue-Medium"/>
                                                 <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
@@ -1472,7 +1408,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="RtX-oO-1fw" userLabel="Temp Target">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="znN-mf-lmp">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hXU-kG-KPd">
@@ -1486,7 +1422,7 @@
                                     </visualEffectView>
                                 </subviews>
                             </stackView>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Remote Temp Target" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="L64-fs-yGX" userLabel="Remote Temp Target">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Tillfälliga Mål" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="L64-fs-yGX" userLabel="Remote Temp Target">
                                 <rect key="frame" x="107.33333333333333" y="70" width="160.33333333333337" height="34.333333333333343"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
@@ -1566,7 +1502,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ijq-aN-c3Y" userLabel="Temp Target">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="TAK-9Y-biG">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="CBe-w4-hJR">
@@ -1580,7 +1516,7 @@
                                     </visualEffectView>
                                 </subviews>
                             </stackView>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Förvalda Måltider" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="urB-n6-RU7" userLabel="Remote Temp Target">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Förval" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="urB-n6-RU7" userLabel="Remote Temp Target">
                                 <rect key="frame" x="107.33333333333333" y="70" width="160.33333333333337" height="34.333333333333343"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
@@ -1620,7 +1556,6 @@
     <resources>
         <image name="alarm" catalog="system" width="123" height="128"/>
         <image name="appletvremote.gen1" catalog="system" width="80" height="128"/>
-        <image name="calendar.badge.plus" catalog="system" width="128" height="109"/>
         <image name="drop.fill" catalog="system" width="96" height="128"/>
         <image name="fork.knife" catalog="system" width="94" height="128"/>
         <image name="gear" catalog="system" width="128" height="122"/>
@@ -1630,7 +1565,6 @@
         <image name="house" catalog="system" width="128" height="104"/>
         <image name="list.bullet.clipboard" catalog="system" width="98" height="128"/>
         <image name="person.fill" catalog="system" width="128" height="120"/>
-        <image name="pills.fill" catalog="system" width="128" height="104"/>
         <image name="safari" catalog="system" width="128" height="123"/>
         <image name="target" catalog="system" width="128" height="123"/>
         <image name="zzz" catalog="system" width="119" height="128"/>
