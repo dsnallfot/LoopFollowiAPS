@@ -25,6 +25,11 @@ class MealViewController: UIViewController {
         }
     }
     
+    @IBAction func presetButtonTapped(_ sender: Any) {
+        let presetViewController = storyboard!.instantiateViewController(withIdentifier: "remotePreset") as! PresetViewController
+        self.present(presetViewController, animated: true, completion: nil)
+    }
+    
     @IBAction func sendRemoteMealPressed(_ sender: Any) {
         // Retrieve the maximum carbs value from UserDefaultsRepository
         let maxCarbs = UserDefaultsRepository.maxCarbs.value

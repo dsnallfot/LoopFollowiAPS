@@ -19,6 +19,11 @@ class RemoteViewController: UIViewController {
         }
     }
     
+    @IBAction func presetButtonPressed(_ sender: Any) {
+        let presetViewController = storyboard!.instantiateViewController(withIdentifier: "remotePreset") as! PresetViewController
+        self.present(presetViewController, animated: true, completion: nil)
+    }
+    
     @IBAction func mealButtonPressed(_ sender: Any) {
         let mealViewController = storyboard!.instantiateViewController(withIdentifier: "remoteMeal") as! MealViewController
         self.present(mealViewController, animated: true, completion: nil)

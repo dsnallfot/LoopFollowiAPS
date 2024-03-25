@@ -454,6 +454,7 @@ class UserDefaultsRepository {
     static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
     static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "🚫 Avbryt Override, ⬇️ 75%, 🤢 Magsjuka, 🍬 Efter dextro, 🍬😴 Efter dextro natt, 🏃‍♂️ Hög aktivitet, ⬇️ 90%, ❌ Blocka SMB, ⚽️ Gympa, 😴 Nattläge, 🍇 Vindruvor, 🍭 Godisdag, 🐌 Ledig dag, 🤧 Förkyld, 👻 Resistens, 🥯 Sen frukost")
     static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "🚫 Avbryt Temp Target, 🏃‍♂️ Hög aktivitet, 🍬 Efter dextro, 🍽️ Äter snart, ❌ Blocka SMB, ⬆️ Boost, ⚽️ Gympa, 🍬😴 Efter dextro natt, 😴 Nattläge")
+    static let presetString = UserDefaultsValue<String>(key: "presetString", default: "🥭 Frukt, 🥯 Frukost, 🍝 Lunch, 🥘 Middag, 🍭 Godis, 🍔 McDonalds, 🍿 Snacks")
 
     // API settings
     static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "EnterTheSID")

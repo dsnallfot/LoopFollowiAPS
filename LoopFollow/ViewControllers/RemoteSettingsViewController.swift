@@ -179,6 +179,14 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.tempTargetsString.value = value
         }
         
+        <<< TextRow("presets"){ row in
+            row.title = "Meal Presets:"
+            row.value = UserDefaultsRepository.presetString.value
+        }.onChange { row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.presetString.value = value
+        }
+        
         +++ ButtonRow() {
             $0.title = "DONE"
         }.onCellSelection { (row, arg)  in
