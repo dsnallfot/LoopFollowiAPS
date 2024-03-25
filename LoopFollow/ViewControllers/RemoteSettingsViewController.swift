@@ -38,36 +38,46 @@ class RemoteSettingsViewController: FormViewController {
         remoteCommandsSection 
         <<< TextRow("twilioSID"){ row in
             row.title = "Twilio SID"
-            let maskedSID = String(repeating: "*", count: UserDefaultsRepository.twilioSIDString.value.count)
-            row.value = maskedSID
+            row.cell.textField.placeholder = "EnterSID"
+            if (UserDefaultsRepository.twilioSIDString.value != "") {
+                let maskedSecret = String(repeating: "*", count: UserDefaultsRepository.twilioSIDString.value.count)
+                row.value = maskedSecret
+            }
         }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.twilioSIDString.value = value
+            UserDefaultsRepository.twilioSIDString.value = row.value ?? ""
         }
         
         <<< TextRow("twilioSecret"){ row in
             row.title = "Twilio Secret"
-            let maskedSecret = String(repeating: "*", count: UserDefaultsRepository.twilioSecretString.value.count)
-            row.value = maskedSecret
+            row.cell.textField.placeholder = "EnterSecret"
+            if (UserDefaultsRepository.twilioSecretString.value != "") {
+                let maskedSecret = String(repeating: "*", count: UserDefaultsRepository.twilioSecretString.value.count)
+                row.value = maskedSecret
+            }
         }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.twilioSecretString.value = value
+            UserDefaultsRepository.twilioSecretString.value = row.value ?? ""
         }
         
         <<< TextRow("twilioFromNumberString"){ row in
             row.title = "Twilio from Number"
-            row.value = UserDefaultsRepository.twilioFromNumberString.value
+            row.cell.textField.placeholder = "EnterFromNumber"
+            row.cell.textField.keyboardType = UIKeyboardType.phonePad
+            if (UserDefaultsRepository.twilioFromNumberString.value != "") {
+                row.value = UserDefaultsRepository.twilioFromNumberString.value
+            }
         }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.twilioFromNumberString.value = value
+            UserDefaultsRepository.twilioFromNumberString.value =  row.value ?? ""
         }
         
         <<< TextRow("twilioToNumberString"){ row in
             row.title = "Twilio to Number"
-            row.value = UserDefaultsRepository.twilioToNumberString.value
+            row.cell.textField.placeholder = "EnterToNumber"
+            row.cell.textField.keyboardType = UIKeyboardType.phonePad
+            if (UserDefaultsRepository.twilioToNumberString.value != "") {
+                row.value = UserDefaultsRepository.twilioToNumberString.value
+            }
         }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.twilioToNumberString.value = value
+            UserDefaultsRepository.twilioToNumberString.value =  row.value ?? ""
         }
         
         let shortcutsSection = Section(header: "Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target buttons. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
