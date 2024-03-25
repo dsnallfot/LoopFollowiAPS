@@ -13,6 +13,7 @@ import EventKitUI
 
 class RemoteSettingsViewController: FormViewController {
     
+    
     override func viewDidLoad()  {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
@@ -20,6 +21,7 @@ class RemoteSettingsViewController: FormViewController {
         }
         buildAdvancedSettings()
     }
+    
     private func buildAdvancedSettings() {
         // Define the section
         let remoteCommandsSection = Section(header: "Twilio Settings", footer: "") {
