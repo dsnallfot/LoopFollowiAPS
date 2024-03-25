@@ -457,7 +457,7 @@ class UserDefaultsRepository {
     static let twilioSecretString = UserDefaultsValue<String>(key: "twilioSecretString", default: "")
     static let twilioFromNumberString = UserDefaultsValue<String>(key: "twilioFromNumberString", default: "")
     static let twilioToNumberString = UserDefaultsValue<String>(key: "twilioToNumberString", default: "")
-    
+
     
     
 }

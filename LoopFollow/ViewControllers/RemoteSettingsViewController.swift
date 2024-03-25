@@ -44,7 +44,7 @@ class RemoteSettingsViewController: FormViewController {
                 row.value = maskedSecret
             }
         }.onChange { row in
-            guard let value = row.value else { return }
+
             UserDefaultsRepository.twilioSIDString.value = row.value ?? ""
         }
         
@@ -56,7 +56,6 @@ class RemoteSettingsViewController: FormViewController {
                 row.value = maskedSecret
             }
         }.onChange { row in
-            guard let value = row.value else { return }
             UserDefaultsRepository.twilioSecretString.value = row.value ?? ""
         }
         
@@ -68,7 +67,6 @@ class RemoteSettingsViewController: FormViewController {
                 row.value = UserDefaultsRepository.twilioFromNumberString.value
             }
         }.onChange { row in
-            guard let value = row.value else { return }
             UserDefaultsRepository.twilioFromNumberString.value =  row.value ?? ""
         }
         
@@ -80,7 +78,6 @@ class RemoteSettingsViewController: FormViewController {
                 row.value = UserDefaultsRepository.twilioToNumberString.value
             }
         }.onChange { row in
-            guard let value = row.value else { return }
             UserDefaultsRepository.twilioToNumberString.value =  row.value ?? ""
         }
         
