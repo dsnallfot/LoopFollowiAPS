@@ -143,7 +143,7 @@ class CustomViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
                 print("Failed to encode URL string")
                 return
             }
-            let urlString = "shortcuts://run-shortcut?name=Remote%20Preset&input=text&text=\(encodedString)"
+            let urlString = "shortcuts://run-shortcut?name=Remote%20Custom%20Action&input=text&text=\(encodedString)"
             if let url = URL(string: urlString) {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
