@@ -661,7 +661,7 @@
                                                 <color key="backgroundColor" red="0.30564124995768777" green="0.6789113867162454" blue="0.65983426234335552" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             </backgroundConfiguration>
                                             <attributedString key="attributedTitle">
-                                                <fragment content="Temp Target">
+                                                <fragment content="Tillfälligt Mål">
                                                     <attributes>
                                                         <font key="NSFont" size="22" name="HelveticaNeue-Medium"/>
                                                     </attributes>
@@ -761,7 +761,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <stackView opaque="NO" contentMode="scaleToFill" spacing="85" translatesAutoresizingMaskIntoConstraints="NO" id="Huo-kW-2V8">
-                                <rect key="frame" x="7.3333333333333428" y="70" width="360.66666666666663" height="34.333333333333343"/>
+                                <rect key="frame" x="6" y="70" width="363.33333333333337" height="34.333333333333343"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Sei-VM-hc2">
                                         <rect key="frame" x="0.0" y="0.0" width="70.333333333333329" height="34.333333333333336"/>
@@ -774,13 +774,13 @@
                                         </connections>
                                     </button>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Måltid" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WzJ-Kc-ZMy">
-                                        <rect key="frame" x="155.33333333333331" y="0.0" width="47" height="34.333333333333336"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                        <rect key="frame" x="155.33333333333334" y="0.0" width="49.666666666666657" height="34.333333333333336"/>
+                                        <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SYt-3I-rWk">
-                                        <rect key="frame" x="287.33333333333337" y="0.0" width="73.333333333333314" height="34.333333333333336"/>
+                                        <rect key="frame" x="290" y="0.0" width="73.333333333333314" height="34.333333333333336"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" title="Avbryt" cornerStyle="capsule">
                                             <fontDescription key="titleFontDescription" type="system" pointSize="17"/>
@@ -1079,8 +1079,8 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Bolus" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Tdy-xg-Qvc">
-                                <rect key="frame" x="166.33333333333334" y="70" width="42.333333333333343" height="34.333333333333343"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <rect key="frame" x="165.33333333333334" y="70" width="44.333333333333343" height="34.333333333333343"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -1282,7 +1282,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="BEz-I9-sPs" userLabel="Override">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="wxu-lS-OVn">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jzQ-mu-Jca">
@@ -1298,7 +1298,7 @@
                             </stackView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Override" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="vfU-vF-dYf">
                                 <rect key="frame" x="107.33333333333333" y="70" width="160.33333333333337" height="34.333333333333343"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -1351,7 +1351,7 @@
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Inställningar" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="CTt-Px-Glh">
                                 <rect key="frame" x="125" y="50" width="126" height="34.333333333333258"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -1408,7 +1408,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="RtX-oO-1fw" userLabel="Temp Target">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="znN-mf-lmp">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hXU-kG-KPd">
@@ -1424,7 +1424,7 @@
                             </stackView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Tillfälliga Mål" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="L64-fs-yGX" userLabel="Remote Temp Target">
                                 <rect key="frame" x="107.33333333333333" y="70" width="160.33333333333337" height="34.333333333333343"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -1502,7 +1502,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ijq-aN-c3Y" userLabel="Temp Target">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="TAK-9Y-biG">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="CBe-w4-hJR">
@@ -1518,7 +1518,7 @@
                             </stackView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Förval" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="urB-n6-RU7" userLabel="Remote Temp Target">
                                 <rect key="frame" x="107.33333333333333" y="70" width="160.33333333333337" height="34.333333333333343"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
