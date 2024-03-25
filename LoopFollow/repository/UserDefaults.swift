@@ -453,11 +453,11 @@ class UserDefaultsRepository {
     static let customString = UserDefaultsValue<String>(key: "customString", default: "Custom Command 1, Custom Command 2, Custom Command 3")
     
     // API settings
-    static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "EnterTheSID")
-    static let twilioSecretString = UserDefaultsValue<String>(key: "twilioSecretString", default: "EnterSecret")
-    static let twilioFromNumberString = UserDefaultsValue<String>(key: "twilioFromNumberString", default: "EnterFromNumber")
-    static let twilioToNumberString = UserDefaultsValue<String>(key: "twilioToNumberString", default: "EnterToNumber")
+    static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "")
+    static let twilioSecretString = UserDefaultsValue<String>(key: "twilioSecretString", default: "")
+    static let twilioFromNumberString = UserDefaultsValue<String>(key: "twilioFromNumberString", default: "")
+    static let twilioToNumberString = UserDefaultsValue<String>(key: "twilioToNumberString", default: "")
     
-
+    
     
 }
