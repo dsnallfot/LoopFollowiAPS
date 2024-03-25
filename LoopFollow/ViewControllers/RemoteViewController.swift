@@ -52,14 +52,14 @@ class RemoteViewController: UIViewController {
     }
     
     @IBAction func calendarButtonTapped(_ sender: Any) {
-        let urlString = "shortcuts://run-shortcut?name=Hälsologg"
+        let urlString = "shortcuts://run-shortcut?name=Healthlog"
         if let url = URL(string: urlString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
     }
     
     @IBAction func menuButtonTapped(_ sender: Any) {
-        let urlString = "shortcuts://run-shortcut?name=Räkna%20KH%20(Excel)"
+        let urlString = "shortcuts://run-shortcut?name=Carbcount"
         if let url = URL(string: urlString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
