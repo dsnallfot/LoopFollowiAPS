@@ -114,9 +114,9 @@ class RemoteSettingsViewController: FormViewController {
             }
         }
         
-        <<< TextRow("Remote Presets"){ row in
+        <<< TextRow("Remote Preset"){ row in
             row.title = ""
-            row.value = "Remote Prest • Preset_🍿 Popcorn"
+            row.value = "Remote Preset • Preset_🍿 Popcorn"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -138,7 +138,7 @@ class RemoteSettingsViewController: FormViewController {
         
         +++ shortcutsSection
         
-        +++ Section(header: "Remote Settings", footer: "Add the overrides, temp targets and meal presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
+        +++ Section(header: "Guardrails", footer: "")
         
         <<< StepperRow("maxCarbs") { row in
             row.title = "Max Carbs (g)"
@@ -170,6 +170,8 @@ class RemoteSettingsViewController: FormViewController {
             guard let value = row.value else { return }
             UserDefaultsRepository.maxBolus.value = Double(value)
         }
+ 
+        +++ Section(header: "Preset Settings", footer: "Add the overrides, temp targets and meal presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
         
         <<< TextRow("overrides"){ row in
             row.title = "Overrides:"
