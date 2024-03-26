@@ -13,6 +13,7 @@ import EventKitUI
 
 class RemoteSettingsViewController: FormViewController {
     
+    var mealViewController: MealViewController?
     
     override func viewDidLoad()  {
         super.viewDidLoad()
@@ -149,7 +150,7 @@ class RemoteSettingsViewController: FormViewController {
         
         +++ shortcutsSection
         
-        +++ Section(header: "Guardrails", footer: "")
+        +++ Section(header: "Guardrails and security", footer: "")
         
         <<< StepperRow("maxCarbs") { row in
             row.title = "Max Carbs (g)"
@@ -181,6 +182,7 @@ class RemoteSettingsViewController: FormViewController {
             guard let value = row.value else { return }
             UserDefaultsRepository.maxBolus.value = Double(value)
         }
+        
         
         +++ Section(header: "Preset Settings", footer: "Add the overrides, temp targets and meal presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
         
