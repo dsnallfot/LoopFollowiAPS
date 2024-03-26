@@ -158,6 +158,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     // This is a temporary safeguard until the issue with multiple calls to speakBG is fixed.
     var lastSpeechTime: Date?
 
+    var autoScrollPauseUntil: Date? = nil
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -869,6 +871,16 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         
+    }
+
+     // User has scrolled the chart
+    func chartTranslated(_ chartView: ChartViewBase, dX: CGFloat, dY: CGFloat) {
+        let isViewingLatestData = abs(BGChart.highestVisibleX - BGChart.chartXMax) < 0.001
+        if isViewingLatestData {
+            autoScrollPauseUntil = nil // User is back at the latest data, allow auto-scrolling
+        } else {
+            autoScrollPauseUntil = Date().addingTimeInterval(5 * 60) // User is viewing historical data, pause auto-scrolling
+        }
     }
     
     
