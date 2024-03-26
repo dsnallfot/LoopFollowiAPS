@@ -11,6 +11,7 @@ import LocalAuthentication
 
 class MealViewController: UIViewController {
     
+    @IBOutlet weak var sendMealButton: UIButton!
     @IBOutlet weak var carbGrams: UITextField!
     @IBOutlet weak var fatGrams: UITextField!
     @IBOutlet weak var proteinGrams: UITextField!
@@ -290,6 +291,23 @@ class MealViewController: UIViewController {
             }.resume()
         }
     }
+    
+    @IBAction func editingChanged(_ sender: Any) {
+        print("Value changed in bolus amount")
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!,
+        ]
+        let attributedTitle: NSAttributedString
+        if let bolusText = bolusUnits.text, bolusText != "0" && bolusText != "" {
+            attributedTitle = NSAttributedString(string: "Skicka Måltid och Bolus", attributes: attributes)
+        } else {
+            attributedTitle = NSAttributedString(string: "Skicka Måltid", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!])
+        }
+        sendMealButton.setAttributedTitle(attributedTitle, for: .normal)
+    }
+
+
     
     @IBAction func doneButtonTapped(_ sender: Any) {
         dismiss(animated: true, completion: nil)
