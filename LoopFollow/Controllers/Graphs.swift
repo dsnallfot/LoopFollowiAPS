@@ -388,7 +388,7 @@ extension MainViewController {
     // Large chart
         let ul = ChartLimitLine()
         ul.limit = Double(dateTimeUtils.getNowTimeIntervalUTC())
-        ul.lineColor = NSUIColor.white
+        ul.lineColor = NSUIColor.label
         ul.lineDashLengths = [CGFloat(4), CGFloat(2)]
         ul.lineWidth = 1
         BGChart.xAxis.addLimitLine(ul)
@@ -396,7 +396,7 @@ extension MainViewController {
         // Small chart
         let sl = ChartLimitLine()
         sl.limit = Double(dateTimeUtils.getNowTimeIntervalUTC())
-        sl.lineColor = NSUIColor.white
+        sl.lineColor = NSUIColor.label
         sl.lineDashLengths = [CGFloat(2), CGFloat(2)]
         sl.lineWidth = 1
         BGChartFull.xAxis.addLimitLine(sl)
