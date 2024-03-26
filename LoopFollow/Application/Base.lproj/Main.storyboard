@@ -1484,7 +1484,7 @@
                                 <state key="normal" title="Button"/>
                                 <buttonConfiguration key="configuration" style="filled">
                                     <attributedString key="attributedTitle">
-                                        <fragment content="Skicka Förvald Måltid">
+                                        <fragment content="Skicka Förval">
                                             <attributes>
                                                 <font key="NSFont" size="20" name="HelveticaNeue-Medium"/>
                                                 <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
