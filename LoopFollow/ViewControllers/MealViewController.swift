@@ -117,31 +117,29 @@ class MealViewController: UIViewController {
         }
         
         // Call createCombinedString to get the combined string
-        if let combinedString = createCombinedString(carbs: carbs, fats: fats, proteins: proteins) {
-            // Show confirmation alert
-            if bolusValue != 0 {
-                showMealBolusConfirmationAlert(combinedString: combinedString)
-            } else {
-                showMealConfirmationAlert(combinedString: combinedString)
-            }
+        let combinedString = createCombinedString(carbs: carbs, fats: fats, proteins: proteins)
+
+        // Show confirmation alert
+        if bolusValue != 0 {
+            showMealBolusConfirmationAlert(combinedString: combinedString)
+        } else {
+            showMealConfirmationAlert(combinedString: combinedString)
         }
         
-        func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String? {
+        func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
             let mealNotesValue = mealNotes.text ?? ""
             var cleanedMealNotes = mealNotesValue
             // Convert bolusValue to string and trim any leading or trailing whitespace
             let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
             
-            // Retrieve the method value from UserDefaultsRepository
-            let method = UserDefaultsRepository.method.value
-            
-            // Construct and return the combinedString
-            let combinedString = "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Bolus_\(trimmedBolusValue)"
-            
-            //Alternative string formatting below, to present the meal like a menu in imessage.
-            //let combinedString = "Mealtime\nCarbs \(carbs)g\nFat \(fats)g\nProtein \(proteins)g \nNote \(cleanedMealNotes)"
-            
-            return combinedString
+            // Construct and return the combinedString based on hideRemoteBolus setting
+            if UserDefaultsRepository.hideRemoteBolus.value {
+                // Construct and return the combinedString without bolus
+                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)"
+            } else {
+                // Construct and return the combinedString with bolus
+                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Bolus_\(trimmedBolusValue)"
+            }
         }
         
         //Alert for meal without bolus
