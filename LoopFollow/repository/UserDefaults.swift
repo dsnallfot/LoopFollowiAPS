@@ -455,7 +455,10 @@ class UserDefaultsRepository {
     static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "🚫 Avbryt Override, ⬇️ 75%, 🤢 Magsjuka, 🍬 Efter dextro, 🍬😴 Efter dextro natt, 🏃‍♂️ Hög aktivitet, ⬇️ 90%, ❌ Blocka SMB, ⚽️ Gympa, 😴 Nattläge, 🍇 Vindruvor, 🍭 Godisdag, 🐌 Ledig dag, 🤧 Förkyld, 👻 Resistens, 🥯 Sen frukost")
     static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "🚫 Avbryt Temp Target, 🏃‍♂️ Hög aktivitet, 🍬 Efter dextro, 🍽️ Äter snart, ❌ Blocka SMB, ⬆️ Boost, ⚽️ Gympa, 🍬😴 Efter dextro natt, 😴 Nattläge")
     static let presetString = UserDefaultsValue<String>(key: "presetString", default: "🍬 1 Dextro, 🍬 2 Dextro, 🥭 Frukt, 🥯 Frukost, 🍝 Lunch, 🥪 Mellis, 🥘 Middag, 🍭 Godis, 🍔 McDonalds, 🍿 Snacks")
+    
+    //Show or Hide advanced features
     static let hideRemoteBolus = UserDefaultsValue<Bool>(key: "hideRemoteBolus", default: true)
+    static let hideRemoteCustom = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
     
     // API settings
     static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "")
