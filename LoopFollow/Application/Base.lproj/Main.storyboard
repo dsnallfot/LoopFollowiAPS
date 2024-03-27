@@ -1556,10 +1556,10 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="7KS-qI-OaU">
-                                <rect key="frame" x="287.66666666666669" y="70" width="75.333333333333314" height="34.333333333333343"/>
+                                <rect key="frame" x="284.66666666666669" y="70" width="78.333333333333314" height="34.333333333333343"/>
                                 <state key="normal" title="Button"/>
                                 <buttonConfiguration key="configuration" style="plain" title="Avbryt" cornerStyle="capsule">
-                                    <fontDescription key="titleFontDescription" type="system" weight="medium" pointSize="17"/>
+                                    <fontDescription key="titleFontDescription" type="system" weight="medium" pointSize="18"/>
                                 </buttonConfiguration>
                                 <connections>
                                     <action selector="cancelButtonPressed:" destination="Q87-1p-npY" eventType="touchUpInside" id="ngW-fn-AAU"/>
@@ -1607,7 +1607,7 @@
                             </stackView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Förval" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="urB-n6-RU7" userLabel="Remote Temp Target">
                                 <rect key="frame" x="107.33333333333333" y="70" width="160.33333333333337" height="34.333333333333343"/>
-                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="18"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
