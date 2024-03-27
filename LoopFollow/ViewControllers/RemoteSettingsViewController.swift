@@ -154,7 +154,7 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("RemoteMealBolus"){ row in
             row.title = ""
-            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal_Mealbolus_1.0"
+            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal_Insulin_1.0"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
