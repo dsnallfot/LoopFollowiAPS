@@ -38,36 +38,47 @@ class RemoteSettingsViewController: FormViewController {
         remoteCommandsSection 
         <<< TextRow("twilioSID"){ row in
             row.title = "Twilio SID"
-            let maskedSID = String(repeating: "*", count: UserDefaultsRepository.twilioSIDString.value.count)
-            row.value = maskedSID
+            row.cell.textField.placeholder = "EnterSID"
+            if (UserDefaultsRepository.twilioSIDString.value != "") {
+                let maskedSecret = String(repeating: "*", count: UserDefaultsRepository.twilioSIDString.value.count)
+                row.value = maskedSecret
+            }
         }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.twilioSIDString.value = value
+
+            UserDefaultsRepository.twilioSIDString.value = row.value ?? ""
         }
         
         <<< TextRow("twilioSecret"){ row in
             row.title = "Twilio Secret"
-            let maskedSecret = String(repeating: "*", count: UserDefaultsRepository.twilioSecretString.value.count)
-            row.value = maskedSecret
+            row.cell.textField.placeholder = "EnterSecret"
+            if (UserDefaultsRepository.twilioSecretString.value != "") {
+                let maskedSecret = String(repeating: "*", count: UserDefaultsRepository.twilioSecretString.value.count)
+                row.value = maskedSecret
+            }
         }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.twilioSecretString.value = value
+            UserDefaultsRepository.twilioSecretString.value = row.value ?? ""
         }
         
         <<< TextRow("twilioFromNumberString"){ row in
             row.title = "Twilio from Number"
-            row.value = UserDefaultsRepository.twilioFromNumberString.value
+            row.cell.textField.placeholder = "EnterFromNumber"
+            row.cell.textField.keyboardType = UIKeyboardType.phonePad
+            if (UserDefaultsRepository.twilioFromNumberString.value != "") {
+                row.value = UserDefaultsRepository.twilioFromNumberString.value
+            }
         }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.twilioFromNumberString.value = value
+            UserDefaultsRepository.twilioFromNumberString.value =  row.value ?? ""
         }
         
         <<< TextRow("twilioToNumberString"){ row in
             row.title = "Twilio to Number"
-            row.value = UserDefaultsRepository.twilioToNumberString.value
+            row.cell.textField.placeholder = "EnterToNumber"
+            row.cell.textField.keyboardType = UIKeyboardType.phonePad
+            if (UserDefaultsRepository.twilioToNumberString.value != "") {
+                row.value = UserDefaultsRepository.twilioToNumberString.value
+            }
         }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.twilioToNumberString.value = value
+            UserDefaultsRepository.twilioToNumberString.value =  row.value ?? ""
         }
         
         let shortcutsSection = Section(header: "Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target buttons. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
@@ -87,28 +98,36 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("Remote Meal"){ row in
             row.title = ""
-            row.value = "Remote Meal • mealtoenact_carbs25fat15protein10noteTestmeal"
+            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_🍔"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("Remote Bolus"){ row in
             row.title = ""
-            row.value = "Remote Bolus • bolustoenact_0.6"
+            row.value = "Remote Bolus • Bolus_0.6"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("Remote Override"){ row in
             row.title = ""
-            row.value = "Remote Override • overridetoenact_Partytime"
+            row.value = "Remote Override • Override_🎉 Partytime"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("Remote Temp Target"){ row in
             row.title = ""
-            row.value = "Remote Temp Target • temptargettoenact_Exercise"
+            row.value = "Remote Temp Target • TempTarget_🏃‍♂️ Exercise"
+            row.cellSetup { cell, row in
+                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
+            }
+        }
+        
+        <<< TextRow("Remote Custom Action"){ row in
+            row.title = ""
+            row.value = "Remote Custom Action • Custom_Any custom textstring"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -130,7 +149,7 @@ class RemoteSettingsViewController: FormViewController {
         
         +++ shortcutsSection
         
-        +++ Section(header: "Remote Settings", footer: "Add the overrides and/or temp targets you would like to be able to choose from in the remote override/temp target pickers. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
+        +++ Section(header: "Guardrails", footer: "")
         
         <<< StepperRow("maxCarbs") { row in
             row.title = "Max Carbs (g)"
@@ -163,6 +182,8 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.maxBolus.value = Double(value)
         }
         
+        +++ Section(header: "Presets and Customizations", footer: "Add the overrides, temp targets and custom actions you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3\nA Custom Action can be any text string you want to send over sms to trigger anything on the receiving iPhone ")
+        
         <<< TextRow("overrides"){ row in
             row.title = "Overrides:"
             row.value = UserDefaultsRepository.overrideString.value
@@ -177,6 +198,14 @@ class RemoteSettingsViewController: FormViewController {
         }.onChange { row in
             guard let value = row.value else { return }
             UserDefaultsRepository.tempTargetsString.value = value
+        }
+        
+        <<< TextRow("customactions"){ row in
+            row.title = "Custom Actions:"
+            row.value = UserDefaultsRepository.customString.value
+        }.onChange { row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.customString.value = value
         }
         
         +++ ButtonRow() {
