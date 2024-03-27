@@ -10,15 +10,25 @@ import UIKit
 
 class RemoteViewController: UIViewController {
     
+    @IBOutlet weak var remoteBolusButton: UIButton!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
-            
-            // Do any additional setup after loading the view.
         }
-    }
-    @IBAction func customButtonPressed(_ sender: Any) {
+            
+            // Initial UI setup based on hideRemoteBolus value
+            updateUI()
+        }
+        
+        // Function to update UI based on hideRemoteBolus value
+        func updateUI() {
+            let isRemoteBolusHidden = UserDefaultsRepository.hideRemoteBolus.value
+            remoteBolusButton.isHidden = isRemoteBolusHidden
+        }
+    
+    @IBAction func presetButtonPressed(_ sender: Any) {
         let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
         self.present(customViewController, animated: true, completion: nil)
     }
@@ -46,5 +56,22 @@ class RemoteViewController: UIViewController {
     @IBAction func remoteSettingsButtonTapped(_ sender: Any) {
         let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
         self.present(remoteSettingsViewController, animated: true, completion: nil)
+    }
+    
+    @IBAction func calendarButtonTapped(_ sender: Any) {
+        let urlString = "shortcuts://run-shortcut?name=Healthlog"
+        if let url = URL(string: urlString) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+    }
+    
+    // Function to hide the bolusRow
+    func hideRemoteBolusButton() {
+        remoteBolusButton.isHidden = true
+    }
+    
+    // Function to show the bolusRow
+    func showRemoteBolusButton() {
+        remoteBolusButton.isHidden = false
     }
 }

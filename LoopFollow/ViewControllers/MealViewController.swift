@@ -11,6 +11,7 @@ import LocalAuthentication
 
 class MealViewController: UIViewController {
     
+    @IBOutlet weak var bolusRow: UIView!
     @IBOutlet weak var sendMealButton: UIButton!
     @IBOutlet weak var carbGrams: UITextField!
     @IBOutlet weak var fatGrams: UITextField!
@@ -22,15 +23,12 @@ class MealViewController: UIViewController {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
-            
-            // Do any additional setup after loading the view.
         }
-    }
-    
-    
-    @IBAction func presetButtonTapped(_ sender: Any) {
-        let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
-        self.present(customViewController, animated: true, completion: nil)
+        
+        // Check the value of hideRemoteBolus and hide the bolusRow accordingly
+        if UserDefaultsRepository.hideRemoteBolus.value {
+            hideBolusRow()
+        }
     }
     
     @IBAction func sendRemoteMealPressed(_ sender: Any) {
@@ -307,7 +305,15 @@ class MealViewController: UIViewController {
         sendMealButton.setAttributedTitle(attributedTitle, for: .normal)
     }
 
-
+    // Function to hide the bolusRow
+    func hideBolusRow() {
+        bolusRow.isHidden = true
+    }
+    
+    // Function to show the bolusRow
+    func showBolusRow() {
+        bolusRow.isHidden = false
+    }
     
     @IBAction func doneButtonTapped(_ sender: Any) {
         dismiss(animated: true, completion: nil)
