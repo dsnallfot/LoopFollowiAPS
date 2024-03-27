@@ -154,7 +154,7 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("RemoteMealBolus"){ row in
             row.title = ""
-            row.value = "Remote Meal and Bolus • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal_Bolus_1.0"
+            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal_Bolus_1.0"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -191,7 +191,7 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("RemotePreset"){ row in
             row.title = ""
-            row.value = "Remote Preset • Preset_🍿 Popcorn"
+            row.value = "Remote Custom Action • Preset_🍿 Popcorn"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -199,7 +199,7 @@ class RemoteSettingsViewController: FormViewController {
         
         // Add the section to the form
         form
-        +++ Section(header: "Remote commands method", footer: "")
+        +++ Section(header: "Select remote commands method", footer: "")
         <<< SegmentedRow<String>("method") { row in
             row.title = ""
             row.options = ["iOS Shortcuts", "SMS API"]

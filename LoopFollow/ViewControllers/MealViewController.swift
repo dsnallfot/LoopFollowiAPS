@@ -31,12 +31,6 @@ class MealViewController: UIViewController {
         }
     }
     
-    
-    @IBAction func presetButtonTapped(_ sender: Any) {
-        let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
-        self.present(customViewController, animated: true, completion: nil)
-    }
-    
     @IBAction func sendRemoteMealPressed(_ sender: Any) {
         // Retrieve the maximum carbs value from UserDefaultsRepository
         let maxCarbs = UserDefaultsRepository.maxCarbs.value
@@ -145,14 +139,14 @@ class MealViewController: UIViewController {
         //Alert for meal without bolus
         func showMealConfirmationAlert(combinedString: String) {
             // Confirmation alert before sending the request
-            let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du registrera denna måltid?", preferredStyle: .alert)
+            let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to register this meal?", preferredStyle: .alert)
             
-            confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+            confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
                 // Proceed with sending the request
                 self.sendMealRequest(combinedString: combinedString)
             }))
             
-            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+            confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
             
             present(confirmationAlert, animated: true, completion: nil)
         }
@@ -160,9 +154,9 @@ class MealViewController: UIViewController {
         //Alert for meal WITH bolus
         func showMealBolusConfirmationAlert(combinedString: String) {
             // Confirmation alert before sending the request
-            let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du registrera denna måltid och ge \(bolusValue) E bolus?", preferredStyle: .alert)
+            let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to register this meal and give \(bolusValue) U bolus?", preferredStyle: .alert)
             
-            confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+            confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
                 // Authenticate with Face ID
                 self.authenticateWithBiometrics {
                     // Proceed with the request after successful authentication
@@ -170,7 +164,7 @@ class MealViewController: UIViewController {
                 }
             }))
             
-            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+            confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
             
             present(confirmationAlert, animated: true, completion: nil)
         }
@@ -264,13 +258,13 @@ class MealViewController: UIViewController {
                 DispatchQueue.main.async {
                     if let error = error {
                         // Failure: Show error alert for network error
-                        let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
+                        let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200..<300).contains(httpResponse.statusCode) {
                             // Success: Show success alert for successful response
-                            let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades!", preferredStyle: .alert)
+                            let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                                 // Dismiss the current view controller
                                 self.dismiss(animated: true, completion: nil)
@@ -278,14 +272,14 @@ class MealViewController: UIViewController {
                             self.present(alertController, animated: true, completion: nil)
                         } else {
                             // Failure: Show error alert for non-successful HTTP status code
-                            let message = "HTTP Statuskod: \(httpResponse.statusCode)"
-                            let alertController = UIAlertController(title: "Fel", message: message, preferredStyle: .alert)
+                            let message = "HTTP Status Code: \(httpResponse.statusCode)"
+                            let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(alertController, animated: true, completion: nil)
                         }
                     } else {
                         // Failure: Show generic error alert for unexpected response
-                        let alertController = UIAlertController(title: "Fel", message: "Oväntat svar från servern", preferredStyle: .alert)
+                        let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
                     }
