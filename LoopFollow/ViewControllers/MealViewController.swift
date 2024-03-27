@@ -138,7 +138,7 @@ class MealViewController: UIViewController {
                 return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)"
             } else {
                 // Construct and return the combinedString with bolus
-                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Bolus_\(trimmedBolusValue)"
+                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Mealbolus_\(trimmedBolusValue)"
             }
         }
         
