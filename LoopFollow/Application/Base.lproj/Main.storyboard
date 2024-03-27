@@ -630,7 +630,6 @@
                                         </buttonConfiguration>
                                         <connections>
                                             <action selector="bolusButtonPressed:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="bgi-Qm-ZLF"/>
-                                            <action selector="remoteBolusButtonPresses:" destination="aie-2F-6fa" eventType="touchUpInside" id="F63-Xn-GVD"/>
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="p4l-1b-Z8k">
@@ -746,9 +745,11 @@
                     </view>
                     <tabBarItem key="tabBarItem" title="Remote" image="appletvremote.gen1" catalog="system" id="Eec-Uu-0Sd"/>
                     <navigationItem key="navigationItem" id="ce2-Vz-Uuo"/>
+                    <connections>
+                        <outlet property="remoteBolusButton" destination="2Vg-R6-0Rz" id="Nb5-jA-f06"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="RnA-lD-Sot" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
-                <exit id="aie-2F-6fa" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
             <point key="canvasLocation" x="-1039.2" y="745.56650246305423"/>
         </scene>
@@ -1138,6 +1139,7 @@
                     <toolbarItems/>
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="bolusRow" destination="1MG-ka-WeC" id="mBu-Yw-aqz"/>
                         <outlet property="bolusUnits" destination="w60-pI-Fq0" id="fzb-I7-3Q9"/>
                         <outlet property="carbGrams" destination="4O6-tP-VAz" id="h4d-TM-Wbc"/>
                         <outlet property="fatGrams" destination="ic7-Xb-WJk" id="pYE-nL-A3C"/>

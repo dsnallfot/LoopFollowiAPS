@@ -10,14 +10,23 @@ import UIKit
 
 class RemoteViewController: UIViewController {
     
+    @IBOutlet weak var remoteBolusButton: UIButton!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
-            
-            // Do any additional setup after loading the view.
         }
-    }
+            
+            // Initial UI setup based on hideRemoteBolus value
+            updateUI()
+        }
+        
+        // Function to update UI based on hideRemoteBolus value
+        func updateUI() {
+            let isRemoteBolusHidden = UserDefaultsRepository.hideRemoteBolus.value
+            remoteBolusButton.isHidden = isRemoteBolusHidden
+        }
     
     @IBAction func presetButtonPressed(_ sender: Any) {
         let presetViewController = storyboard!.instantiateViewController(withIdentifier: "remotePreset") as! PresetViewController
@@ -54,5 +63,15 @@ class RemoteViewController: UIViewController {
         if let url = URL(string: urlString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
+    }
+    
+    // Function to hide the bolusRow
+    func hideRemoteBolusButton() {
+        remoteBolusButton.isHidden = true
+    }
+    
+    // Function to show the bolusRow
+    func showRemoteBolusButton() {
+        remoteBolusButton.isHidden = false
     }
 }

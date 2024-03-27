@@ -183,6 +183,14 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.maxBolus.value = Double(value)
         }
         
+        form +++ Section("Advanced functions")
+        <<< SwitchRow("hideRemoteBolus") { row in
+            row.title = "Hide Bolus (app restart needed)"
+            row.value = UserDefaultsRepository.hideRemoteBolus.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.hideRemoteBolus.value = value
+        }
         
         +++ Section(header: "Preset Settings", footer: "Add the overrides, temp targets and meal presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
         
@@ -209,7 +217,6 @@ class RemoteSettingsViewController: FormViewController {
             guard let value = row.value else { return }
             UserDefaultsRepository.presetString.value = value
         }
-        
         +++ ButtonRow() {
             $0.title = "DONE"
         }.onCellSelection { (row, arg)  in
