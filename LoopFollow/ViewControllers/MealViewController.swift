@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import LocalAuthentication
 
 class MealViewController: UIViewController {
     
@@ -14,7 +15,7 @@ class MealViewController: UIViewController {
     @IBOutlet weak var fatGrams: UITextField!
     @IBOutlet weak var proteinGrams: UITextField!
     @IBOutlet weak var mealNotes: UITextField!
-    
+    @IBOutlet weak var bolusUnits: UITextField!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,10 +26,49 @@ class MealViewController: UIViewController {
         }
     }
     
+    
+    @IBAction func presetButtonTapped(_ sender: Any) {
+        let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
+        self.present(customViewController, animated: true, completion: nil)
+    }
+    
     @IBAction func sendRemoteMealPressed(_ sender: Any) {
         // Retrieve the maximum carbs value from UserDefaultsRepository
         let maxCarbs = UserDefaultsRepository.maxCarbs.value
+        let maxBolus = UserDefaultsRepository.maxBolus.value
         
+        // BOLUS ENTRIES
+        //Process bolus entries
+        guard var bolusText = bolusUnits.text else {
+            print("Error: Bolus amount not entered")
+            return
+        }
+        
+        // Replace all occurrences of ',' with '.'
+        bolusText = bolusText.replacingOccurrences(of: ",", with: ".")
+        
+        let bolusValue: Double
+        if bolusText.isEmpty {
+            bolusValue = 0
+        } else {
+            guard let bolusDouble = Double(bolusText) else {
+                print("Error: Bolus amount conversion failed")
+                return
+            }
+            bolusValue = bolusDouble
+        }
+        
+        if bolusValue > maxBolus {
+            // Format maxBolus to display only one decimal place
+            let formattedMaxBolus = String(format: "%.1f", maxBolus)
+            
+            let alertControllerBolus = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed bolus of \(formattedMaxBolus) U is exceeded! Please try again with a smaller amount.", preferredStyle: .alert)
+            alertControllerBolus.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            present(alertControllerBolus, animated: true, completion: nil)
+            return
+        }
+        
+        // CARBS & FPU ENTRIES
         // Convert carbGrams, fatGrams, and proteinGrams to integers or default to 0 if empty
         let carbs: Int
         let fats: Int
@@ -74,41 +114,115 @@ class MealViewController: UIViewController {
         // Call createCombinedString to get the combined string
         if let combinedString = createCombinedString(carbs: carbs, fats: fats, proteins: proteins) {
             // Show confirmation alert
-            showConfirmationAlert(combinedString: combinedString)
+            if bolusValue != 0 {
+                showMealBolusConfirmationAlert(combinedString: combinedString)
+            } else {
+                showMealConfirmationAlert(combinedString: combinedString)
+            }
+        }
+        
+        func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String? {
+            let mealNotesValue = mealNotes.text ?? ""
+            var cleanedMealNotes = mealNotesValue
+            // Convert bolusValue to string and trim any leading or trailing whitespace
+            let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Retrieve the method value from UserDefaultsRepository
+            let method = UserDefaultsRepository.method.value
+            
+            // Construct and return the combinedString
+            let combinedString = "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Bolus_\(trimmedBolusValue)"
+            
+            //Alternative string formatting below, to present the meal like a menu in imessage.
+            //let combinedString = "Mealtime\nCarbs \(carbs)g\nFat \(fats)g\nProtein \(proteins)g \nNote \(cleanedMealNotes)"
+            
+            return combinedString
+        }
+        
+        //Alert for meal without bolus
+        func showMealConfirmationAlert(combinedString: String) {
+            // Confirmation alert before sending the request
+            let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du registrera denna måltid?", preferredStyle: .alert)
+            
+            confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+                // Proceed with sending the request
+                self.sendMealRequest(combinedString: combinedString)
+            }))
+            
+            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+            
+            present(confirmationAlert, animated: true, completion: nil)
+        }
+        
+        //Alert for meal WITH bolus
+        func showMealBolusConfirmationAlert(combinedString: String) {
+            // Confirmation alert before sending the request
+            let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du registrera denna måltid och ge \(bolusValue) E bolus?", preferredStyle: .alert)
+            
+            confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+                // Authenticate with Face ID
+                self.authenticateWithBiometrics {
+                    // Proceed with the request after successful authentication
+                    self.sendMealRequest(combinedString: combinedString)
+                }
+            }))
+            
+            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+            
+            present(confirmationAlert, animated: true, completion: nil)
         }
     }
     
-    func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String? {
-        let mealNotesValue = mealNotes.text ?? ""
-        var cleanedMealNotes = mealNotesValue
+    func authenticateWithBiometrics(completion: @escaping () -> Void) {
+        let context = LAContext()
+        var error: NSError?
         
-        // Retrieve the method value from UserDefaultsRepository
-        let method = UserDefaultsRepository.method.value
-        
-        // Construct and return the combinedString
-        let combinedString = "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)"
-        
-        //Alterntive combinedString formatting below, to present the meal more like a visual menu in imessage on receiving iPhone.
-        //let combinedString = "Mealtime\nCarbs \(carbs)g\nFat \(fats)g\nProtein \(proteins)g \nNote \(cleanedMealNotes)"
-        
-        return combinedString
+        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            let reason = "Authenticate with biometrics to proceed"
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
+                DispatchQueue.main.async {
+                    if success {
+                        // Authentication successful
+                        completion()
+                    } else {
+                        // Check for passcode authentication
+                        if let error = authenticationError as NSError?,
+                           error.code == LAError.biometryNotAvailable.rawValue || error.code == LAError.biometryNotEnrolled.rawValue {
+                            // Biometry (Face ID or Touch ID) is not available or not enrolled, use passcode
+                            self.authenticateWithPasscode(completion: completion)
+                        } else {
+                            // Authentication failed
+                            if let error = authenticationError {
+                                print("Authentication failed: \(error.localizedDescription)")
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // Biometry (Face ID or Touch ID) is not available, use passcode
+            self.authenticateWithPasscode(completion: completion)
+        }
     }
     
-    func showConfirmationAlert(combinedString: String) {
-        // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to register this meal?", preferredStyle: .alert)
+    func authenticateWithPasscode(completion: @escaping () -> Void) {
+        let context = LAContext()
         
-        confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
-            // Proceed with sending the request
-            self.sendMealRequest(combinedString: combinedString)
-        }))
-        
-        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-        
-        present(confirmationAlert, animated: true, completion: nil)
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Authenticate with passcode to proceed") { success, error in
+            DispatchQueue.main.async {
+                if success {
+                    // Authentication successful
+                    completion()
+                } else {
+                    // Authentication failed
+                    if let error = error {
+                        print("Authentication failed: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
     }
-    
-    
+        
     func sendMealRequest(combinedString: String) {
         // Retrieve the method value from UserDefaultsRepository
         let method = UserDefaultsRepository.method.value
@@ -124,8 +238,8 @@ class MealViewController: UIViewController {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
             dismiss(animated: true, completion: nil)
-        } else {
-            // If method is "SMS API", proceed with sending the request
+        } else {            // If method is "SMS API", proceed with sending the request
+            
             let twilioSID = UserDefaultsRepository.twilioSIDString.value
             let twilioSecret = UserDefaultsRepository.twilioSecretString.value
             let fromNumber = UserDefaultsRepository.twilioFromNumberString.value
@@ -147,13 +261,13 @@ class MealViewController: UIViewController {
                 DispatchQueue.main.async {
                     if let error = error {
                         // Failure: Show error alert for network error
-                        let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
+                        let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200..<300).contains(httpResponse.statusCode) {
                             // Success: Show success alert for successful response
-                            let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
+                            let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades!", preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                                 // Dismiss the current view controller
                                 self.dismiss(animated: true, completion: nil)
@@ -161,14 +275,14 @@ class MealViewController: UIViewController {
                             self.present(alertController, animated: true, completion: nil)
                         } else {
                             // Failure: Show error alert for non-successful HTTP status code
-                            let message = "HTTP Status Code: \(httpResponse.statusCode)"
-                            let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+                            let message = "HTTP Statuskod: \(httpResponse.statusCode)"
+                            let alertController = UIAlertController(title: "Fel", message: message, preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(alertController, animated: true, completion: nil)
                         }
                     } else {
                         // Failure: Show generic error alert for unexpected response
-                        let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
+                        let alertController = UIAlertController(title: "Fel", message: "Oväntat svar från servern", preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
                     }
@@ -181,4 +295,3 @@ class MealViewController: UIViewController {
         dismiss(animated: true, completion: nil)
     }
 }
-

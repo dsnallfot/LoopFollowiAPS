@@ -13,6 +13,8 @@ import EventKitUI
 
 class RemoteSettingsViewController: FormViewController {
     
+    var mealViewController: MealViewController?
+    
     override func viewDidLoad()  {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
@@ -20,6 +22,7 @@ class RemoteSettingsViewController: FormViewController {
         }
         buildAdvancedSettings()
     }
+    
     private func buildAdvancedSettings() {
         // Define the section
         let remoteCommandsSection = Section(header: "Twilio Settings", footer: "") {
@@ -35,7 +38,7 @@ class RemoteSettingsViewController: FormViewController {
         }
         
         // Add rows to the section
-        remoteCommandsSection 
+        remoteCommandsSection
         <<< TextRow("twilioSID"){ row in
             row.title = "Twilio SID"
             row.cell.textField.placeholder = "EnterSID"
@@ -44,10 +47,8 @@ class RemoteSettingsViewController: FormViewController {
                 row.value = maskedSecret
             }
         }.onChange { row in
-
             UserDefaultsRepository.twilioSIDString.value = row.value ?? ""
         }
-        
         <<< TextRow("twilioSecret"){ row in
             row.title = "Twilio Secret"
             row.cell.textField.placeholder = "EnterSecret"
@@ -57,8 +58,8 @@ class RemoteSettingsViewController: FormViewController {
             }
         }.onChange { row in
             UserDefaultsRepository.twilioSecretString.value = row.value ?? ""
+            
         }
-        
         <<< TextRow("twilioFromNumberString"){ row in
             row.title = "Twilio from Number"
             row.cell.textField.placeholder = "EnterFromNumber"
@@ -98,7 +99,7 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("Remote Meal"){ row in
             row.title = ""
-            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_🍔"
+            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -125,9 +126,9 @@ class RemoteSettingsViewController: FormViewController {
             }
         }
         
-        <<< TextRow("Remote Custom Action"){ row in
+        <<< TextRow("Remote Preset"){ row in
             row.title = ""
-            row.value = "Remote Custom Action • Custom_Any custom textstring"
+            row.value = "Remote Preset • Preset_🍿 Popcorn"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -149,7 +150,7 @@ class RemoteSettingsViewController: FormViewController {
         
         +++ shortcutsSection
         
-        +++ Section(header: "Guardrails", footer: "")
+        +++ Section(header: "Guardrails and security", footer: "")
         
         <<< StepperRow("maxCarbs") { row in
             row.title = "Max Carbs (g)"
@@ -182,7 +183,8 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.maxBolus.value = Double(value)
         }
         
-        +++ Section(header: "Presets and Customizations", footer: "Add the overrides, temp targets and custom actions you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3\nA Custom Action can be any text string you want to send over sms to trigger anything on the receiving iPhone ")
+        
+        +++ Section(header: "Preset Settings", footer: "Add the overrides, temp targets and meal presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
         
         <<< TextRow("overrides"){ row in
             row.title = "Overrides:"
@@ -200,8 +202,8 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.tempTargetsString.value = value
         }
         
-        <<< TextRow("customactions"){ row in
-            row.title = "Custom Actions:"
+        <<< TextRow("presets"){ row in
+            row.title = "Meal Presets:"
             row.value = UserDefaultsRepository.customString.value
         }.onChange { row in
             guard let value = row.value else { return }
