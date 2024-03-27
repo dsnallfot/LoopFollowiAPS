@@ -10,6 +10,7 @@ import UIKit
 
 class RemoteViewController: UIViewController {
     
+    @IBOutlet weak var customPresetButton: UIButton!
     @IBOutlet weak var remoteBolusButton: UIButton!
     
     override func viewDidLoad() {
@@ -18,7 +19,7 @@ class RemoteViewController: UIViewController {
             overrideUserInterfaceStyle = .dark
         }
             
-            // Initial UI setup based on hideRemoteBolus value
+            // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustom value
             updateUI()
         }
         
@@ -26,7 +27,10 @@ class RemoteViewController: UIViewController {
         func updateUI() {
             let isRemoteBolusHidden = UserDefaultsRepository.hideRemoteBolus.value
             remoteBolusButton.isHidden = isRemoteBolusHidden
-        }
+
+        let isCustomPresetHidden = UserDefaultsRepository.hideRemoteCustom.value
+        customPresetButton.isHidden = isCustomPresetHidden
+    }
     
     @IBAction func presetButtonPressed(_ sender: Any) {
         let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
@@ -65,13 +69,23 @@ class RemoteViewController: UIViewController {
         }
     }
     
-    // Function to hide the bolusRow
+    // Function to hide the bolus button
     func hideRemoteBolusButton() {
         remoteBolusButton.isHidden = true
     }
     
-    // Function to show the bolusRow
+    // Function to show the bolus button
     func showRemoteBolusButton() {
         remoteBolusButton.isHidden = false
+    }
+    
+    // Function to hide the custompreset button
+    func hideCustomPresetButton() {
+        customPresetButton.isHidden = true
+    }
+    
+    // Function to show the custompreset button
+    func showCustomPresetButton() {
+        customPresetButton.isHidden = false
     }
 }
