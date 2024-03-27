@@ -40,15 +40,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var refreshControl: UIRefreshControl!
 
     let speechSynthesizer = AVSpeechSynthesizer()
-    
-    @IBOutlet weak var Shortcut: UIButton!
-    
-    @IBAction func openURLButtonTapped(_ sender: UIButton) {
-        if let url = URL(string: "shortcuts://run-shortcut?name=Loop%20Follow") {
-            UIApplication.shared.open(url, options: [:], completionHandler: nil)
-        }
-    }
-    
+        
     // Data Table class
     class infoData {
         public var name: String
@@ -124,7 +116,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var suspendGraphData: [DataStructs.timestampOnlyStruct] = []
     var resumeGraphData: [DataStructs.timestampOnlyStruct] = []
     var sensorStartGraphData: [DataStructs.timestampOnlyStruct] = []
-    var pumpChangeGraphData: [DataStructs.timestampOnlyStruct] = []
     var noteGraphData: [DataStructs.noteStruct] = []
     var chartData = LineChartData()
     var newBGPulled = false
