@@ -10,13 +10,31 @@ import UIKit
 
 class RemoteViewController: UIViewController {
     
+    @IBOutlet weak var customPresetButton: UIButton!
+    @IBOutlet weak var remoteBolusButton: UIButton!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
-            
-            // Do any additional setup after loading the view.
         }
+            
+            // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustom value
+            updateUI()
+        }
+        
+        // Function to update UI based on hideRemoteBolus value
+        func updateUI() {
+            let isRemoteBolusHidden = UserDefaultsRepository.hideRemoteBolus.value
+            remoteBolusButton.isHidden = isRemoteBolusHidden
+
+        let isCustomPresetHidden = UserDefaultsRepository.hideRemoteCustom.value
+        customPresetButton.isHidden = isCustomPresetHidden
+    }
+    
+    @IBAction func presetButtonPressed(_ sender: Any) {
+        let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
+        self.present(customViewController, animated: true, completion: nil)
     }
     
     @IBAction func mealButtonPressed(_ sender: Any) {
@@ -42,5 +60,32 @@ class RemoteViewController: UIViewController {
     @IBAction func remoteSettingsButtonTapped(_ sender: Any) {
         let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
         self.present(remoteSettingsViewController, animated: true, completion: nil)
+    }
+    
+    @IBAction func calendarButtonTapped(_ sender: Any) {
+        let urlString = "shortcuts://run-shortcut?name=Healthlog"
+        if let url = URL(string: urlString) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+    }
+    
+    // Function to hide the bolus button
+    func hideRemoteBolusButton() {
+        remoteBolusButton.isHidden = true
+    }
+    
+    // Function to show the bolus button
+    func showRemoteBolusButton() {
+        remoteBolusButton.isHidden = false
+    }
+    
+    // Function to hide the custompreset button
+    func hideCustomPresetButton() {
+        customPresetButton.isHidden = true
+    }
+    
+    // Function to show the custompreset button
+    func showCustomPresetButton() {
+        customPresetButton.isHidden = false
     }
 }

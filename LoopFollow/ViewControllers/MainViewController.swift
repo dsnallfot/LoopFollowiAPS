@@ -11,7 +11,7 @@ import Charts
 import EventKit
 import ShareClient
 import UserNotifications
-import Photos
+import AVFAudio
 
 class MainViewController: UIViewController, UITableViewDataSource, ChartViewDelegate, UNUserNotificationCenterDelegate, UIScrollViewDelegate {
     
@@ -40,7 +40,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var refreshControl: UIRefreshControl!
 
     let speechSynthesizer = AVSpeechSynthesizer()
-
+        
     // Data Table class
     class infoData {
         public var name: String
@@ -148,6 +148,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     // This is a temporary safeguard until the issue with multiple calls to speakBG is fixed.
     var lastSpeechTime: Date?
 
+    var autoScrollPauseUntil: Date? = nil
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -179,7 +181,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         infoTable.dataSource = self
         infoTable.tableFooterView = UIView(frame: .zero) // get rid of extra rows
         infoTable.bounces = false
-        infoTable.addBorder(toSide: .Left, withColor: UIColor.darkGray.cgColor, andThickness: 2)
         
         // initialize the tableData
         self.tableData = []
@@ -297,65 +298,61 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         // check the app state
         // TODO: move to a function ?
         if let appState = self.appStateController {
+        
+           if appState.chartSettingsChanged {
+              
+              // can look at settings flags to be more fine tuned
+              self.updateBGGraphSettings()
             
-            if appState.chartSettingsChanged {
-                
-                // can look at settings flags to be more fine tuned
-                self.updateBGGraphSettings()
-                
-                if ChartSettingsChangeEnum.smallGraphHeight.rawValue != 0 {
-                    smallGraphHeightConstraint.constant = CGFloat(UserDefaultsRepository.smallGraphHeight.value)
-                    self.view.layoutIfNeeded()
-                }
-                
-                // reset the app state
-                appState.chartSettingsChanged = false
-                appState.chartSettingsChanges = 0
+            if ChartSettingsChangeEnum.smallGraphHeight.rawValue != 0 {
+                smallGraphHeightConstraint.constant = CGFloat(UserDefaultsRepository.smallGraphHeight.value)
+                self.view.layoutIfNeeded()
             }
-            if appState.generalSettingsChanged {
-                
-                // settings for appBadge changed
-                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.appBadgeChange.rawValue != 0 {
-                    
-                }
-                
-                // settings for textcolor changed
-                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.colorBGTextChange.rawValue != 0 {
-                    self.setBGTextColor()
-                }
-                
-                // settings for showStats changed
-                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showStatsChange.rawValue != 0 {
-                    statsView.isHidden = !UserDefaultsRepository.showStats.value
-                }
-                
-                // settings for useIFCC changed
-                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.useIFCCChange.rawValue != 0 {
-                    updateStats()
-                }
-                
-                // settings for showSmallGraph changed
-                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showSmallGraphChange.rawValue != 0 {
-                    BGChartFull.isHidden = !UserDefaultsRepository.showSmallGraph.value
-                }
-                
-                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showDisplayNameChange.rawValue != 0 {
-                    self.updateServerText()
-                }
-                
-                // reset the app state
-                appState.generalSettingsChanged = false
-                appState.generalSettingsChanges = 0
-            }
-            if appState.infoDataSettingsChanged {
-                createDerivedData()
-                self.infoTable.reloadData()
-                
-                // reset
-                appState.infoDataSettingsChanged = false
-            }
+              
+              // reset the app state
+              appState.chartSettingsChanged = false
+              appState.chartSettingsChanges = 0
+           }
+           if appState.generalSettingsChanged {
+           
+              // settings for appBadge changed
+              if appState.generalSettingsChanges & GeneralSettingsChangeEnum.appBadgeChange.rawValue != 0 {
+                 
+              }
+              
+              // settings for textcolor changed
+              if appState.generalSettingsChanges & GeneralSettingsChangeEnum.colorBGTextChange.rawValue != 0 {
+                 self.setBGTextColor()
+              }
             
-            // add more processing of the app state
+            // settings for showStats changed
+            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showStatsChange.rawValue != 0 {
+               statsView.isHidden = !UserDefaultsRepository.showStats.value
+            }
+
+            // settings for useIFCC changed
+            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.useIFCCChange.rawValue != 0 {
+                updateStats()
+            }
+
+            // settings for showSmallGraph changed
+            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showSmallGraphChange.rawValue != 0 {
+                BGChartFull.isHidden = !UserDefaultsRepository.showSmallGraph.value
+            }
+              
+              // reset the app state
+              appState.generalSettingsChanged = false
+              appState.generalSettingsChanges = 0
+           }
+           if appState.infoDataSettingsChanged {
+              createDerivedData()
+              self.infoTable.reloadData()
+              
+              // reset
+              appState.infoDataSettingsChanged = false
+           }
+           
+           // add more processing of the app state
         }
     }
     
@@ -434,9 +431,9 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         if bgData.count > 0 {
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970)-bgData[bgData.count - 1].date) / 60
             minAgoBG = Double(TimeInterval(Date().timeIntervalSince1970)-bgData[bgData.count - 1].date)
-            MinAgoText.text = String(Int(deltaTime)) + " min ago"
-            snoozer.MinAgoLabel.text = String(Int(deltaTime)) + " min ago"
-            latestMinAgoString = String(Int(deltaTime)) + " min ago"
+            MinAgoText.text = String(Int(deltaTime)) + " m sedan"
+            snoozer.MinAgoLabel.text = String(Int(deltaTime)) + " m sedan"
+            latestMinAgoString = String(Int(deltaTime)) + " m sedan"
         } else {
             MinAgoText.text = ""
             snoozer.MinAgoLabel.text = ""
@@ -465,7 +462,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             isEnabled = false
         }
         
-        LoopStatusLabel.isHidden = isHidden
+        //LoopStatusLabel.isHidden = isHidden
         PredictionLabel.isHidden = isHidden
         infoTable.isHidden = isHidden
         
@@ -523,145 +520,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         graphics:[String:String]=["Flat":"→","DoubleUp":"↑↑","SingleUp":"↑","FortyFiveUp":"↗","FortyFiveDown":"↘︎","SingleDown":"↓","DoubleDown":"↓↓","None":"-","NONE":"-","NOT COMPUTABLE":"-","RATE OUT OF RANGE":"-", "": "-"]
         return graphics[value]!
     }
-    
-    // Test code to save an image of graph for viewing on watch
-    func saveChartImage() {
-        var originalColor = BGChart.backgroundColor
-        BGChart.backgroundColor = NSUIColor.black
-        guard var image = BGChart.getChartImage(transparent: true) else {
-            BGChart.backgroundColor = originalColor
-            return }
-        var newImage = image.resizeImage(448.0, landscape: false, opaque: false, contentMode: .scaleAspectFit)
-        createAlbums(name1: "Loop Follow", name2: "Loop Follow Old")
-        if let collection1 = fetchAssetCollection("Loop Follow"), let collection2 = fetchAssetCollection("Loop Follow Old") {
-            deleteExistingImagesFromCollection(collection: collection1)
-            saveImageToAssetCollection(image, collection1: collection1, collection2: collection2)
-        }
-        
-        BGChart.backgroundColor = originalColor
-    }
-    
-    func createAlbums(name1: String, name2: String) {
-        if let collection1 = fetchAssetCollection(name1) {
-        } else {
-            // Album does not exist, create it and attempt to save the image
-            PHPhotoLibrary.shared().performChanges({
-                PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: name1)
-            }, completionHandler: { (success: Bool, error: Error?) in
-                guard success == true && error == nil else {
-                    NSLog("Could not create the album")
-                    if let err = error {
-                        NSLog("Error: \(err)")
-                    }
-                    return
-                }
-
-                if let newCollection1 = self.fetchAssetCollection(name1) {
-                }
-            })
-        }
-        
-        if let collection2 = fetchAssetCollection(name2) {
-        } else {
-            // Album does not exist, create it and attempt to save the image
-            PHPhotoLibrary.shared().performChanges({
-                PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: name2)
-            }, completionHandler: { (success: Bool, error: Error?) in
-                guard success == true && error == nil else {
-                    NSLog("Could not create the album")
-                    if let err = error {
-                        NSLog("Error: \(err)")
-                    }
-                    return
-                }
-
-                if let newCollection2 = self.fetchAssetCollection(name2) {
-                }
-            })
-        }
-    }
-    
-    func fetchAssetCollection(_ name: String) -> PHAssetCollection? {
-
-        let fetchOption = PHFetchOptions()
-        fetchOption.predicate = NSPredicate(format: "title == '" + name + "'")
-
-        let fetchResult = PHAssetCollection.fetchAssetCollections(
-            with: PHAssetCollectionType.album,
-            subtype: PHAssetCollectionSubtype.albumRegular,
-            options: fetchOption)
-
-        return fetchResult.firstObject
-    }
-    
-    func deleteOldImages() {
-        if let collection = fetchAssetCollection("Loop Follow Old") {
-            let library = PHPhotoLibrary.shared()
-            library.performChanges({
-                let fetchOptions = PHFetchOptions()
-                let allPhotos = PHAsset.fetchAssets(in: collection, options: .none)
-                PHAssetChangeRequest.deleteAssets(allPhotos)
-            }, completionHandler: { (success: Bool, error: Error?) in
-                guard success == true && error == nil else {
-                    NSLog("Could not delete the image")
-                    if let err = error {
-                        NSLog("Error: " + err.localizedDescription)
-                    }
-                    return
-                }
-            })
-        }
-        
-        self.sendGeneralNotification(self, title: "Watch Face Cleanup", subtitle: "", body: "Delete old watch face graph images", timer: 86400)
-        
-        
-    }
-    
-    func deleteExistingImagesFromCollection(collection: PHAssetCollection) {
-        
-        // This code removes existing photos from collection but does not delete them
-        if collection.estimatedAssetCount < 1 { return }
-
-        PHPhotoLibrary.shared().performChanges( {
-
-            if let request = PHAssetCollectionChangeRequest(for: collection) {
-                request.removeAssets(at: [0])
-            }
-
-        }, completionHandler: { (success: Bool, error: Error?) in
-            guard success == true && error == nil else {
-                NSLog("Could not delete the image")
-                if let err = error {
-                    NSLog("Error: " + err.localizedDescription)
-                }
-                return
-            }
-        })
-    }
-
-    func saveImageToAssetCollection(_ image: UIImage, collection1: PHAssetCollection, collection2: PHAssetCollection) {
-        
-        PHPhotoLibrary.shared().performChanges({
-            
-            let creationRequest = PHAssetCreationRequest.creationRequestForAsset(from: image)
-            if let request = PHAssetCollectionChangeRequest(for: collection1),
-               let placeHolder = creationRequest.placeholderForCreatedAsset {
-                request.addAssets([placeHolder] as NSFastEnumeration)
-            }
-            if let request2 = PHAssetCollectionChangeRequest(for: collection2),
-               let placeHolder2 = creationRequest.placeholderForCreatedAsset {
-                request2.addAssets([placeHolder2] as NSFastEnumeration)
-            }
-        }, completionHandler: { (success: Bool, error: Error?) in
-            guard success == true && error == nil else {
-                NSLog("Could not save the image")
-                if let err = error {
-                    NSLog("Error: " + err.localizedDescription)
-                }
-                return
-            }
-        })
-    }
 
     func writeCalendar() {
         if UserDefaultsRepository.debugLog.value {
@@ -689,10 +547,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         }
 
             // Create Event info
-        var deltaBG = 0 // protect index out of bounds
-        if self.bgData.count > 1 {
-            deltaBG = self.bgData[self.bgData.count - 1].sgv -  self.bgData[self.bgData.count - 2].sgv as Int
-        }
+            let deltaBG = self.bgData[self.bgData.count - 1].sgv -  self.bgData[self.bgData.count - 2].sgv as Int
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - self.bgData[self.bgData.count - 1].date) / 60
             var deltaString = ""
             if deltaBG < 0 {
@@ -708,9 +563,10 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 //                if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Calendar start date") }
             var eventEndDate = eventStartDate.addingTimeInterval(60 * 10)
             var  eventTitle = UserDefaultsRepository.watchLine1.value
-            if (UserDefaultsRepository.watchLine2.value.count > 1) {
-                eventTitle += "\n" + UserDefaultsRepository.watchLine2.value
-            }
+            var  eventLocation = UserDefaultsRepository.watchLine2.value
+            //if (UserDefaultsRepository.watchLine2.value.count > 1) {
+                //eventLocation += UserDefaultsRepository.watchLine2.value
+            //<}
             eventTitle = eventTitle.replacingOccurrences(of: "%BG%", with: bgUnits.toDisplayUnits(String(self.bgData[self.bgData.count - 1].sgv)))
             eventTitle = eventTitle.replacingOccurrences(of: "%DIRECTION%", with: direction)
             eventTitle = eventTitle.replacingOccurrences(of: "%DELTA%", with: deltaString)
@@ -718,17 +574,33 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 let val = Int( self.currentOverride*100)
                 // let overrideText = String(format:"%f1", self.currentOverride*100)
                 let text = String(val) + "%"
-                eventTitle = eventTitle.replacingOccurrences(of: "%OVERRIDE%", with: text)
+                eventLocation = eventLocation.replacingOccurrences(of: "%OVERRIDE%", with: text)
             } else {
-                eventTitle = eventTitle.replacingOccurrences(of: "%OVERRIDE%", with: "")
+                eventLocation = eventLocation.replacingOccurrences(of: "%OVERRIDE%", with: "")
             }
-            eventTitle = eventTitle.replacingOccurrences(of: "%LOOP%", with: self.latestLoopStatusString)
+            eventLocation = eventLocation.replacingOccurrences(of: "%LOOP%", with: self.latestLoopStatusString)
             var minAgo = ""
             if deltaTime > 9 {
                 // write old BG reading and continue pushing out end date to show last entry
                 minAgo = String(Int(deltaTime)) + " min"
                 eventEndDate = eventStartDate.addingTimeInterval((60 * 10) + (deltaTime * 60))
             }
+        let lastSGV = Double(self.bgData[self.bgData.count - 1].sgv) // Convert the last SGV to a Double
+        let deltaBGValue = Double(deltaBG) // Convert deltaBG to a Double
+
+        let fifteenMin = (lastSGV + deltaBGValue * 2.5) * 0.0555
+        let fifteenMinString = String(format: "%.1f", fifteenMin) // Convert to string with one decimal place
+            // Use the calculated 'fifteenMinString' as needed
+        let fifteenMinValue = Double(fifteenMinString) ?? 0.0
+
+        if fifteenMinValue < 3.9 {
+            eventLocation = eventLocation.replacingOccurrences(of: "%15MIN%", with: "🆘 " + fifteenMinString)
+        } else if fifteenMinValue > 7.8 {
+            eventLocation = eventLocation.replacingOccurrences(of: "%15MIN%", with: "⚠️ " + fifteenMinString)
+        } else {
+            eventLocation = eventLocation.replacingOccurrences(of: "%15MIN%", with: "✅ " + fifteenMinString)
+        }
+            
             var cob = "0"
             if self.latestCOB != "" {
                 cob = self.latestCOB
@@ -742,9 +614,11 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 iob = self.latestIOB
             }
             eventTitle = eventTitle.replacingOccurrences(of: "%MINAGO%", with: minAgo)
-            eventTitle = eventTitle.replacingOccurrences(of: "%IOB%", with: iob)
-            eventTitle = eventTitle.replacingOccurrences(of: "%COB%", with: cob)
-            eventTitle = eventTitle.replacingOccurrences(of: "%BASAL%", with: basal)
+        eventLocation = eventLocation.replacingOccurrences(of: "%IOB%", with: iob)
+        eventLocation = eventLocation.replacingOccurrences(of: "%COB%", with: cob)
+        eventLocation = eventLocation.replacingOccurrences(of: "%BASAL%", with: basal + "E/h")
+        
+            
             
             
             
@@ -770,6 +644,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             // Write New Event
             var event = EKEvent(eventStore: self.store)
             event.title = eventTitle
+            event.location = eventLocation
             event.startDate = eventStartDate
             event.endDate = eventEndDate
             event.calendar = self.store.calendar(withIdentifier: UserDefaultsRepository.calendarIdentifier.value)
@@ -786,13 +661,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 // Display error to user
                 //if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Error: Calendar Write") }
             }
-        
-        if UserDefaultsRepository.saveImage.value {
-            DispatchQueue.main.async {
-                self.saveChartImage()
-            }
-                
-        }
     }
     
     
@@ -843,7 +711,16 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         
     }
+
+     // User has scrolled the chart
+    func chartTranslated(_ chartView: ChartViewBase, dX: CGFloat, dY: CGFloat) {
+        let isViewingLatestData = abs(BGChart.highestVisibleX - BGChart.chartXMax) < 0.001
+        if isViewingLatestData {
+            autoScrollPauseUntil = nil // User is back at the latest data, allow auto-scrolling
+        } else {
+            autoScrollPauseUntil = Date().addingTimeInterval(5 * 60) // User is viewing historical data, pause auto-scrolling
+        }
+    }
     
     
 }
-
