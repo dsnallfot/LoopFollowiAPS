@@ -13,13 +13,71 @@ import EventKitUI
 
 class RemoteSettingsViewController: FormViewController {
     
-    override func viewDidLoad()  {
+    var mealViewController: MealViewController?
+    
+    override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Check and apply user preference for dark mode
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        
+        // Build and configure advanced settings
         buildAdvancedSettings()
+        
+        // Reload the form initially
+        reloadForm()
     }
+    
+    func reloadForm() {
+        // Check if the switch for hiding Remote Bolus is enabled
+        let hideBolus = Condition.function([], { _ in
+            return UserDefaultsRepository.hideRemoteBolus.value
+        })
+
+        // Find the "RemoteMealBolus" row
+        if let remoteMealBolusRow = form.rowBy(tag: "RemoteMealBolus") as? TextRow {
+            remoteMealBolusRow.hidden = hideBolus
+            remoteMealBolusRow.evaluateHidden()
+        }
+        
+        // Find the "RemoteBolus" row
+        if let remoteMealBolusRow = form.rowBy(tag: "RemoteBolus") as? TextRow {
+            remoteMealBolusRow.hidden = hideBolus
+            remoteMealBolusRow.evaluateHidden()
+        }
+
+        // Find the "RemoteMeal" row
+        if let remoteMealRow = form.rowBy(tag: "RemoteMeal") as? TextRow {
+            remoteMealRow.hidden = Condition.function([], { _ in
+                return !UserDefaultsRepository.hideRemoteBolus.value
+            })
+            remoteMealRow.evaluateHidden()
+        }
+
+        // Check if the switch for hiding Custom Actions is enabled
+        let hideCustomActions = Condition.function([], { _ in
+            return UserDefaultsRepository.hideRemoteCustom.value
+        })
+
+        // Find the "presets" row
+        if let presetsRow = form.rowBy(tag: "presets") {
+            presetsRow.hidden = hideCustomActions
+            presetsRow.evaluateHidden()
+        }
+
+        // Find the "RemotePresets" row
+        if let remotePresetsRow = form.rowBy(tag: "RemotePreset") {
+            remotePresetsRow.hidden = hideCustomActions
+            remotePresetsRow.evaluateHidden()
+        }
+
+        // Reload the form to reflect the changes
+        tableView?.reloadData()
+    }
+
+    
     private func buildAdvancedSettings() {
         // Define the section
         let remoteCommandsSection = Section(header: "Twilio Settings", footer: "") {
@@ -35,7 +93,7 @@ class RemoteSettingsViewController: FormViewController {
         }
         
         // Add rows to the section
-        remoteCommandsSection 
+        remoteCommandsSection
         <<< TextRow("twilioSID"){ row in
             row.title = "Twilio SID"
             row.cell.textField.placeholder = "EnterSID"
@@ -46,7 +104,6 @@ class RemoteSettingsViewController: FormViewController {
         }.onChange { row in
             UserDefaultsRepository.twilioSIDString.value = row.value ?? ""
         }
-        
         <<< TextRow("twilioSecret"){ row in
             row.title = "Twilio Secret"
             row.cell.textField.placeholder = "EnterSecret"
@@ -56,8 +113,8 @@ class RemoteSettingsViewController: FormViewController {
             }
         }.onChange { row in
             UserDefaultsRepository.twilioSecretString.value = row.value ?? ""
+            
         }
-        
         <<< TextRow("twilioFromNumberString"){ row in
             row.title = "Twilio from Number"
             row.cell.textField.placeholder = "EnterFromNumber"
@@ -95,30 +152,46 @@ class RemoteSettingsViewController: FormViewController {
         // Add rows to the section
         shortcutsSection
         
-        <<< TextRow("Remote Meal"){ row in
+        <<< TextRow("RemoteMealBolus"){ row in
             row.title = ""
-            row.value = "Remote Meal • mealtoenact_carbs25fat15protein10noteTestmeal"
+            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal_Insulin_1.0"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
-        <<< TextRow("Remote Bolus"){ row in
+        
+        <<< TextRow("RemoteMeal"){ row in
             row.title = ""
-            row.value = "Remote Bolus • bolustoenact_0.6"
+            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
-        <<< TextRow("Remote Override"){ row in
+        <<< TextRow("RemoteBolus"){ row in
             row.title = ""
-            row.value = "Remote Override • overridetoenact_Partytime"
+            row.value = "Remote Bolus • Bolus_0.6"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
-        <<< TextRow("Remote Temp Target"){ row in
+        <<< TextRow("RemoteOverride"){ row in
             row.title = ""
-            row.value = "Remote Temp Target • temptargettoenact_Exercise"
+            row.value = "Remote Override • Override_🎉 Partytime"
+            row.cellSetup { cell, row in
+                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
+            }
+        }
+        <<< TextRow("RemoteTempTarget"){ row in
+            row.title = ""
+            row.value = "Remote Temp Target • TempTarget_🏃‍♂️ Exercise"
+            row.cellSetup { cell, row in
+                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
+            }
+        }
+        
+        <<< TextRow("RemotePreset"){ row in
+            row.title = ""
+            row.value = "Remote Custom Action • Preset_🍿 Popcorn"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -126,7 +199,7 @@ class RemoteSettingsViewController: FormViewController {
         
         // Add the section to the form
         form
-        +++ Section(header: "Remote commands method", footer: "")
+        +++ Section(header: "Select remote commands method", footer: "")
         <<< SegmentedRow<String>("method") { row in
             row.title = ""
             row.options = ["iOS Shortcuts", "SMS API"]
@@ -140,7 +213,7 @@ class RemoteSettingsViewController: FormViewController {
         
         +++ shortcutsSection
         
-        +++ Section(header: "Remote Settings", footer: "Add the overrides and/or temp targets you would like to be able to choose from in the remote override/temp target pickers. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
+        +++ Section(header: "Guardrails and security", footer: "")
         
         <<< StepperRow("maxCarbs") { row in
             row.title = "Max Carbs (g)"
@@ -173,6 +246,43 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.maxBolus.value = Double(value)
         }
         
+        form +++ Section("Advanced functions (App Restart needed)")
+            <<< SegmentedRow<String>("hideRemoteBolus") { row in
+                row.title = "Bolus Actions"
+                row.options = ["Show", "Hide"]
+                row.value = UserDefaultsRepository.hideRemoteBolus.value ? "Hide" : "Show"
+            }.cellSetup { cell, _ in
+                cell.segmentedControl.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    cell.segmentedControl.widthAnchor.constraint(equalTo: cell.widthAnchor, multiplier: 0.5) // Adjust multiplier as needed
+                ])
+            }.onChange { [weak self] row in
+                guard let value = row.value else { return }
+                UserDefaultsRepository.hideRemoteBolus.value = value == "Hide"
+                
+                // Reload the form after the value changes
+                self?.reloadForm()
+            }
+            
+            <<< SegmentedRow<String>("hideRemoteCustom") { row in
+                row.title = "Custom Actions"
+                row.options = ["Show", "Hide"]
+                row.value = UserDefaultsRepository.hideRemoteCustom.value ? "Hide" : "Show"
+            }.cellSetup { cell, _ in
+                cell.segmentedControl.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    cell.segmentedControl.widthAnchor.constraint(equalTo: cell.widthAnchor, multiplier: 0.5) // Adjust multiplier as needed
+                ])
+            }.onChange { [weak self] row in
+                guard let value = row.value else { return }
+                UserDefaultsRepository.hideRemoteCustom.value = value == "Hide"
+                
+                // Reload the form after the value changes
+                self?.reloadForm()
+            }
+        
+        +++ Section(header: "Preset Settings", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
+        
         <<< TextRow("overrides"){ row in
             row.title = "Overrides:"
             row.value = UserDefaultsRepository.overrideString.value
@@ -189,6 +299,13 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.tempTargetsString.value = value
         }
         
+        <<< TextRow("presets"){ row in
+            row.title = "Custom Presets:"
+            row.value = UserDefaultsRepository.customString.value
+        }.onChange { row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.customString.value = value
+        }
         +++ ButtonRow() {
             $0.title = "DONE"
         }.onCellSelection { (row, arg)  in
