@@ -58,25 +58,25 @@ class dateTimeUtils {
     }
     
     static func getDateTimeString(addingHours hours: Int? = nil, addingDays days: Int? = nil) -> String {
-            let currentDate = Date()
-            var date = currentDate
+        let currentDate = Date()
+        var date = currentDate
         
         if let hoursToAdd = hours {
-                    date = Calendar.current.date(byAdding: .hour, value: hoursToAdd, to: currentDate)!
-                }
+            date = Calendar.current.date(byAdding: .hour, value: hoursToAdd, to: currentDate)!
+        }
         
         if let daysToAdd = days {
-                    date = Calendar.current.date(byAdding: .day, value: daysToAdd, to: currentDate)!
-                }
+            date = Calendar.current.date(byAdding: .day, value: daysToAdd, to: currentDate)!
+        }
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         dateFormatter.locale = Locale(identifier: "en_US")
         dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-
-                return dateFormatter.string(from: date)
+        
+        return dateFormatter.string(from: date)
     }
-    
+
     static func printNow() -> String {
         let date = Date()
         let formatter = DateFormatter()
