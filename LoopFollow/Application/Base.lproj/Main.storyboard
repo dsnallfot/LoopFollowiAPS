@@ -547,11 +547,11 @@
                     </tabBar>
                     <connections>
                         <segue destination="9pv-A4-QxB" kind="relationship" relationship="viewControllers" id="u7Y-xg-7CH"/>
-                        <segue destination="4ie-sJ-hfo" kind="relationship" relationship="viewControllers" id="JuK-UN-Utr"/>
-                        <segue destination="e0E-cx-0Wr" kind="relationship" relationship="viewControllers" id="3iM-cT-aWL"/>
-                        <segue destination="8rJ-Kc-sve" kind="relationship" relationship="viewControllers" id="YQY-2G-mMn"/>
-                        <segue destination="7an-Fz-r9u" kind="relationship" relationship="viewControllers" id="dNI-cW-DSq"/>
-                        <segue destination="hDv-qK-Udb" kind="relationship" relationship="viewControllers" id="mMr-Ju-t14"/>
+                        <segue destination="7an-Fz-r9u" kind="relationship" relationship="viewControllers" id="Wyt-KS-mqB"/>
+                        <segue destination="e0E-cx-0Wr" kind="relationship" relationship="viewControllers" id="DoC-xh-NA3"/>
+                        <segue destination="8rJ-Kc-sve" kind="relationship" relationship="viewControllers" id="v9F-r7-C0x"/>
+                        <segue destination="hDv-qK-Udb" kind="relationship" relationship="viewControllers" id="DNC-2X-EOc"/>
+                        <segue destination="4ie-sJ-hfo" kind="relationship" relationship="viewControllers" id="f5a-Gm-VPM"/>
                     </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="HuB-VB-40B" sceneMemberID="firstResponder"/>
