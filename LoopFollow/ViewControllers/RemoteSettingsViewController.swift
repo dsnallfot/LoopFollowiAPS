@@ -263,11 +263,11 @@ class RemoteSettingsViewController: FormViewController {
         <<< SwitchRow("hideRemoteCustom") { row in
             row.title = "Show Custom Actions" //Inverted code to make switch on = show instead of hide
             // Invert the value here for initial state
-            row.value = !UserDefaultsRepository.hideRemoteCustom.value
+            row.value = !UserDefaultsRepository.hideRemoteCustomActions.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
             // Invert the value again when saving
-            UserDefaultsRepository.hideRemoteCustom.value = !value
+            UserDefaultsRepository.hideRemoteCustomActions.value = !value
             
             // Reload the form after the value changes
             self?.reloadForm()
