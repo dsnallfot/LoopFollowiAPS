@@ -450,11 +450,11 @@ class UserDefaultsRepository {
     static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
     static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "👻 Resistance, 🤧 Sick day, 🏃‍♂️ Exercise, 😴 Nightmode")
     static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "Exercise, Eating soon, Low treatment")
-    static let customString = UserDefaultsValue<String>(key: "customString", default: "Custom Command 1, Custom Command 2, Custom Command 3")
+    static let customActionsString = UserDefaultsValue<String>(key: "customActionsString", default: "Custom Action 1, Custom Action 2, Custom Action 3")
     
     //Show or Hide advanced features
         static let hideRemoteBolus = UserDefaultsValue<Bool>(key: "hideRemoteBolus", default: true)
-        static let hideRemoteCustom = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
+        static let hideRemoteCustomActions = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
     
     // API settings
     static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "")

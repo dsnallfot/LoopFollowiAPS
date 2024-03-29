@@ -1,5 +1,5 @@
 //
-//  PresetViewController.swift
+//  CustomActionsViewController.swift
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2024-03-25.
@@ -9,12 +9,12 @@
 import UIKit
 import LocalAuthentication
 
-class CustomViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
+class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
     
-    @IBOutlet weak var customPicker: UIPickerView!
+    @IBOutlet weak var customActionsPicker: UIPickerView!
     
     // Property to store the selected override option
-    var selectedCustom: String?
+    var selectedCustomAction: String?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,14 +24,14 @@ class CustomViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
             // Do any additional setup after loading the view.
         }
         // Set the delegate and data source for the UIPickerView
-        customPicker.delegate = self
-        customPicker.dataSource = self
+        customActionsPicker.delegate = self
+        customActionsPicker.dataSource = self
         
         // Set the default selected item for the UIPickerView
-        customPicker.selectRow(0, inComponent: 0, animated: false)
+        customActionsPicker.selectRow(0, inComponent: 0, animated: false)
         
         // Set the initial selected override
-        selectedCustom = customOptions[0]
+        selectedCustomAction = customActionsOptions[0]
     }
     
     // MARK: - UIPickerViewDataSource
@@ -41,38 +41,38 @@ class CustomViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
     }
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        return customOptions.count
+        return customActionsOptions.count
     }
     
     // MARK: - UIPickerViewDelegate
     
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        return customOptions[row]
+        return customActionsOptions[row]
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedOverride property when an option is selected
-        selectedCustom = customOptions[row]
-        print("Custom Picker selected: \(selectedCustom!)")
+        selectedCustomAction = customActionsOptions[row]
+        print("Custom Picker selected: \(selectedCustomAction!)")
     }
     
-    @IBAction func sendRemoteCustomPressed(_ sender: Any) {
-        guard let selectedCustom = selectedCustom else {
-            print("No custom option selected")
+    @IBAction func sendRemoteCustomActionPressed(_ sender: Any) {
+        guard let selectedCustomAction = selectedCustomAction else {
+            print("No custom action option selected")
             return
         }
         
-        let combinedString = "Custom_\(selectedCustom)"
+        let combinedString = "CustomAction_\(selectedCustomAction)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedCustom)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedCustomAction)?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
             self.authenticateWithBiometrics {
                 // Proceed with the request after successful authentication
-                self.sendCustomRequest(combinedString: combinedString)
+                self.sendCustomActionRequest(combinedString: combinedString)
             }
         }))
         
@@ -131,7 +131,7 @@ class CustomViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
         }
     }
     
-    func sendCustomRequest(combinedString: String) {
+    func sendCustomActionRequest(combinedString: String) {
         
         // Retrieve the method value from UserDefaultsRepository
         let method = UserDefaultsRepository.method.value
@@ -208,10 +208,10 @@ class CustomViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
     }
     
     // Data for the UIPickerView
-    lazy var customOptions: [String] = {
-        let customString = UserDefaultsRepository.customString.value
-        // Split the customString by ", " to get individual options
-        return customString.components(separatedBy: ", ")
+    lazy var customActionsOptions: [String] = {
+        let customActionsString = UserDefaultsRepository.customActionsString.value
+        // Split the customActionsString by ", " to get individual options
+        return customActionsString.components(separatedBy: ", ")
     }()
 }
 

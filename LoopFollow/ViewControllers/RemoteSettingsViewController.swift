@@ -58,19 +58,19 @@ class RemoteSettingsViewController: FormViewController {
 
         // Check if the switch for hiding Custom Actions is enabled
         let hideCustomActions = Condition.function([], { _ in
-            return UserDefaultsRepository.hideRemoteCustom.value
+            return UserDefaultsRepository.hideRemoteCustomActions.value
         })
 
-        // Find the "presets" row
-        if let presetsRow = form.rowBy(tag: "presets") {
-            presetsRow.hidden = hideCustomActions
-            presetsRow.evaluateHidden()
+        // Find the "customActions" row
+        if let customActionsRow = form.rowBy(tag: "customActions") {
+            customActionsRow.hidden = hideCustomActions
+            customActionsRow.evaluateHidden()
         }
 
-        // Find the "RemotePresets" row
-        if let remotePresetsRow = form.rowBy(tag: "RemotePreset") {
-            remotePresetsRow.hidden = hideCustomActions
-            remotePresetsRow.evaluateHidden()
+        // Find the "RemoteCustomActions" row
+        if let remoteCustomActionsRow = form.rowBy(tag: "RemoteCustomActions") {
+            remoteCustomActionsRow.hidden = hideCustomActions
+            remoteCustomActionsRow.evaluateHidden()
         }
 
         // Reload the form to reflect the changes
@@ -189,9 +189,9 @@ class RemoteSettingsViewController: FormViewController {
             }
         }
         
-        <<< TextRow("RemotePreset"){ row in
+        <<< TextRow("RemoteCustomActions"){ row in
             row.title = ""
-            row.value = "Remote Custom Action • Preset_🍿 Popcorn"
+            row.value = "Remote Custom Action • CustomAction_🍿 Popcorn"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -267,7 +267,7 @@ class RemoteSettingsViewController: FormViewController {
             <<< SegmentedRow<String>("hideRemoteCustom") { row in
                 row.title = "Custom Actions"
                 row.options = ["Show", "Hide"]
-                row.value = UserDefaultsRepository.hideRemoteCustom.value ? "Hide" : "Show"
+                row.value = UserDefaultsRepository.hideRemoteCustomActions.value ? "Hide" : "Show"
             }.cellSetup { cell, _ in
                 cell.segmentedControl.translatesAutoresizingMaskIntoConstraints = false
                 NSLayoutConstraint.activate([
@@ -275,13 +275,13 @@ class RemoteSettingsViewController: FormViewController {
                 ])
             }.onChange { [weak self] row in
                 guard let value = row.value else { return }
-                UserDefaultsRepository.hideRemoteCustom.value = value == "Hide"
+                UserDefaultsRepository.hideRemoteCustomActions.value = value == "Hide"
                 
                 // Reload the form after the value changes
                 self?.reloadForm()
             }
         
-        +++ Section(header: "Preset Settings", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
+        +++ Section(header: "Presets Settings", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
         
         <<< TextRow("overrides"){ row in
             row.title = "Overrides:"
@@ -299,12 +299,12 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.tempTargetsString.value = value
         }
         
-        <<< TextRow("presets"){ row in
-            row.title = "Custom Presets:"
-            row.value = UserDefaultsRepository.customString.value
+        <<< TextRow("customactions"){ row in
+            row.title = "Custom Actions:"
+            row.value = UserDefaultsRepository.customActionsString.value
         }.onChange { row in
             guard let value = row.value else { return }
-            UserDefaultsRepository.customString.value = value
+            UserDefaultsRepository.customActionsString.value = value
         }
         +++ ButtonRow() {
             $0.title = "DONE"
