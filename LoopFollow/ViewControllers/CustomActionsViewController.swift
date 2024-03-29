@@ -11,7 +11,11 @@ import LocalAuthentication
 
 class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
     
+    @IBOutlet weak var sendCustomActionButton: UIButton!
     @IBOutlet weak var customActionsPicker: UIPickerView!
+    
+    var isAlertShowing = false // Property to track if alerts are currently showing
+    var isButtonDisabled = false // Property to track if the button is currently disabled
     
     // Property to store the selected override option
     var selectedCustomAction: String?
@@ -57,6 +61,13 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
     }
     
     @IBAction func sendRemoteCustomActionPressed(_ sender: Any) {
+        // Disable the button to prevent multiple taps
+                if !isButtonDisabled {
+                    isButtonDisabled = true
+                    sendCustomActionButton.isEnabled = false
+                } else {
+                    return // If button is already disabled, return to prevent double registration
+                }
         guard let selectedCustomAction = selectedCustomAction else {
             print("No custom action option selected")
             return
@@ -76,10 +87,21 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
             }
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
+                    // Handle dismissal when "Cancel" is selected
+                    self.handleAlertDismissal()
+                }))
         
         present(confirmationAlert, animated: true, completion: nil)
     }
+    
+    // Function to handle alert dismissal
+        func handleAlertDismissal() {
+            // Enable the button when alerts are dismissed
+            isAlertShowing = false
+            sendCustomActionButton.isEnabled = true
+            isButtonDisabled = false // Reset button disable status
+        }
     
     func authenticateWithBiometrics(completion: @escaping () -> Void) {
         let context = LAContext()
@@ -175,6 +197,7 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
                         let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
+                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200..<300).contains(httpResponse.statusCode) {
                             // Success: Show success alert for successful response
@@ -190,12 +213,14 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
                             let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(alertController, animated: true, completion: nil)
+                            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                         }
                     } else {
                         // Failure: Show generic error alert for unexpected response
                         let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
+                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     }
                 }
             }.resume()

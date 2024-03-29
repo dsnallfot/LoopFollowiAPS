@@ -1321,6 +1321,7 @@
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="bolusAmount" destination="0HU-rw-87i" id="Cv5-Ig-do0"/>
+                        <outlet property="sendBolusButton" destination="omd-J4-dQH" id="x98-rc-4vm"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="qc2-lN-ejk" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1424,6 +1425,7 @@
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="overridePicker" destination="jzQ-mu-Jca" id="ndJ-R2-O4t"/>
+                        <outlet property="sendOverrideButton" destination="bbd-yY-tzY" id="jGP-Xt-DVI"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="5Ca-0z-gh3" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1557,6 +1559,7 @@
                     <toolbarItems/>
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="sendTempTargetButton" destination="Rra-PP-alB" id="2Kx-lJ-2BF"/>
                         <outlet property="tempTargetsPicker" destination="hXU-kG-KPd" id="hEv-1v-Sd8"/>
                     </connections>
                 </viewController>
@@ -1658,6 +1661,7 @@
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="customActionsPicker" destination="CBe-w4-hJR" id="dzk-uD-H9j"/>
+                        <outlet property="sendCustomActionButton" destination="QD5-23-9lU" id="s6V-rx-Ahs"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="pYk-Ld-tWW" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
