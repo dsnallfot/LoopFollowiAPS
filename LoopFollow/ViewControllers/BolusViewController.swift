@@ -11,7 +11,11 @@ import LocalAuthentication
 
 class BolusViewController: UIViewController {
     
+    @IBOutlet weak var sendBolusButton: UIButton!
     @IBOutlet weak var bolusAmount: UITextField!
+    
+    var isAlertShowing = false // Property to track if alerts are currently showing
+    var isButtonDisabled = false // Property to track if the button is currently disabled
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,6 +25,13 @@ class BolusViewController: UIViewController {
     }
     
     @IBAction func sendRemoteBolusPressed(_ sender: Any) {
+        // Disable the button to prevent multiple taps
+        if !isButtonDisabled {
+            isButtonDisabled = true
+            sendBolusButton.isEnabled = false
+        } else {
+            return // If button is already disabled, return to prevent double registration
+        }
         // Retrieve the maximum bolus value
         let maxBolus = UserDefaultsRepository.maxBolus.value 
         
@@ -44,8 +55,11 @@ class BolusViewController: UIViewController {
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed bolus of \(formattedMaxBolus) U is exceeded! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
+            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
             return
         }
+        // Set isAlertShowing to true before showing the alert
+        isAlertShowing = true
         
         // Confirmation alert before sending the request
         let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to give \(bolusValue) U bolus?", preferredStyle: .alert)
@@ -58,7 +72,10 @@ class BolusViewController: UIViewController {
             }
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
+                    // Handle dismissal when "Cancel" is selected
+                    self.handleAlertDismissal()
+                }))
         
         present(confirmationAlert, animated: true, completion: nil)
     }
@@ -113,6 +130,13 @@ class BolusViewController: UIViewController {
         }
     }
     
+    // Function to handle alert dismissal
+    func handleAlertDismissal() {
+        // Enable the button when alerts are dismissed
+        isAlertShowing = false
+        sendBolusButton.isEnabled = true
+        isButtonDisabled = false // Reset button disable status
+    }
     
     func sendBolusRequest(bolusValue: Double) {
         
@@ -163,6 +187,7 @@ class BolusViewController: UIViewController {
                         let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
+                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200..<300).contains(httpResponse.statusCode) {
                             // Success: Show success alert for successful response
@@ -178,12 +203,14 @@ class BolusViewController: UIViewController {
                             let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(alertController, animated: true, completion: nil)
+                            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                         }
                     } else {
                         // Failure: Show generic error alert for unexpected response
                         let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
+                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     }
                 }
             }.resume()
