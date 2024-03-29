@@ -76,6 +76,7 @@ class MealViewController: UIViewController {
             let alertControllerBolus = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed bolus of \(formattedMaxBolus) U is exceeded! Please try again with a smaller amount.", preferredStyle: .alert)
             alertControllerBolus.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertControllerBolus, animated: true, completion: nil)
+            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
             return
         }
         
@@ -119,6 +120,7 @@ class MealViewController: UIViewController {
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
+            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
             return // Exit the function if any value exceeds maxCarbs
         }
         
