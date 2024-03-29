@@ -10,7 +10,7 @@ import UIKit
 
 class RemoteViewController: UIViewController {
     
-    @IBOutlet weak var customPresetButton: UIButton!
+    @IBOutlet weak var customActionButton: UIButton!
     @IBOutlet weak var remoteBolusButton: UIButton!
     
     override func viewDidLoad() {
@@ -19,7 +19,7 @@ class RemoteViewController: UIViewController {
             overrideUserInterfaceStyle = .dark
         }
             
-            // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustom value
+            // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustomActions value
             updateUI()
         }
         
@@ -28,13 +28,13 @@ class RemoteViewController: UIViewController {
             let isRemoteBolusHidden = UserDefaultsRepository.hideRemoteBolus.value
             remoteBolusButton.isHidden = isRemoteBolusHidden
 
-        let isCustomPresetHidden = UserDefaultsRepository.hideRemoteCustom.value
-        customPresetButton.isHidden = isCustomPresetHidden
+        let isCustomActionHidden = UserDefaultsRepository.hideRemoteCustomActions.value
+        customActionButton.isHidden = isCustomActionHidden
     }
     
-    @IBAction func presetButtonPressed(_ sender: Any) {
-        let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
-        self.present(customViewController, animated: true, completion: nil)
+    @IBAction func customActionButtonPressed(_ sender: Any) {
+        let customActionsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomActions") as! CustomActionsViewController
+        self.present(customActionsViewController, animated: true, completion: nil)
     }
     
     @IBAction func mealButtonPressed(_ sender: Any) {
@@ -79,13 +79,13 @@ class RemoteViewController: UIViewController {
         remoteBolusButton.isHidden = false
     }
     
-    // Function to hide the custompreset button
-    func hideCustomPresetButton() {
-        customPresetButton.isHidden = true
+    // Function to hide the customAction button
+    func hideCustomActionButton() {
+        customActionButton.isHidden = true
     }
     
-    // Function to show the custompreset button
-    func showCustomPresetButton() {
-        customPresetButton.isHidden = false
+    // Function to show the customAction button
+    func showCustomActionButton() {
+        customActionButton.isHidden = false
     }
 }
