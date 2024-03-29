@@ -19,9 +19,6 @@ class MealViewController: UIViewController {
     @IBOutlet weak var mealNotes: UITextField!
     @IBOutlet weak var bolusUnits: UITextField!
     
-    var isAlertShowing = false // Property to track if alerts are currently showing
-    var isButtonDisabled = false // Property to track if the button is currently disabled
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
@@ -35,15 +32,6 @@ class MealViewController: UIViewController {
     }
     
     @IBAction func sendRemoteMealPressed(_ sender: Any) {
-        // Disable the button to prevent multiple taps
-        if !isButtonDisabled {
-            isButtonDisabled = true
-            sendMealButton.isEnabled = false
-        } else {
-            return // If button is already disabled, return to prevent double registration
-        }
-        
-        
         // Retrieve the maximum carbs value from UserDefaultsRepository
         let maxCarbs = UserDefaultsRepository.maxCarbs.value
         let maxBolus = UserDefaultsRepository.maxBolus.value
@@ -76,7 +64,6 @@ class MealViewController: UIViewController {
             let alertControllerBolus = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed bolus of \(formattedMaxBolus) U is exceeded! Please try again with a smaller amount.", preferredStyle: .alert)
             alertControllerBolus.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertControllerBolus, animated: true, completion: nil)
-            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
             return
         }
         
@@ -120,7 +107,6 @@ class MealViewController: UIViewController {
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
-            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
             return // Exit the function if any value exceeds maxCarbs
         }
         
@@ -152,8 +138,6 @@ class MealViewController: UIViewController {
         
         //Alert for meal without bolus
         func showMealConfirmationAlert(combinedString: String) {
-            // Set isAlertShowing to true before showing the alert
-                    isAlertShowing = true
             // Confirmation alert before sending the request
             let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to register this meal?", preferredStyle: .alert)
             
@@ -162,18 +146,13 @@ class MealViewController: UIViewController {
                 self.sendMealRequest(combinedString: combinedString)
             }))
             
-            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
-                // Handle dismissal when "Cancel" is selected
-                self.handleAlertDismissal()
-            }))
+            confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
             
             present(confirmationAlert, animated: true, completion: nil)
         }
         
         //Alert for meal WITH bolus
         func showMealBolusConfirmationAlert(combinedString: String) {
-            // Set isAlertShowing to true before showing the alert
-                    isAlertShowing = true
             // Confirmation alert before sending the request
             let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to register this meal and give \(bolusValue) U bolus?", preferredStyle: .alert)
             
@@ -240,13 +219,6 @@ class MealViewController: UIViewController {
             }
         }
     }
-    // Function to handle alert dismissal
-    func handleAlertDismissal() {
-        // Enable the button when alerts are dismissed
-        isAlertShowing = false
-        sendMealButton.isEnabled = true
-        isButtonDisabled = false // Reset button disable status
-    }
         
     func sendMealRequest(combinedString: String) {
         // Retrieve the method value from UserDefaultsRepository
@@ -289,7 +261,6 @@ class MealViewController: UIViewController {
                         let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
-                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200..<300).contains(httpResponse.statusCode) {
                             // Success: Show success alert for successful response
@@ -305,14 +276,12 @@ class MealViewController: UIViewController {
                             let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(alertController, animated: true, completion: nil)
-                            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                         }
                     } else {
                         // Failure: Show generic error alert for unexpected response
                         let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
-                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     }
                 }
             }.resume()
