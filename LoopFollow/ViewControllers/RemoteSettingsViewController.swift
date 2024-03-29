@@ -58,19 +58,19 @@ class RemoteSettingsViewController: FormViewController {
 
         // Check if the switch for hiding Custom Actions is enabled
         let hideCustomActions = Condition.function([], { _ in
-            return UserDefaultsRepository.hideRemoteCustomActions.value
+            return UserDefaultsRepository.hideRemoteCustom.value
         })
 
-        // Find the "customActions" row
-        if let customActionsRow = form.rowBy(tag: "customActions") {
-            customActionsRow.hidden = hideCustomActions
-            customActionsRow.evaluateHidden()
+        // Find the "presets" row
+        if let presetsRow = form.rowBy(tag: "presets") {
+            presetsRow.hidden = hideCustomActions
+            presetsRow.evaluateHidden()
         }
 
-        // Find the "RemoteCustomActions" row
-        if let remoteCustomActionsRow = form.rowBy(tag: "RemoteCustomActions") {
-            remoteCustomActionsRow.hidden = hideCustomActions
-            remoteCustomActionsRow.evaluateHidden()
+        // Find the "RemotePresets" row
+        if let remotePresetsRow = form.rowBy(tag: "RemotePreset") {
+            remotePresetsRow.hidden = hideCustomActions
+            remotePresetsRow.evaluateHidden()
         }
 
         // Reload the form to reflect the changes
@@ -189,9 +189,9 @@ class RemoteSettingsViewController: FormViewController {
             }
         }
         
-        <<< TextRow("RemoteCustomActions"){ row in
+        <<< TextRow("RemotePreset"){ row in
             row.title = ""
-            row.value = "Remote Custom Action • CustomAction_🍿 Popcorn"
+            row.value = "Remote Custom Action • Preset_🍿 Popcorn"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -273,7 +273,7 @@ class RemoteSettingsViewController: FormViewController {
             self?.reloadForm()
         }
         
-        +++ Section(header: "Presets Settings", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
+        +++ Section(header: "Preset Settings", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
         
         <<< TextRow("overrides"){ row in
             row.title = "Overrides:"
@@ -291,12 +291,12 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.tempTargetsString.value = value
         }
         
-        <<< TextRow("customactions"){ row in
+        <<< TextRow("presets"){ row in
             row.title = "Custom Actions:"
-            row.value = UserDefaultsRepository.customActionsString.value
+            row.value = UserDefaultsRepository.customString.value
         }.onChange { row in
             guard let value = row.value else { return }
-            UserDefaultsRepository.customActionsString.value = value
+            UserDefaultsRepository.customString.value = value
         }
         +++ ButtonRow() {
             $0.title = "DONE"
