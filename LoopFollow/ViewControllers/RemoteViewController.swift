@@ -13,6 +13,8 @@ class RemoteViewController: UIViewController {
     @IBOutlet weak var customPresetButton: UIButton!
     @IBOutlet weak var remoteBolusButton: UIButton!
     
+    let method = UserDefaultsRepository.method.value
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
@@ -63,9 +65,18 @@ class RemoteViewController: UIViewController {
     }
     
     @IBAction func calendarButtonTapped(_ sender: Any) {
-        let urlString = "shortcuts://run-shortcut?name=Healthlog"
-        if let url = URL(string: urlString) {
-            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        //Check to see if the input method is SMS API or something else
+        //If SMS API, do not use shortcuts - use Nightscout API instead
+        if method == "SMS API" {
+            //Eventually, display a pop up to capture note text and send it off via Nightscout API
+            return
+        }
+        //If not SMS API, we must be in the Shortcut world - so trigger the Shortcut
+        else {
+            let urlString = "shortcuts://run-shortcut?name=Healthlog"
+            if let url = URL(string: urlString) {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
         }
     }
     
