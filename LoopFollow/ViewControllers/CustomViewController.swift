@@ -1,5 +1,5 @@
 //
-//  CustomActionsViewController.swift
+//  PresetViewController.swift
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2024-03-25.
@@ -9,16 +9,12 @@
 import UIKit
 import LocalAuthentication
 
-class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
+class CustomViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
     
-    @IBOutlet weak var sendCustomActionButton: UIButton!
-    @IBOutlet weak var customActionsPicker: UIPickerView!
-    
-    var isAlertShowing = false // Property to track if alerts are currently showing
-    var isButtonDisabled = false // Property to track if the button is currently disabled
+    @IBOutlet weak var customPicker: UIPickerView!
     
     // Property to store the selected override option
-    var selectedCustomAction: String?
+    var selectedCustom: String?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,14 +24,14 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
             // Do any additional setup after loading the view.
         }
         // Set the delegate and data source for the UIPickerView
-        customActionsPicker.delegate = self
-        customActionsPicker.dataSource = self
+        customPicker.delegate = self
+        customPicker.dataSource = self
         
         // Set the default selected item for the UIPickerView
-        customActionsPicker.selectRow(0, inComponent: 0, animated: false)
+        customPicker.selectRow(0, inComponent: 0, animated: false)
         
         // Set the initial selected override
-        selectedCustomAction = customActionsOptions[0]
+        selectedCustom = customOptions[0]
     }
     
     // MARK: - UIPickerViewDataSource
@@ -45,63 +41,45 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
     }
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        return customActionsOptions.count
+        return customOptions.count
     }
     
     // MARK: - UIPickerViewDelegate
     
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        return customActionsOptions[row]
+        return customOptions[row]
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedOverride property when an option is selected
-        selectedCustomAction = customActionsOptions[row]
-        print("Custom Picker selected: \(selectedCustomAction!)")
+        selectedCustom = customOptions[row]
+        print("Custom Picker selected: \(selectedCustom!)")
     }
     
-    @IBAction func sendRemoteCustomActionPressed(_ sender: Any) {
-        // Disable the button to prevent multiple taps
-                if !isButtonDisabled {
-                    isButtonDisabled = true
-                    sendCustomActionButton.isEnabled = false
-                } else {
-                    return // If button is already disabled, return to prevent double registration
-                }
-        guard let selectedCustomAction = selectedCustomAction else {
-            print("No custom action option selected")
+    @IBAction func sendRemoteCustomPressed(_ sender: Any) {
+        guard let selectedCustom = selectedCustom else {
+            print("No custom option selected")
             return
         }
         
-        let combinedString = "CustomAction_\(selectedCustomAction)"
+        let combinedString = "Custom_\(selectedCustom)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedCustomAction)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedCustom)?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
             self.authenticateWithBiometrics {
                 // Proceed with the request after successful authentication
-                self.sendCustomActionRequest(combinedString: combinedString)
+                self.sendCustomRequest(combinedString: combinedString)
             }
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
-                    // Handle dismissal when "Cancel" is selected
-                    self.handleAlertDismissal()
-                }))
+        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         
         present(confirmationAlert, animated: true, completion: nil)
     }
-    
-    // Function to handle alert dismissal
-        func handleAlertDismissal() {
-            // Enable the button when alerts are dismissed
-            isAlertShowing = false
-            sendCustomActionButton.isEnabled = true
-            isButtonDisabled = false // Reset button disable status
-        }
     
     func authenticateWithBiometrics(completion: @escaping () -> Void) {
         let context = LAContext()
@@ -153,7 +131,7 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
         }
     }
     
-    func sendCustomActionRequest(combinedString: String) {
+    func sendCustomRequest(combinedString: String) {
         
         // Retrieve the method value from UserDefaultsRepository
         let method = UserDefaultsRepository.method.value
@@ -197,7 +175,6 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
                         let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
-                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200..<300).contains(httpResponse.statusCode) {
                             // Success: Show success alert for successful response
@@ -213,14 +190,12 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
                             let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(alertController, animated: true, completion: nil)
-                            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                         }
                     } else {
                         // Failure: Show generic error alert for unexpected response
                         let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
-                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     }
                 }
             }.resume()
@@ -233,10 +208,10 @@ class CustomActionsViewController: UIViewController, UIPickerViewDataSource, UIP
     }
     
     // Data for the UIPickerView
-    lazy var customActionsOptions: [String] = {
-        let customActionsString = UserDefaultsRepository.customActionsString.value
-        // Split the customActionsString by ", " to get individual options
-        return customActionsString.components(separatedBy: ", ")
+    lazy var customOptions: [String] = {
+        let customString = UserDefaultsRepository.customString.value
+        // Split the customString by ", " to get individual options
+        return customString.components(separatedBy: ", ")
     }()
 }
 
