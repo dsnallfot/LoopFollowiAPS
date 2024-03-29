@@ -247,39 +247,31 @@ class RemoteSettingsViewController: FormViewController {
         }
         
         form +++ Section("Advanced functions (App Restart needed)")
-            <<< SegmentedRow<String>("hideRemoteBolus") { row in
-                row.title = "Bolus Actions"
-                row.options = ["Show", "Hide"]
-                row.value = UserDefaultsRepository.hideRemoteBolus.value ? "Hide" : "Show"
-            }.cellSetup { cell, _ in
-                cell.segmentedControl.translatesAutoresizingMaskIntoConstraints = false
-                NSLayoutConstraint.activate([
-                    cell.segmentedControl.widthAnchor.constraint(equalTo: cell.widthAnchor, multiplier: 0.5) // Adjust multiplier as needed
-                ])
-            }.onChange { [weak self] row in
-                guard let value = row.value else { return }
-                UserDefaultsRepository.hideRemoteBolus.value = value == "Hide"
-                
-                // Reload the form after the value changes
-                self?.reloadForm()
-            }
+        <<< SwitchRow("hideRemoteBolus") { row in
+            row.title = "Show Remote Bolus"
+            // Invert the value here for initial state
+            row.value = !UserDefaultsRepository.hideRemoteBolus.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            // Invert the value again when saving
+            UserDefaultsRepository.hideRemoteBolus.value = !value
             
-            <<< SegmentedRow<String>("hideRemoteCustom") { row in
-                row.title = "Custom Actions"
-                row.options = ["Show", "Hide"]
-                row.value = UserDefaultsRepository.hideRemoteCustom.value ? "Hide" : "Show"
-            }.cellSetup { cell, _ in
-                cell.segmentedControl.translatesAutoresizingMaskIntoConstraints = false
-                NSLayoutConstraint.activate([
-                    cell.segmentedControl.widthAnchor.constraint(equalTo: cell.widthAnchor, multiplier: 0.5) // Adjust multiplier as needed
-                ])
-            }.onChange { [weak self] row in
-                guard let value = row.value else { return }
-                UserDefaultsRepository.hideRemoteCustom.value = value == "Hide"
-                
-                // Reload the form after the value changes
-                self?.reloadForm()
-            }
+            // Reload the form after the value changes
+            self?.reloadForm()
+        }
+
+        <<< SwitchRow("hideRemoteCustom") { row in
+            row.title = "Show Custom Actions"
+            // Invert the value here for initial state
+            row.value = !UserDefaultsRepository.hideRemoteCustom.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            // Invert the value again when saving
+            UserDefaultsRepository.hideRemoteCustom.value = !value
+            
+            // Reload the form after the value changes
+            self?.reloadForm()
+        }
         
         
         +++ Section(header: "Preset Settings", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
@@ -301,7 +293,7 @@ class RemoteSettingsViewController: FormViewController {
         }
         
         <<< TextRow("presets"){ row in
-            row.title = "Custom Presets:"
+            row.title = "Custom Actions:"
             row.value = UserDefaultsRepository.presetString.value
         }.onChange { row in
             guard let value = row.value else { return }
