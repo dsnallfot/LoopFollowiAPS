@@ -10,12 +10,7 @@ import UIKit
 
 class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
     
-    @IBOutlet weak var sendOverrideButton: UIButton!
     @IBOutlet weak var overridePicker: UIPickerView!
-        
-    var isAlertShowing = false // Property to track if alerts are currently showing
-    var isButtonDisabled = false // Property to track if the button is currently disabled
-
     
     // Property to store the selected override option
     var selectedOverride: String?
@@ -59,13 +54,6 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     }
     
     @IBAction func sendRemoteOverridePressed(_ sender: Any) {
-        // Disable the button to prevent multiple taps
-         if !isButtonDisabled {
-             isButtonDisabled = true
-             sendOverrideButton.isEnabled = false
-         } else {
-             return // If button is already disabled, return to prevent double registration
-         }
         guard let selectedOverride = selectedOverride else {
             print("No override option selected")
             return
@@ -82,21 +70,10 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
             self.sendOverrideRequest(combinedString: combinedString)
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
-                    // Handle dismissal when "Cancel" is selected
-                    self.handleAlertDismissal()
-                }))
+        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         
         present(confirmationAlert, animated: true, completion: nil)
     }
-    
-    // Function to handle alert dismissal
-        func handleAlertDismissal() {
-            // Enable the button when alerts are dismissed
-            isAlertShowing = false
-            sendOverrideButton.isEnabled = true
-            isButtonDisabled = false // Reset button disable status
-        }
     
     func sendOverrideRequest(combinedString: String) {
         
@@ -141,7 +118,6 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
                         let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
-                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200..<300).contains(httpResponse.statusCode) {
                             // Success: Show success alert for successful response
@@ -157,14 +133,12 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
                             let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(alertController, animated: true, completion: nil)
-                            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                         }
                     } else {
                         // Failure: Show generic error alert for unexpected response
                         let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
-                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     }
                 }
             }.resume()

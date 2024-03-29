@@ -10,8 +10,10 @@ import UIKit
 
 class RemoteViewController: UIViewController {
     
-    @IBOutlet weak var customActionButton: UIButton!
+    @IBOutlet weak var customPresetButton: UIButton!
     @IBOutlet weak var remoteBolusButton: UIButton!
+    
+    let method = UserDefaultsRepository.method.value
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -19,7 +21,7 @@ class RemoteViewController: UIViewController {
             overrideUserInterfaceStyle = .dark
         }
             
-            // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustomActions value
+            // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustom value
             updateUI()
         }
         
@@ -28,13 +30,13 @@ class RemoteViewController: UIViewController {
             let isRemoteBolusHidden = UserDefaultsRepository.hideRemoteBolus.value
             remoteBolusButton.isHidden = isRemoteBolusHidden
 
-        let isCustomActionHidden = UserDefaultsRepository.hideRemoteCustomActions.value
-        customActionButton.isHidden = isCustomActionHidden
+        let isCustomPresetHidden = UserDefaultsRepository.hideRemoteCustom.value
+        customPresetButton.isHidden = isCustomPresetHidden
     }
     
-    @IBAction func customActionButtonPressed(_ sender: Any) {
-        let customActionsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomActions") as! CustomActionsViewController
-        self.present(customActionsViewController, animated: true, completion: nil)
+    @IBAction func presetButtonPressed(_ sender: Any) {
+        let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
+        self.present(customViewController, animated: true, completion: nil)
     }
     
     @IBAction func mealButtonPressed(_ sender: Any) {
@@ -63,9 +65,18 @@ class RemoteViewController: UIViewController {
     }
     
     @IBAction func calendarButtonTapped(_ sender: Any) {
-        let urlString = "shortcuts://run-shortcut?name=Healthlog"
-        if let url = URL(string: urlString) {
-            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        //Check to see if the input method is SMS API or something else
+        //If SMS API, do not use shortcuts - use Nightscout API instead
+        if method == "SMS API" {
+            //Eventually, display a pop up to capture note text and send it off via Nightscout API
+            return
+        }
+        //If not SMS API, we must be in the Shortcut world - so trigger the Shortcut
+        else {
+            let urlString = "shortcuts://run-shortcut?name=Healthlog"
+            if let url = URL(string: urlString) {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
         }
     }
     
@@ -79,13 +90,13 @@ class RemoteViewController: UIViewController {
         remoteBolusButton.isHidden = false
     }
     
-    // Function to hide the customAction button
-    func hideCustomActionButton() {
-        customActionButton.isHidden = true
+    // Function to hide the custompreset button
+    func hideCustomPresetButton() {
+        customPresetButton.isHidden = true
     }
     
-    // Function to show the customAction button
-    func showCustomActionButton() {
-        customActionButton.isHidden = false
+    // Function to show the custompreset button
+    func showCustomPresetButton() {
+        customPresetButton.isHidden = false
     }
 }

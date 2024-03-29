@@ -552,7 +552,7 @@
                         <segue destination="e0E-cx-0Wr" kind="relationship" relationship="viewControllers" id="DoC-xh-NA3"/>
                         <segue destination="8rJ-Kc-sve" kind="relationship" relationship="viewControllers" id="v9F-r7-C0x"/>
                         <segue destination="hDv-qK-Udb" kind="relationship" relationship="viewControllers" id="DNC-2X-EOc"/>
-                        <segue destination="4ie-sJ-hfo" kind="relationship" relationship="viewControllers" id="n40-km-p5N"/>
+                        <segue destination="4ie-sJ-hfo" kind="relationship" relationship="viewControllers" id="f5a-Gm-VPM"/>
                     </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="HuB-VB-40B" sceneMemberID="firstResponder"/>
@@ -567,10 +567,10 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" alignment="center" spacing="17" translatesAutoresizingMaskIntoConstraints="NO" id="ns4-YC-Awz">
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" alignment="center" spacing="17" translatesAutoresizingMaskIntoConstraints="NO" id="ns4-YC-Awz" userLabel="Stack View Big buttons">
                                 <rect key="frame" x="20" y="150" width="335" height="479"/>
                                 <subviews>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Srr-Hj-3UX">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Srr-Hj-3UX" userLabel="Custom Actions Button">
                                         <rect key="frame" x="4" y="0.0" width="327" height="82.333333333333329"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="wand.and.stars" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
@@ -589,10 +589,10 @@
                                             <color key="baseForegroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         </buttonConfiguration>
                                         <connections>
-                                            <action selector="customActionButtonPressed:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="8BF-CR-nhZ"/>
+                                            <action selector="presetButtonPressed:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="n6C-Rs-E9d"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Kbc-y8-Yyv">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Kbc-y8-Yyv" userLabel="Meal Button">
                                         <rect key="frame" x="4" y="99.333333333333343" width="327" height="82"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="fork.knife" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
@@ -613,7 +613,7 @@
                                             <action selector="mealButtonPressed:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="3XE-nZ-djx"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2Vg-R6-0Rz">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2Vg-R6-0Rz" userLabel="Bolus Button">
                                         <rect key="frame" x="4" y="198.33333333333331" width="327" height="82.333333333333314"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="drop.fill" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
@@ -633,7 +633,7 @@
                                             <action selector="bolusButtonPressed:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="bgi-Qm-ZLF"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="p4l-1b-Z8k">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="p4l-1b-Z8k" userLabel="Override Button">
                                         <rect key="frame" x="4" y="297.66666666666669" width="327" height="82"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="person.fill" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
@@ -653,7 +653,7 @@
                                             <action selector="overrideButtonPressed:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="fii-OJ-npy"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="eWa-bY-PRf">
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="eWa-bY-PRf" userLabel="Temporary Target Button">
                                         <rect key="frame" x="4" y="396.66666666666663" width="327" height="82.333333333333314"/>
                                         <state key="normal" title="Button"/>
                                         <buttonConfiguration key="configuration" style="plain" image="target" catalog="system" imagePadding="8" cornerStyle="large" titleAlignment="center">
@@ -695,11 +695,11 @@
                                     <constraint firstAttribute="trailing" secondItem="p4l-1b-Z8k" secondAttribute="trailing" constant="4" id="uCH-Eq-k3z"/>
                                 </constraints>
                             </stackView>
-                            <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="b3T-o4-ESN">
-                                <rect key="frame" x="268.66666666666669" y="49" width="98.333333333333314" height="34.333333333333343"/>
+                            <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="b3T-o4-ESN" userLabel="Stack View Little buttons">
+                                <rect key="frame" x="268.66666666666669" y="60.000000000000007" width="98.333333333333314" height="23.333333333333336"/>
                                 <subviews>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Cs-mt-7ke">
-                                        <rect key="frame" x="0.0" y="0.0" width="47.333333333333336" height="34.333333333333336"/>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Cs-mt-7ke" userLabel="Note Button">
+                                        <rect key="frame" x="0.0" y="0.0" width="47.333333333333336" height="23.333333333333332"/>
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                         <state key="normal" title="Button">
                                             <attributedString key="attributedTitle"/>
@@ -714,8 +714,8 @@
                                             <action selector="calendarButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="JFn-f7-KEp"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AuC-IH-cun">
-                                        <rect key="frame" x="47.333333333333314" y="0.0" width="51" height="34.333333333333336"/>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AuC-IH-cun" userLabel="Settings Button">
+                                        <rect key="frame" x="47.333333333333314" y="0.0" width="51" height="23.333333333333332"/>
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                         <state key="normal" title="Button">
                                             <attributedString key="attributedTitle"/>
@@ -739,6 +739,7 @@
                             <constraint firstAttribute="trailing" secondItem="b3T-o4-ESN" secondAttribute="trailing" constant="8" id="42U-e4-3n4"/>
                             <constraint firstItem="qde-S1-0zf" firstAttribute="trailing" secondItem="ns4-YC-Awz" secondAttribute="trailing" constant="20" id="Hby-Md-VcH"/>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="top" secondItem="b3T-o4-ESN" secondAttribute="bottom" constant="66.666666666666657" id="KWH-Ae-126"/>
+                            <constraint firstItem="b3T-o4-ESN" firstAttribute="top" secondItem="qde-S1-0zf" secondAttribute="top" constant="10" id="KaL-dy-gKL"/>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="leading" secondItem="qde-S1-0zf" secondAttribute="leading" constant="20" id="Lxf-Mg-SV4"/>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="top" secondItem="qde-S1-0zf" secondAttribute="top" constant="100" id="MKZ-4o-aUj"/>
                             <constraint firstItem="qde-S1-0zf" firstAttribute="bottom" secondItem="ns4-YC-Awz" secondAttribute="bottom" constant="100" id="SgO-Lo-oHR"/>
@@ -748,7 +749,7 @@
                     <tabBarItem key="tabBarItem" title="Remote" image="appletvremote.gen1" catalog="system" id="Eec-Uu-0Sd"/>
                     <navigationItem key="navigationItem" id="ce2-Vz-Uuo"/>
                     <connections>
-                        <outlet property="customActionButton" destination="Srr-Hj-3UX" id="6fd-c7-vUB"/>
+                        <outlet property="customPresetButton" destination="Srr-Hj-3UX" id="2oE-Ij-dyr"/>
                         <outlet property="remoteBolusButton" destination="2Vg-R6-0Rz" id="Nb5-jA-f06"/>
                     </connections>
                 </viewController>
@@ -1166,7 +1167,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ebE-KC-hR4" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1039" y="1422"/>
+            <point key="canvasLocation" x="-1753" y="1422"/>
         </scene>
         <!--Remote Bolus-->
         <scene sceneID="1oS-JQ-Aks">
@@ -1340,13 +1341,12 @@
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="bolusAmount" destination="0HU-rw-87i" id="Cv5-Ig-do0"/>
-                        <outlet property="sendBolusButton" destination="omd-J4-dQH" id="x98-rc-4vm"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="qc2-lN-ejk" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <exit id="2WB-f6-k7Q" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
-            <point key="canvasLocation" x="-356" y="1422"/>
+            <point key="canvasLocation" x="-1039" y="1422"/>
         </scene>
         <!--Remote Override-->
         <scene sceneID="LdH-iY-luh">
@@ -1444,13 +1444,12 @@
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="overridePicker" destination="jzQ-mu-Jca" id="ndJ-R2-O4t"/>
-                        <outlet property="sendOverrideButton" destination="bbd-yY-tzY" id="jGP-Xt-DVI"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="5Ca-0z-gh3" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <exit id="20o-Rx-sVx" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
-            <point key="canvasLocation" x="334" y="1422"/>
+            <point key="canvasLocation" x="-356" y="1422"/>
         </scene>
         <!--Remote Settings View Controller-->
         <scene sceneID="kNS-Jc-naT">
@@ -1582,18 +1581,17 @@
                     <toolbarItems/>
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
-                        <outlet property="sendTempTargetButton" destination="Rra-PP-alB" id="2Kx-lJ-2BF"/>
                         <outlet property="tempTargetsPicker" destination="hXU-kG-KPd" id="hEv-1v-Sd8"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="PEj-be-N7c" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1023" y="1422"/>
+            <point key="canvasLocation" x="334" y="1422"/>
         </scene>
-        <!--Remote Custom Actions-->
+        <!--Remote Custom-->
         <scene sceneID="oiQ-Dk-NgF">
             <objects>
-                <viewController storyboardIdentifier="remoteCustomActions" title="Remote Custom Actions" id="Q87-1p-npY" customClass="CustomActionsViewController" customModule="Loop_Follow" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="remoteCustom" title="Remote Custom" id="Q87-1p-npY" customClass="CustomViewController" customModule="Loop_Follow" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="zIz-ZN-XWm">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1608,7 +1606,7 @@
                                     <fontDescription key="titleFontDescription" type="system" pointSize="17"/>
                                 </buttonConfiguration>
                                 <connections>
-                                    <action selector="cancelButtonPressed:" destination="Q87-1p-npY" eventType="touchUpInside" id="uJg-DL-1VK"/>
+                                    <action selector="cancelButtonPressed:" destination="Q87-1p-npY" eventType="touchUpInside" id="cPX-6T-AvB"/>
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="QD5-23-9lU">
@@ -1628,7 +1626,7 @@
                                     </attributedString>
                                 </buttonConfiguration>
                                 <connections>
-                                    <action selector="sendRemoteCustomActionPressed:" destination="Q87-1p-npY" eventType="touchUpInside" id="xCX-aA-Pir"/>
+                                    <action selector="sendRemoteCustomPressed:" destination="Q87-1p-npY" eventType="touchUpInside" id="tv0-25-T0i"/>
                                 </connections>
                             </button>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="Js8-Sn-Cfq">
@@ -1683,8 +1681,7 @@
                     <toolbarItems/>
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
-                        <outlet property="customActionsPicker" destination="CBe-w4-hJR" id="dzk-uD-H9j"/>
-                        <outlet property="sendCustomActionButton" destination="QD5-23-9lU" id="s6V-rx-Ahs"/>
+                        <outlet property="customPicker" destination="CBe-w4-hJR" id="CQW-Z2-zW7"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="pYk-Ld-tWW" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1717,7 +1714,7 @@
                     </constraints>
                 </stackView>
             </objects>
-            <point key="canvasLocation" x="-1753" y="1422"/>
+            <point key="canvasLocation" x="1021.6" y="1421.6748768472908"/>
         </scene>
     </scenes>
     <resources>

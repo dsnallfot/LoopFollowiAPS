@@ -162,7 +162,7 @@ class MealViewController: UIViewController {
                 self.sendMealRequest(combinedString: combinedString)
             }))
             
-            confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
+            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
                 // Handle dismissal when "Cancel" is selected
                 self.handleAlertDismissal()
             }))
@@ -185,10 +185,7 @@ class MealViewController: UIViewController {
                 }
             }))
             
-            confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
-                // Handle dismissal when "Cancel" is selected
-                self.handleAlertDismissal()
-            }))
+            confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
             
             present(confirmationAlert, animated: true, completion: nil)
         }
