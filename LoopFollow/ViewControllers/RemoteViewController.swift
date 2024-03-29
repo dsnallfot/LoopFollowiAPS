@@ -30,7 +30,7 @@ class RemoteViewController: UIViewController {
             let isRemoteBolusHidden = UserDefaultsRepository.hideRemoteBolus.value
             remoteBolusButton.isHidden = isRemoteBolusHidden
 
-        let isCustomPresetHidden = UserDefaultsRepository.hideRemoteCustom.value
+        let isCustomPresetHidden = UserDefaultsRepository.hideRemoteCustomActions.value
         customPresetButton.isHidden = isCustomPresetHidden
     }
     
