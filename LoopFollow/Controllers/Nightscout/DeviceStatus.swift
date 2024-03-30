@@ -336,24 +336,24 @@ extension MainViewController {
                             if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "lastBGTime: " + String(lastBGTime)) }
                             if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "wasEnacted: " + String(wasEnacted)) }
                             if tempBasalTime > lastBGTime && !wasEnacted {
-                                //LoopStatusLabel.text = "⏀"
+                                LoopStatusLabel.text = "⏀"
                                 latestLoopStatusString = "⏀"
                                 if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Open Loop: recommended temp. temp time > bg time, was not enacted") }
                             } else {
-                                //LoopStatusLabel.text = "↻"
+                                LoopStatusLabel.text = "↻"
                                 latestLoopStatusString = "↻"
                                 if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Looping: recommended temp, but temp time is < bg time and/or was enacted") }
                             }
                         }
                     } else {
-                        //LoopStatusLabel.text = "↻"
+                        LoopStatusLabel.text = "↻"
                         latestLoopStatusString = "↻"
                         if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Looping: no recommended temp") }
                     }
                     
                 }
                 if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {
-                    //LoopStatusLabel.text = "⚠"
+                    LoopStatusLabel.text = "⚠"
                     latestLoopStatusString = "⚠"
                 }
                 latestLoopTime = lastLoopTime
