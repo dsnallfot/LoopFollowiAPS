@@ -58,7 +58,7 @@ class RemoteSettingsViewController: FormViewController {
 
         // Check if the switch for hiding Custom Actions is enabled
         let hideCustomActions = Condition.function([], { _ in
-            return UserDefaultsRepository.hideRemoteCustom.value
+            return UserDefaultsRepository.hideRemoteCustomActions.value
         })
 
         // Find the "presets" row
