@@ -454,7 +454,7 @@ class UserDefaultsRepository {
     
     //Show or Hide advanced features
         static let hideRemoteBolus = UserDefaultsValue<Bool>(key: "hideRemoteBolus", default: true)
-        static let hideRemoteCustom = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
+        static let hideRemoteCustomActions = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
     
     // API settings
     static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "")
