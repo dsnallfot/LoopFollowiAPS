@@ -58,7 +58,7 @@ class RemoteSettingsViewController: FormViewController {
 
         // Check if the switch for hiding Custom Actions is enabled
         let hideCustomActions = Condition.function([], { _ in
-            return UserDefaultsRepository.hideRemoteCustom.value
+            return UserDefaultsRepository.hideRemoteCustomActions.value
         })
 
         // Find the "presets" row
@@ -263,11 +263,11 @@ class RemoteSettingsViewController: FormViewController {
         <<< SwitchRow("hideRemoteCustom") { row in
             row.title = "Show Custom Actions"
             // Invert the value here for initial state
-            row.value = !UserDefaultsRepository.hideRemoteCustom.value
+            row.value = !UserDefaultsRepository.hideRemoteCustomActions.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
             // Invert the value again when saving
-            UserDefaultsRepository.hideRemoteCustom.value = !value
+            UserDefaultsRepository.hideRemoteCustomActions.value = !value
             
             // Reload the form after the value changes
             self?.reloadForm()
@@ -284,7 +284,7 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.overrideString.value = value
         }
         
-        <<< TextRow("temptargets"){ row in
+        <<< TextRow("TempTargets"){ row in
             row.title = "Temp Targets:"
             row.value = UserDefaultsRepository.tempTargetsString.value
         }.onChange { row in
@@ -292,12 +292,12 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.tempTargetsString.value = value
         }
         
-        <<< TextRow("presets"){ row in
+        <<< TextRow("CustomActions"){ row in
             row.title = "Custom Actions:"
-            row.value = UserDefaultsRepository.presetString.value
+            row.value = UserDefaultsRepository.customActionsString.value
         }.onChange { row in
             guard let value = row.value else { return }
-            UserDefaultsRepository.presetString.value = value
+            UserDefaultsRepository.customActionsString.value = value
         }
         +++ ButtonRow() {
             $0.title = "DONE"

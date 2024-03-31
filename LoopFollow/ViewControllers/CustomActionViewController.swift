@@ -1,5 +1,5 @@
 //
-//  PresetViewController.swift
+//  CustomActionsViewController.swift
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2024-03-25.
@@ -9,17 +9,16 @@
 import UIKit
 import LocalAuthentication
 
-class PresetViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
+class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
     
-    @IBOutlet weak var sendPresetButton: UIButton!
-    @IBOutlet weak var presetPicker: UIPickerView!
+    @IBOutlet weak var sendCustomActionButton: UIButton!
+    @IBOutlet weak var customActionsPicker: UIPickerView!
     
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
- 
     
     // Property to store the selected override option
-    var selectedPreset: String?
+    var selectedCustomAction: String?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,14 +28,14 @@ class PresetViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
             // Do any additional setup after loading the view.
         }
         // Set the delegate and data source for the UIPickerView
-        presetPicker.delegate = self
-        presetPicker.dataSource = self
+        customActionsPicker.delegate = self
+        customActionsPicker.dataSource = self
         
         // Set the default selected item for the UIPickerView
-        presetPicker.selectRow(0, inComponent: 0, animated: false)
+        customActionsPicker.selectRow(0, inComponent: 0, animated: false)
         
         // Set the initial selected override
-        selectedPreset = presetOptions[0]
+        selectedCustomAction = customActionsOptions[0]
     }
     
     // MARK: - UIPickerViewDataSource
@@ -46,63 +45,63 @@ class PresetViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
     }
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        return presetOptions.count
+        return customActionsOptions.count
     }
     
     // MARK: - UIPickerViewDelegate
     
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-        return presetOptions[row]
+        return customActionsOptions[row]
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedOverride property when an option is selected
-        selectedPreset = presetOptions[row]
-        print("Preset Picker selected: \(selectedPreset!)")
+        selectedCustomAction = customActionsOptions[row]
+        print("Custom Picker selected: \(selectedCustomAction!)")
     }
     
-    @IBAction func sendRemotePresetPressed(_ sender: Any) {
+    @IBAction func sendRemoteCustomActionPressed(_ sender: Any) {
         // Disable the button to prevent multiple taps
-        if !isButtonDisabled {
-            isButtonDisabled = true
-            sendPresetButton.isEnabled = false
-        } else {
-            return // If button is already disabled, return to prevent double registration
-        }
-        guard let selectedPreset = selectedPreset else {
-            print("No preset option selected")
+                if !isButtonDisabled {
+                    isButtonDisabled = true
+                    sendCustomActionButton.isEnabled = false
+                } else {
+                    return // If button is already disabled, return to prevent double registration
+                }
+        guard let selectedCustomAction = selectedCustomAction else {
+            print("No custom action option selected")
             return
         }
         
-        let combinedString = "Preset_\(selectedPreset)"
+        let combinedString = "CustomAction_\(selectedCustomAction)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du skicka \(selectedPreset)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedCustomAction)?", preferredStyle: .alert)
         
-        confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+        confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
             self.authenticateWithBiometrics {
                 // Proceed with the request after successful authentication
-                self.sendPresetRequest(combinedString: combinedString)
+                self.sendCustomActionRequest(combinedString: combinedString)
             }
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
-            // Handle dismissal when "Cancel" is selected
-            self.handleAlertDismissal()
-        }))
+        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
+                    // Handle dismissal when "Cancel" is selected
+                    self.handleAlertDismissal()
+                }))
         
         present(confirmationAlert, animated: true, completion: nil)
     }
     
     // Function to handle alert dismissal
-    func handleAlertDismissal() {
-        // Enable the button when alerts are dismissed
-        isAlertShowing = false
-        sendPresetButton.isEnabled = true
-        isButtonDisabled = false // Reset button disable status
-    }
+        func handleAlertDismissal() {
+            // Enable the button when alerts are dismissed
+            isAlertShowing = false
+            sendCustomActionButton.isEnabled = true
+            isButtonDisabled = false // Reset button disable status
+        }
     
     func authenticateWithBiometrics(completion: @escaping () -> Void) {
         let context = LAContext()
@@ -154,7 +153,7 @@ class PresetViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
         }
     }
     
-    func sendPresetRequest(combinedString: String) {
+    func sendCustomActionRequest(combinedString: String) {
         
         // Retrieve the method value from UserDefaultsRepository
         let method = UserDefaultsRepository.method.value
@@ -166,7 +165,7 @@ class PresetViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
                 print("Failed to encode URL string")
                 return
             }
-            let urlString = "shortcuts://run-shortcut?name=Remote%20Preset&input=text&text=\(encodedString)"
+            let urlString = "shortcuts://run-shortcut?name=Remote%20Custom%20Action&input=text&text=\(encodedString)"
             if let url = URL(string: urlString) {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
@@ -195,14 +194,14 @@ class PresetViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
                 DispatchQueue.main.async {
                     if let error = error {
                         // Failure: Show error alert for network error
-                        let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
+                        let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
                         self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                     } else if let httpResponse = response as? HTTPURLResponse {
                         if (200..<300).contains(httpResponse.statusCode) {
                             // Success: Show success alert for successful response
-                            let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades!", preferredStyle: .alert)
+                            let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                                 // Dismiss the current view controller
                                 self.dismiss(animated: true, completion: nil)
@@ -210,15 +209,15 @@ class PresetViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
                             self.present(alertController, animated: true, completion: nil)
                         } else {
                             // Failure: Show error alert for non-successful HTTP status code
-                            let message = "HTTP Statuskod: \(httpResponse.statusCode)"
-                            let alertController = UIAlertController(title: "Fel", message: message, preferredStyle: .alert)
+                            let message = "HTTP Status Code: \(httpResponse.statusCode)"
+                            let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
                             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(alertController, animated: true, completion: nil)
                             self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                         }
                     } else {
                         // Failure: Show generic error alert for unexpected response
-                        let alertController = UIAlertController(title: "Fel", message: "Oväntat svar från servern", preferredStyle: .alert)
+                        let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
                         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                         self.present(alertController, animated: true, completion: nil)
                         self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
@@ -229,15 +228,15 @@ class PresetViewController: UIViewController, UIPickerViewDataSource, UIPickerVi
         
     }
     
+
     @IBAction func cancelButtonPressed(_ sender: Any) {
         dismiss(animated: true, completion: nil)
     }
     
-    // Data for the UIPickerView    
-    lazy var presetOptions: [String] = {
-        let presetString = UserDefaultsRepository.presetString.value
-        // Split the presetString by ", " to get individual options
-        return presetString.components(separatedBy: ", ")
+    // Data for the UIPickerView
+    lazy var customActionsOptions: [String] = {
+        let customActionsString = UserDefaultsRepository.customActionsString.value
+        // Split the customActionsString by ", " to get individual options
+        return customActionsString.components(separatedBy: ", ")
     }()
 }
-
