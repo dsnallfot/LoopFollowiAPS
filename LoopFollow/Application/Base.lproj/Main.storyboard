@@ -1290,7 +1290,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VIj-s4-cIt" userLabel="Empty">
                                         <rect key="frame" x="0.0" y="201.00000000000003" width="343" height="58.999999999999972"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="2ZP-L8-YwT">
-                                            <rect key="frame" x="0.0" y="0.0" width="343" height="59"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="343" height="58.999999999999972"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         </view>
@@ -1343,6 +1343,7 @@
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="bolusAmount" destination="0HU-rw-87i" id="Cv5-Ig-do0"/>
+                        <outlet property="bolusEntryField" destination="0HU-rw-87i" id="E1k-IY-JCh"/>
                         <outlet property="sendBolusButton" destination="omd-J4-dQH" id="3nr-GO-3lG"/>
                     </connections>
                 </viewController>

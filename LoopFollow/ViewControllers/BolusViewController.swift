@@ -9,8 +9,9 @@
 import UIKit
 import LocalAuthentication
 
-class BolusViewController: UIViewController {
+class BolusViewController: UIViewController, UITextFieldDelegate {
     
+    @IBOutlet weak var bolusEntryField: UITextField!
     @IBOutlet weak var sendBolusButton: UIButton!
     @IBOutlet weak var bolusAmount: UITextField!
     
@@ -22,6 +23,11 @@ class BolusViewController: UIViewController {
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        bolusEntryField.delegate = self
+        self.focusBolusEntryField()
+    }
+    func focusBolusEntryField() {
+        self.bolusEntryField.becomeFirstResponder()
     }
     
     @IBAction func sendRemoteBolusPressed(_ sender: Any) {
