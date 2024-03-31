@@ -9,8 +9,13 @@
 import UIKit
 import LocalAuthentication
 
-class MealViewController: UIViewController {
+class MealViewController: UIViewController, UITextFieldDelegate {
     
+    @IBOutlet weak var carbsEntryField: UITextField!
+    @IBOutlet weak var fatEntryField: UITextField!
+    @IBOutlet weak var proteinEntryField: UITextField!
+    @IBOutlet weak var notesEntryField: UITextField!
+    @IBOutlet weak var bolusEntryField: UITextField!
     @IBOutlet weak var bolusRow: UIView!
     @IBOutlet weak var sendMealButton: UIButton!
     @IBOutlet weak var carbGrams: UITextField!
@@ -28,6 +33,8 @@ class MealViewController: UIViewController {
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        carbsEntryField.delegate = self
+        self.focusCarbsEntryField()
         
         // Check the value of hideRemoteBolus and hide the bolusRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {
@@ -35,6 +42,9 @@ class MealViewController: UIViewController {
         }
     }
     
+    func focusCarbsEntryField() {
+            self.carbsEntryField.becomeFirstResponder()
+        }
     
     @IBAction func presetButtonTapped(_ sender: Any) {
         let customActionViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomAction") as! CustomActionViewController
