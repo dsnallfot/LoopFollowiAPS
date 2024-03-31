@@ -10,7 +10,7 @@ import UIKit
 
 class RemoteViewController: UIViewController {
     
-    @IBOutlet weak var customPresetButton: UIButton!
+    @IBOutlet weak var customActionButton: UIButton!
     @IBOutlet weak var remoteBolusButton: UIButton!
     
     let method = UserDefaultsRepository.method.value
@@ -30,13 +30,13 @@ class RemoteViewController: UIViewController {
             let isRemoteBolusHidden = UserDefaultsRepository.hideRemoteBolus.value
             remoteBolusButton.isHidden = isRemoteBolusHidden
 
-        let isCustomPresetHidden = UserDefaultsRepository.hideRemoteCustomActions.value
-        customPresetButton.isHidden = isCustomPresetHidden
+        let isCustomActionsHidden = UserDefaultsRepository.hideRemoteCustomActions.value
+        customActionButton.isHidden = isCustomActionsHidden
     }
     
-    @IBAction func presetButtonPressed(_ sender: Any) {
-        let customViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustom") as! CustomViewController
-        self.present(customViewController, animated: true, completion: nil)
+    @IBAction func customActionButtonPressed(_ sender: Any) {
+        let customActionViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomAction") as! CustomActionViewController
+        self.present(customActionViewController, animated: true, completion: nil)
     }
     
     @IBAction func mealButtonPressed(_ sender: Any) {
@@ -90,13 +90,13 @@ class RemoteViewController: UIViewController {
         remoteBolusButton.isHidden = false
     }
     
-    // Function to hide the custompreset button
-    func hideCustomPresetButton() {
-        customPresetButton.isHidden = true
+    // Function to hide the customaction button
+    func hideCustomActionButton() {
+        customActionButton.isHidden = true
     }
     
-    // Function to show the custompreset button
-    func showCustomPresetButton() {
-        customPresetButton.isHidden = false
+    // Function to show the customaction button
+    func showCustomActionButton() {
+        customActionButton.isHidden = false
     }
 }

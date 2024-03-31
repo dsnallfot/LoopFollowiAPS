@@ -444,17 +444,22 @@ class UserDefaultsRepository {
     static let alertBatterySnoozeHours = UserDefaultsValue<Int>(key: "alertBatterySnoozeHours", default: 1)
     static var deviceBatteryLevel: UserDefaultsValue<Double> = UserDefaultsValue(key: "deviceBatteryLevel", default: 100.0)
     
-    // Remote settings
+    // Remote configuration
     static let method = UserDefaultsValue<String>(key: "method", default: "SMS API")
-    static let maxCarbs = UserDefaultsValue<Int>(key: "maxCarbs", default: 30)
-    static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
-    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "👻 Resistance, 🤧 Sick day, 🏃‍♂️ Exercise, 😴 Nightmode")
-    static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "Exercise, Eating soon, Low treatment")
-    static let customString = UserDefaultsValue<String>(key: "customString", default: "Custom Command 1, Custom Command 2, Custom Command 3")
+    static let caregiverName = UserDefaultsValue<String>(key: "caregiverName", default: "")
+    static let remoteSecretCode = UserDefaultsValue<String>(key: "remoteSecretCode", default: "")
+
+    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "")
+    static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "")
+    static let customActionsString = UserDefaultsValue<String>(key: "customActionsString", default: "")
     
     //Show or Hide advanced features
         static let hideRemoteBolus = UserDefaultsValue<Bool>(key: "hideRemoteBolus", default: true)
         static let hideRemoteCustomActions = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
+    
+    //Remote guardrails
+    static let maxCarbs = UserDefaultsValue<Int>(key: "maxCarbs", default: 30)
+    static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
     
     // API settings
     static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "")

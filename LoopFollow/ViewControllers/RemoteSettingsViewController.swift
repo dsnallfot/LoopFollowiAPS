@@ -61,16 +61,16 @@ class RemoteSettingsViewController: FormViewController {
             return UserDefaultsRepository.hideRemoteCustomActions.value
         })
 
-        // Find the "presets" row
-        if let presetsRow = form.rowBy(tag: "presets") {
-            presetsRow.hidden = hideCustomActions
-            presetsRow.evaluateHidden()
+        // Find the "customActions" row
+        if let customActionsRow = form.rowBy(tag: "CustomActions") {
+            customActionsRow.hidden = hideCustomActions
+            customActionsRow.evaluateHidden()
         }
 
-        // Find the "RemotePresets" row
-        if let remotePresetsRow = form.rowBy(tag: "RemotePreset") {
-            remotePresetsRow.hidden = hideCustomActions
-            remotePresetsRow.evaluateHidden()
+        // Find the "RemoteCustomActions" row
+        if let remoteCustomActionsRow = form.rowBy(tag: "RemoteCustomActions") {
+            remoteCustomActionsRow.hidden = hideCustomActions
+            remoteCustomActionsRow.evaluateHidden()
         }
 
         // Reload the form to reflect the changes
@@ -137,7 +137,7 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.twilioToNumberString.value =  row.value ?? ""
         }
         
-        let shortcutsSection = Section(header: "Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target buttons. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
+        let shortcutsSection = Section(header: "iOS Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target buttons. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
             $0.hidden = Condition.function(["method"], { form in
                 // Retrieve the value of the segmented row
                 guard let methodRow = form.rowBy(tag: "method") as? SegmentedRow<String>,
@@ -189,9 +189,9 @@ class RemoteSettingsViewController: FormViewController {
             }
         }
         
-        <<< TextRow("RemotePreset"){ row in
+        <<< TextRow("RemoteCustomAction"){ row in
             row.title = ""
-            row.value = "Remote Custom Action • Preset_🍿 Popcorn"
+            row.value = "Remote Custom Action • CustomAction_🍿 Popcorn"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -212,6 +212,83 @@ class RemoteSettingsViewController: FormViewController {
         +++ remoteCommandsSection
         
         +++ shortcutsSection
+        
+        +++ Section(header: "Remote configuration", footer: "The Caregiver name will be shown in all remote actions messages sent on the receiving phone.\n\nThe Secret Code should be something unique, and the exact same code later needs to be entered when asked for it in an import question, when setting up the preconfigured shortcut for enacting remote actions on the receiving phone")
+        
+        <<< TextRow("caregivername"){ row in
+            row.title = "Caregiver Name"
+            row.value = UserDefaultsRepository.caregiverName.value
+            row.cell.textField.placeholder = "Enter your name"
+        }.onChange { row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.caregiverName.value = value
+        }
+        
+        <<< TextRow("secretcode"){ row in
+            row.title = "Secret Code"
+            row.value = UserDefaultsRepository.caregiverName.value
+            row.cell.textField.placeholder = "Enter a secret code"
+        }.onChange { row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.caregiverName.value = value
+        }
+
+        
+        +++ Section(header: "Remote presets setup", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
+        
+        <<< TextRow("Overrides"){ row in
+            row.title = "Overrides:"
+            row.value = UserDefaultsRepository.overrideString.value
+            row.cell.textField.placeholder = "👻 Resistance, 🤧 Sick day, 🏃‍♂️ Exercise, 😴 Nightmode"
+        }.onChange { row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.overrideString.value = value
+        }
+        
+        <<< TextRow("TempTargets"){ row in
+            row.title = "Temp Targets:"
+            row.value = UserDefaultsRepository.tempTargetsString.value
+            row.cell.textField.placeholder = "Exercise, Eating soon, Low treatment"
+        }.onChange { row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.tempTargetsString.value = value
+        }
+        
+        <<< TextRow("CustomActions"){ row in
+            row.title = "Custom Actions:"
+            row.value = UserDefaultsRepository.customActionsString.value
+            row.cell.textField.placeholder = "Custom Command 1, Custom Command 2, Custom Command 3"
+        }.onChange { row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.customActionsString.value = value
+        }
+        
+        form +++ Section("Advanced functions (App Restart needed)")
+        <<< SwitchRow("hideRemoteBolus") { row in
+            row.title = "Show Remote Bolus" //Inverted code to make switch on = show instead of hide
+            // Invert the value here for initial state
+            row.value = !UserDefaultsRepository.hideRemoteBolus.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            // Invert the value again when saving
+            UserDefaultsRepository.hideRemoteBolus.value = !value
+            
+            // Reload the form after the value changes
+            self?.reloadForm()
+        }
+
+        <<< SwitchRow("hideRemoteCustom") { row in
+            row.title = "Show Custom Actions" //Inverted code to make switch on = show instead of hide
+            // Invert the value here for initial state
+            row.value = !UserDefaultsRepository.hideRemoteCustomActions.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            // Invert the value again when saving
+            UserDefaultsRepository.hideRemoteCustomActions.value = !value
+            
+            // Reload the form after the value changes
+            self?.reloadForm()
+        }
         
         +++ Section(header: "Guardrails and security", footer: "")
         
@@ -244,59 +321,6 @@ class RemoteSettingsViewController: FormViewController {
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
             UserDefaultsRepository.maxBolus.value = Double(value)
-        }
-        
-        form +++ Section("Advanced functions (App Restart needed)")
-        <<< SwitchRow("hideRemoteBolus") { row in
-            row.title = "Show Remote Bolus" //Inverted code to make switch on = show instead of hide
-            // Invert the value here for initial state
-            row.value = !UserDefaultsRepository.hideRemoteBolus.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            // Invert the value again when saving
-            UserDefaultsRepository.hideRemoteBolus.value = !value
-            
-            // Reload the form after the value changes
-            self?.reloadForm()
-        }
-
-        <<< SwitchRow("hideRemoteCustom") { row in
-            row.title = "Show Custom Actions" //Inverted code to make switch on = show instead of hide
-            // Invert the value here for initial state
-            row.value = !UserDefaultsRepository.hideRemoteCustomActions.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            // Invert the value again when saving
-            UserDefaultsRepository.hideRemoteCustomActions.value = !value
-            
-            // Reload the form after the value changes
-            self?.reloadForm()
-        }
-        
-        +++ Section(header: "Preset Settings", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
-        
-        <<< TextRow("overrides"){ row in
-            row.title = "Overrides:"
-            row.value = UserDefaultsRepository.overrideString.value
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.overrideString.value = value
-        }
-        
-        <<< TextRow("temptargets"){ row in
-            row.title = "Temp Targets:"
-            row.value = UserDefaultsRepository.tempTargetsString.value
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.tempTargetsString.value = value
-        }
-        
-        <<< TextRow("presets"){ row in
-            row.title = "Custom Actions:"
-            row.value = UserDefaultsRepository.customString.value
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.customString.value = value
         }
         +++ ButtonRow() {
             $0.title = "DONE"
