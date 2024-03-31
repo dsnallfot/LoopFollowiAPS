@@ -510,16 +510,27 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 
     func setBGTextColor() {
         if bgData.count > 0 {
-            guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
+            guard let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController else { return }
             let latestBG = bgData[bgData.count - 1].sgv
-            var color: NSUIColor = NSUIColor.label
+            var color: UIColor = .label // Default color
+            
             if UserDefaultsRepository.colorBGText.value {
-                if Float(latestBG) >= UserDefaultsRepository.highLine.value {
-                    color = NSUIColor.systemYellow
-                } else if Float(latestBG) <= UserDefaultsRepository.lowLine.value {
-                    color = NSUIColor.systemRed
-                } else {
-                    color = NSUIColor.systemGreen
+                if let loopYellow = UIColor(named: "LoopYellow") {
+                    if Float(latestBG) >= UserDefaultsRepository.highLine.value {
+                        color = loopYellow
+                    }
+                }
+                
+                if let loopRed = UIColor(named: "LoopRed") {
+                    if Float(latestBG) <= UserDefaultsRepository.lowLine.value {
+                        color = loopRed
+                    }
+                }
+                
+                if let loopGreen = UIColor(named: "LoopGreen") {
+                    if Float(latestBG) > UserDefaultsRepository.lowLine.value && Float(latestBG) < UserDefaultsRepository.highLine.value {
+                        color = loopGreen
+                    }
                 }
             }
             

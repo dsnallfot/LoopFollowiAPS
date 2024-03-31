@@ -64,15 +64,15 @@ extension MainViewController {
             chartEntry.append(value)
             
             if pieData[i].name == "high" {
-                if let color = UIColor(named: "LoopYellow")?.withAlphaComponent(0.8) {
+                if let color = UIColor(named: "LoopYellow") { //? }.withAlphaComponent(0.8) {
                     colors.append(color)
                 }
             } else if pieData[i].name == "low" {
-                if let color = UIColor(named: "LoopRed")?.withAlphaComponent(0.8) {
+                if let color = UIColor(named: "LoopRed") { //? }.withAlphaComponent(0.8) {
                     colors.append(color)
                 }
             } else {
-                if let color = UIColor(named: "LoopGreen")?.withAlphaComponent(0.8) {
+                if let color = UIColor(named: "LoopGreen") { //? }.withAlphaComponent(0.8) {
                     colors.append(color)
                 }
             }
