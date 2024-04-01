@@ -9,6 +9,7 @@
 import UIKit
 
 class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
+    var appStateController: AppStateController?
     
     @IBOutlet weak var sendOverrideButton: UIButton!
     @IBOutlet weak var overridePicker: UIPickerView!

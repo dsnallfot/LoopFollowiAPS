@@ -10,6 +10,7 @@ import UIKit
 import LocalAuthentication
 
 class BolusViewController: UIViewController, UITextFieldDelegate {
+    var appStateController: AppStateController?
     
     @IBOutlet weak var bolusEntryField: UITextField!
     @IBOutlet weak var sendBolusButton: UIButton!

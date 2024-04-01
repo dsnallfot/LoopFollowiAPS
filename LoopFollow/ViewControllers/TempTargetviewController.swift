@@ -9,6 +9,7 @@
 import UIKit
 
 class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
+    var appStateController: AppStateController?
     
     @IBOutlet weak var sendTempTargetButton: UIButton!
     @IBOutlet weak var tempTargetsPicker: UIPickerView!

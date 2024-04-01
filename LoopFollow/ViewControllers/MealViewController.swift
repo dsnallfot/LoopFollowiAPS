@@ -10,6 +10,7 @@ import UIKit
 import LocalAuthentication
 
 class MealViewController: UIViewController, UITextFieldDelegate {
+    var appStateController: AppStateController?
     
     //var latestCR: Double = 0.0 // Out commented preparations for fetching latestCR
     
@@ -61,7 +62,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
 
         // Set the text field with the formatted value of CR
         CRValue.text = formattedCR
-        print(formattedCR)
+        print("CR: \(formattedCR)")
         
         // Check the value of hideRemoteBolus and hide the bolusRow and bolusCalcRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {

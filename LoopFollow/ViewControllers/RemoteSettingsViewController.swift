@@ -12,6 +12,7 @@ import EventKit
 import EventKitUI
 
 class RemoteSettingsViewController: FormViewController {
+    var appStateController: AppStateController?
     
     var mealViewController: MealViewController?
     

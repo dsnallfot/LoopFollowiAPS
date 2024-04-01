@@ -10,6 +10,7 @@ import UIKit
 import LocalAuthentication
 
 class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
+    var appStateController: AppStateController?
     
     @IBOutlet weak var sendCustomActionButton: UIButton!
     @IBOutlet weak var customActionsPicker: UIPickerView!

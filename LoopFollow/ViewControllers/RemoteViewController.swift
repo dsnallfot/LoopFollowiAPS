@@ -9,6 +9,7 @@
 import UIKit
 
 class RemoteViewController: UIViewController {
+    var appStateController: AppStateController?
     
     //var latestCR: Double = 0.0 // Out commented preparations for fetching latestCR
     
