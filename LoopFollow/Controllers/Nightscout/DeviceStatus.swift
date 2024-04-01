@@ -219,6 +219,7 @@ extension MainViewController {
                         tableData[13].value = String(format:"%.1f", enactedData["TDD"] as! Double) + " E"
                         tableData[14].value = String(format:"%.1f", enactedData["ISF"] as! Double) + " mmol/L/E"
                         tableData[15].value = String(format:"%.1f", enactedData["CR"] as! Double) + " g/E"
+                        //latestCR = Double(enactedData["CR"] as! Double) // Out commented preparations for fetching latestCR
                         
                         //Daniel mmol version of target
                         let currentTargetMgdl = enactedData["current_target"] as! Double

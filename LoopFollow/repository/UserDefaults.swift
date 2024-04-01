@@ -465,6 +465,8 @@ class UserDefaultsRepository {
     static let maxCarbs = UserDefaultsValue<Int>(key: "maxCarbs", default: 30)
     static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
     
+    static let carbRatio = UserDefaultsValue<Double>(key: "carbRatio", default: 30)
+    
     // API settings
     static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "")
     static let twilioSecretString = UserDefaultsValue<String>(key: "twilioSecretString", default: "")

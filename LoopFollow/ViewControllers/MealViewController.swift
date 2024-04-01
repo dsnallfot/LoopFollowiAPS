@@ -11,18 +11,25 @@ import LocalAuthentication
 
 class MealViewController: UIViewController, UITextFieldDelegate {
     
+    //var latestCR: Double = 0.0 // Out commented preparations for fetching latestCR
+    
     @IBOutlet weak var carbsEntryField: UITextField!
     @IBOutlet weak var fatEntryField: UITextField!
     @IBOutlet weak var proteinEntryField: UITextField!
     @IBOutlet weak var notesEntryField: UITextField!
     @IBOutlet weak var bolusEntryField: UITextField!
     @IBOutlet weak var bolusRow: UIView!
+    @IBOutlet weak var bolusCalcRow: UIView!
+    @IBOutlet weak var bolusCalculated: UITextField!
     @IBOutlet weak var sendMealButton: UIButton!
     @IBOutlet weak var carbGrams: UITextField!
     @IBOutlet weak var fatGrams: UITextField!
     @IBOutlet weak var proteinGrams: UITextField!
     @IBOutlet weak var mealNotes: UITextField!
     @IBOutlet weak var bolusUnits: UITextField!
+    @IBOutlet weak var CRValue: UITextField!
+    var CR: Decimal = 0.0
+    
     
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
@@ -36,10 +43,104 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         carbsEntryField.delegate = self
         self.focusCarbsEntryField()
         
-        // Check the value of hideRemoteBolus and hide the bolusRow accordingly
+       // Retrieve the carb ratio value from UserDefaults
+        let carbRatio = UserDefaultsRepository.carbRatio.value
+        CR = Decimal(carbRatio)
+        
+        // Now you can use latestCR instead of UserDefaultsRepository.carbRatio.value
+        //CR = Decimal(latestCR) // Out commented preparations for fetching latestCR
+
+
+        // Create a NumberFormatter instance
+        let numberFormatter = NumberFormatter()
+        numberFormatter.minimumFractionDigits = 0
+        numberFormatter.maximumFractionDigits = 1
+
+        // Format the CR value to have one decimal place
+        let formattedCR = numberFormatter.string(from: NSDecimalNumber(decimal: CR) as NSNumber) ?? ""
+
+        // Set the text field with the formatted value of CR
+        CRValue.text = formattedCR
+        print(formattedCR)
+        
+        // Check the value of hideRemoteBolus and hide the bolusRow and bolusCalcRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {
             hideBolusRow()
         }
+    }
+    
+    // Function to calculate the suggested bolus value based on CR
+    func calculateBolus() {
+        guard let carbsText = carbsEntryField.text,
+              let carbsValue = Decimal(string: carbsText),
+              carbsValue > 0 else {
+            // If no valid input or input is not a positive number, clear bolusCalculated
+            bolusCalculated.text = ""
+            return
+        }
+
+        var bolusValue = carbsValue / CR
+        // Round down to the nearest 0.05
+        bolusValue = roundDown(toNearest: Decimal(0.05), value: bolusValue)
+        
+        // Format the bolus value based on the locale's decimal separator
+        let formattedBolus = formatDecimal(bolusValue)
+        
+        bolusCalculated.text = "\(formattedBolus)"
+    }
+
+    // UITextFieldDelegate method to handle text changes in carbsEntryField
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        // Calculate bolus whenever the text changes
+        // Calculate the new text after the replacement
+        let newText = (textField.text as NSString?)?.replacingCharacters(in: range, with: string) ?? string
+        guard !newText.isEmpty else {
+            // If the new text is empty, clear bolusCalculated
+            bolusCalculated.text = ""
+
+            return true
+        }
+
+        // Check if the new text is a valid number
+        guard let carbsValue = Decimal(string: newText), carbsValue >= 0 else {
+            return false
+        }
+
+        // Perform the calculation and update bolusCalculated
+        var bolusValue = carbsValue / CR
+        // Round down to the nearest 0.05
+        bolusValue = roundDown(toNearest: Decimal(0.05), value: bolusValue)
+        
+        // Format the bolus value based on the locale's decimal separator
+        let formattedBolus = formatDecimal(bolusValue)
+        
+        bolusCalculated.text = "\(formattedBolus)"
+        return true
+    }
+
+    // Function to round a Decimal number down to the nearest specified increment
+    func roundDown(toNearest increment: Decimal, value: Decimal) -> Decimal {
+        let doubleValue = NSDecimalNumber(decimal: value).doubleValue
+        let roundedDouble = (doubleValue * 20).rounded(.down) / 20
+        
+        return Decimal(roundedDouble)
+    }
+
+    // Function to format a Decimal number based on the locale's decimal separator
+    func formatDecimal(_ value: Decimal) -> String {
+        let doubleValue = NSDecimalNumber(decimal: value).doubleValue
+        
+        let numberFormatter = NumberFormatter()
+        numberFormatter.minimumFractionDigits = 2
+        numberFormatter.maximumFractionDigits = 2
+        numberFormatter.minimumIntegerDigits = 1
+        numberFormatter.decimalSeparator = Locale.current.decimalSeparator
+        
+        guard let formattedString = numberFormatter.string(from: NSNumber(value: doubleValue)) else {
+            fatalError("Failed to format the number.")
+        }
+        
+        return formattedString
     }
     
     func focusCarbsEntryField() {
@@ -71,7 +172,8 @@ class MealViewController: UIViewController, UITextFieldDelegate {
             return
         }
         
-        // Replace all occurrences of ',' with '.'
+        // Replace all occurrences of ',' with '.
+        
         bolusText = bolusText.replacingOccurrences(of: ",", with: ".")
         
         let bolusValue: Double
@@ -354,15 +456,13 @@ class MealViewController: UIViewController, UITextFieldDelegate {
     // Function to hide the bolusRow
     func hideBolusRow() {
         bolusRow.isHidden = true
+        bolusCalcRow.isHidden = true
     }
     
     // Function to show the bolusRow
     func showBolusRow() {
         bolusRow.isHidden = false
-    }
-    
-    func calculateBolus() {
-        
+        bolusCalcRow.isHidden = false
     }
     
     @IBAction func doneButtonTapped(_ sender: Any) {

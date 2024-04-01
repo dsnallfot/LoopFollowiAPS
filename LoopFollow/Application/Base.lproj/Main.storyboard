@@ -1059,7 +1059,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qqQ-Pz-Pqc" userLabel="Bolus">
                                         <rect key="frame" x="0.0" y="201.00000000000003" width="343" height="58.999999999999972"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="1MG-ka-WeC">
-                                            <rect key="frame" x="0.0" y="0.0" width="343" height="58.999999999999972"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="343" height="59"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="FKe-UD-Eyg">
@@ -1146,25 +1146,101 @@
                                     <action selector="sendRemoteMealPressed:" destination="vZZ-Gp-n6j" eventType="touchUpInside" id="NPm-EP-8Fr"/>
                                 </connections>
                             </button>
+                            <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2gn-wU-vht" userLabel="Bolus calculations">
+                                <rect key="frame" x="24" y="489" width="327" height="31"/>
+                                <subviews>
+                                    <stackView opaque="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="bwx-Nh-71D">
+                                        <rect key="frame" x="4" y="0.0" width="319" height="18.666666666666668"/>
+                                        <subviews>
+                                            <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="247" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="CR:" textAlignment="natural" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="ImY-AS-MmW">
+                                                <rect key="frame" x="0.0" y="0.0" width="25" height="18.666666666666668"/>
+                                                <accessibility key="accessibilityConfiguration">
+                                                    <accessibilityTraits key="traits" notEnabled="YES"/>
+                                                </accessibility>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" relation="lessThanOrEqual" constant="25" id="5W6-UB-3Ty"/>
+                                                </constraints>
+                                                <color key="textColor" systemColor="placeholderTextColor"/>
+                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                <textInputTraits key="textInputTraits"/>
+                                            </textField>
+                                            <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" ambiguous="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="--" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="HuJ-v6-CGs">
+                                                <rect key="frame" x="33" y="0.0" width="67" height="18.666666666666668"/>
+                                                <accessibility key="accessibilityConfiguration">
+                                                    <accessibilityTraits key="traits" notEnabled="YES"/>
+                                                </accessibility>
+                                                <color key="textColor" systemColor="placeholderTextColor"/>
+                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                <textInputTraits key="textInputTraits"/>
+                                            </textField>
+                                            <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" ambiguous="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="Beräknad måltidsbolus:" placeholder="--" textAlignment="right" adjustsFontSizeToFit="NO" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="mOd-tR-lbz">
+                                                <rect key="frame" x="108" y="0.0" width="151" height="18.666666666666668"/>
+                                                <accessibility key="accessibilityConfiguration">
+                                                    <accessibilityTraits key="traits" notEnabled="YES"/>
+                                                </accessibility>
+                                                <color key="textColor" systemColor="placeholderTextColor"/>
+                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                <textInputTraits key="textInputTraits"/>
+                                            </textField>
+                                            <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" ambiguous="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="--" textAlignment="right" adjustsFontSizeToFit="NO" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="I2U-cs-0ob">
+                                                <rect key="frame" x="267" y="0.0" width="35" height="18.666666666666668"/>
+                                                <accessibility key="accessibilityConfiguration">
+                                                    <accessibilityTraits key="traits" notEnabled="YES"/>
+                                                </accessibility>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" constant="35" id="4ph-0r-Xa8"/>
+                                                </constraints>
+                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                <textInputTraits key="textInputTraits"/>
+                                            </textField>
+                                            <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" ambiguous="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="E" textAlignment="natural" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Kam-lr-gX7">
+                                                <rect key="frame" x="310" y="0.0" width="9" height="18.666666666666668"/>
+                                                <accessibility key="accessibilityConfiguration">
+                                                    <accessibilityTraits key="traits" notEnabled="YES"/>
+                                                </accessibility>
+                                                <color key="textColor" systemColor="placeholderTextColor"/>
+                                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                <textInputTraits key="textInputTraits"/>
+                                            </textField>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="ImY-AS-MmW" firstAttribute="leading" secondItem="bwx-Nh-71D" secondAttribute="leading" constant="8" id="2RA-TS-y7E"/>
+                                        </constraints>
+                                    </stackView>
+                                </subviews>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                <constraints>
+                                    <constraint firstItem="bwx-Nh-71D" firstAttribute="leading" secondItem="2gn-wU-vht" secondAttribute="leading" constant="4" id="8La-I9-0Rb"/>
+                                    <constraint firstAttribute="trailing" secondItem="bwx-Nh-71D" secondAttribute="trailing" constant="4" id="p68-UI-LJi"/>
+                                    <constraint firstItem="bwx-Nh-71D" firstAttribute="top" secondItem="2gn-wU-vht" secondAttribute="top" id="qyF-tG-Z4w"/>
+                                </constraints>
+                            </view>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="x7Z-jF-kMI"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
+                            <constraint firstItem="2gn-wU-vht" firstAttribute="leading" secondItem="x7Z-jF-kMI" secondAttribute="leading" constant="24" id="2kZ-BP-Rql"/>
                             <constraint firstItem="37H-jP-EQn" firstAttribute="leading" secondItem="4j8-vX-JWG" secondAttribute="leadingMargin" id="7nw-qi-xh1"/>
                             <constraint firstItem="Huo-kW-2V8" firstAttribute="top" secondItem="x7Z-jF-kMI" secondAttribute="top" constant="20" id="9qO-CC-diZ"/>
                             <constraint firstItem="x7Z-jF-kMI" firstAttribute="trailing" secondItem="2mm-PR-C91" secondAttribute="trailing" constant="12" id="F45-oU-StR"/>
+                            <constraint firstItem="2gn-wU-vht" firstAttribute="centerX" secondItem="4j8-vX-JWG" secondAttribute="centerX" id="J45-0Y-HHh"/>
                             <constraint firstItem="Huo-kW-2V8" firstAttribute="centerX" secondItem="4j8-vX-JWG" secondAttribute="centerX" id="RYm-GR-Y3q"/>
                             <constraint firstItem="37H-jP-EQn" firstAttribute="centerX" secondItem="Huo-kW-2V8" secondAttribute="centerX" id="XYU-Ig-dED"/>
                             <constraint firstItem="37H-jP-EQn" firstAttribute="top" secondItem="Huo-kW-2V8" secondAttribute="bottom" constant="30" id="ap3-aR-w8a"/>
                             <constraint firstAttribute="trailingMargin" secondItem="37H-jP-EQn" secondAttribute="trailing" id="ckr-Va-rVp"/>
+                            <constraint firstItem="x7Z-jF-kMI" firstAttribute="trailing" secondItem="2gn-wU-vht" secondAttribute="trailing" constant="24" id="dyK-r2-vMN"/>
                             <constraint firstItem="37H-jP-EQn" firstAttribute="centerX" secondItem="2mm-PR-C91" secondAttribute="centerX" id="eZl-Na-M5e"/>
                             <constraint firstItem="2mm-PR-C91" firstAttribute="leading" secondItem="x7Z-jF-kMI" secondAttribute="leading" constant="12" id="fPY-JU-hmg"/>
+                            <constraint firstItem="2gn-wU-vht" firstAttribute="top" secondItem="2mm-PR-C91" secondAttribute="bottom" constant="8" id="wda-qa-Wm9"/>
                             <constraint firstItem="2mm-PR-C91" firstAttribute="top" secondItem="37H-jP-EQn" secondAttribute="bottom" constant="8" id="yBw-SB-an4"/>
                         </constraints>
                     </view>
                     <toolbarItems/>
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="CRValue" destination="HuJ-v6-CGs" id="eOh-Sk-n4a"/>
+                        <outlet property="bolusCalcRow" destination="2gn-wU-vht" id="CaL-P9-Y7m"/>
+                        <outlet property="bolusCalculated" destination="I2U-cs-0ob" id="FZA-Oh-e90"/>
                         <outlet property="bolusEntryField" destination="w60-pI-Fq0" id="B1y-LA-ZYi"/>
                         <outlet property="bolusRow" destination="1MG-ka-WeC" id="mBu-Yw-aqz"/>
                         <outlet property="bolusUnits" destination="w60-pI-Fq0" id="fzb-I7-3Q9"/>
@@ -1181,7 +1257,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ebE-KC-hR4" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1039" y="1422"/>
+            <point key="canvasLocation" x="-1039.2" y="1421.6748768472908"/>
         </scene>
         <!--Remote Bolus-->
         <scene sceneID="1oS-JQ-Aks">
@@ -1295,7 +1371,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VIj-s4-cIt" userLabel="Empty">
                                         <rect key="frame" x="0.0" y="201.00000000000003" width="343" height="58.999999999999972"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="2ZP-L8-YwT">
-                                            <rect key="frame" x="0.0" y="0.0" width="343" height="58.999999999999972"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="343" height="59"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         </view>
@@ -1403,7 +1479,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="BEz-I9-sPs" userLabel="Override">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="wxu-lS-OVn">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jzQ-mu-Jca">
@@ -1530,7 +1606,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="RtX-oO-1fw" userLabel="Temp Target">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="znN-mf-lmp">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hXU-kG-KPd">
@@ -1625,7 +1701,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ijq-aN-c3Y" userLabel="Temp Target">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="TAK-9Y-biG">
-                                            <rect key="frame" x="0.0" y="0.0" width="359" height="319.66666666666669"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="359" height="320"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <pickerView contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="CBe-w4-hJR">
@@ -1706,6 +1782,9 @@
         </namedColor>
         <systemColor name="labelColor">
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+        <systemColor name="placeholderTextColor">
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.29803921568627451" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="secondarySystemBackgroundColor">
             <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

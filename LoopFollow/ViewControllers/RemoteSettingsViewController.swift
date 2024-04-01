@@ -246,6 +246,23 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.maxBolus.value = Double(value)
         }
         
+        //Temporary workaround to get CR inte meal view until enacted iaps data can be fetched
+        <<< StepperRow("carbRatio") { row in
+            row.title = "Carb Ratio"
+            row.cell.stepper.stepValue = 1
+            row.cell.stepper.minimumValue = 1
+            row.cell.stepper.maximumValue = 50
+            row.value = Double(UserDefaultsRepository.carbRatio.value)
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                // Format the value with one fraction
+                return String(format: "%.1f", value)
+            }
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.carbRatio.value = Double(value)
+        }
+        
         form +++ Section("Advanced functions (App Restart needed)")
         <<< SwitchRow("hideRemoteBolus") { row in
             row.title = "Show Remote Bolus"
