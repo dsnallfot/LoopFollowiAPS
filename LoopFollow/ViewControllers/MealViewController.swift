@@ -31,17 +31,20 @@ class MealViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var CRValue: UITextField!
     var CR: Decimal = 0.0
     
-    
+    let maxCarbs = UserDefaultsRepository.maxCarbs.value
+    let maxBolus = UserDefaultsRepository.maxBolus.value
+        
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
     
-
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
         carbsEntryField.delegate = self
+        fatEntryField.delegate = self
+        proteinEntryField.delegate = self
         self.focusCarbsEntryField()
         
        // Retrieve the carb ratio value from UserDefaults
@@ -70,54 +73,74 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
-    // Function to calculate the suggested bolus value based on CR
+    // Function to calculate the suggested bolus value based on CR and check for maxCarbs
     func calculateBolus() {
-        guard let carbsText = carbsEntryField.text,
-              let carbsValue = Decimal(string: carbsText),
-              carbsValue > 0 else {
-            // If no valid input or input is not a positive number, clear bolusCalculated
-            bolusCalculated.text = ""
-            return
+            guard let carbsText = carbsEntryField.text,
+                  let carbsValue = Decimal(string: carbsText),
+                  carbsValue > 0 else {
+                // If no valid input or input is not a positive number, clear bolusCalculated
+                bolusCalculated.text = ""
+                return
+            }
+
+            var bolusValue = carbsValue / CR
+            // Round down to the nearest 0.05
+            bolusValue = roundDown(toNearest: Decimal(0.05), value: bolusValue)
+            
+            // Format the bolus value based on the locale's decimal separator
+            let formattedBolus = formatDecimal(bolusValue)
+            
+            bolusCalculated.text = "\(formattedBolus)"
         }
 
-        var bolusValue = carbsValue / CR
-        // Round down to the nearest 0.05
-        bolusValue = roundDown(toNearest: Decimal(0.05), value: bolusValue)
-        
-        // Format the bolus value based on the locale's decimal separator
-        let formattedBolus = formatDecimal(bolusValue)
-        
-        bolusCalculated.text = "\(formattedBolus)"
-    }
+        // UITextFieldDelegate method to handle text changes in carbsEntryField
+        func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+            // Calculate bolus whenever the carbstext changes
+            // Calculate the new text after the replacement
+            let newText = (textField.text as NSString?)?.replacingCharacters(in: range, with: string) ?? string
+            guard !newText.isEmpty else {
+                // If the new text is empty, clear bolusCalculated
+                bolusCalculated.text = ""
+                // Update button state
+                updateButtonState()
+                return true
+            }
 
-    // UITextFieldDelegate method to handle text changes in carbsEntryField
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        // Calculate bolus whenever the text changes
-        // Calculate the new text after the replacement
-        let newText = (textField.text as NSString?)?.replacingCharacters(in: range, with: string) ?? string
-        guard !newText.isEmpty else {
-            // If the new text is empty, clear bolusCalculated
-            bolusCalculated.text = ""
+            // Check if the new text is a valid number
+            guard let carbsValue = Decimal(string: newText), carbsValue >= 0 else {
+                // Update button state
+                updateButtonState()
+                return false
+            }
+
+            let fatValue = Decimal(string: fatEntryField.text ?? "0") ?? 0
+            let proteinValue = Decimal(string: proteinEntryField.text ?? "0") ?? 0
+            
+            // Check if the carbs value exceeds maxCarbs
+            if carbsValue > Decimal(maxCarbs) || fatValue > Decimal(maxCarbs) || proteinValue > Decimal(maxCarbs) {
+                    // Disable button
+                    isButtonDisabled = true
+                    // Update button title
+                    sendMealButton.setAttributedTitle(NSAttributedString(string: "Maxgräns \(maxCarbs)g överskreds", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+                } else {
+                    // Enable button
+                    isButtonDisabled = false
+                    // Check if bolusText is not "0" and not empty
+                    if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
+                        // Update button title with bolus
+                        sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid och Bolus", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+                    } else {
+                        // Update button title without bolus
+                        sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+                    }
+                }
+
+            // Update button state
+            updateButtonState()
 
             return true
         }
 
-        // Check if the new text is a valid number
-        guard let carbsValue = Decimal(string: newText), carbsValue >= 0 else {
-            return false
-        }
-
-        // Perform the calculation and update bolusCalculated
-        var bolusValue = carbsValue / CR
-        // Round down to the nearest 0.05
-        bolusValue = roundDown(toNearest: Decimal(0.05), value: bolusValue)
-        
-        // Format the bolus value based on the locale's decimal separator
-        let formattedBolus = formatDecimal(bolusValue)
-        
-        bolusCalculated.text = "\(formattedBolus)"
-        return true
-    }
 
     // Function to round a Decimal number down to the nearest specified increment
     func roundDown(toNearest increment: Decimal, value: Decimal) -> Decimal {
@@ -163,8 +186,8 @@ class MealViewController: UIViewController, UITextFieldDelegate {
                 }
         
         // Retrieve the maximum carbs value from UserDefaultsRepository
-        let maxCarbs = UserDefaultsRepository.maxCarbs.value
-        let maxBolus = UserDefaultsRepository.maxBolus.value
+        //let maxCarbs = UserDefaultsRepository.maxCarbs.value
+        //let maxBolus = UserDefaultsRepository.maxBolus.value
         
         // BOLUS ENTRIES
         //Process bolus entries
@@ -255,7 +278,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         
         func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
             let mealNotesValue = mealNotes.text ?? ""
-            var cleanedMealNotes = mealNotesValue
+            let cleanedMealNotes = mealNotesValue
             // Convert bolusValue to string and trim any leading or trailing whitespace
             let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
             
@@ -445,13 +468,33 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         let attributes: [NSAttributedString.Key: Any] = [
             .font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!,
         ]
-        let attributedTitle: NSAttributedString
-        if let bolusText = bolusUnits.text, bolusText != "0" && bolusText != "" {
-            attributedTitle = NSAttributedString(string: "Skicka Måltid och Bolus", attributes: attributes)
+        
+        // Check if bolusText exceeds maxBolus
+        if let bolusText = bolusUnits.text, let bolusValue = Decimal(string: bolusText), bolusValue > Decimal(UserDefaultsRepository.maxBolus.value) {
+            // Disable button
+            sendMealButton.isEnabled = false
+            // Format maxBolus with two decimal places
+            let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
+            // Update button title if bolus exceeds maxBolus
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "Maxgräns \(formattedMaxBolus) E överskreds!", attributes: attributes), for: .normal)
         } else {
-            attributedTitle = NSAttributedString(string: "Skicka Måltid", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!])
+            // Enable button
+            sendMealButton.isEnabled = true
+            // Check if bolusText is not "0" and not empty
+            if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
+                // Update button title with bolus
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid och Bolus", attributes: attributes), for: .normal)
+            } else {
+                // Update button title without bolus
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+            }
         }
-        sendMealButton.setAttributedTitle(attributedTitle, for: .normal)
+    }
+    
+    // Function to update button state
+    func updateButtonState() {
+        // Disable or enable button based on isButtonDisabled
+        sendMealButton.isEnabled = !isButtonDisabled
     }
 
     // Function to hide the bolusRow
