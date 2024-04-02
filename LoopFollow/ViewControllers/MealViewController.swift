@@ -220,7 +220,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
             bolusValue = bolusDouble
         }
         //Let code remain for now - to be cleaned
-        if bolusValue > maxBolus {
+        if bolusValue > (maxBolus + 0.05) {
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
             
@@ -336,7 +336,10 @@ class MealViewController: UIViewController, UITextFieldDelegate {
                 }
             }))
             
-            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
+                // Handle dismissal when "Cancel" is selected
+                self.handleAlertDismissal()
+            }))
             
             present(confirmationAlert, animated: true, completion: nil)
         }

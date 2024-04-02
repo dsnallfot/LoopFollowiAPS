@@ -59,7 +59,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate {
         }
         
         //Let code remain for now - to be cleaned
-        if bolusValue > maxBolus {
+        if bolusValue > (maxBolus + 0.05) {
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
             
