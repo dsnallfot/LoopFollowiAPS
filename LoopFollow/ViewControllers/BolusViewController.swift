@@ -236,18 +236,24 @@ class BolusViewController: UIViewController, UITextFieldDelegate {
         ]
         
         // Check if bolusText exceeds maxBolus
-        if let bolusText = bolusUnits.text, let bolusValue = Decimal(string: bolusText), bolusValue > Decimal(maxBolus) {
+        if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
+           let bolusValue = Decimal(string: bolusText),
+           bolusValue > Decimal(maxBolus) {
+            
             // Disable button
             sendBolusButton.isEnabled = false
+            
             // Format maxBolus with two decimal places
             let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
+            
             // Update button title if bolus exceeds maxBolus
             sendBolusButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(formattedMaxBolus) E", attributes: attributes), for: .normal)
         } else {
             // Enable button
             sendBolusButton.isEnabled = true
-                // Update button title with bolus
-                sendBolusButton.setAttributedTitle(NSAttributedString(string: "Skicka Bolus", attributes: attributes), for: .normal)
+            
+            // Update button title with bolus
+            sendBolusButton.setAttributedTitle(NSAttributedString(string: "Skicka Bolus", attributes: attributes), for: .normal)
         }
     }
     

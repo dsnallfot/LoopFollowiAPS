@@ -482,16 +482,22 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         ]
         
         // Check if bolusText exceeds maxBolus
-        if let bolusText = bolusUnits.text, let bolusValue = Decimal(string: bolusText), bolusValue > Decimal(UserDefaultsRepository.maxBolus.value) {
+        if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
+           let bolusValue = Decimal(string: bolusText),
+           bolusValue > Decimal(UserDefaultsRepository.maxBolus.value) {
+            
             // Disable button
             sendMealButton.isEnabled = false
+            
             // Format maxBolus with two decimal places
             let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
+            
             // Update button title if bolus exceeds maxBolus
             sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(formattedMaxBolus) E", attributes: attributes), for: .normal)
         } else {
             // Enable button
             sendMealButton.isEnabled = true
+            
             // Check if bolusText is not "0" and not empty
             if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
                 // Update button title with bolus
@@ -502,6 +508,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
             }
         }
     }
+
     
     // Function to update button state
     func updateButtonState() {
