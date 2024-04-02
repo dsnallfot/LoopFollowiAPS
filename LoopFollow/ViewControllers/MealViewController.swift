@@ -94,17 +94,26 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         }
 
         // UITextFieldDelegate method to handle text changes in carbsEntryField
-        func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-            // Calculate bolus whenever the carbstext changes
-            // Calculate the new text after the replacement
-            let newText = (textField.text as NSString?)?.replacingCharacters(in: range, with: string) ?? string
-            guard !newText.isEmpty else {
-                // If the new text is empty, clear bolusCalculated
-                bolusCalculated.text = ""
-                // Update button state
-                updateButtonState()
-                return true
-            }
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        // Ensure that the textField being changed is the carbsEntryField
+        guard textField == carbsEntryField else {
+            return true
+        }
+        
+        // Calculate the new text after the replacement
+        let newText = (textField.text as NSString?)?.replacingCharacters(in: range, with: string) ?? string
+        if !newText.isEmpty {
+            // Update the text in the carbsEntryField
+            textField.text = newText
+            
+            // Calculate bolus whenever the carbs text field changes
+            calculateBolus()
+        } else {
+            // If the new text is empty, clear bolusCalculated and update button state
+            bolusCalculated.text = ""
+            updateButtonState()
+            return true
+        }
 
             // Check if the new text is a valid number
             guard let carbsValue = Decimal(string: newText), carbsValue >= 0 else {
@@ -121,7 +130,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
                     // Disable button
                     isButtonDisabled = true
                     // Update button title
-                    sendMealButton.setAttributedTitle(NSAttributedString(string: "Maxgräns \(maxCarbs)g överskreds", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+                    sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(maxCarbs) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
                 } else {
                     // Enable button
                     isButtonDisabled = false
@@ -138,7 +147,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
             // Update button state
             updateButtonState()
 
-            return true
+            return false // Return false to prevent the text field from updating its text again
         }
 
 
@@ -210,7 +219,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
             }
             bolusValue = bolusDouble
         }
-        
+        //Let code remain for now - to be cleaned
         if bolusValue > maxBolus {
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
@@ -257,7 +266,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         } else {
             proteins = 0
         }
-        
+        //Let code remain for now - to be cleaned
         if carbs > maxCarbs || fats > maxCarbs || proteins > maxCarbs {
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
@@ -476,7 +485,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
             // Format maxBolus with two decimal places
             let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
             // Update button title if bolus exceeds maxBolus
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "Maxgräns \(formattedMaxBolus) E överskreds!", attributes: attributes), for: .normal)
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(formattedMaxBolus) E", attributes: attributes), for: .normal)
         } else {
             // Enable button
             sendMealButton.isEnabled = true

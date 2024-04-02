@@ -15,9 +15,12 @@ class BolusViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var bolusEntryField: UITextField!
     @IBOutlet weak var sendBolusButton: UIButton!
     @IBOutlet weak var bolusAmount: UITextField!
+    @IBOutlet weak var bolusUnits: UITextField!
     
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
+    
+    let maxBolus = UserDefaultsRepository.maxBolus.value
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -55,6 +58,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate {
             return
         }
         
+        //Let code remain for now - to be cleaned
         if bolusValue > maxBolus {
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
@@ -222,6 +226,35 @@ class BolusViewController: UIViewController, UITextFieldDelegate {
             }.resume()
             
         }
+    }
+    
+    @IBAction func editingChanged(_ sender: Any) {
+        print("Value changed in bolus amount")
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!,
+        ]
+        
+        // Check if bolusText exceeds maxBolus
+        if let bolusText = bolusUnits.text, let bolusValue = Decimal(string: bolusText), bolusValue > Decimal(maxBolus) {
+            // Disable button
+            sendBolusButton.isEnabled = false
+            // Format maxBolus with two decimal places
+            let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
+            // Update button title if bolus exceeds maxBolus
+            sendBolusButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(formattedMaxBolus) E", attributes: attributes), for: .normal)
+        } else {
+            // Enable button
+            sendBolusButton.isEnabled = true
+                // Update button title with bolus
+                sendBolusButton.setAttributedTitle(NSAttributedString(string: "Skicka Bolus", attributes: attributes), for: .normal)
+        }
+    }
+    
+    // Function to update button state
+    func updateButtonState() {
+        // Disable or enable button based on isButtonDisabled
+        sendBolusButton.isEnabled = !isButtonDisabled
     }
     
     @IBAction func cancelButtonPressed(_ sender: Any) {
