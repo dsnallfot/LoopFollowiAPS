@@ -1126,8 +1126,8 @@
                                     <action selector="sendRemoteMealPressed:" destination="vZZ-Gp-n6j" eventType="touchUpInside" id="NPm-EP-8Fr"/>
                                 </connections>
                             </button>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Bolus" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3N8-rd-yMK">
-                                <rect key="frame" x="165.33333333333334" y="70" width="44.333333333333343" height="35"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Meal" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3N8-rd-yMK">
+                                <rect key="frame" x="168.33333333333334" y="70" width="38.333333333333343" height="35"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="35" id="wX2-yf-Swm"/>
                                 </constraints>
@@ -1169,11 +1169,16 @@
                     <toolbarItems/>
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
+                        <outlet property="bolusEntryField" destination="w60-pI-Fq0" id="1Jf-dq-9NW"/>
                         <outlet property="bolusRow" destination="1MG-ka-WeC" id="mBu-Yw-aqz"/>
                         <outlet property="bolusUnits" destination="w60-pI-Fq0" id="fzb-I7-3Q9"/>
                         <outlet property="carbGrams" destination="4O6-tP-VAz" id="h4d-TM-Wbc"/>
+                        <outlet property="carbsEntryField" destination="4O6-tP-VAz" id="CGn-68-E6I"/>
+                        <outlet property="fatEntryField" destination="ic7-Xb-WJk" id="j4g-50-ohy"/>
                         <outlet property="fatGrams" destination="ic7-Xb-WJk" id="pYE-nL-A3C"/>
                         <outlet property="mealNotes" destination="nEW-4g-bv5" id="0sT-1i-gc6"/>
+                        <outlet property="notesEntryField" destination="nEW-4g-bv5" id="UlO-L4-VFP"/>
+                        <outlet property="proteinEntryField" destination="9FK-17-HsT" id="zPz-wv-cAK"/>
                         <outlet property="proteinGrams" destination="9FK-17-HsT" id="7fI-xl-d9D"/>
                         <outlet property="sendMealButton" destination="2mm-PR-C91" id="Hn3-MJ-5OU"/>
                     </connections>
@@ -1354,6 +1359,7 @@
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="bolusAmount" destination="0HU-rw-87i" id="Cv5-Ig-do0"/>
+                        <outlet property="bolusEntryField" destination="0HU-rw-87i" id="6h7-GW-ktK"/>
                         <outlet property="sendBolusButton" destination="omd-J4-dQH" id="PCD-uC-2iY"/>
                     </connections>
                 </viewController>
