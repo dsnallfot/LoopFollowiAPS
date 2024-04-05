@@ -11,6 +11,28 @@ import Eureka
 import EventKit
 import EventKitUI
 
+// Custom UITableViewCell subclass to accommodate UITextView
+class ExpandableTextCell: Cell<String>, CellType, UITextViewDelegate {
+    @IBOutlet weak var textView: UITextView!
+
+    override func setup() {
+        super.setup()
+        textView.delegate = self
+    }
+
+    func textViewDidChange(_ textView: UITextView) {
+        row.value = textView.text
+        row.updateCell()
+    }
+}
+
+// Custom row subclass to use the ExpandableTextCell
+final class ExpandableTextRow: Row<ExpandableTextCell>, RowType {
+    required public init(tag: String?) {
+        super.init(tag: tag)
+        cellProvider = CellProvider<ExpandableTextCell>(nibName: "ExpandableTextCell")
+    }
+}
 class RemoteSettingsViewController: FormViewController {
     var appStateController: AppStateController?
     
@@ -294,29 +316,30 @@ class RemoteSettingsViewController: FormViewController {
         
         +++ Section(header: "Preset Settings", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
         
-        <<< TextRow("overrides"){ row in
-            row.title = "Overrides:"
-            row.value = UserDefaultsRepository.overrideString.value
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.overrideString.value = value
-        }
+        <<< ExpandableTextRow("overrides"){ row in
+             row.title = "Overrides:"
+             row.value = UserDefaultsRepository.overrideString.value
+         }.onChange { row in
+             guard let value = row.value else { return }
+             UserDefaultsRepository.overrideString.value = value
+         }
+         
+         <<< ExpandableTextRow("TempTargets"){ row in
+             row.title = "Temp Targets:"
+             row.value = UserDefaultsRepository.tempTargetsString.value
+         }.onChange { row in
+             guard let value = row.value else { return }
+             UserDefaultsRepository.tempTargetsString.value = value
+         }
+         
+         <<< ExpandableTextRow("CustomActions"){ row in
+             row.title = "Custom Actions:"
+             row.value = UserDefaultsRepository.customActionsString.value
+         }.onChange { row in
+             guard let value = row.value else { return }
+             UserDefaultsRepository.customActionsString.value = value
+         }
         
-        <<< TextRow("TempTargets"){ row in
-            row.title = "Temp Targets:"
-            row.value = UserDefaultsRepository.tempTargetsString.value
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.tempTargetsString.value = value
-        }
-        
-        <<< TextRow("CustomActions"){ row in
-            row.title = "Custom Actions:"
-            row.value = UserDefaultsRepository.customActionsString.value
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.customActionsString.value = value
-        }
         +++ ButtonRow() {
             $0.title = "DONE"
         }.onCellSelection { (row, arg)  in

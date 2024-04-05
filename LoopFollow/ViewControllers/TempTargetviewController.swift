@@ -8,7 +8,7 @@
 
 import UIKit
 
-class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
+class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
     var appStateController: AppStateController?
     
     @IBOutlet weak var sendTempTargetButton: UIButton!
@@ -114,60 +114,25 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
                 }
             dismiss(animated: true, completion: nil)
-            } else {
+        } else {
             // If method is "SMS API", proceed with sending the request
-            let twilioSID = UserDefaultsRepository.twilioSIDString.value
-            let twilioSecret = UserDefaultsRepository.twilioSecretString.value
-            let fromNumber = UserDefaultsRepository.twilioFromNumberString.value
-            let toNumber = UserDefaultsRepository.twilioToNumberString.value
-            let message = combinedString
-            
-            // Build the request
-            let urlString = "https://\(twilioSID):\(twilioSecret)@api.twilio.com/2010-04-01/Accounts/\(twilioSID)/Messages"
-            guard let url = URL(string: urlString) else {
-                print("Invalid URL")
-                return
+            twilioRequest(combinedString: combinedString) { result in
+                switch result {
+                case .success:
+                    // Show success alert
+                    let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades!", preferredStyle: .alert)
+                    alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                        // Dismiss the current view controller
+                        self.dismiss(animated: true, completion: nil)
+                    }))
+                    self.present(alertController, animated: true, completion: nil)
+                case .failure(let error):
+                    // Show error alert
+                    let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
+                    alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                    self.present(alertController, animated: true, completion: nil)
+                }
             }
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.httpBody = "From=\(fromNumber)&To=\(toNumber)&Body=\(message)".data(using: .utf8)
-            
-                // Build the completion block and send the request
-                URLSession.shared.dataTask(with: request) { (data, response, error) in
-                    DispatchQueue.main.async {
-                        if let error = error {
-                            // Failure: Show error alert for network error
-                            let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
-                            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                            self.present(alertController, animated: true, completion: nil)
-                            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                        } else if let httpResponse = response as? HTTPURLResponse {
-                            if (200..<300).contains(httpResponse.statusCode) {
-                                // Success: Show success alert for successful response
-                                let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades!", preferredStyle: .alert)
-                                alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-                                    // Dismiss the current view controller
-                                    self.dismiss(animated: true, completion: nil)
-                                }))
-                                self.present(alertController, animated: true, completion: nil)
-                            } else {
-                                // Failure: Show error alert for non-successful HTTP status code
-                                let message = "HTTP Statuskod: \(httpResponse.statusCode)"
-                                let alertController = UIAlertController(title: "Fel", message: message, preferredStyle: .alert)
-                                alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                                self.present(alertController, animated: true, completion: nil)
-                                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                            }
-                        } else {
-                            // Failure: Show generic error alert for unexpected response
-                            let alertController = UIAlertController(title: "Fel", message: "Oväntat svar från servern", preferredStyle: .alert)
-                            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                            self.present(alertController, animated: true, completion: nil)
-                            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                        }
-                    }
-                }.resume()
-            
         }
     }
     
