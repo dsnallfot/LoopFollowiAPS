@@ -464,6 +464,7 @@ class UserDefaultsRepository {
     //Show or Hide advanced features
     static let hideRemoteBolus = UserDefaultsValue<Bool>(key: "hideRemoteBolus", default: true)
     static let hideRemoteCustomActions = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
+    static let hideBolusCalc = UserDefaultsValue<Bool>(key: "hideBolusCalc", default: true)
     
     //Remote guardrails
     static let maxCarbs = UserDefaultsValue<Int>(key: "maxCarbs", default: 30)

@@ -67,9 +67,14 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         CRValue.text = formattedCR
         print("CR: \(formattedCR)")
         
-        // Check the value of hideRemoteBolus and hide the bolusRow and bolusCalcRow accordingly
+        // Check the value of hideRemoteBolus and hide the bolusRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {
             hideBolusRow()
+        }
+        
+        // Check the value of hideBolusCalc and hide the bolusCalcRow accordingly
+        if UserDefaultsRepository.hideBolusCalc.value {
+            hideBolusCalcRow()
         }
     }
     
@@ -485,12 +490,20 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     // Function to hide the bolusRow
     func hideBolusRow() {
         bolusRow.isHidden = true
-        bolusCalcRow.isHidden = true
     }
     
     // Function to show the bolusRow
     func showBolusRow() {
         bolusRow.isHidden = false
+    }
+    
+    // Function to hide the bolusCalcRow
+    func hideBolusCalcRow() {
+        bolusCalcRow.isHidden = true
+    }
+    
+    // Function to show the bolusCalcRow
+    func showBolusCalcRow() {
         bolusCalcRow.isHidden = false
     }
     
