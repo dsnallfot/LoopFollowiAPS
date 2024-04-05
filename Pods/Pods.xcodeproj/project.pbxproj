@@ -421,7 +421,6 @@
 		640DB089E7BC7FA9C4C5D67D1E58393A /* BarChartData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BarChartData.swift; path = Source/Charts/Data/Implementations/Standard/BarChartData.swift; sourceTree = "<group>"; };
 		649C6079A86B7348DD9A91E50537DC34 /* Core.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Core.swift; path = Source/Core/Core.swift; sourceTree = "<group>"; };
 		64CDF688CF8AB9F834E7C349894B685F /* Charts-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "Charts-umbrella.h"; sourceTree = "<group>"; };
-		65A160FC2BC027AE00C917F8 /* ExpandableTextCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ExpandableTextCell.xib; sourceTree = "<group>"; };
 		6B99954AAFDEFB38844275070432B078 /* DateFieldRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DateFieldRow.swift; path = Source/Rows/Common/DateFieldRow.swift; sourceTree = "<group>"; };
 		6C90F7AE53155C1804331C13F95834B2 /* MarkerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MarkerView.swift; path = Source/Charts/Components/MarkerView.swift; sourceTree = "<group>"; };
 		6CC42ADFADC10F4104EF63EB5AAA16E1 /* LegendRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LegendRenderer.swift; path = Source/Charts/Renderers/LegendRenderer.swift; sourceTree = "<group>"; };
@@ -968,7 +967,6 @@
 		CF1408CF629C7361332E53B88F7BD30C = {
 			isa = PBXGroup;
 			children = (
-				65A160FC2BC027AE00C917F8 /* ExpandableTextCell.xib */,
 				9D940727FF8FB9C785EB98E56350EF41 /* Podfile */,
 				1628BF05B4CAFDCC3549A101F5A10A17 /* Frameworks */,
 				13FDBA381EFB6D82130DECCB3D232C00 /* Pods */,
