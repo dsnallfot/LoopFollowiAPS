@@ -78,9 +78,9 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedCustomAction)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du aktivera \(selectedCustomAction)?", preferredStyle: .alert)
         
-        confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
+        confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
             self.authenticateWithBiometrics {
                 // Proceed with the request after successful authentication
@@ -88,7 +88,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
             }
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
+        confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
                     // Handle dismissal when "Cancel" is selected
                     self.handleAlertDismissal()
                 }))
