@@ -177,7 +177,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                 switch result {
                 case .success:
                     // Show success alert
-                    let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades!", preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                         // Dismiss the current view controller
                         self.dismiss(animated: true, completion: nil)
