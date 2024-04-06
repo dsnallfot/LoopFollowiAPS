@@ -153,7 +153,14 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         // Convert bolusValue to string and trim any leading or trailing whitespace
         let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
         
-        let combinedString = "Bolus_\(trimmedBolusValue)"
+        //Old formatting saved for a while
+        /*let combinedString = "Bolus_\(trimmedBolusValue)"
+        print("Combined string:", combinedString)*/
+        
+        //New formatting for testing (Use Loop Follow Remote Bolus on receiving phone after triggering automation)
+        let name = UserDefaultsRepository.caregiverName.value
+        let secret = UserDefaultsRepository.remoteSecretCode.value
+        let combinedString = "Remote Bolus\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
         print("Combined string:", combinedString)
         
         // Retrieve the method value from UserDefaultsRepository

@@ -213,7 +213,7 @@ class RemoteSettingsViewController: FormViewController {
         
         +++ shortcutsSection
         
-        +++ Section(header: "Remote configuration", footer: "The Caregiver name will be shown in all remote actions messages sent on the receiving phone.\n\nThe Secret Code (max 8 characters) should be something unique, and the exact same code later needs to be entered when asked for it in an import question, when setting up the preconfigured shortcut for enacting remote actions on the receiving phone")
+        +++ Section(header: "Remote configuration", footer: "The Caregiver name will be shown in all remote actions messages sent on the receiving phone.\n\nThe Secret Code (max 10 characters) should be something unique, and the exact same code later needs to be entered when asked for it in an import question, when setting up the preconfigured shortcut for enacting remote actions on the receiving phone")
         
         <<< NameRow("caregivername"){ row in
             row.title = "Caregiver Name"
@@ -226,13 +226,13 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("secretcode"){ row in
             row.title = "Secret Code"
-            row.value = UserDefaultsRepository.caregiverName.value
+            row.value = UserDefaultsRepository.remoteSecretCode.value
             row.cell.textField.placeholder = "Enter a secret code"
         }.onChange { row in
             guard let value = row.value else { return }
-            let truncatedValue = String(value.prefix(8)) // Limiting to 8 characters
+            let truncatedValue = String(value.prefix(10)) // Limiting to 10 characters
             row.value = truncatedValue
-            UserDefaultsRepository.caregiverName.value = truncatedValue
+            UserDefaultsRepository.remoteSecretCode.value = truncatedValue
         }
         
         +++ Section(header: "Remote presets setup", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")

@@ -290,6 +290,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             showMealConfirmationAlert(combinedString: combinedString)
         }
         
+        /*
+        //Old formatting saved for a while
         func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
             let mealNotesValue = mealNotes.text ?? ""
             let cleanedMealNotes = mealNotesValue
@@ -303,6 +305,26 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             } else {
                 // Construct and return the combinedString with bolus
                 return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Insulin_\(trimmedBolusValue)"
+            }
+        }
+        */
+        
+        //New formatting for testing (Use Loop Follow Remote Meal on receiving phone after triggering automation)
+        func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
+            let mealNotesValue = mealNotes.text ?? ""
+            let cleanedMealNotes = mealNotesValue
+            let name = UserDefaultsRepository.caregiverName.value
+            let secret = UserDefaultsRepository.remoteSecretCode.value
+            // Convert bolusValue to string and trim any leading or trailing whitespace
+            let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Construct and return the combinedString based on hideRemoteBolus setting
+            if UserDefaultsRepository.hideRemoteBolus.value {
+                // Construct and return the combinedString without bolus
+                return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nInlagt av: \(name)\nHemlig kod: \(secret)"
+            } else {
+                // Construct and return the combinedString with bolus
+                return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
             }
         }
         
