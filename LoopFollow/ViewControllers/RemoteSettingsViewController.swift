@@ -226,11 +226,11 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("secretcode"){ row in
             row.title = "Secret Code"
-            row.value = UserDefaultsRepository.caregiverName.value
+            row.value = UserDefaultsRepository.remoteSecretCode.value
             row.cell.textField.placeholder = "Enter a secret code"
         }.onChange { row in
             guard let value = row.value else { return }
-            UserDefaultsRepository.caregiverName.value = value
+            UserDefaultsRepository.remoteSecretCode.value = value
         }
 
         
