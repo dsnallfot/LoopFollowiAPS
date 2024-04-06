@@ -70,8 +70,16 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
             print("No override option selected")
             return
         }
-        
+        /*
+        //Old formatting saved for a while
         let combinedString = "Override_\(selectedOverride)"
+        print("Combined string:", combinedString)
+         */
+        
+        //New formatting for testing (Use Loop Follow Remote Bolus on receiving phone after triggering automation)
+        let name = UserDefaultsRepository.caregiverName.value
+        let secret = UserDefaultsRepository.remoteSecretCode.value
+        let combinedString = "Remote Override\n\(selectedOverride)\nInlagt av: \(name)\nHemlig kod: \(secret)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
