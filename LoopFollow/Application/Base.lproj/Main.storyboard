@@ -574,9 +574,9 @@
                         <segue destination="9pv-A4-QxB" kind="relationship" relationship="viewControllers" id="u7Y-xg-7CH"/>
                         <segue destination="7an-Fz-r9u" kind="relationship" relationship="viewControllers" id="dNI-cW-DSq"/>
                         <segue destination="e0E-cx-0Wr" kind="relationship" relationship="viewControllers" id="kb8-ZP-S02"/>
+                        <segue destination="4ie-sJ-hfo" kind="relationship" relationship="viewControllers" id="UH2-WY-ScH"/>
                         <segue destination="8rJ-Kc-sve" kind="relationship" relationship="viewControllers" id="8hv-o5-AvI"/>
                         <segue destination="hDv-qK-Udb" kind="relationship" relationship="viewControllers" id="8Qf-3z-2UL"/>
-                        <segue destination="4ie-sJ-hfo" kind="relationship" relationship="viewControllers" id="UH2-WY-ScH"/>
                     </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="HuB-VB-40B" sceneMemberID="firstResponder"/>
