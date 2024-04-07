@@ -101,9 +101,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // UITextFieldDelegate method to handle text changes in carbsEntryField
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         // Ensure that the textField being changed is the carbsEntryField
-        guard textField == carbsEntryField else {
+        /*guard textField == carbsEntryField else {
             return true
-        }
+        }*/
         
         // Calculate the new text after the replacement
         let newText = (textField.text as NSString?)?.replacingCharacters(in: range, with: string) ?? string
