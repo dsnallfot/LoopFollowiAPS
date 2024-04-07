@@ -65,13 +65,15 @@ class InfoDisplaySettingsViewController: FormViewController {
                  } else {
                     row.title = "\u{2001}\t\(UserDefaultsRepository.infoNames.value[UserDefaultsRepository.infoSort.value[i]])"
                  }
-                 self.appStateController!.infoDataSettingsChanged = true
+                  if let appStateController = self.appStateController {
+                      appStateController.infoDataSettingsChanged = true
+                  }
               }
            }
        }
     
        +++ ButtonRow() {
-          $0.title = "KLAR"
+          $0.title = "DONE"
        }.onCellSelection { (row, arg)  in
           self.dismiss(animated:true, completion: nil)
        }
@@ -84,7 +86,9 @@ class InfoDisplaySettingsViewController: FormViewController {
         
         // new sort
         if(destIndex != sourceIndex ) {
-           self.appStateController!.infoDataSettingsChanged = true
+            if let appStateController = self.appStateController {
+                appStateController.infoDataSettingsChanged = true
+            }
            
             let tmpVal = UserDefaultsRepository.infoSort.value[sourceIndex]
             UserDefaultsRepository.infoSort.value.remove(at:sourceIndex)
