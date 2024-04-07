@@ -91,42 +91,61 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         
         // CARBS & FPU ENTRIES
-        // Convert carbGrams, fatGrams, and proteinGrams to integers or default to 0 if empty
-        let carbs: Int
-        let fats: Int
-        let proteins: Int
-        
-        if let carbText = carbGrams.text, !carbText.isEmpty {
-            guard let carbsValue = Int(carbText) else {
-                print("Error: Carb input value conversion failed")
-                return
-            }
-            carbs = carbsValue
-        } else {
-            carbs = 0
+        guard var carbText = carbGrams.text else {
+            print("Error: Carb amount not entered")
+            return
         }
         
-        if let fatText = fatGrams.text, !fatText.isEmpty {
-            guard let fatsValue = Int(fatText) else {
-                print("Error: Fat input value conversion failed")
+        carbText = carbText.replacingOccurrences(of: ",", with: ".")
+        
+        let carbsValue: Double
+        if carbText.isEmpty {
+            carbsValue = 0
+        } else {
+            guard let carbsDouble = Double(carbText) else {
+                print("Error: Carb amount conversion failed")
                 return
             }
-            fats = fatsValue
-        } else {
-            fats = 0
+            carbsValue = carbsDouble
         }
         
-        if let proteinText = proteinGrams.text, !proteinText.isEmpty {
-            guard let proteinsValue = Int(proteinText) else {
-                print("Error: Protein input value conversion failed")
+        guard var fatText = fatGrams.text else {
+            print("Error: Fat amount not entered")
+            return
+        }
+        
+        fatText = fatText.replacingOccurrences(of: ",", with: ".")
+        
+        let fatsValue: Double
+        if fatText.isEmpty {
+            fatsValue = 0
+        } else {
+            guard let fatsDouble = Double(fatText) else {
+                print("Error: Fat amount conversion failed")
                 return
             }
-            proteins = proteinsValue
-        } else {
-            proteins = 0
+            fatsValue = fatsDouble
         }
         
-        if carbs > maxCarbs || fats > maxCarbs || proteins > maxCarbs {
+        guard var proteinText = proteinGrams.text else {
+            print("Error: Protein amount not entered")
+            return
+        }
+        
+        proteinText = proteinText.replacingOccurrences(of: ",", with: ".")
+        
+        let proteinsValue: Double
+        if proteinText.isEmpty {
+            proteinsValue = 0
+        } else {
+            guard let proteinsDouble = Double(proteinText) else {
+                print("Error: Protein amount conversion failed")
+                return
+            }
+            proteinsValue = proteinsDouble
+        }
+        
+        if carbsValue > maxCarbs || fatsValue > maxCarbs || proteinsValue > maxCarbs {
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
@@ -135,7 +154,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         
         // Call createCombinedString to get the combined string
-        let combinedString = createCombinedString(carbs: carbs, fats: fats, proteins: proteins)
+        let combinedString = createCombinedString(carbs: carbsValue, fats: fatsValue, proteins: proteinsValue)
 
         // Show confirmation alert
         if bolusValue != 0 {
@@ -144,7 +163,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             showMealConfirmationAlert(combinedString: combinedString)
         }
         
-        func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
+        func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
             let mealNotesValue = mealNotes.text ?? ""
             var cleanedMealNotes = mealNotesValue
             // Convert bolusValue to string and trim any leading or trailing whitespace
@@ -153,10 +172,10 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Construct and return the combinedString based on hideRemoteBolus setting
             if UserDefaultsRepository.hideRemoteBolus.value {
                 // Construct and return the combinedString without bolus
-                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)"
+                return "Meal_Carbs_\(carbsValue)g_Fat_\(fatsValue)g_Protein_\(proteinsValue)g_Note_\(cleanedMealNotes)"
             } else {
                 // Construct and return the combinedString with bolus
-                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Insulin_\(trimmedBolusValue)"
+                return "Meal_Carbs_\(carbsValue)g_Fat_\(fatsValue)g_Protein_\(proteinsValue)g_Note_\(cleanedMealNotes)_Insulin_\(trimmedBolusValue)"
             }
         }
         

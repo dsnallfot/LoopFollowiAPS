@@ -304,7 +304,7 @@ class RemoteSettingsViewController: FormViewController {
             }
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
-            UserDefaultsRepository.maxCarbs.value = Int(value)
+            UserDefaultsRepository.maxCarbs.value = Double(value)
         }
         
         <<< StepperRow("maxBolus") { row in
