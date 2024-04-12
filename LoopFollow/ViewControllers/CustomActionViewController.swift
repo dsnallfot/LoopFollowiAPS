@@ -8,6 +8,7 @@
 
 import UIKit
 import LocalAuthentication
+import AudioToolbox
 
 class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
     var appStateController: AppStateController?
@@ -185,6 +186,9 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
             twilioRequest(combinedString: combinedString) { result in
                 switch result {
                 case .success:
+                    // Play success sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    
                     // Show success alert
                     let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
@@ -193,6 +197,9 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                     }))
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
+                    // Play failure sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1106))
+                    
                     // Show error alert
                     let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
