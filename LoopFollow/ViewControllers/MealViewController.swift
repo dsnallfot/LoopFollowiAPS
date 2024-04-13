@@ -399,6 +399,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                             if let error = authenticationError {
                                 print("Authentication failed: \(error.localizedDescription)")
                             }
+                            // Handle dismissal when authentication fails
+                            self.handleAlertDismissal()
                         }
                     }
                 }
@@ -422,6 +424,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                     if let error = error {
                         print("Authentication failed: \(error.localizedDescription)")
                     }
+                    // Handle dismissal when authentication fails
+                    self.handleAlertDismissal()
                 }
             }
         }

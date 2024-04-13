@@ -135,6 +135,8 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                             if let error = authenticationError {
                                 print("Authentication failed: \(error.localizedDescription)")
                             }
+                            // Handle dismissal when authentication fails
+                            self.handleAlertDismissal()
                         }
                     }
                 }
@@ -158,6 +160,8 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                     if let error = error {
                         print("Authentication failed: \(error.localizedDescription)")
                     }
+                    // Handle dismissal when authentication fails
+                    self.handleAlertDismissal()
                 }
             }
         }

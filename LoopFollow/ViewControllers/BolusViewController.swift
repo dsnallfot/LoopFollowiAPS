@@ -116,6 +116,8 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                             if let error = authenticationError {
                                 print("Authentication failed: \(error.localizedDescription)")
                             }
+                            // Handle dismissal when authentication fails
+                            self.handleAlertDismissal()
                         }
                     }
                 }
@@ -139,6 +141,8 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                     if let error = error {
                         print("Authentication failed: \(error.localizedDescription)")
                     }
+                    // Handle dismissal when authentication fails
+                    self.handleAlertDismissal()
                 }
             }
         }
