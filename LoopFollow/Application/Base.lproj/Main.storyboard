@@ -1124,8 +1124,9 @@
                                 <constraints>
                                     <constraint firstAttribute="height" constant="70" id="9uo-Pv-QIT"/>
                                 </constraints>
+                                <color key="tintColor" red="0.89019608500000003" green="0.73725497719999999" blue="0.27450981740000002" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="filled">
+                                <buttonConfiguration key="configuration" style="filled" cornerStyle="medium">
                                     <attributedString key="attributedTitle">
                                         <fragment content="Skicka Måltid">
                                             <attributes>
@@ -1383,8 +1384,9 @@
                                 <constraints>
                                     <constraint firstAttribute="height" constant="70" id="3N4-yk-D95"/>
                                 </constraints>
+                                <color key="tintColor" red="0.270588249" green="0.55686277149999996" blue="0.91764706370000004" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="filled">
+                                <buttonConfiguration key="configuration" style="filled" cornerStyle="medium">
                                     <attributedString key="attributedTitle">
                                         <fragment content="Skicka Bolus">
                                             <attributes>
@@ -1454,8 +1456,9 @@
                                 <constraints>
                                     <constraint firstAttribute="height" constant="70" id="edq-xu-cV5"/>
                                 </constraints>
+                                <color key="tintColor" red="0.62745100259999997" green="0.33333334329999997" blue="0.82745099070000006" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="filled">
+                                <buttonConfiguration key="configuration" style="filled" cornerStyle="medium">
                                     <attributedString key="attributedTitle">
                                         <fragment content="Skicka Override">
                                             <attributes>
@@ -1581,8 +1584,9 @@
                                 <constraints>
                                     <constraint firstAttribute="height" constant="70" id="Efw-r6-zM4"/>
                                 </constraints>
+                                <color key="tintColor" red="0.30196079609999998" green="0.65882354970000001" blue="0.63921570780000003" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="filled">
+                                <buttonConfiguration key="configuration" style="filled" cornerStyle="medium">
                                     <attributedString key="attributedTitle">
                                         <fragment content="Skicka Tillfälligt Mål">
                                             <attributes>
@@ -1676,8 +1680,9 @@
                                 <constraints>
                                     <constraint firstAttribute="height" constant="70" id="pal-mn-Nmq"/>
                                 </constraints>
+                                <color key="tintColor" red="0.90196079019999997" green="0.58431375029999999" blue="0.78431367870000002" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="filled">
+                                <buttonConfiguration key="configuration" style="filled" cornerStyle="medium">
                                     <attributedString key="attributedTitle">
                                         <fragment content="Skicka Förval">
                                             <attributes>
