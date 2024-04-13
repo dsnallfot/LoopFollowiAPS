@@ -782,7 +782,7 @@
         <!--Remote Meal-->
         <scene sceneID="FMG-vq-Yxr">
             <objects>
-                <viewController storyboardIdentifier="remoteMeal" title="Remote Meal" id="vZZ-Gp-n6j" customClass="MealViewController" customModule="Loop_Follow" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="remoteMeal" title="Remote Meal" keyboardType="on" id="vZZ-Gp-n6j" customClass="MealViewController" customModule="Loop_Follow" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="4j8-vX-JWG">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1256,7 +1256,7 @@
         <!--Remote Bolus-->
         <scene sceneID="1oS-JQ-Aks">
             <objects>
-                <viewController storyboardIdentifier="remoteBolus" title="Remote Bolus" id="gGw-b9-Weh" customClass="BolusViewController" customModule="Loop_Follow" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="remoteBolus" title="Remote Bolus" keyboardType="on" id="gGw-b9-Weh" customClass="BolusViewController" customModule="Loop_Follow" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="e3x-UU-aBO">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
