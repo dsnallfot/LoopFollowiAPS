@@ -61,6 +61,9 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         
         //Let code remain for now - to be cleaned
         if bolusValue > (maxBolus + 0.05) {
+            // Play failure sound
+            AudioServicesPlaySystemSound(SystemSoundID(1053))
+            
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
             
@@ -73,7 +76,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         // Set isAlertShowing to true before showing the alert
                             isAlertShowing = true
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du ge \(bolusValue) E bolus?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Bekräfta bolus", message: "Vill du ge \(bolusValue) E bolus?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
@@ -158,7 +161,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         /*let combinedString = "Bolus_\(trimmedBolusValue)"
         print("Combined string:", combinedString)*/
         
-        //New formatting for testing (Use Loop Follow Remote Bolus on receiving phone after triggering automation)
+        //New formatting for testing (Use "Remote Bolus" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
         let combinedString = "Remote Bolus\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
@@ -196,7 +199,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
                     // Play failure sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1106))
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
                     let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)

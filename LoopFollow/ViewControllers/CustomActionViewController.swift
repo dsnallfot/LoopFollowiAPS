@@ -80,14 +80,14 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
         print("Combined string:", combinedString)
          */
         
-        //New formatting for testing (Use Loop Follow Remote Bolus on receiving phone after triggering automation)
+        //New formatting for testing (Use "Remote Custom Action" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
         let combinedString = "Remote Custom Action\n\(selectedCustomAction)\nInlagt av: \(name)\nHemlig kod: \(secret)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du aktivera \(selectedCustomAction)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Bekräfta förval", message: "Observera att flera av förvalen både registrerar en måltid och ger en bolus!\n\nVill du registrera \(selectedCustomAction)?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
@@ -198,7 +198,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
                     // Play failure sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1106))
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
                     let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)

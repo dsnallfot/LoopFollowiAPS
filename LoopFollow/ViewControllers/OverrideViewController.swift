@@ -77,14 +77,14 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         print("Combined string:", combinedString)
          */
         
-        //New formatting for testing (Use Loop Follow Remote Bolus on receiving phone after triggering automation)
+        //New formatting for testing (Use "Remote Override" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
         let combinedString = "Remote Override\n\(selectedOverride)\nInlagt av: \(name)\nHemlig kod: \(secret)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du aktivera \(selectedOverride)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Bekräfta override", message: "Vill du aktivera \(selectedOverride)?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
             // Proceed with sending the request
@@ -141,7 +141,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
                     // Play failure sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1106))
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
                     let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)

@@ -227,6 +227,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         //Let code remain for now - to be cleaned
         if bolusValue > (maxBolus + 0.05) {
+            // Play failure sound
+            AudioServicesPlaySystemSound(SystemSoundID(1053))
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
             
@@ -274,6 +276,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         //Let code remain for now - to be cleaned
         if carbs > maxCarbs || fats > maxCarbs || proteins > maxCarbs {
+            // Play failure sound
+            AudioServicesPlaySystemSound(SystemSoundID(1053))
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
@@ -310,7 +314,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         */
         
-        //New formatting for testing (Use Loop Follow Remote Meal on receiving phone after triggering automation)
+        //New formatting for testing (Use "Remote Meal" as trigger word on receiving phone after triggering automation)
         func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
             let mealNotesValue = mealNotes.text ?? ""
             let cleanedMealNotes = mealNotesValue
@@ -334,7 +338,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Set isAlertShowing to true before showing the alert
                     isAlertShowing = true
             // Confirmation alert before sending the request
-            let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du registrera denna måltid?", preferredStyle: .alert)
+            let confirmationAlert = UIAlertController(title: "Bekräfta måltid", message: "Vill du registrera denna måltid?", preferredStyle: .alert)
             
             confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
                 // Proceed with sending the request
@@ -354,7 +358,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Set isAlertShowing to true before showing the alert
                     isAlertShowing = true
             // Confirmation alert before sending the request
-            let confirmationAlert = UIAlertController(title: "Bekräfta", message: "Vill du registrera denna måltid och ge \(bolusValue) E bolus?", preferredStyle: .alert)
+            let confirmationAlert = UIAlertController(title: "Bekräfta måltid och bolus", message: "Vill du registrera denna måltid och ge \(bolusValue) E bolus?", preferredStyle: .alert)
             
             confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
                 // Authenticate with Face ID
@@ -463,7 +467,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
                     // Play failure sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1106))
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
                     let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
