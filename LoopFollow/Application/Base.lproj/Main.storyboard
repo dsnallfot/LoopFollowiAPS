@@ -383,10 +383,10 @@
                                         <rect key="frame" x="0.0" y="383" width="359" height="238"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="20" translatesAutoresizingMaskIntoConstraints="NO" id="HFL-Ye-6HR">
-                                                <rect key="frame" x="83" y="73.333333333333371" width="193" height="91.666666666666686"/>
+                                                <rect key="frame" x="62.666666666666686" y="73.333333333333371" width="234" height="91.666666666666686"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Clock" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsLetterSpacingToFitWidth="YES" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="r85-eB-vVd">
-                                                        <rect key="frame" x="0.0" y="0.0" width="193" height="71.666666666666671"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="234" height="71.666666666666671"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="70"/>
                                                         <nil key="textColor"/>
                                                         <nil key="highlightedColor"/>
@@ -395,7 +395,7 @@
                                                         </variation>
                                                     </label>
                                                     <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Alert Name" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsLetterSpacingToFitWidth="YES" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="tiA-fs-ZRV">
-                                                        <rect key="frame" x="0.0" y="81.666666666666629" width="193" height="0.0"/>
+                                                        <rect key="frame" x="0.0" y="81.666666666666629" width="234" height="0.0"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="70"/>
                                                         <nil key="textColor"/>
                                                         <nil key="highlightedColor"/>
@@ -404,10 +404,10 @@
                                                         </variation>
                                                     </label>
                                                     <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Meu-VT-byv">
-                                                        <rect key="frame" x="0.0" y="81.666666666666629" width="193" height="0.0"/>
+                                                        <rect key="frame" x="0.0" y="81.666666666666629" width="234" height="0.0"/>
                                                         <color key="backgroundColor" systemColor="systemGreenColor"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="70"/>
-                                                        <state key="normal" title=" Snooze ">
+                                                        <state key="normal" title="   Snooze   ">
                                                             <color key="titleColor" systemColor="labelColor"/>
                                                         </state>
                                                         <variation key="heightClass=regular-widthClass=compact">
@@ -418,7 +418,7 @@
                                                         </connections>
                                                     </button>
                                                     <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="dav-Y8-lSK">
-                                                        <rect key="frame" x="0.0" y="91.666666666666629" width="193" height="0.0"/>
+                                                        <rect key="frame" x="0.0" y="91.666666666666629" width="234" height="0.0"/>
                                                         <subviews>
                                                             <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="snoozeMinutes" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="iC4-A1-q9b">
                                                                 <rect key="frame" x="0.0" y="0.0" width="0.0" height="32"/>
