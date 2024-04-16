@@ -642,7 +642,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertUrgentLowPredictiveMinutes.value = Int(value)
         }
         <<< StepperRow("alertUrgentLowSnooze") { row in
-            row.title = "Default Snooze"
+            row.title = "Snooze Minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 5
             row.cell.stepper.maximumValue = 15
@@ -818,7 +818,7 @@ class AlarmViewController: FormViewController {
         
             
         <<< StepperRow("alertLowSnooze") { row in
-            row.title = "Snooze"
+            row.title = "Snooze Minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 5
             row.cell.stepper.maximumValue = 30
@@ -979,7 +979,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertHighPersistent.value = Int(value)
         }
         <<< StepperRow("alertHighSnooze") { row in
-            row.title = "Snooze"
+            row.title = "Snooze Minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 10
             row.cell.stepper.maximumValue = 120
@@ -1124,7 +1124,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertUrgentHighBG.value = Float(value)
         }
         <<< StepperRow("alertUrgentHighSnooze") { row in
-            row.title = "Snooze"
+            row.title = "Snooze Minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 10
             row.cell.stepper.maximumValue = 120
@@ -1305,7 +1305,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertFastDropBelowBG.value = Float(value)
         }
         <<< StepperRow("alertFastDropSnooze") { row in
-            row.title = "Snooze"
+            row.title = "Snooze Minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 5
             row.cell.stepper.maximumValue = 60
@@ -1487,7 +1487,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertFastRiseAboveBG.value = Float(value)
         }
         <<< StepperRow("alertFastRiseSnooze") { row in
-            row.title = "Snooze"
+            row.title = "Snooze Minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 5
             row.cell.stepper.maximumValue = 60
@@ -1619,7 +1619,7 @@ class AlarmViewController: FormViewController {
                     }
         
             <<< StepperRow("alertMissedReading") { row in
-                row.title = "Time"
+                row.title = "Alert after minutes"
                 row.cell.stepper.stepValue = 5
                 row.cell.stepper.minimumValue = 10
                 row.cell.stepper.maximumValue = 120
@@ -1633,7 +1633,7 @@ class AlarmViewController: FormViewController {
                     UserDefaultsRepository.alertMissedReading.value = Int(value)
             }
             <<< StepperRow("alertMissedReadingSnooze") { row in
-                row.title = "Snooze"
+                row.title = "Snooze Minutes"
                 row.cell.stepper.stepValue = 5
                 row.cell.stepper.minimumValue = 10
                 row.cell.stepper.maximumValue = 180
@@ -1763,7 +1763,7 @@ class AlarmViewController: FormViewController {
                         UserDefaultsRepository.alertNotLoopingActive.value = value
                 }
         <<< StepperRow("alertNotLooping") { row in
-            row.title = "Time"
+            row.title = "Altert after minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 10
             row.cell.stepper.maximumValue = 60
@@ -1815,7 +1815,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertNotLoopingUpperLimit.value = Float(value)
         }
         <<< StepperRow("alertNotLoopingSnooze") { row in
-            row.title = "Snooze"
+            row.title = "Snooze Minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 10
             row.cell.stepper.maximumValue = 120
@@ -1944,7 +1944,7 @@ class AlarmViewController: FormViewController {
                         UserDefaultsRepository.alertMissedBolusActive.value = value
                 }
         <<< StepperRow("alertMissedBolus") { row in
-            row.title = "Time"
+            row.title = "Alert after minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 5
             row.cell.stepper.maximumValue = 60
@@ -2015,7 +2015,7 @@ class AlarmViewController: FormViewController {
         }
         
         <<< StepperRow("alertMissedBolusSnooze") { row in
-            row.title = "Snooze"
+            row.title = "Snooze Minutes"
             row.cell.stepper.stepValue = 5
             row.cell.stepper.minimumValue = 5
             row.cell.stepper.maximumValue = 60
@@ -2155,7 +2155,7 @@ class AlarmViewController: FormViewController {
             }
             
             <<< StepperRow("alertSAGE") { row in
-                row.title = "Time"
+                row.title = "Alert when hours left"
                 row.cell.stepper.stepValue = 1
                 row.cell.stepper.minimumValue = 1
                 row.cell.stepper.maximumValue = 24
@@ -2169,7 +2169,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertSAGE.value = Int(value)
             }
             <<< StepperRow("alertSAGESnooze") { row in
-                row.title = "Snooze"
+                row.title = "Snooze Hours"
                 row.cell.stepper.stepValue = 1
                 row.cell.stepper.minimumValue = 1
                 row.cell.stepper.maximumValue = 24
@@ -2307,7 +2307,7 @@ class AlarmViewController: FormViewController {
             }
             
             <<< StepperRow("alertCAGE") { row in
-                row.title = "Time"
+                row.title = "Alert when hours left"
                 row.cell.stepper.stepValue = 1
                 row.cell.stepper.minimumValue = 1
                 row.cell.stepper.maximumValue = 24
@@ -2321,7 +2321,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertCAGE.value = Int(value)
             }
             <<< StepperRow("alertCAGESnooze") { row in
-                row.title = "Snooze"
+                row.title = "Snooze Hours"
                 row.cell.stepper.stepValue = 1
                 row.cell.stepper.minimumValue = 1
                 row.cell.stepper.maximumValue = 24
