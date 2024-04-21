@@ -468,6 +468,7 @@ class UserDefaultsRepository {
     
     //Remote guardrails
     static let maxCarbs = UserDefaultsValue<Int>(key: "maxCarbs", default: 30)
+    static let maxFatProtein = UserDefaultsValue<Int>(key: "maxFatProtein", default: 30)
     static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
     static let carbRatio = UserDefaultsValue<Double>(key: "carbRatio", default: 30)
     

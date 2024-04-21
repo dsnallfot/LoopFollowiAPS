@@ -33,6 +33,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     var CR: Decimal = 0.0
     
     let maxCarbs = UserDefaultsRepository.maxCarbs.value
+    let maxFatProtein = UserDefaultsRepository.maxFatProtein.value
     let maxBolus = UserDefaultsRepository.maxBolus.value
         
     var isAlertShowing = false // Property to track if alerts are currently showing
@@ -122,22 +123,28 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
 
             // Check if the new text is a valid number
-            guard let carbsValue = Decimal(string: newText), carbsValue >= 0 else {
+            guard let newValue = Decimal(string: newText), newValue >= 0 else {
                 // Update button state
                 updateButtonState()
                 return false
             }
 
+            let carbsValue = Decimal(string: carbsEntryField.text ?? "0") ?? 0
             let fatValue = Decimal(string: fatEntryField.text ?? "0") ?? 0
             let proteinValue = Decimal(string: proteinEntryField.text ?? "0") ?? 0
             
             // Check if the carbs value exceeds maxCarbs
-            if carbsValue > Decimal(maxCarbs) || fatValue > Decimal(maxCarbs) || proteinValue > Decimal(maxCarbs) {
+            if carbsValue > Decimal(maxCarbs) {
                     // Disable button
                     isButtonDisabled = true
                     // Update button title
-                    sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(maxCarbs) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-                } else {
+                    sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns kolhydrater \(maxCarbs) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+            } else if fatValue > Decimal(maxFatProtein) || proteinValue > Decimal(maxFatProtein) {
+                // Disable button
+                isButtonDisabled = true
+                // Update button title
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns fett/protein \(maxFatProtein) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+            } else {
                     // Enable button
                     isButtonDisabled = false
                     // Check if bolusText is not "0" and not empty
@@ -492,7 +499,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // Check if bolusText exceeds maxBolus
         if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
            let bolusValue = Decimal(string: bolusText),
-           bolusValue > Decimal(UserDefaultsRepository.maxBolus.value) {
+           bolusValue > Decimal(maxBolus) + 0.01 { //add 0.01 to allow entry of = maxBolus due to rounding issues with double and decimals otherwise disable it when bolusValue=maxBolus
             
             // Disable button
             sendMealButton.isEnabled = false
@@ -501,7 +508,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
             
             // Update button title if bolus exceeds maxBolus
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(formattedMaxBolus) E", attributes: attributes), for: .normal)
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns bolus \(formattedMaxBolus) E", attributes: attributes), for: .normal)
         } else {
             // Enable button
             sendMealButton.isEnabled = true

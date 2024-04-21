@@ -224,7 +224,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         // Check if bolusText exceeds maxBolus
         if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
            let bolusValue = Decimal(string: bolusText),
-           bolusValue > Decimal(maxBolus) {
+           bolusValue > Decimal(maxBolus) + 0.01 { //add 0.01 to allow entry of = maxBolus due to rounding issues with double and decimals otherwise disable it when bolusValue=maxBolus
             
             // Disable button
             sendBolusButton.isEnabled = false
