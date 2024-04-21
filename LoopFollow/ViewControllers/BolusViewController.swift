@@ -56,6 +56,13 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         
         guard let bolusValue = Double(bolusText) else {
             print("Error: Bolus amount conversion failed")
+            // Play failure sound
+            AudioServicesPlaySystemSound(SystemSoundID(1053))
+            // Display an alert
+            let alertController = UIAlertController(title: "Fel", message: "Bolus är inmatad i fel format", preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+            present(alertController, animated: true, completion: nil)
+            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
             return
         }
         

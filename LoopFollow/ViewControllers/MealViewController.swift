@@ -214,7 +214,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // BOLUS ENTRIES
         //Process bolus entries
         guard var bolusText = bolusUnits.text else {
-            print("Error: Bolus amount not entered")
+            print("Note: Bolus amount not entered")
             return
         }
         
@@ -228,6 +228,13 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         } else {
             guard let bolusDouble = Double(bolusText) else {
                 print("Error: Bolus amount conversion failed")
+                // Play failure sound
+                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                // Display an alert
+                let alertController = UIAlertController(title: "Fel", message: "Bolus är inmatad i fel format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                present(alertController, animated: true, completion: nil)
+                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
             }
             bolusValue = bolusDouble
@@ -255,6 +262,13 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         if let carbText = carbGrams.text, !carbText.isEmpty {
             guard let carbsValue = Int(carbText) else {
                 print("Error: Carb input value conversion failed")
+                // Play failure sound
+                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                // Display an alert
+                let alertController = UIAlertController(title: "Fel", message: "Kolhydrater är inmatade i fel format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                present(alertController, animated: true, completion: nil)
+                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
             }
             carbs = carbsValue
@@ -265,6 +279,13 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         if let fatText = fatGrams.text, !fatText.isEmpty {
             guard let fatsValue = Int(fatText) else {
                 print("Error: Fat input value conversion failed")
+                // Play failure sound
+                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                // Display an alert
+                let alertController = UIAlertController(title: "Fel", message: "Fett är inmatat i fel format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                present(alertController, animated: true, completion: nil)
+                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
             }
             fats = fatsValue
@@ -275,6 +296,13 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         if let proteinText = proteinGrams.text, !proteinText.isEmpty {
             guard let proteinsValue = Int(proteinText) else {
                 print("Error: Protein input value conversion failed")
+                // Play failure sound
+                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                // Display an alert
+                let alertController = UIAlertController(title: "Fel", message: "Protein är inmatat i fel format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                present(alertController, animated: true, completion: nil)
+                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
             }
             proteins = proteinsValue
