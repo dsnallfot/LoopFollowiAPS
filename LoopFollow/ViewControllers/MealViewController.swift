@@ -145,8 +145,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             proteinsValue = proteinsDouble
         }
         
-        if carbsValue > maxCarbs || fatsValue > maxCarbs || proteinsValue > maxCarbs {
-            let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
+        if carbsValue > maxCarbs { // || fatsValue > maxCarbs || proteinsValue > maxCarbs { // Just use the maxcarbs guardrail for carb entries until we agreed upon a better approach regarding fat and protein
+            let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs) g is exceeded! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
             self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
