@@ -9,7 +9,7 @@
 import UIKit
 import LocalAuthentication
 
-class MealViewController: UIViewController, UITextFieldDelegate {
+class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestable {
     
     @IBOutlet weak var carbsEntryField: UITextField!
     @IBOutlet weak var fatEntryField: UITextField!
@@ -91,43 +91,62 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         }
         
         // CARBS & FPU ENTRIES
-        // Convert carbGrams, fatGrams, and proteinGrams to integers or default to 0 if empty
-        let carbs: Int
-        let fats: Int
-        let proteins: Int
-        
-        if let carbText = carbGrams.text, !carbText.isEmpty {
-            guard let carbsValue = Int(carbText) else {
-                print("Error: Carb input value conversion failed")
-                return
-            }
-            carbs = carbsValue
-        } else {
-            carbs = 0
+        guard var carbText = carbGrams.text else {
+            print("Error: Carb amount not entered")
+            return
         }
         
-        if let fatText = fatGrams.text, !fatText.isEmpty {
-            guard let fatsValue = Int(fatText) else {
-                print("Error: Fat input value conversion failed")
+        carbText = carbText.replacingOccurrences(of: ",", with: ".")
+        
+        let carbsValue: Double
+        if carbText.isEmpty {
+            carbsValue = 0
+        } else {
+            guard let carbsDouble = Double(carbText) else {
+                print("Error: Carb amount conversion failed")
                 return
             }
-            fats = fatsValue
-        } else {
-            fats = 0
+            carbsValue = carbsDouble
         }
         
-        if let proteinText = proteinGrams.text, !proteinText.isEmpty {
-            guard let proteinsValue = Int(proteinText) else {
-                print("Error: Protein input value conversion failed")
+        guard var fatText = fatGrams.text else {
+            print("Error: Fat amount not entered")
+            return
+        }
+        
+        fatText = fatText.replacingOccurrences(of: ",", with: ".")
+        
+        let fatsValue: Double
+        if fatText.isEmpty {
+            fatsValue = 0
+        } else {
+            guard let fatsDouble = Double(fatText) else {
+                print("Error: Fat amount conversion failed")
                 return
             }
-            proteins = proteinsValue
-        } else {
-            proteins = 0
+            fatsValue = fatsDouble
         }
         
-        if carbs > maxCarbs || fats > maxCarbs || proteins > maxCarbs {
-            let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
+        guard var proteinText = proteinGrams.text else {
+            print("Error: Protein amount not entered")
+            return
+        }
+        
+        proteinText = proteinText.replacingOccurrences(of: ",", with: ".")
+        
+        let proteinsValue: Double
+        if proteinText.isEmpty {
+            proteinsValue = 0
+        } else {
+            guard let proteinsDouble = Double(proteinText) else {
+                print("Error: Protein amount conversion failed")
+                return
+            }
+            proteinsValue = proteinsDouble
+        }
+        
+        if carbsValue > maxCarbs { // || fatsValue > maxCarbs || proteinsValue > maxCarbs { // Just use the maxcarbs guardrail for carb entries until we agreed upon a better approach regarding fat and protein
+            let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs) g is exceeded! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
             self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
@@ -135,7 +154,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
         }
         
         // Call createCombinedString to get the combined string
-        let combinedString = createCombinedString(carbs: carbs, fats: fats, proteins: proteins)
+        let combinedString = createCombinedString(carbs: carbsValue, fats: fatsValue, proteins: proteinsValue)
 
         // Show confirmation alert
         if bolusValue != 0 {
@@ -144,7 +163,7 @@ class MealViewController: UIViewController, UITextFieldDelegate {
             showMealConfirmationAlert(combinedString: combinedString)
         }
         
-        func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
+        func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
             let mealNotesValue = mealNotes.text ?? ""
             var cleanedMealNotes = mealNotesValue
             // Convert bolusValue to string and trim any leading or trailing whitespace
@@ -153,10 +172,10 @@ class MealViewController: UIViewController, UITextFieldDelegate {
             // Construct and return the combinedString based on hideRemoteBolus setting
             if UserDefaultsRepository.hideRemoteBolus.value {
                 // Construct and return the combinedString without bolus
-                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)"
+                return "Meal_Carbs_\(carbsValue)g_Fat_\(fatsValue)g_Protein_\(proteinsValue)g_Note_\(cleanedMealNotes)"
             } else {
                 // Construct and return the combinedString with bolus
-                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Insulin_\(trimmedBolusValue)"
+                return "Meal_Carbs_\(carbsValue)g_Fat_\(fatsValue)g_Protein_\(proteinsValue)g_Note_\(cleanedMealNotes)_Insulin_\(trimmedBolusValue)"
             }
         }
         
@@ -276,59 +295,25 @@ class MealViewController: UIViewController, UITextFieldDelegate {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
             dismiss(animated: true, completion: nil)
-        } else {            // If method is "SMS API", proceed with sending the request
-            
-            let twilioSID = UserDefaultsRepository.twilioSIDString.value
-            let twilioSecret = UserDefaultsRepository.twilioSecretString.value
-            let fromNumber = UserDefaultsRepository.twilioFromNumberString.value
-            let toNumber = UserDefaultsRepository.twilioToNumberString.value
-            let message = combinedString
-            
-            // Build the request
-            let urlString = "https://\(twilioSID):\(twilioSecret)@api.twilio.com/2010-04-01/Accounts/\(twilioSID)/Messages"
-            guard let url = URL(string: urlString) else {
-                print("Invalid URL")
-                return
-            }
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.httpBody = "From=\(fromNumber)&To=\(toNumber)&Body=\(message)".data(using: .utf8)
-            
-            // Build the completion block and send the request
-            URLSession.shared.dataTask(with: request) { (data, response, error) in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        // Failure: Show error alert for network error
-                        let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
-                        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                        self.present(alertController, animated: true, completion: nil)
-                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                    } else if let httpResponse = response as? HTTPURLResponse {
-                        if (200..<300).contains(httpResponse.statusCode) {
-                            // Success: Show success alert for successful response
-                            let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
-                            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-                                // Dismiss the current view controller
-                                self.dismiss(animated: true, completion: nil)
-                            }))
-                            self.present(alertController, animated: true, completion: nil)
-                        } else {
-                            // Failure: Show error alert for non-successful HTTP status code
-                            let message = "HTTP Status Code: \(httpResponse.statusCode)"
-                            let alertController = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-                            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                            self.present(alertController, animated: true, completion: nil)
-                            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                        }
-                    } else {
-                        // Failure: Show generic error alert for unexpected response
-                        let alertController = UIAlertController(title: "Error", message: "Unexpected response", preferredStyle: .alert)
-                        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                        self.present(alertController, animated: true, completion: nil)
-                        self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                    }
+        } else {
+            // If method is "SMS API", proceed with sending the request
+            twilioRequest(combinedString: combinedString) { result in
+                switch result {
+                case .success:
+                    // Show success alert
+                    let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
+                    alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                        // Dismiss the current view controller
+                        self.dismiss(animated: true, completion: nil)
+                    }))
+                    self.present(alertController, animated: true, completion: nil)
+                case .failure(let error):
+                    // Show error alert
+                    let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
+                    alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                    self.present(alertController, animated: true, completion: nil)
                 }
-            }.resume()
+            }
         }
     }
     
