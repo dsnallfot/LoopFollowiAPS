@@ -103,10 +103,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // UITextFieldDelegate method to handle text changes in carbsEntryField
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         // Ensure that the textField being changed is the carbsEntryField
-        /*guard textField == carbsEntryField else {
-            return true
-        }*/
-        
+
         // Calculate the new text after the replacement
         let newText = (textField.text as NSString?)?.replacingCharacters(in: range, with: string) ?? string
         if !newText.isEmpty {
@@ -254,66 +251,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         
         // CARBS & FPU ENTRIES
-        /*
-         // Convert carbGrams, fatGrams, and proteinGrams to integers or default to 0 if empty
-        let carbs: Int
-        let fats: Int
-        let proteins: Int
-        
-        if let carbText = carbGrams.text, !carbText.isEmpty {
-            guard let carbsValue = Int(carbText) else {
-                print("Error: Carb input value conversion failed")
-                // Play failure sound
-                AudioServicesPlaySystemSound(SystemSoundID(1053))
-                // Display an alert
-                let alertController = UIAlertController(title: "Fel", message: "Kolhydrater är inmatade i fel format", preferredStyle: .alert)
-                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
-                present(alertController, animated: true, completion: nil)
-                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                return
-            }
-            carbs = carbsValue
-        } else {
-            carbs = 0
-        }
-        
-        if let fatText = fatGrams.text, !fatText.isEmpty {
-            guard let fatsValue = Int(fatText) else {
-                print("Error: Fat input value conversion failed")
-                // Play failure sound
-                AudioServicesPlaySystemSound(SystemSoundID(1053))
-                // Display an alert
-                let alertController = UIAlertController(title: "Fel", message: "Fett är inmatat i fel format", preferredStyle: .alert)
-                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
-                present(alertController, animated: true, completion: nil)
-                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                return
-            }
-            fats = fatsValue
-        } else {
-            fats = 0
-        }
-        
-        if let proteinText = proteinGrams.text, !proteinText.isEmpty {
-            guard let proteinsValue = Int(proteinText) else {
-                print("Error: Protein input value conversion failed")
-                // Play failure sound
-                AudioServicesPlaySystemSound(SystemSoundID(1053))
-                // Display an alert
-                let alertController = UIAlertController(title: "Fel", message: "Protein är inmatat i fel format", preferredStyle: .alert)
-                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
-                present(alertController, animated: true, completion: nil)
-                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
-                return
-            }
-            proteins = proteinsValue
-        } else {
-            proteins = 0
-        }
-        if carbs > maxCarbs || fats > maxCarbs || proteins > maxCarbs {*/
         
         guard var carbText = carbGrams.text else {
-            print("Error: Carb amount not entered")
+            print("Note: Carb amount not entered")
             return
         }
         
@@ -324,14 +264,21 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             carbsValue = 0
         } else {
             guard let carbsDouble = Double(carbText) else {
-                print("Error: Carb amount conversion failed")
+                print("Error: Carb input value conversion failed")
+                // Play failure sound
+                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                // Display an alert
+                let alertController = UIAlertController(title: "Fel", message: "Kolhydrater är inmatade i fel format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                present(alertController, animated: true, completion: nil)
+                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
             }
             carbsValue = carbsDouble
         }
         
         guard var fatText = fatGrams.text else {
-            print("Error: Fat amount not entered")
+            print("Note: Fat amount not entered")
             return
         }
         
@@ -342,14 +289,21 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             fatsValue = 0
         } else {
             guard let fatsDouble = Double(fatText) else {
-                print("Error: Fat amount conversion failed")
+                print("Error: Fat input value conversion failed")
+                // Play failure sound
+                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                // Display an alert
+                let alertController = UIAlertController(title: "Fel", message: "Fett är inmatat i fel format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                present(alertController, animated: true, completion: nil)
+                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
             }
             fatsValue = fatsDouble
         }
         
         guard var proteinText = proteinGrams.text else {
-            print("Error: Protein amount not entered")
+            print("Note: Protein amount not entered")
             return
         }
         
@@ -360,18 +314,20 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             proteinsValue = 0
         } else {
             guard let proteinsDouble = Double(proteinText) else {
-                print("Error: Protein amount conversion failed")
+                print("Error: Protein input value conversion failed")
+                // Play failure sound
+                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                // Display an alert
+                let alertController = UIAlertController(title: "Fel", message: "Protein är inmatat i fel format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                present(alertController, animated: true, completion: nil)
+                self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
             }
             proteinsValue = proteinsDouble
         }
         
         if carbsValue > maxCarbs || fatsValue > maxCarbs || proteinsValue > maxCarbs {
-        
-        
-        
-        
-        
             // Play failure sound
             AudioServicesPlaySystemSound(SystemSoundID(1053))
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
@@ -391,27 +347,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         } else {
             showMealConfirmationAlert(combinedString: combinedString)
         }
-        
-        /*
-        //Old formatting saved for a while
-        func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
-            let mealNotesValue = mealNotes.text ?? ""
-            let cleanedMealNotes = mealNotesValue
-            // Convert bolusValue to string and trim any leading or trailing whitespace
-            let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            // Construct and return the combinedString based on hideRemoteBolus setting
-            if UserDefaultsRepository.hideRemoteBolus.value {
-                // Construct and return the combinedString without bolus
-                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)"
-            } else {
-                // Construct and return the combinedString with bolus
-                return "Meal_Carbs_\(carbs)g_Fat_\(fats)g_Protein_\(proteins)g_Note_\(cleanedMealNotes)_Insulin_\(trimmedBolusValue)"
-            }
-        }
-        */
-        
-        //New formatting for testing (Use "Remote Meal" as trigger word on receiving phone after triggering automation)
+    
         //func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
         func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
             let mealNotesValue = mealNotes.text ?? ""
@@ -420,15 +356,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let secret = UserDefaultsRepository.remoteSecretCode.value
             // Convert bolusValue to string and trim any leading or trailing whitespace
             let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            // Construct and return the combinedString based on hideRemoteBolus setting
-            /*if UserDefaultsRepository.hideRemoteBolus.value {
-                // Construct and return the combinedString without bolus
-                return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nInlagt av: \(name)\nHemlig kod: \(secret)"
-            } else {
-                // Construct and return the combinedString with bolus
-                return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
-            }*/
+
             if UserDefaultsRepository.hideRemoteBolus.value {
                 // Construct and return the combinedString without bolus
                 return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInlagt av: \(name)\nHemlig kod: \(secret)"
@@ -436,7 +364,6 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 // Construct and return the combinedString with bolus
                 return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
             }
-
         }
         
         //Alert for meal without bolus
@@ -622,7 +549,6 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             }
         }
     }
-
     
     // Function to update button state
     func updateButtonState() {

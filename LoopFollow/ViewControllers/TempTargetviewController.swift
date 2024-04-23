@@ -56,7 +56,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedTempTarget property when an option is selected
         selectedTempTarget = tempTargetsOptions[row]
-        print("Override Picker selected: \(selectedTempTarget!)")
+        print("Temp Target Picker selected: \(selectedTempTarget!)")
     }
     
     @IBAction func sendRemoteTempTargetPressed(_ sender: Any) {
