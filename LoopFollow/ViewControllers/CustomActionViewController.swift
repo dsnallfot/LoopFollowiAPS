@@ -8,8 +8,10 @@
 
 import UIKit
 import LocalAuthentication
+import AudioToolbox
 
-class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable {
+class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
+    var appStateController: AppStateController?
     
     @IBOutlet weak var sendCustomActionButton: UIButton!
     @IBOutlet weak var customActionsPicker: UIPickerView!
@@ -57,7 +59,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedOverride property when an option is selected
         selectedCustomAction = customActionsOptions[row]
-        print("Custom Picker selected: \(selectedCustomAction!)")
+        print("Custom Action Picker selected: \(selectedCustomAction!)")
     }
     
     @IBAction func sendRemoteCustomActionPressed(_ sender: Any) {
@@ -72,12 +74,20 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
             print("No custom action option selected")
             return
         }
-        
+        /*
+         //Old formatting saved for a while
         let combinedString = "CustomAction_\(selectedCustomAction)"
+        print("Combined string:", combinedString)
+         */
+        
+        //New formatting for testing (Use "Remote Custom Action" as trigger word on receiving phone after triggering automation)
+        let name = UserDefaultsRepository.caregiverName.value
+        let secret = UserDefaultsRepository.remoteSecretCode.value
+        let combinedString = "Remote Custom Action\n\(selectedCustomAction)\nEntered by: \(name)\nSecret Code: \(secret)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedCustomAction)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirm Custom Action", message: "Note that custom actions could be configured to both register meals, give boluses and/or activate other shortcuts (based on how the configuration is made on the receiving iPhone)\n\nDo you want to register \(selectedCustomAction)?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
@@ -125,6 +135,8 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                             if let error = authenticationError {
                                 print("Authentication failed: \(error.localizedDescription)")
                             }
+                            // Handle dismissal when authentication fails
+                            self.handleAlertDismissal()
                         }
                     }
                 }
@@ -148,6 +160,8 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                     if let error = error {
                         print("Authentication failed: \(error.localizedDescription)")
                     }
+                    // Handle dismissal when authentication fails
+                    self.handleAlertDismissal()
                 }
             }
         }
@@ -176,23 +190,29 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
             twilioRequest(combinedString: combinedString) { result in
                 switch result {
                 case .success:
+                    // Play success sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    
                     // Show success alert
-                    let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Success!", message: "Message delivered", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                         // Dismiss the current view controller
                         self.dismiss(animated: true, completion: nil)
                     }))
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
+                    // Play failure sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
+                    
                     // Show error alert
-                    let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Error!", message: error.localizedDescription, preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                     self.present(alertController, animated: true, completion: nil)
                 }
             }
         }
     }
-    
+
     @IBAction func cancelButtonPressed(_ sender: Any) {
         dismiss(animated: true, completion: nil)
     }

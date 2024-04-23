@@ -307,6 +307,22 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.maxCarbs.value = Double(value)
         }
         
+        <<< StepperRow("maxFatProtein") { row in
+            row.title = "Max Fat or Protein (g)"
+            row.cell.stepper.stepValue = 5
+            row.cell.stepper.minimumValue = 0
+            row.cell.stepper.maximumValue = 200
+            row.value = Double(UserDefaultsRepository.maxFatProtein.value)
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                return "\(Int(value))"
+            }
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            //UserDefaultsRepository.maxFatProtein.value = Int(value)
+            UserDefaultsRepository.maxFatProtein.value = Double(value)
+        }
+        
         <<< StepperRow("maxBolus") { row in
             row.title = "Max Bolus (U)"
             row.cell.stepper.stepValue = 0.1

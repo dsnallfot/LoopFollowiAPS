@@ -1246,6 +1246,9 @@
                                                                     <color key="tintColor" systemColor="labelColor"/>
                                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                                     <textInputTraits key="textInputTraits" keyboardType="decimalPad"/>
+                                                                    <connections>
+                                                                        <action selector="editingChanged:" destination="gGw-b9-Weh" eventType="editingChanged" id="d3e-8U-GuT"/>
+                                                                    </connections>
                                                                 </textField>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="U" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="YIt-Qz-s6v">
                                                                     <rect key="frame" x="214" y="4" width="25" height="27"/>
@@ -1360,6 +1363,7 @@
                     <connections>
                         <outlet property="bolusAmount" destination="0HU-rw-87i" id="Cv5-Ig-do0"/>
                         <outlet property="bolusEntryField" destination="0HU-rw-87i" id="6h7-GW-ktK"/>
+                        <outlet property="bolusUnits" destination="0HU-rw-87i" id="f15-Va-xuC"/>
                         <outlet property="sendBolusButton" destination="omd-J4-dQH" id="PCD-uC-2iY"/>
                     </connections>
                 </viewController>

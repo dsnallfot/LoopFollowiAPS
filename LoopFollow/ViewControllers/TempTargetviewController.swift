@@ -7,8 +7,10 @@
 //
 
 import UIKit
+import AudioToolbox
 
-class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable {
+class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
+    var appStateController: AppStateController?
     
     @IBOutlet weak var sendTempTargetButton: UIButton!
     @IBOutlet weak var tempTargetsPicker: UIPickerView!
@@ -16,7 +18,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
     
-    // Property to store the selected override option
+    // Property to store the selected temptarget option
     var selectedTempTarget: String?
     
     override func viewDidLoad() {
@@ -54,49 +56,56 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedTempTarget property when an option is selected
         selectedTempTarget = tempTargetsOptions[row]
-        print("Override Picker selected: \(selectedTempTarget!)")
+        print("Temp Target Picker selected: \(selectedTempTarget!)")
     }
     
     @IBAction func sendRemoteTempTargetPressed(_ sender: Any) {
         // Disable the button to prevent multiple taps
-         if !isButtonDisabled {
-             isButtonDisabled = true
-             sendTempTargetButton.isEnabled = false
-         } else {
-             return // If button is already disabled, return to prevent double registration
-         }
+        if !isButtonDisabled {
+            isButtonDisabled = true
+            sendTempTargetButton.isEnabled = false
+        } else {
+            return // If button is already disabled, return to prevent double registration
+        }
         guard let selectedTempTarget = selectedTempTarget else {
             print("No temp target option selected")
             return
         }
-        
+        /*
+        //Old formatting saved for a while
         let combinedString = "TempTarget_\(selectedTempTarget)"
+        print("Combined string:", combinedString)
+         */
+        
+        //New formatting for testing (Use "Remote Temp Target" as trigger word on receiving phone after triggering automation)
+        let name = UserDefaultsRepository.caregiverName.value
+        let secret = UserDefaultsRepository.remoteSecretCode.value
+        let combinedString = "Remote Temp Target\n\(selectedTempTarget)\nEntered by: \(name)\nSecret Code: \(secret)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedTempTarget)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirm Temp Target", message: "Do you want to activate \(selectedTempTarget)?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Proceed with sending the request
             self.sendTTRequest(combinedString: combinedString)
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
-                    // Handle dismissal when "Cancel" is selected
-                    self.handleAlertDismissal()
-                }))
+        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
+            // Handle dismissal when "Cancel" is selected
+            self.handleAlertDismissal()
+        }))
         
         present(confirmationAlert, animated: true, completion: nil)
     }
     
     // Function to handle alert dismissal
-        func handleAlertDismissal() {
-            // Enable the button when alerts are dismissed
-            isAlertShowing = false
-            sendTempTargetButton.isEnabled = true
-            isButtonDisabled = false // Reset button disable status
-        }
-    
+    func handleAlertDismissal() {
+        // Enable the button when alerts are dismissed
+        isAlertShowing = false
+        sendTempTargetButton.isEnabled = true
+        isButtonDisabled = false // Reset button disable status
+    }
     func sendTTRequest(combinedString: String) {
         
         // Retrieve the method value from UserDefaultsRepository
@@ -104,31 +113,37 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         
         // Use combinedString as the text in the URL
         if method != "SMS API" {
-            // URL encode combinedString
-            guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode URL string")
-                return
-            }
-            let urlString = "shortcuts://run-shortcut?name=Remote%20Temp%20Target&input=text&text=\(encodedString)"
-            if let url = URL(string: urlString) {
-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-            }
+                // URL encode combinedString
+                guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                    print("Failed to encode URL string")
+                    return
+                }
+                let urlString = "shortcuts://run-shortcut?name=Remote%20Temp%20Target&input=text&text=\(encodedString)"
+                if let url = URL(string: urlString) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
             dismiss(animated: true, completion: nil)
         } else {
             // If method is "SMS API", proceed with sending the request
             twilioRequest(combinedString: combinedString) { result in
                 switch result {
                 case .success:
+                    // Play success sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    
                     // Show success alert
-                    let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Success!", message: "Message delivered", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                         // Dismiss the current view controller
                         self.dismiss(animated: true, completion: nil)
                     }))
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
+                    // Play failure sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
+                    
                     // Show error alert
-                    let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Error!", message: error.localizedDescription, preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                     self.present(alertController, animated: true, completion: nil)
                 }
@@ -147,3 +162,4 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         return tempTargetsString.components(separatedBy: ", ")
     }()
 }
+
