@@ -40,7 +40,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var refreshControl: UIRefreshControl!
 
     let speechSynthesizer = AVSpeechSynthesizer()
-        
+
     // Data Table class
     class infoData {
         public var name: String
@@ -181,6 +181,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         infoTable.dataSource = self
         infoTable.tableFooterView = UIView(frame: .zero) // get rid of extra rows
         infoTable.bounces = false
+        infoTable.addBorder(toSide: .Left, withColor: UIColor.darkGray.cgColor, andThickness: 2)
         
         // initialize the tableData
         self.tableData = []
@@ -276,6 +277,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         restartAllTimers()
         currentCage = nil
         currentSage = nil
+        lastSpeechTime = nil
         refreshControl.endRefreshing()
     }
     
@@ -298,61 +300,65 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         // check the app state
         // TODO: move to a function ?
         if let appState = self.appStateController {
-        
-           if appState.chartSettingsChanged {
-              
-              // can look at settings flags to be more fine tuned
-              self.updateBGGraphSettings()
             
-            if ChartSettingsChangeEnum.smallGraphHeight.rawValue != 0 {
-                smallGraphHeightConstraint.constant = CGFloat(UserDefaultsRepository.smallGraphHeight.value)
-                self.view.layoutIfNeeded()
+            if appState.chartSettingsChanged {
+                
+                // can look at settings flags to be more fine tuned
+                self.updateBGGraphSettings()
+                
+                if ChartSettingsChangeEnum.smallGraphHeight.rawValue != 0 {
+                    smallGraphHeightConstraint.constant = CGFloat(UserDefaultsRepository.smallGraphHeight.value)
+                    self.view.layoutIfNeeded()
+                }
+                
+                // reset the app state
+                appState.chartSettingsChanged = false
+                appState.chartSettingsChanges = 0
             }
-              
-              // reset the app state
-              appState.chartSettingsChanged = false
-              appState.chartSettingsChanges = 0
-           }
-           if appState.generalSettingsChanged {
-           
-              // settings for appBadge changed
-              if appState.generalSettingsChanges & GeneralSettingsChangeEnum.appBadgeChange.rawValue != 0 {
-                 
-              }
-              
-              // settings for textcolor changed
-              if appState.generalSettingsChanges & GeneralSettingsChangeEnum.colorBGTextChange.rawValue != 0 {
-                 self.setBGTextColor()
-              }
+            if appState.generalSettingsChanged {
+                
+                // settings for appBadge changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.appBadgeChange.rawValue != 0 {
+                    
+                }
+                
+                // settings for textcolor changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.colorBGTextChange.rawValue != 0 {
+                    self.setBGTextColor()
+                }
+                
+                // settings for showStats changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showStatsChange.rawValue != 0 {
+                    statsView.isHidden = !UserDefaultsRepository.showStats.value
+                }
+                
+                // settings for useIFCC changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.useIFCCChange.rawValue != 0 {
+                    updateStats()
+                }
+                
+                // settings for showSmallGraph changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showSmallGraphChange.rawValue != 0 {
+                    BGChartFull.isHidden = !UserDefaultsRepository.showSmallGraph.value
+                }
+                
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showDisplayNameChange.rawValue != 0 {
+                    self.updateServerText()
+                }
+                
+                // reset the app state
+                appState.generalSettingsChanged = false
+                appState.generalSettingsChanges = 0
+            }
+            if appState.infoDataSettingsChanged {
+                createDerivedData()
+                self.infoTable.reloadData()
+                
+                // reset
+                appState.infoDataSettingsChanged = false
+            }
             
-            // settings for showStats changed
-            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showStatsChange.rawValue != 0 {
-               statsView.isHidden = !UserDefaultsRepository.showStats.value
-            }
-
-            // settings for useIFCC changed
-            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.useIFCCChange.rawValue != 0 {
-                updateStats()
-            }
-
-            // settings for showSmallGraph changed
-            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showSmallGraphChange.rawValue != 0 {
-                BGChartFull.isHidden = !UserDefaultsRepository.showSmallGraph.value
-            }
-              
-              // reset the app state
-              appState.generalSettingsChanged = false
-              appState.generalSettingsChanges = 0
-           }
-           if appState.infoDataSettingsChanged {
-              createDerivedData()
-              self.infoTable.reloadData()
-              
-              // reset
-              appState.infoDataSettingsChanged = false
-           }
-           
-           // add more processing of the app state
+            // add more processing of the app state
         }
     }
     
@@ -422,26 +428,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         showHideNSDetails()
     }
     
-    
-
-    //update Min Ago Text. We need to call this separately because it updates between readings
-    func updateMinAgo(){
-        if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Update min ago text") }
-        guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
-        if bgData.count > 0 {
-            let deltaTime = (TimeInterval(Date().timeIntervalSince1970)-bgData[bgData.count - 1].date) / 60
-            minAgoBG = Double(TimeInterval(Date().timeIntervalSince1970)-bgData[bgData.count - 1].date)
-            MinAgoText.text = String(Int(deltaTime)) + " m sedan"
-            snoozer.MinAgoLabel.text = String(Int(deltaTime)) + " m sedan"
-            latestMinAgoString = String(Int(deltaTime)) + " m sedan"
-        } else {
-            MinAgoText.text = ""
-            snoozer.MinAgoLabel.text = ""
-            latestMinAgoString = ""
-        }
-        
-    }
-    
     //Clear the info data before next pull. This ensures we aren't displaying old data if something fails.
     func clearLastInfoData(index: Int){
         tableData[index].value = ""
@@ -462,7 +448,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             isEnabled = false
         }
         
-        //LoopStatusLabel.isHidden = isHidden
+        LoopStatusLabel.isHidden = isHidden
         PredictionLabel.isHidden = isHidden
         infoTable.isHidden = isHidden
         
@@ -483,11 +469,10 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         DispatchQueue.main.async {
         if UserDefaultsRepository.appBadge.value {
             let latestBG = String(val)
-            UIApplication.shared.applicationIconBadgeNumber = Int(bgUnits.removePeriodForBadge(bgUnits.toDisplayUnits(latestBG))) ?? val
-        } else {
-            UIApplication.shared.applicationIconBadgeNumber = 0
-        }
-//        if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "updated badge") }
+            UIApplication.shared.applicationIconBadgeNumber = Int(bgUnits.removePeriodAndCommaForBadge(bgUnits.toDisplayUnits(latestBG))) ?? val
+            } else {
+                UIApplication.shared.applicationIconBadgeNumber = 0
+            }
         }
     }
     
@@ -520,7 +505,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         graphics:[String:String]=["Flat":"→","DoubleUp":"↑↑","SingleUp":"↑","FortyFiveUp":"↗","FortyFiveDown":"↘︎","SingleDown":"↓","DoubleDown":"↓↓","None":"-","NONE":"-","NOT COMPUTABLE":"-","RATE OUT OF RANGE":"-", "": "-"]
         return graphics[value]!
     }
-
+        
     func writeCalendar() {
         if UserDefaultsRepository.debugLog.value {
             self.writeDebugLog(value: "Write calendar start")
@@ -547,7 +532,10 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         }
 
             // Create Event info
-            let deltaBG = self.bgData[self.bgData.count - 1].sgv -  self.bgData[self.bgData.count - 2].sgv as Int
+        var deltaBG = 0 // protect index out of bounds
+        if self.bgData.count > 1 {
+            deltaBG = self.bgData[self.bgData.count - 1].sgv -  self.bgData[self.bgData.count - 2].sgv as Int
+        }
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - self.bgData[self.bgData.count - 1].date) / 60
             var deltaString = ""
             if deltaBG < 0 {
@@ -563,10 +551,9 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 //                if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Calendar start date") }
             var eventEndDate = eventStartDate.addingTimeInterval(60 * 10)
             var  eventTitle = UserDefaultsRepository.watchLine1.value
-            var  eventLocation = UserDefaultsRepository.watchLine2.value
-            //if (UserDefaultsRepository.watchLine2.value.count > 1) {
-                //eventLocation += UserDefaultsRepository.watchLine2.value
-            //<}
+            if (UserDefaultsRepository.watchLine2.value.count > 1) {
+                eventTitle += "\n" + UserDefaultsRepository.watchLine2.value
+            }
             eventTitle = eventTitle.replacingOccurrences(of: "%BG%", with: bgUnits.toDisplayUnits(String(self.bgData[self.bgData.count - 1].sgv)))
             eventTitle = eventTitle.replacingOccurrences(of: "%DIRECTION%", with: direction)
             eventTitle = eventTitle.replacingOccurrences(of: "%DELTA%", with: deltaString)
@@ -574,33 +561,17 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 let val = Int( self.currentOverride*100)
                 // let overrideText = String(format:"%f1", self.currentOverride*100)
                 let text = String(val) + "%"
-                eventLocation = eventLocation.replacingOccurrences(of: "%OVERRIDE%", with: text)
+                eventTitle = eventTitle.replacingOccurrences(of: "%OVERRIDE%", with: text)
             } else {
-                eventLocation = eventLocation.replacingOccurrences(of: "%OVERRIDE%", with: "")
+                eventTitle = eventTitle.replacingOccurrences(of: "%OVERRIDE%", with: "")
             }
-            eventLocation = eventLocation.replacingOccurrences(of: "%LOOP%", with: self.latestLoopStatusString)
+            eventTitle = eventTitle.replacingOccurrences(of: "%LOOP%", with: self.latestLoopStatusString)
             var minAgo = ""
             if deltaTime > 9 {
                 // write old BG reading and continue pushing out end date to show last entry
                 minAgo = String(Int(deltaTime)) + " min"
                 eventEndDate = eventStartDate.addingTimeInterval((60 * 10) + (deltaTime * 60))
             }
-        let lastSGV = Double(self.bgData[self.bgData.count - 1].sgv) // Convert the last SGV to a Double
-        let deltaBGValue = Double(deltaBG) // Convert deltaBG to a Double
-
-        let fifteenMin = (lastSGV + deltaBGValue * 2.5) * 0.0555
-        let fifteenMinString = String(format: "%.1f", fifteenMin) // Convert to string with one decimal place
-            // Use the calculated 'fifteenMinString' as needed
-        let fifteenMinValue = Double(fifteenMinString) ?? 0.0
-
-        if fifteenMinValue < 3.9 {
-            eventLocation = eventLocation.replacingOccurrences(of: "%15MIN%", with: "🆘 " + fifteenMinString)
-        } else if fifteenMinValue > 7.8 {
-            eventLocation = eventLocation.replacingOccurrences(of: "%15MIN%", with: "⚠️ " + fifteenMinString)
-        } else {
-            eventLocation = eventLocation.replacingOccurrences(of: "%15MIN%", with: "✅ " + fifteenMinString)
-        }
-            
             var cob = "0"
             if self.latestCOB != "" {
                 cob = self.latestCOB
@@ -614,11 +585,9 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 iob = self.latestIOB
             }
             eventTitle = eventTitle.replacingOccurrences(of: "%MINAGO%", with: minAgo)
-        eventLocation = eventLocation.replacingOccurrences(of: "%IOB%", with: iob)
-        eventLocation = eventLocation.replacingOccurrences(of: "%COB%", with: cob)
-        eventLocation = eventLocation.replacingOccurrences(of: "%BASAL%", with: basal + "E/h")
-        
-            
+            eventTitle = eventTitle.replacingOccurrences(of: "%IOB%", with: iob)
+            eventTitle = eventTitle.replacingOccurrences(of: "%COB%", with: cob)
+            eventTitle = eventTitle.replacingOccurrences(of: "%BASAL%", with: basal)
             
             
             
@@ -644,7 +613,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             // Write New Event
             var event = EKEvent(eventStore: self.store)
             event.title = eventTitle
-            event.location = eventLocation
             event.startDate = eventStartDate
             event.endDate = eventEndDate
             event.calendar = self.store.calendar(withIdentifier: UserDefaultsRepository.calendarIdentifier.value)
@@ -711,8 +679,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         
     }
-
-     // User has scrolled the chart
+    
+    // User has scrolled the chart
     func chartTranslated(_ chartView: ChartViewBase, dX: CGFloat, dY: CGFloat) {
         let isViewingLatestData = abs(BGChart.highestVisibleX - BGChart.chartXMax) < 0.001
         if isViewingLatestData {
@@ -721,6 +689,4 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             autoScrollPauseUntil = Date().addingTimeInterval(5 * 60) // User is viewing historical data, pause auto-scrolling
         }
     }
-    
-    
 }
