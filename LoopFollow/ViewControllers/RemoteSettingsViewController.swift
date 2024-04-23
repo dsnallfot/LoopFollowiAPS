@@ -226,11 +226,11 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("secretcode"){ row in
             row.title = "Secret Code"
-            row.value = UserDefaultsRepository.caregiverName.value
+            row.value = UserDefaultsRepository.remoteSecretCode.value
             row.cell.textField.placeholder = "Enter a secret code"
         }.onChange { row in
             guard let value = row.value else { return }
-            UserDefaultsRepository.caregiverName.value = value
+            UserDefaultsRepository.remoteSecretCode.value = value
         }
 
         
@@ -304,7 +304,7 @@ class RemoteSettingsViewController: FormViewController {
             }
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
-            UserDefaultsRepository.maxCarbs.value = Int(value)
+            UserDefaultsRepository.maxCarbs.value = Double(value)
         }
         
         <<< StepperRow("maxBolus") { row in
@@ -324,8 +324,13 @@ class RemoteSettingsViewController: FormViewController {
         }
         +++ ButtonRow() {
             $0.title = "DONE"
-        }.onCellSelection { (row, arg)  in
-            self.dismiss(animated:true, completion: nil)
+        }.onCellSelection { (row, arg) in
+            if let navigationController = self.navigationController {
+                navigationController.popViewController(animated: true)
+            } else {
+                // If there's no navigation controller, dismiss the current view controller
+                self.dismiss(animated: true, completion: nil)
+            }
         }
     }
 }
