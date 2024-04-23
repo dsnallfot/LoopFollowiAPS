@@ -254,7 +254,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         
         // CARBS & FPU ENTRIES
-        // Convert carbGrams, fatGrams, and proteinGrams to integers or default to 0 if empty
+        /*
+         // Convert carbGrams, fatGrams, and proteinGrams to integers or default to 0 if empty
         let carbs: Int
         let fats: Int
         let proteins: Int
@@ -309,8 +310,68 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         } else {
             proteins = 0
         }
-        //Let code remain for now - to be cleaned
-        if carbs > maxCarbs || fats > maxCarbs || proteins > maxCarbs {
+        if carbs > maxCarbs || fats > maxCarbs || proteins > maxCarbs {*/
+        
+        guard var carbText = carbGrams.text else {
+            print("Error: Carb amount not entered")
+            return
+        }
+        
+        carbText = carbText.replacingOccurrences(of: ",", with: ".")
+        
+        let carbsValue: Double
+        if carbText.isEmpty {
+            carbsValue = 0
+        } else {
+            guard let carbsDouble = Double(carbText) else {
+                print("Error: Carb amount conversion failed")
+                return
+            }
+            carbsValue = carbsDouble
+        }
+        
+        guard var fatText = fatGrams.text else {
+            print("Error: Fat amount not entered")
+            return
+        }
+        
+        fatText = fatText.replacingOccurrences(of: ",", with: ".")
+        
+        let fatsValue: Double
+        if fatText.isEmpty {
+            fatsValue = 0
+        } else {
+            guard let fatsDouble = Double(fatText) else {
+                print("Error: Fat amount conversion failed")
+                return
+            }
+            fatsValue = fatsDouble
+        }
+        
+        guard var proteinText = proteinGrams.text else {
+            print("Error: Protein amount not entered")
+            return
+        }
+        
+        proteinText = proteinText.replacingOccurrences(of: ",", with: ".")
+        
+        let proteinsValue: Double
+        if proteinText.isEmpty {
+            proteinsValue = 0
+        } else {
+            guard let proteinsDouble = Double(proteinText) else {
+                print("Error: Protein amount conversion failed")
+                return
+            }
+            proteinsValue = proteinsDouble
+        }
+        
+        if carbsValue > maxCarbs || fatsValue > maxCarbs || proteinsValue > maxCarbs {
+        
+        
+        
+        
+        
             // Play failure sound
             AudioServicesPlaySystemSound(SystemSoundID(1053))
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
@@ -321,7 +382,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         
         // Call createCombinedString to get the combined string
-        let combinedString = createCombinedString(carbs: carbs, fats: fats, proteins: proteins)
+        //let combinedString = createCombinedString(carbs: carbs, fats: fats, proteins: proteins)
+        let combinedString = createCombinedString(carbs: carbsValue, fats: fatsValue, proteins: proteinsValue)
 
         // Show confirmation alert
         if bolusValue != 0 {
@@ -350,7 +412,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         */
         
         //New formatting for testing (Use "Remote Meal" as trigger word on receiving phone after triggering automation)
-        func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
+        //func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
+        func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
             let mealNotesValue = mealNotes.text ?? ""
             let cleanedMealNotes = mealNotesValue
             let name = UserDefaultsRepository.caregiverName.value
@@ -359,13 +422,21 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
             
             // Construct and return the combinedString based on hideRemoteBolus setting
-            if UserDefaultsRepository.hideRemoteBolus.value {
+            /*if UserDefaultsRepository.hideRemoteBolus.value {
                 // Construct and return the combinedString without bolus
                 return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nInlagt av: \(name)\nHemlig kod: \(secret)"
             } else {
                 // Construct and return the combinedString with bolus
                 return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
+            }*/
+            if UserDefaultsRepository.hideRemoteBolus.value {
+                // Construct and return the combinedString without bolus
+                return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInlagt av: \(name)\nHemlig kod: \(secret)"
+            } else {
+                // Construct and return the combinedString with bolus
+                return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
             }
+
         }
         
         //Alert for meal without bolus
