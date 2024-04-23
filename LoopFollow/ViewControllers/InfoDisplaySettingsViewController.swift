@@ -68,16 +68,20 @@ class InfoDisplaySettingsViewController: FormViewController {
                   if let appStateController = self.appStateController {
                       appStateController.infoDataSettingsChanged = true
                   }
-
               }
            }
        }
     
-       +++ ButtonRow() {
-          $0.title = "DONE"
-       }.onCellSelection { (row, arg)  in
-          self.dismiss(animated:true, completion: nil)
-       }
+        +++ ButtonRow() {
+            $0.title = "DONE"
+        }.onCellSelection { (row, arg) in
+            if let navigationController = self.navigationController {
+                navigationController.popViewController(animated: true)
+            } else {
+                // If there's no navigation controller, dismiss the current view controller
+                self.dismiss(animated: true, completion: nil)
+            }
+        }
     }
     
     override func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
