@@ -137,7 +137,7 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.twilioToNumberString.value =  row.value ?? ""
         }
         
-        let shortcutsSection = Section(header: "iOS Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target buttons. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
+        let shortcutsSection = Section(header: "iOS Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target' buttons.The \'\n' commands in the text strings create line breaks for better readability in imessage. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
             $0.hidden = Condition.function(["method"], { form in
                 // Retrieve the value of the segmented row
                 guard let methodRow = form.rowBy(tag: "method") as? SegmentedRow<String>,
@@ -154,7 +154,7 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("RemoteMealBolus"){ row in
             row.title = ""
-            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal_Insulin_1.0"
+            row.value = "Remote Meal • Remote Meal\\nCarbs: 25.5g\\nFat: 20g\\nProtein: 15g\\nNotes: Testmeal)\\nInsulin: 1.55U\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -162,28 +162,28 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("RemoteMeal"){ row in
             row.title = ""
-            row.value = "Remote Meal • Meal_Carbs_25g_Fat_15g_Protein_10g_Note_Testmeal"
+            row.value = "Remote Meal • Remote Meal\\nCarbs: 25.5g\\nFat: 20g\\nProtein: 15g\\nNotes: Testmeal)\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("RemoteBolus"){ row in
             row.title = ""
-            row.value = "Remote Bolus • Bolus_0.6"
+            row.value = "Remote Bolus • Remote Bolus\\nInsulin: 0.75U\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("RemoteOverride"){ row in
             row.title = ""
-            row.value = "Remote Override • Override_🎉 Partytime"
+            row.value = "Remote Override • Remote Override\\n🎉 Partytime\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
         }
         <<< TextRow("RemoteTempTarget"){ row in
             row.title = ""
-            row.value = "Remote Temp Target • TempTarget_🏃‍♂️ Exercise"
+            row.value = "Remote Temp Target • Remote Temp Target\\n🏃‍♂️ Exercise\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -191,7 +191,7 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("RemoteCustomAction"){ row in
             row.title = ""
-            row.value = "Remote Custom Action • CustomAction_🍿 Popcorn"
+            row.value = "Remote Custom Action • Remote Custom Action\\n🍿 Popcorn\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
