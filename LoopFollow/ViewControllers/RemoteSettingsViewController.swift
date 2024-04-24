@@ -137,7 +137,7 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.twilioToNumberString.value =  row.value ?? ""
         }
         
-        let shortcutsSection = Section(header: "iOS Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target' buttons.The \'\n' commands in the text strings create line breaks for better readability in imessage. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
+        let shortcutsSection = Section(header: "iOS Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target' buttons. The '\\n' commands in the text strings create line breaks for better readability in imessage. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
             $0.hidden = Condition.function(["method"], { form in
                 // Retrieve the value of the segmented row
                 guard let methodRow = form.rowBy(tag: "method") as? SegmentedRow<String>,
