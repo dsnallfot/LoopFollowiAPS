@@ -467,8 +467,6 @@ class UserDefaultsRepository {
     static let hideBolusCalc = UserDefaultsValue<Bool>(key: "hideBolusCalc", default: true)
     
     //Remote guardrails
-    //static let maxCarbs = UserDefaultsValue<Int>(key: "maxCarbs", default: 30)
-    //static let maxFatProtein = UserDefaultsValue<Int>(key: "maxFatProtein", default: 30)
     static let maxCarbs = UserDefaultsValue<Double>(key: "maxCarbs", default: 30)
     static let maxFatProtein = UserDefaultsValue<Double>(key: "maxFatProtein", default: 30)
     static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
