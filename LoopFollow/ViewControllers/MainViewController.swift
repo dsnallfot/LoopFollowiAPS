@@ -14,18 +14,7 @@ import UserNotifications
 import AVFAudio
 
 class MainViewController: UIViewController, UITableViewDataSource, ChartViewDelegate, UNUserNotificationCenterDelegate, UIScrollViewDelegate {
-    
-    // Out commented preparations for fetching latestCR
-    /*var latestCR: Double = 30.0 // Assuming this is where latestCR is defined
-    
-    // Function to prepare for segue to RemoteViewController
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let remoteViewController = segue.destination as? RemoteViewController {
-            // Pass latestCR to RemoteViewController
-            remoteViewController.latestCR = self.latestCR
-        }
-    }*/
-    
+        
     @IBOutlet weak var BGText: UILabel!
     @IBOutlet weak var DeltaText: UILabel!
     @IBOutlet weak var DirectionText: UILabel!

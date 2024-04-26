@@ -74,12 +74,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
             print("No custom action option selected")
             return
         }
-        /*
-         //Old formatting saved for a while
-        let combinedString = "CustomAction_\(selectedCustomAction)"
-        print("Combined string:", combinedString)
-         */
-        
+
         //New formatting for testing (Use "Remote Custom Action" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value

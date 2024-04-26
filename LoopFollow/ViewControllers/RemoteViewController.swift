@@ -11,8 +11,6 @@ import UIKit
 class RemoteViewController: UIViewController {
     var appStateController: AppStateController?
     
-    //var latestCR: Double = 0.0 // Out commented preparations for fetching latestCR
-    
     @IBOutlet weak var customActionButton: UIButton!
     @IBOutlet weak var remoteBolusButton: UIButton!
     
@@ -42,7 +40,6 @@ class RemoteViewController: UIViewController {
     
     @IBAction func mealButtonPressed(_ sender: Any) {
         let mealViewController = storyboard!.instantiateViewController(withIdentifier: "remoteMeal") as! MealViewController
-        //mealViewController.latestCR = self.latestCR // Pass latestCR to MealViewController // Out commented preparations for fetching latestCR
         self.present(mealViewController, animated: true, completion: nil)
     }
     

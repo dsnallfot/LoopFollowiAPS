@@ -353,27 +353,6 @@ class RemoteSettingsViewController: FormViewController {
             self?.reloadForm()
         }
 
-        //Out commented code since CR now is fetched from enacted loopstatus
-        /*
-        // Conditionally show the StepperRow based on the value of the switch row
-        <<< StepperRow("carbRatio") { row in
-            row.title = "Carb Ratio for bolus calc"
-            row.hidden = Condition.function(["hideBolusCalc"], { form in
-                return !((form.rowBy(tag: "hideBolusCalc") as? SwitchRow)?.value ?? true)
-            })
-            row.cell.stepper.stepValue = 0.1
-            row.cell.stepper.minimumValue = 0.1
-            row.cell.stepper.maximumValue = 50
-            row.value = Double(UserDefaultsRepository.carbRatio.value)
-            row.displayValueFor = { value in
-                guard let value = value else { return nil }
-                return String(format: "%.1f", value)
-            }
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.carbRatio.value = Double(value)
-        }*/
-
         +++ ButtonRow() {
             $0.title = "DONE"
         }.onCellSelection { (row, arg) in

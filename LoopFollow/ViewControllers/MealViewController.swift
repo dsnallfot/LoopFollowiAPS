@@ -28,12 +28,16 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var mealNotes: UITextField!
     @IBOutlet weak var bolusUnits: UITextField!
     @IBOutlet weak var CRValue: UITextField!
+    @IBOutlet weak var minPredBGValue: UITextField!
+    @IBOutlet weak var warningSymbol: UIImageView!
     var CR: Decimal = 0.0
+    var minPredBG: Decimal = 0.0
+    var lowThreshold: Decimal = 0.0
     
     let maxCarbs = UserDefaultsRepository.maxCarbs.value
     let maxFatProtein = UserDefaultsRepository.maxFatProtein.value
     let maxBolus = UserDefaultsRepository.maxBolus.value
-        
+    
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
     
@@ -47,7 +51,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         proteinEntryField.delegate = self
         self.focusCarbsEntryField()
         
-        // Use sharedCRValue instead of UserDefaultsRepository.carbRatio.value
+    //Bolus calculation preperations
+        
+        //Carb ratio
         if let sharedCRDouble = Double(sharedCRValue) {
             CR = Decimal(sharedCRDouble)
         } else {
@@ -58,18 +64,41 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         let numberFormatter = NumberFormatter()
         numberFormatter.minimumFractionDigits = 0
         numberFormatter.maximumFractionDigits = 1
-
+        
         // Format the CR value to have one decimal place
         let formattedCR = numberFormatter.string(from: NSDecimalNumber(decimal: CR) as NSNumber) ?? ""
-
+        
         // Set the text field with the formatted value of CR or "N/A" if formattedCR is "0.0"
         CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
         print("CR: \(formattedCR) g/E")
-        print("Predicted Min BG: \((sharedPredMin) * 0.0555) mmol/L") // Just print for now. To use as guardrail for bolusrecommendation later on
+        
+        /*
         print("Latest IOB: \(sharedLatestIOB) E") // Just print for now. To use as info in bolusrecommendation later on
         print("Latest COB: \(sharedLatestCOB) g") // Just print for now. To use as info in bolusrecommendation later on
         print("Delta: \(Double(sharedDeltaBG) * 0.0555) mmol/L") // Just print for now. To use as info in bolusrecommendation later on
+         */
         
+        //MinPredBG & Low Threshold
+        let minPredBG = Decimal(sharedPredMin * 0.0555)
+        let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
+        
+        // Format the MinPredBG value & low threshold to have one decimal place
+        let formattedMinPredBG = numberFormatter.string(from: NSDecimalNumber(decimal: minPredBG) as NSNumber) ?? ""
+        let formattedLowThreshold = numberFormatter.string(from: NSDecimalNumber(decimal: lowThreshold) as NSNumber) ?? ""
+         
+        // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinPredBG is "0.0"
+        minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
+        print("Predicted Min BG: \(formattedMinPredBG) mmol/L")
+        print("Low threshold: \(formattedLowThreshold) mmol/L")
+        
+        // Check if the value of minPredBG is less than lowThreshold
+        if minPredBG < lowThreshold {
+            // Show warning symbol
+                warningSymbol.isHidden = false
+        } else {
+            // Hide warning symbol
+                warningSymbol.isHidden = true
+        }
         // Check the value of hideRemoteBolus and hide the bolusRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {
             hideBolusRow()
@@ -80,31 +109,31 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             hideBolusCalcRow()
         }
     }
-
+    
     // Function to calculate the suggested bolus value based on CR and check for maxCarbs
     func calculateBolus() {
-            guard let carbsText = carbsEntryField.text,
-                  let carbsValue = Decimal(string: carbsText),
-                  carbsValue > 0 else {
-                // If no valid input or input is not a positive number, clear bolusCalculated
-                bolusCalculated.text = ""
-                return
-            }
-
-            var bolusValue = carbsValue / CR
-            // Round down to the nearest 0.05
-            bolusValue = roundDown(toNearest: Decimal(0.05), value: bolusValue)
-            
-            // Format the bolus value based on the locale's decimal separator
-            let formattedBolus = formatDecimal(bolusValue)
-            
-            bolusCalculated.text = "\(formattedBolus)"
+        guard let carbsText = carbsEntryField.text,
+              let carbsValue = Decimal(string: carbsText),
+              carbsValue > 0 else {
+            // If no valid input or input is not a positive number, clear bolusCalculated
+            bolusCalculated.text = ""
+            return
         }
-
-        // UITextFieldDelegate method to handle text changes in carbsEntryField
+        
+        var bolusValue = carbsValue / CR
+        // Round down to the nearest 0.05
+        bolusValue = roundDown(toNearest: Decimal(0.05), value: bolusValue)
+        
+        // Format the bolus value based on the locale's decimal separator
+        let formattedBolus = formatDecimal(bolusValue)
+        
+        bolusCalculated.text = "\(formattedBolus)"
+    }
+    
+    // UITextFieldDelegate method to handle text changes in carbsEntryField
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         // Ensure that the textField being changed is the carbsEntryField
-
+        
         // Calculate the new text after the replacement
         let newText = (textField.text as NSString?)?.replacingCharacters(in: range, with: string) ?? string
         if !newText.isEmpty {
@@ -119,49 +148,49 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             updateButtonState()
             return true
         }
-
-            // Check if the new text is a valid number
-            guard let newValue = Decimal(string: newText), newValue >= 0 else {
-                // Update button state
-                updateButtonState()
-                return false
-            }
-
-            let carbsValue = Decimal(string: carbsEntryField.text ?? "0") ?? 0
-            let fatValue = Decimal(string: fatEntryField.text ?? "0") ?? 0
-            let proteinValue = Decimal(string: proteinEntryField.text ?? "0") ?? 0
-            
-            // Check if the carbs value exceeds maxCarbs
-            if carbsValue > Decimal(maxCarbs) {
-                    // Disable button
-                    isButtonDisabled = true
-                    // Update button title
-                    sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns kolhydrater \(maxCarbs) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-            } else if fatValue > Decimal(maxFatProtein) || proteinValue > Decimal(maxFatProtein) {
-                // Disable button
-                isButtonDisabled = true
-                // Update button title
-                sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns fett/protein \(maxFatProtein) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-            } else {
-                    // Enable button
-                    isButtonDisabled = false
-                    // Check if bolusText is not "0" and not empty
-                    if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
-                        // Update button title with bolus
-                        sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid och Bolus", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-                    } else {
-                        // Update button title without bolus
-                        sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-                    }
-                }
-
+        
+        // Check if the new text is a valid number
+        guard let newValue = Decimal(string: newText), newValue >= 0 else {
             // Update button state
             updateButtonState()
-
-            return false // Return false to prevent the text field from updating its text again
+            return false
         }
-
-
+        
+        let carbsValue = Decimal(string: carbsEntryField.text ?? "0") ?? 0
+        let fatValue = Decimal(string: fatEntryField.text ?? "0") ?? 0
+        let proteinValue = Decimal(string: proteinEntryField.text ?? "0") ?? 0
+        
+        // Check if the carbs value exceeds maxCarbs
+        if carbsValue > Decimal(maxCarbs) {
+            // Disable button
+            isButtonDisabled = true
+            // Update button title
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns kolhydrater \(maxCarbs) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+        } else if fatValue > Decimal(maxFatProtein) || proteinValue > Decimal(maxFatProtein) {
+            // Disable button
+            isButtonDisabled = true
+            // Update button title
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns fett/protein \(maxFatProtein) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+        } else {
+            // Enable button
+            isButtonDisabled = false
+            // Check if bolusText is not "0" and not empty
+            if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
+                // Update button title with bolus
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid och Bolus", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+            } else {
+                // Update button title without bolus
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
+            }
+        }
+        
+        // Update button state
+        updateButtonState()
+        
+        return false // Return false to prevent the text field from updating its text again
+    }
+    
+    
     // Function to round a Decimal number down to the nearest specified increment
     func roundDown(toNearest increment: Decimal, value: Decimal) -> Decimal {
         let doubleValue = NSDecimalNumber(decimal: value).doubleValue
@@ -169,7 +198,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         
         return Decimal(roundedDouble)
     }
-
+    
     // Function to format a Decimal number based on the locale's decimal separator
     func formatDecimal(_ value: Decimal) -> String {
         let doubleValue = NSDecimalNumber(decimal: value).doubleValue
@@ -188,8 +217,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     }
     
     func focusCarbsEntryField() {
-            self.carbsEntryField.becomeFirstResponder()
-        }
+        self.carbsEntryField.becomeFirstResponder()
+    }
     
     @IBAction func presetButtonTapped(_ sender: Any) {
         let customActionViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomAction") as! CustomActionViewController
@@ -198,12 +227,12 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     
     @IBAction func sendRemoteMealPressed(_ sender: Any) {
         // Disable the button to prevent multiple taps
-                if !isButtonDisabled {
-                    isButtonDisabled = true
-                    sendMealButton.isEnabled = false
-                } else {
-                    return // If button is already disabled, return to prevent double registration
-                }
+        if !isButtonDisabled {
+            isButtonDisabled = true
+            sendMealButton.isEnabled = false
+        } else {
+            return // If button is already disabled, return to prevent double registration
+        }
         
         // Retrieve the maximum carbs value from UserDefaultsRepository
         //let maxCarbs = UserDefaultsRepository.maxCarbs.value
@@ -341,14 +370,14 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // Call createCombinedString to get the combined string
         //let combinedString = createCombinedString(carbs: carbs, fats: fats, proteins: proteins)
         let combinedString = createCombinedString(carbs: carbsValue, fats: fatsValue, proteins: proteinsValue)
-
+        
         // Show confirmation alert
         if bolusValue != 0 {
             showMealBolusConfirmationAlert(combinedString: combinedString)
         } else {
             showMealConfirmationAlert(combinedString: combinedString)
         }
-    
+        
         //func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
         func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
             let mealNotesValue = mealNotes.text ?? ""
@@ -357,7 +386,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let secret = UserDefaultsRepository.remoteSecretCode.value
             // Convert bolusValue to string and trim any leading or trailing whitespace
             let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
-
+            
             if UserDefaultsRepository.hideRemoteBolus.value {
                 // Construct and return the combinedString without bolus
                 return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInlagt av: \(name)\nHemlig kod: \(secret)"
@@ -370,7 +399,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         //Alert for meal without bolus
         func showMealConfirmationAlert(combinedString: String) {
             // Set isAlertShowing to true before showing the alert
-                    isAlertShowing = true
+            isAlertShowing = true
             // Confirmation alert before sending the request
             let confirmationAlert = UIAlertController(title: "Bekräfta måltid", message: "Vill du registrera denna måltid?", preferredStyle: .alert)
             
@@ -390,7 +419,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         //Alert for meal WITH bolus
         func showMealBolusConfirmationAlert(combinedString: String) {
             // Set isAlertShowing to true before showing the alert
-                    isAlertShowing = true
+            isAlertShowing = true
             // Confirmation alert before sending the request
             let confirmationAlert = UIAlertController(title: "Bekräfta måltid och bolus", message: "Vill du registrera denna måltid och ge \(bolusValue) E bolus?", preferredStyle: .alert)
             
@@ -472,7 +501,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         sendMealButton.isEnabled = true
         isButtonDisabled = false // Reset button disable status
     }
-        
+    
     func sendMealRequest(combinedString: String) {
         // Retrieve the method value from UserDefaultsRepository
         let method = UserDefaultsRepository.method.value

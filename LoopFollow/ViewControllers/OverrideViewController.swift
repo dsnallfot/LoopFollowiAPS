@@ -71,11 +71,6 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
             print("No override option selected")
             return
         }
-        /*
-        //Old formatting saved for a while
-        let combinedString = "Override_\(selectedOverride)"
-        print("Combined string:", combinedString)
-         */
         
         //New formatting for testing (Use "Remote Override" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value

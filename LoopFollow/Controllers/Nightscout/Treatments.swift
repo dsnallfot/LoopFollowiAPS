@@ -59,7 +59,7 @@ extension MainViewController {
             switch eventType {
                         case "Temp Basal":
                             tempBasal.append(entry)
-                        case "Correction Bolus", "Bolus", /*"SMB",*/ "Insulinpenna":
+                        case "Correction Bolus", "Bolus", "Insulinpenna":
                             bolus.append(entry)
                         case "SMB":
                             smb.append(entry)

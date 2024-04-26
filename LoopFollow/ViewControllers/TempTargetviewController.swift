@@ -71,12 +71,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
             print("No temp target option selected")
             return
         }
-        /*
-        //Old formatting saved for a while
-        let combinedString = "TempTarget_\(selectedTempTarget)"
-        print("Combined string:", combinedString)
-         */
-        
+
         //New formatting for testing (Use "Remote Temp Target" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
