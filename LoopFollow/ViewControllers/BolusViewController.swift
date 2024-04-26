@@ -17,9 +17,13 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     @IBOutlet weak var sendBolusButton: UIButton!
     @IBOutlet weak var bolusAmount: UITextField!
     @IBOutlet weak var bolusUnits: UITextField!
-    
+    @IBOutlet weak var minPredBGValue: UITextField!
+    @IBOutlet weak var minPredBGView: UIView!
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
+    
+    var minPredBG: Decimal = 0.0
+    var lowThreshold: Decimal = 0.0
     
     let maxBolus = UserDefaultsRepository.maxBolus.value
 
@@ -30,6 +34,33 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         }
         bolusEntryField.delegate = self
         self.focusBolusEntryField()
+        
+        // Create a NumberFormatter instance
+        let numberFormatter = NumberFormatter()
+        numberFormatter.minimumFractionDigits = 0
+        numberFormatter.maximumFractionDigits = 1
+        
+        //MinPredBG & Low Threshold
+        let minPredBG = Decimal(sharedPredMin * 0.0555)
+        let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
+        
+        // Format the MinPredBG value & low threshold to have one decimal place
+        let formattedMinPredBG = numberFormatter.string(from: NSDecimalNumber(decimal: minPredBG) as NSNumber) ?? ""
+        let formattedLowThreshold = numberFormatter.string(from: NSDecimalNumber(decimal: lowThreshold) as NSNumber) ?? ""
+         
+        // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinPredBG is "0.0"
+        minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
+        print("Predicted Min BG: \(formattedMinPredBG) mmol/L")
+        print("Low threshold: \(formattedLowThreshold) mmol/L")
+        
+        // Check if the value of minPredBG is less than lowThreshold
+        if minPredBG < lowThreshold {
+            // Show warning symbol
+         minPredBGView.isHidden = false
+        } else {
+            // Hide warning symbol
+         minPredBGView.isHidden = true
+        }
     }
     func focusBolusEntryField() {
         self.bolusEntryField.becomeFirstResponder()
