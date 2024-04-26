@@ -13,8 +13,6 @@ import AudioToolbox
 class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestable  {
     var appStateController: AppStateController?
     
-    //var latestCR: Double = 0.0 // Out commented preparations for fetching latestCR
-    
     @IBOutlet weak var carbsEntryField: UITextField!
     @IBOutlet weak var fatEntryField: UITextField!
     @IBOutlet weak var proteinEntryField: UITextField!
@@ -49,14 +47,13 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         proteinEntryField.delegate = self
         self.focusCarbsEntryField()
         
-       // Retrieve the carb ratio value from UserDefaults
-        let carbRatio = UserDefaultsRepository.carbRatio.value
-        CR = Decimal(carbRatio)
+        // Use sharedCRValue instead of UserDefaultsRepository.carbRatio.value
+        if let sharedCRDouble = Double(sharedCRValue) {
+            CR = Decimal(sharedCRDouble)
+        } else {
+            print("CR could not be fetched")
+        }
         
-        // Now you can use latestCR instead of UserDefaultsRepository.carbRatio.value
-        //CR = Decimal(latestCR) // Out commented preparations for fetching latestCR
-
-
         // Create a NumberFormatter instance
         let numberFormatter = NumberFormatter()
         numberFormatter.minimumFractionDigits = 0
@@ -65,8 +62,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // Format the CR value to have one decimal place
         let formattedCR = numberFormatter.string(from: NSDecimalNumber(decimal: CR) as NSNumber) ?? ""
 
-        // Set the text field with the formatted value of CR
-        CRValue.text = formattedCR
+        // Set the text field with the formatted value of CR or "N/A" if formattedCR is "0.0"
+        CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
         print("CR: \(formattedCR)")
         
         // Check the value of hideRemoteBolus and hide the bolusRow accordingly
@@ -79,7 +76,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             hideBolusCalcRow()
         }
     }
-    
+
     // Function to calculate the suggested bolus value based on CR and check for maxCarbs
     func calculateBolus() {
             guard let carbsText = carbsEntryField.text,

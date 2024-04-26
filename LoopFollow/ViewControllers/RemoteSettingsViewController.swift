@@ -353,6 +353,8 @@ class RemoteSettingsViewController: FormViewController {
             self?.reloadForm()
         }
 
+        //Out commented code since CR now is fetched from enacted loopstatus
+        /*
         // Conditionally show the StepperRow based on the value of the switch row
         <<< StepperRow("carbRatio") { row in
             row.title = "Carb Ratio for bolus calc"
@@ -370,7 +372,7 @@ class RemoteSettingsViewController: FormViewController {
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
             UserDefaultsRepository.carbRatio.value = Double(value)
-        }
+        }*/
 
         +++ ButtonRow() {
             $0.title = "DONE"
