@@ -65,6 +65,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // Set the text field with the formatted value of CR or "N/A" if formattedCR is "0.0"
         CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
         print("CR: \(formattedCR)")
+        print("Predicted Min BG: \(sharedPredMin) mg/dl") // Just print for now. To use as guardrail for bolusrecommendation later on
         
         // Check the value of hideRemoteBolus and hide the bolusRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {

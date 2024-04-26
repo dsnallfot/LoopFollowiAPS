@@ -10,6 +10,7 @@ import Foundation
 import UIKit
 
 var sharedCRValue: String = ""
+var sharedPredMin: Double = 0.0
 
 extension MainViewController {
     // NS Device Status Web Call
@@ -325,11 +326,17 @@ extension MainViewController {
                             }
                         }
                         
-                        let predMin = graphdata.min()
-                        let predMax = graphdata.max()
-                        tableData[9].value = bgUnits.toDisplayUnits(String(predMin!)) + "-" + bgUnits.toDisplayUnits(String(predMax!)) + " mmol/L"
-                        
-                        updatePredictionGraph(color: predictioncolor)
+                        if let predMin = graphdata.min(), let predMax = graphdata.max() {
+                            let formattedPredMin = bgUnits.toDisplayUnits(String(predMin))
+                            let formattedPredMax = bgUnits.toDisplayUnits(String(predMax))
+                            tableData[9].value = "\(formattedPredMin) - \(formattedPredMax) mmol/L"
+                            // Update sharedPredMin here
+                            sharedPredMin = predMin
+                            updatePredictionGraph(color: predictioncolor)
+                        } else {
+                            tableData[9].value = "N/A"
+                            // Handle the case where predMin or predMax is nil
+                        }
                     }
                     
                     if let loopStatus = lastLoopRecord["recommendedTempBasal"] as? [String:AnyObject] {
