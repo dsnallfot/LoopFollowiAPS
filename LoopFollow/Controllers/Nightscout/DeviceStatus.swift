@@ -11,6 +11,8 @@ import UIKit
 
 var sharedCRValue: String = ""
 var sharedPredMin: Double = 0.0
+var sharedLatestIOB: String = ""
+var sharedLatestCOB: String = ""
 
 extension MainViewController {
     // NS Device Status Web Call
@@ -208,10 +210,12 @@ extension MainViewController {
                     if let iobdata = lastLoopRecord["iob"] as? [String:AnyObject] {
                         tableData[0].value = String(format:"%.2f", (iobdata["iob"] as! Double)) + " E"
                         latestIOB = String(format:"%.2f", (iobdata["iob"] as! Double))
+                        sharedLatestIOB = latestIOB
                     }
                     if let enactedData = lastLoopRecord["enacted"] as? [String:AnyObject] {
                         tableData[1].value = String(format:"%.0f", enactedData["COB"] as! Double) + " g"
-                        latestCOB = String(format:"%.0f", enactedData["COB"] as! Double) + " g"
+                        latestCOB = String(format:"%.0f", enactedData["COB"] as! Double)
+                        sharedLatestCOB = latestCOB
                         
                         tableData[8].value = String(format:"%.2f", enactedData["insulinReq"] as! Double) + " E"
                         
