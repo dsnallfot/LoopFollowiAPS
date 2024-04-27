@@ -84,7 +84,7 @@ extension MainViewController {
                                 let newEntry = cageData(created_at: createdAt)
                                 pumpSiteChange.append(newEntry)
                             }
-                        case "Sensor Start", "Sensor Change", "Sensorbyte":
+                        case "Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart":
                             if let createdAt = entry["created_at"] as? String {
                                 let newEntry = sageData(created_at: createdAt)
                                 cgmSensorChange.append(newEntry)
