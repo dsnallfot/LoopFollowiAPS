@@ -30,6 +30,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var CRValue: UITextField!
     @IBOutlet weak var minPredBGValue: UITextField!
     @IBOutlet weak var minBGStack: UIStackView!
+    @IBOutlet weak var bolusStack: UIStackView!
     var CR: Decimal = 0.0
     var minPredBG: Decimal = 0.0
     var lowThreshold: Decimal = 0.0
@@ -40,6 +41,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
+    var isBolusEntryFieldPopulated = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -99,6 +101,11 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Hide Min BG stack
             minBGStack.isHidden = true
         }
+        
+        // Add tap gesture recognizer to bolusStack
+                let tapGesture = UITapGestureRecognizer(target: self, action: #selector(bolusStackTapped))
+                bolusStack.addGestureRecognizer(tapGesture)
+        
         // Check the value of hideRemoteBolus and hide the bolusRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {
             hideBolusRow()
@@ -218,6 +225,19 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     
     func focusCarbsEntryField() {
         self.carbsEntryField.becomeFirstResponder()
+    }
+    
+    // Action method to handle tap on bolusStack
+    @objc func bolusStackTapped() {
+        if isBolusEntryFieldPopulated {
+            // If bolusEntryField is already populated, make it empty
+            bolusEntryField.text = ""
+            isBolusEntryFieldPopulated = false
+        } else {
+            // If bolusEntryField is empty, populate it with the value from bolusCalculated
+            bolusEntryField.text = bolusCalculated.text
+            isBolusEntryFieldPopulated = true
+        }
     }
     
     @IBAction func presetButtonTapped(_ sender: Any) {

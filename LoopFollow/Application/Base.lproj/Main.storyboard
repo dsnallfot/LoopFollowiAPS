@@ -1140,17 +1140,17 @@
                                     <action selector="sendRemoteMealPressed:" destination="vZZ-Gp-n6j" eventType="touchUpInside" id="NPm-EP-8Fr"/>
                                 </connections>
                             </button>
-                            <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2gn-wU-vht" userLabel="Bolus calculations">
-                                <rect key="frame" x="24" y="481.66666666666663" width="327" height="24.666666666666686"/>
+                            <view autoresizesSubviews="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" verticalHuggingPriority="249" horizontalCompressionResistancePriority="749" verticalCompressionResistancePriority="749" translatesAutoresizingMaskIntoConstraints="NO" id="2gn-wU-vht" userLabel="Bolus calculations">
+                                <rect key="frame" x="24" y="473.66666666666669" width="327" height="24.666666666666686"/>
                                 <subviews>
-                                    <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" distribution="equalSpacing" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="bwx-Nh-71D" userLabel="Calc stack">
-                                        <rect key="frame" x="0.0" y="3" width="327" height="20.333333333333332"/>
+                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="equalSpacing" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="bwx-Nh-71D" userLabel="Calc stack">
+                                        <rect key="frame" x="4" y="3" width="319" height="18.666666666666668"/>
                                         <subviews>
-                                            <stackView opaque="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="amd-cH-2dr" userLabel="CR Stack">
-                                                <rect key="frame" x="0.0" y="0.0" width="66" height="20.333333333333332"/>
+                                            <stackView opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="amd-cH-2dr" userLabel="CR Stack">
+                                                <rect key="frame" x="0.0" y="0.0" width="66" height="18.666666666666668"/>
                                                 <subviews>
                                                     <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="247" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="CR:" textAlignment="natural" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="0iT-Zf-5iK">
-                                                        <rect key="frame" x="0.0" y="0.0" width="23" height="20.333333333333332"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="23" height="18.666666666666668"/>
                                                         <accessibility key="accessibilityConfiguration">
                                                             <accessibilityTraits key="traits" notEnabled="YES"/>
                                                         </accessibility>
@@ -1162,7 +1162,7 @@
                                                         <textInputTraits key="textInputTraits"/>
                                                     </textField>
                                                     <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="--" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="HuJ-v6-CGs">
-                                                        <rect key="frame" x="31" y="0.0" width="35" height="20.333333333333332"/>
+                                                        <rect key="frame" x="31" y="0.0" width="35" height="18.666666666666668"/>
                                                         <accessibility key="accessibilityConfiguration">
                                                             <accessibilityTraits key="traits" notEnabled="YES"/>
                                                         </accessibility>
@@ -1174,11 +1174,11 @@
                                                     </textField>
                                                 </subviews>
                                             </stackView>
-                                            <stackView opaque="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="CDP-F4-WHL" userLabel="Min BG stack">
-                                                <rect key="frame" x="96" y="0.0" width="123" height="20.333333333333332"/>
+                                            <stackView opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="CDP-F4-WHL" userLabel="Min BG stack">
+                                                <rect key="frame" x="92" y="0.0" width="123" height="18.666666666666668"/>
                                                 <subviews>
                                                     <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" translatesAutoresizingMaskIntoConstraints="NO" id="aE4-eh-QsG">
-                                                        <rect key="frame" x="0.0" y="1.3333333333333321" width="21" height="18"/>
+                                                        <rect key="frame" x="0.0" y="1.3333333333333321" width="21" height="16.333333333333336"/>
                                                         <color key="tintColor" systemColor="labelColor"/>
                                                         <imageReference key="image" image="exclamationmark.triangle.fill" catalog="system" symbolScale="medium" renderingMode="hierarchical">
                                                             <hierarchicalColors>
@@ -1189,7 +1189,7 @@
                                                         </imageReference>
                                                     </imageView>
                                                     <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="247" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="Min BG:" textAlignment="natural" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="ImY-AS-MmW">
-                                                        <rect key="frame" x="29" y="0.0" width="51" height="20.333333333333332"/>
+                                                        <rect key="frame" x="29" y="0.0" width="51" height="18.666666666666668"/>
                                                         <accessibility key="accessibilityConfiguration">
                                                             <accessibilityTraits key="traits" notEnabled="YES"/>
                                                         </accessibility>
@@ -1201,7 +1201,7 @@
                                                         <textInputTraits key="textInputTraits"/>
                                                     </textField>
                                                     <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="--" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="hgY-IM-3vx">
-                                                        <rect key="frame" x="88" y="0.0" width="35" height="20.333333333333332"/>
+                                                        <rect key="frame" x="88" y="0.0" width="35" height="18.666666666666668"/>
                                                         <accessibility key="accessibilityConfiguration">
                                                             <accessibilityTraits key="traits" notEnabled="YES"/>
                                                         </accessibility>
@@ -1213,11 +1213,11 @@
                                                     </textField>
                                                 </subviews>
                                             </stackView>
-                                            <stackView opaque="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="95y-dY-wba" userLabel="Bolus stack">
-                                                <rect key="frame" x="248.66666666666671" y="0.0" width="78.333333333333343" height="20.333333333333332"/>
+                                            <stackView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="252" verticalHuggingPriority="252" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="95y-dY-wba" userLabel="Bolus stack">
+                                                <rect key="frame" x="240.66666666666671" y="0.0" width="78.333333333333343" height="18.666666666666668"/>
                                                 <subviews>
                                                     <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="Bolus:" textAlignment="right" adjustsFontSizeToFit="NO" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="mOd-tR-lbz">
-                                                        <rect key="frame" x="0.0" y="0.0" width="40" height="20.333333333333332"/>
+                                                        <rect key="frame" x="0.0" y="0.0" width="40" height="18.666666666666668"/>
                                                         <accessibility key="accessibilityConfiguration">
                                                             <accessibilityTraits key="traits" notEnabled="YES"/>
                                                         </accessibility>
@@ -1225,8 +1225,8 @@
                                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                         <textInputTraits key="textInputTraits"/>
                                                     </textField>
-                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="--" textAlignment="right" adjustsFontSizeToFit="NO" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="I2U-cs-0ob">
-                                                        <rect key="frame" x="48" y="0.0" width="13.333333333333336" height="20.333333333333332"/>
+                                                    <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="--" textAlignment="right" adjustsFontSizeToFit="NO" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="I2U-cs-0ob">
+                                                        <rect key="frame" x="48" y="0.0" width="13.333333333333336" height="18.666666666666668"/>
                                                         <accessibility key="accessibilityConfiguration">
                                                             <accessibilityTraits key="traits" notEnabled="YES"/>
                                                         </accessibility>
@@ -1237,7 +1237,7 @@
                                                         <textInputTraits key="textInputTraits"/>
                                                     </textField>
                                                     <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="E" textAlignment="natural" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Kam-lr-gX7">
-                                                        <rect key="frame" x="69.333333333333314" y="0.0" width="9" height="20.333333333333332"/>
+                                                        <rect key="frame" x="69.333333333333314" y="0.0" width="9" height="18.666666666666668"/>
                                                         <accessibility key="accessibilityConfiguration">
                                                             <accessibilityTraits key="traits" notEnabled="YES"/>
                                                         </accessibility>
@@ -1250,12 +1250,12 @@
                                         </subviews>
                                     </stackView>
                                 </subviews>
-                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <constraints>
                                     <constraint firstItem="bwx-Nh-71D" firstAttribute="leading" secondItem="2gn-wU-vht" secondAttribute="leading" constant="4" id="8La-I9-0Rb"/>
-                                    <constraint firstItem="bwx-Nh-71D" firstAttribute="leading" secondItem="2gn-wU-vht" secondAttribute="leading" id="ERN-Cs-FMY"/>
+                                    <constraint firstAttribute="height" constant="24.670000000000002" id="izS-H2-NyH"/>
+                                    <constraint firstItem="bwx-Nh-71D" firstAttribute="centerY" secondItem="2gn-wU-vht" secondAttribute="centerY" id="kAE-km-6vy"/>
+                                    <constraint firstItem="bwx-Nh-71D" firstAttribute="top" secondItem="2gn-wU-vht" secondAttribute="top" constant="3" id="mcF-VZ-74K"/>
                                     <constraint firstAttribute="trailing" secondItem="bwx-Nh-71D" secondAttribute="trailing" constant="4" id="p68-UI-LJi"/>
-                                    <constraint firstAttribute="trailing" secondItem="bwx-Nh-71D" secondAttribute="trailing" id="zov-eO-76N"/>
                                 </constraints>
                             </view>
                         </subviews>
@@ -1286,6 +1286,7 @@
                         <outlet property="bolusCalculated" destination="I2U-cs-0ob" id="FZA-Oh-e90"/>
                         <outlet property="bolusEntryField" destination="w60-pI-Fq0" id="B1y-LA-ZYi"/>
                         <outlet property="bolusRow" destination="1MG-ka-WeC" id="mBu-Yw-aqz"/>
+                        <outlet property="bolusStack" destination="95y-dY-wba" id="lvz-aQ-gUw"/>
                         <outlet property="bolusUnits" destination="w60-pI-Fq0" id="fzb-I7-3Q9"/>
                         <outlet property="carbGrams" destination="4O6-tP-VAz" id="h4d-TM-Wbc"/>
                         <outlet property="carbsEntryField" destination="4O6-tP-VAz" id="e4g-rY-clb"/>
@@ -1837,7 +1838,7 @@
                                 <rect key="frame" x="24" y="480" width="327" height="24.666666666666742"/>
                                 <subviews>
                                     <stackView opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" ambiguous="YES" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="MIP-na-OUH">
-                                        <rect key="frame" x="108" y="8" width="109" height="20.333333333333336"/>
+                                        <rect key="frame" x="108" y="8" width="109" height="20.333333333333332"/>
                                         <subviews>
                                             <imageView opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="9Zo-V2-kti">
                                                 <rect key="frame" x="0.0" y="1.3333333333333321" width="21" height="18"/>
