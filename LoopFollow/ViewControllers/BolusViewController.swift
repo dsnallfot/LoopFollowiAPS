@@ -22,7 +22,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
     
-    var minPredBG: Decimal = 0.0
+    var minGuardBG: Decimal = 0.0
     var lowThreshold: Decimal = 0.0
     
     let maxBolus = UserDefaultsRepository.maxBolus.value
@@ -40,21 +40,21 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         numberFormatter.minimumFractionDigits = 0
         numberFormatter.maximumFractionDigits = 1
         
-        //MinPredBG & Low Threshold
-        let minPredBG = Decimal(sharedPredMin * 0.0555)
+        //MinGuardBG & Low Threshold
+        let minGuardBG = Decimal(sharedMinGuardBG)
         let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
         
-        // Format the MinPredBG value & low threshold to have one decimal place
-        let formattedMinPredBG = numberFormatter.string(from: NSDecimalNumber(decimal: minPredBG) as NSNumber) ?? ""
+        // Format the MinGuardBG value & low threshold to have one decimal place
+        let formattedMinGuardBG = numberFormatter.string(from: NSDecimalNumber(decimal: minGuardBG) as NSNumber) ?? ""
         let formattedLowThreshold = numberFormatter.string(from: NSDecimalNumber(decimal: lowThreshold) as NSNumber) ?? ""
          
-        // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinPredBG is "0.0"
-        minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
-        print("Predicted Min BG: \(formattedMinPredBG) mmol/L")
+        // Set the text field with the formatted value of minGuardBG or "N/A" if formattedMinGuardBG is "0.0"
+        minPredBGValue.text = formattedMinGuardBG == "0" ? "N/A" : formattedMinGuardBG
+        print("Predicted Min BG: \(formattedMinGuardBG) mmol/L")
         print("Low threshold: \(formattedLowThreshold) mmol/L")
         
         // Check if the value of minPredBG is less than lowThreshold
-        if minPredBG < lowThreshold {
+        if minGuardBG < lowThreshold {
             // Show warning symbol
             minPredBGStack.isHidden = false
         } else {

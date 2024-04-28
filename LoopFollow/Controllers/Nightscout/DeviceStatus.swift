@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 
 var sharedCRValue: String = ""
-var sharedPredMin: Double = 0.0
+var sharedMinGuardBG: Double = 0.0
 var sharedLatestIOB: String = ""
 var sharedLatestCOB: String = ""
 
@@ -203,38 +203,57 @@ extension MainViewController {
                         if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Loop: Was Enacted") }
                         wasEnacted = true
                         if let lastTempBasal = enacted["rate"] as? Double {
-                            
+                            // Handle lastTempBasal if needed
                         }
                     }
-                    
+
                     if let iobdata = lastLoopRecord["iob"] as? [String:AnyObject] {
-                        tableData[0].value = String(format:"%.2f", (iobdata["iob"] as! Double)) + " E"
-                        latestIOB = String(format:"%.2f", (iobdata["iob"] as! Double))
-                        sharedLatestIOB = latestIOB
+                        if let iob = iobdata["iob"] as? Double {
+                            tableData[0].value = String(format:"%.2f", iob) + " E"
+                            latestIOB = String(format:"%.2f", iob)
+                            sharedLatestIOB = latestIOB
+                        }
                     }
+
                     if let enactedData = lastLoopRecord["enacted"] as? [String:AnyObject] {
-                        tableData[1].value = String(format:"%.0f", enactedData["COB"] as! Double) + " g"
-                        latestCOB = String(format:"%.0f", enactedData["COB"] as! Double)
-                        sharedLatestCOB = latestCOB
+                        if let COB = enactedData["COB"] as? Double {
+                            tableData[1].value = String(format:"%.0f", COB) + " g"
+                            latestCOB = String(format:"%.0f", COB)
+                            sharedLatestCOB = latestCOB
+                        }
                         
-                        tableData[8].value = String(format:"%.2f", enactedData["insulinReq"] as! Double) + " E"
+                        if let insulinReq = enactedData["insulinReq"] as? Double {
+                            tableData[8].value = String(format:"%.2f", insulinReq) + " E"
+                        }
                         
-                        let sens = enactedData["sensitivityRatio"] as! Double * 100.0
-                        tableData[11].value = String(format:"%.0f", sens) + " %"
+                        if let sensitivityRatio = enactedData["sensitivityRatio"] as? Double {
+                            let sens = sensitivityRatio * 100.0
+                            tableData[11].value = String(format:"%.0f", sens) + " %"
+                        }
                         
-                        //Auggie - get TDD, ISF, CR, target
-                        tableData[13].value = String(format:"%.1f", enactedData["TDD"] as! Double) + " E"
-                        tableData[14].value = String(format:"%.1f", enactedData["ISF"] as! Double) + " mmol/L/E"
-                        tableData[15].value = String(format:"%.1f", enactedData["CR"] as! Double) + " g/E"
-                        // Compute tableDataCRValue here
-                        let tableDataCRValue = String(format:"%.1f", enactedData["CR"] as! Double)
-                        // Update sharedCRValue
-                        sharedCRValue = tableDataCRValue
+                        if let TDD = enactedData["TDD"] as? Double {
+                            tableData[13].value = String(format:"%.1f", TDD) + " E"
+                        }
                         
-                        //Daniel mmol version of target
-                        let currentTargetMgdl = enactedData["current_target"] as! Double
-                        let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
-                        tableData[16].value = String(format: "%.1f", currentTargetMmol) + " mmol/L"
+                        if let ISF = enactedData["ISF"] as? Double {
+                            tableData[14].value = String(format:"%.1f", ISF) + " mmol/L/E"
+                        }
+                        
+                        if let CR = enactedData["CR"] as? Double {
+                            tableData[15].value = String(format:"%.1f", CR) + " g/E"
+                            sharedCRValue = String(format:"%.1f", CR)
+                        }
+                        
+                        if let minGuardBG = enactedData["minGuardBG"] as? Double {
+                            let formattedMinGuardBGString = bgUnits.toDisplayUnits(String(format:"%.1f", minGuardBG))
+                            let formattedLowLine = bgUnits.toDisplayUnits(String(format:"%.1f", UserDefaultsRepository.lowLine.value))
+                            sharedMinGuardBG = Double(formattedMinGuardBGString) ?? 0.0
+                        }
+                        
+                        if let currentTargetMgdl = enactedData["current_target"] as? Double {
+                            let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
+                            tableData[16].value = String(format: "%.1f", currentTargetMmol) + " mmol/L"
+                        }
                         
                     } else {
                         // If enactedData is nil, set all tableData values to "Waiting"
@@ -334,8 +353,6 @@ extension MainViewController {
                             let formattedPredMin = bgUnits.toDisplayUnits(String(predMin))
                             let formattedPredMax = bgUnits.toDisplayUnits(String(predMax))
                             tableData[9].value = "\(formattedPredMin) - \(formattedPredMax) mmol/L"
-                            // Update sharedPredMin here
-                            sharedPredMin = predMin
                             updatePredictionGraph(color: predictioncolor)
                         } else {
                             tableData[9].value = "N/A"
