@@ -18,7 +18,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     @IBOutlet weak var bolusAmount: UITextField!
     @IBOutlet weak var bolusUnits: UITextField!
     @IBOutlet weak var minPredBGValue: UITextField!
-    @IBOutlet weak var minPredBGView: UIView!
+    @IBOutlet weak var minPredBGStack: UIStackView!
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
     
@@ -56,10 +56,10 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         // Check if the value of minPredBG is less than lowThreshold
         if minPredBG < lowThreshold {
             // Show warning symbol
-         minPredBGView.isHidden = false
+            minPredBGStack.isHidden = false
         } else {
             // Hide warning symbol
-         minPredBGView.isHidden = true
+            minPredBGStack.isHidden = true
         }
     }
     func focusBolusEntryField() {

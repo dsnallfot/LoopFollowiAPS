@@ -266,6 +266,19 @@ class RemoteSettingsViewController: FormViewController {
         }
         
         form +++ Section("Advanced functions (App Restart needed)")
+        <<< SwitchRow("hideRemoteCustom") { row in
+            row.title = "Show Custom Actions" //Inverted code to make switch on = show instead of hide
+            // Invert the value here for initial state
+            row.value = !UserDefaultsRepository.hideRemoteCustomActions.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            // Invert the value again when saving
+            UserDefaultsRepository.hideRemoteCustomActions.value = !value
+            
+            // Reload the form after the value changes
+            self?.reloadForm()
+        }
+        
         <<< SwitchRow("hideRemoteBolus") { row in
             row.title = "Show Remote Bolus" //Inverted code to make switch on = show instead of hide
             // Invert the value here for initial state
@@ -279,16 +292,15 @@ class RemoteSettingsViewController: FormViewController {
             self?.reloadForm()
         }
         
-        <<< SwitchRow("hideRemoteCustom") { row in
-            row.title = "Show Custom Actions" //Inverted code to make switch on = show instead of hide
-            // Invert the value here for initial state
-            row.value = !UserDefaultsRepository.hideRemoteCustomActions.value
+        <<< SwitchRow("hideBolusCalc") { row in
+            row.title = "Show Bolus Calculations"
+            row.value = !UserDefaultsRepository.hideBolusCalc.value
+            row.hidden = Condition.function(["hideRemoteBolus"], { form in
+                return !((form.rowBy(tag: "hideRemoteBolus") as? SwitchRow)?.value ?? true)
+            })
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
-            // Invert the value again when saving
-            UserDefaultsRepository.hideRemoteCustomActions.value = !value
-            
-            // Reload the form after the value changes
+            UserDefaultsRepository.hideBolusCalc.value = !value
             self?.reloadForm()
         }
         
@@ -342,17 +354,6 @@ class RemoteSettingsViewController: FormViewController {
             UserDefaultsRepository.maxBolus.value = Double(value)
         }
         
-        +++ Section(header: "Bolus Calculator", footer: "")
-        
-        <<< SwitchRow("hideBolusCalc") { row in
-            row.title = "Show Bolus Calculations"
-            row.value = !UserDefaultsRepository.hideBolusCalc.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.hideBolusCalc.value = !value
-            self?.reloadForm()
-        }
-
         +++ ButtonRow() {
             $0.title = "DONE"
         }.onCellSelection { (row, arg) in

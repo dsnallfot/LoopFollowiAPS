@@ -19,7 +19,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var notesEntryField: UITextField!
     @IBOutlet weak var bolusEntryField: UITextField!
     @IBOutlet weak var bolusRow: UIView!
-    @IBOutlet weak var bolusCalcRow: UIView!
+    @IBOutlet weak var bolusCalcStack: UIStackView!
     @IBOutlet weak var bolusCalculated: UITextField!
     @IBOutlet weak var sendMealButton: UIButton!
     @IBOutlet weak var carbGrams: UITextField!
@@ -103,8 +103,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         
         // Add tap gesture recognizer to bolusStack
-                let tapGesture = UITapGestureRecognizer(target: self, action: #selector(bolusStackTapped))
-                bolusStack.addGestureRecognizer(tapGesture)
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(bolusStackTapped))
+        bolusStack.addGestureRecognizer(tapGesture)
         
         // Check the value of hideRemoteBolus and hide the bolusRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {
@@ -163,34 +163,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             return false
         }
         
-        let carbsValue = Decimal(string: carbsEntryField.text ?? "0") ?? 0
-        let fatValue = Decimal(string: fatEntryField.text ?? "0") ?? 0
-        let proteinValue = Decimal(string: proteinEntryField.text ?? "0") ?? 0
-        
-        // Check if the carbs value exceeds maxCarbs
-        if carbsValue > Decimal(maxCarbs) {
-            // Disable button
-            isButtonDisabled = true
-            // Update button title
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns kolhydrater \(maxCarbs) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-        } else if fatValue > Decimal(maxFatProtein) || proteinValue > Decimal(maxFatProtein) {
-            // Disable button
-            isButtonDisabled = true
-            // Update button title
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns fett/protein \(maxFatProtein) g", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-        } else {
-            // Enable button
-            isButtonDisabled = false
-            // Check if bolusText is not "0" and not empty
-            if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
-                // Update button title with bolus
-                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid och Bolus", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-            } else {
-                // Update button title without bolus
-                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-            }
-        }
-        
+        sendMealorMealandBolus()
+            
         // Update button state
         updateButtonState()
         
@@ -227,18 +201,72 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         self.carbsEntryField.becomeFirstResponder()
     }
     
+    func sendMealorMealandBolus() {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!,
+        ]
+        
+        let carbsValue = Decimal(string: carbsEntryField.text ?? "0") ?? 0
+        let fatValue = Decimal(string: fatEntryField.text ?? "0") ?? 0
+        let proteinValue = Decimal(string: proteinEntryField.text ?? "0") ?? 0
+        
+        // Check if the carbs value exceeds maxCarbs
+        if carbsValue > Decimal(maxCarbs) {
+            // Disable button
+            isButtonDisabled = true
+            sendMealButton.isEnabled = false
+            // Update button title
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns kolhydrater \(maxCarbs) g", attributes: attributes), for: .normal)
+        } else if fatValue > Decimal(maxFatProtein) || proteinValue > Decimal(maxFatProtein) {
+            // Disable button
+            isButtonDisabled = true
+            sendMealButton.isEnabled = false
+            // Update button title
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns fett/protein \(maxFatProtein) g", attributes: attributes), for: .normal)
+            
+            // Check if bolusText exceeds maxBolus
+        } else if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
+           let bolusValue = Decimal(string: bolusText),
+           bolusValue > Decimal(maxBolus) + 0.01 { //add 0.01 to allow entry of = maxBolus due to rounding issues with double and decimals otherwise disable it when bolusValue=maxBolus
+            
+            // Disable button
+            isButtonDisabled = true
+            sendMealButton.isEnabled = false
+            
+            // Format maxBolus with two decimal places
+            let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
+            
+            // Update button title if bolus exceeds maxBolus
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns bolus \(formattedMaxBolus) E", attributes: attributes), for: .normal)
+        } else {
+            // Enable button
+            sendMealButton.isEnabled = true
+            isButtonDisabled = false
+           // Check if bolusText is not "0" and not empty
+            if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
+                // Update button title with bolus
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid och Bolus", attributes: attributes), for: .normal)
+            } else {
+                // Update button title without bolus
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid", attributes: attributes), for: .normal)
+            }
+        }
+    }
+    
     // Action method to handle tap on bolusStack
     @objc func bolusStackTapped() {
         if isBolusEntryFieldPopulated {
             // If bolusEntryField is already populated, make it empty
             bolusEntryField.text = ""
             isBolusEntryFieldPopulated = false
+            sendMealorMealandBolus()
         } else {
             // If bolusEntryField is empty, populate it with the value from bolusCalculated
             bolusEntryField.text = bolusCalculated.text
             isBolusEntryFieldPopulated = true
+            sendMealorMealandBolus()
+            }
         }
-    }
     
     @IBAction func presetButtonTapped(_ sender: Any) {
         let customActionViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomAction") as! CustomActionViewController
@@ -567,37 +595,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     
     @IBAction func editingChanged(_ sender: Any) {
         print("Value changed in bolus amount")
+                
+        sendMealorMealandBolus()
         
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!,
-        ]
-        
-        // Check if bolusText exceeds maxBolus
-        if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
-           let bolusValue = Decimal(string: bolusText),
-           bolusValue > Decimal(maxBolus) + 0.01 { //add 0.01 to allow entry of = maxBolus due to rounding issues with double and decimals otherwise disable it when bolusValue=maxBolus
-            
-            // Disable button
-            sendMealButton.isEnabled = false
-            
-            // Format maxBolus with two decimal places
-            let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
-            
-            // Update button title if bolus exceeds maxBolus
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns bolus \(formattedMaxBolus) E", attributes: attributes), for: .normal)
-        } else {
-            // Enable button
-            sendMealButton.isEnabled = true
-            
-            // Check if bolusText is not "0" and not empty
-            if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
-                // Update button title with bolus
-                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid och Bolus", attributes: attributes), for: .normal)
-            } else {
-                // Update button title without bolus
-                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid", attributes: [.font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!]), for: .normal)
-            }
-        }
     }
     
     // Function to update button state
@@ -606,9 +606,10 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         sendMealButton.isEnabled = !isButtonDisabled
     }
 
-    // Function to hide the bolusRow
+    // Function to hide both the bolusRow and bolusCalcStack
     func hideBolusRow() {
         bolusRow.isHidden = true
+        bolusCalcStack.isHidden = true
     }
     
     // Function to show the bolusRow
@@ -616,14 +617,14 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         bolusRow.isHidden = false
     }
     
-    // Function to hide the bolusCalcRow
+    // Function to hide the bolusCalcStack
     func hideBolusCalcRow() {
-        bolusCalcRow.isHidden = true
+        bolusCalcStack.isHidden = true
     }
     
-    // Function to show the bolusCalcRow
+    // Function to show the bolusCalcStack
     func showBolusCalcRow() {
-        bolusCalcRow.isHidden = false
+        bolusCalcStack.isHidden = false
     }
     
     @IBAction func doneButtonTapped(_ sender: Any) {
