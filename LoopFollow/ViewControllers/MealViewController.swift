@@ -29,7 +29,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var bolusUnits: UITextField!
     @IBOutlet weak var CRValue: UITextField!
     @IBOutlet weak var minPredBGValue: UITextField!
-    @IBOutlet weak var warningSymbol: UIImageView!
+    @IBOutlet weak var minBGStack: UIStackView!
     var CR: Decimal = 0.0
     var minPredBG: Decimal = 0.0
     var lowThreshold: Decimal = 0.0
@@ -93,11 +93,11 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         
         // Check if the value of minPredBG is less than lowThreshold
         if minPredBG < lowThreshold {
-            // Show warning symbol
-                warningSymbol.isHidden = false
+            // Show Min BG stack
+            minBGStack.isHidden = false
         } else {
-            // Hide warning symbol
-                warningSymbol.isHidden = true
+            // Hide Min BG stack
+            minBGStack.isHidden = true
         }
         // Check the value of hideRemoteBolus and hide the bolusRow accordingly
         if UserDefaultsRepository.hideRemoteBolus.value {
