@@ -10,9 +10,11 @@ import Foundation
 import UIKit
 
 var sharedCRValue: String = ""
-var sharedMinGuardBG: Double = 0.0
 var sharedLatestIOB: String = ""
 var sharedLatestCOB: String = ""
+var sharedMinGuardBG: Double = 0.0
+var sharedInsulinReq: Double = 0.0
+var sharedLastSMBUnits: Double = 0.0
 
 extension MainViewController {
     // NS Device Status Web Call
@@ -244,16 +246,32 @@ extension MainViewController {
                             sharedCRValue = String(format:"%.1f", CR)
                         }
                         
-                        if let minGuardBG = enactedData["minGuardBG"] as? Double {
-                            let formattedMinGuardBGString = bgUnits.toDisplayUnits(String(format:"%.1f", minGuardBG))
-                            let formattedLowLine = bgUnits.toDisplayUnits(String(format:"%.1f", UserDefaultsRepository.lowLine.value))
-                            sharedMinGuardBG = Double(formattedMinGuardBGString) ?? 0.0
-                        }
-                        
                         if let currentTargetMgdl = enactedData["current_target"] as? Double {
                             let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
                             tableData[16].value = String(format: "%.1f", currentTargetMmol) + " mmol/L"
                         }
+                        //Daniel: Added enacted data for bolus calculator and info
+                        if let minGuardBG = enactedData["minGuardBG"] as? Double {
+                                let formattedMinGuardBGString = bgUnits.toDisplayUnits(String(format:"%.1f", minGuardBG))
+                                sharedMinGuardBG = Double(formattedMinGuardBGString) ?? 0
+                            } else {
+                                let formattedLowLine = bgUnits.toDisplayUnits(String(format:"%.1f", UserDefaultsRepository.lowLine.value))
+                                sharedMinGuardBG = Double(formattedLowLine) ?? 0
+                            }
+                        
+                        if let insulinReq = enactedData["insulinReq"] as? Double {
+                                let formattedInsulinReqString = String(format:"%.2f", insulinReq)
+                                sharedInsulinReq = Double(formattedInsulinReqString) ?? 0
+                            } else {
+                                sharedInsulinReq = 0
+                            }
+                        
+                        if let LastSMBUnits = enactedData["units"] as? Double {
+                                let formattedLastSMBUnitsString = String(format:"%.2f", LastSMBUnits)
+                                sharedLastSMBUnits = Double(formattedLastSMBUnitsString) ?? 0
+                            } else {
+                                sharedLastSMBUnits = 0
+                            }
                         
                     } else {
                         // If enactedData is nil, set all tableData values to "Waiting"
