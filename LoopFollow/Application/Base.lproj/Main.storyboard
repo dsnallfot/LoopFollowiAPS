@@ -1086,7 +1086,7 @@
                                                         </subviews>
                                                     </stackView>
                                                     <stackView opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="CDP-F4-WHL" userLabel="Min BG stack">
-                                                        <rect key="frame" x="77.333333333333314" y="0.0" width="123" height="44"/>
+                                                        <rect key="frame" x="97" y="0.0" width="123" height="44"/>
                                                         <subviews>
                                                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" translatesAutoresizingMaskIntoConstraints="NO" id="aE4-eh-QsG">
                                                                 <rect key="frame" x="0.0" y="1.3333333333333321" width="21" height="41.666666666666671"/>
@@ -1100,7 +1100,7 @@
                                                                 </imageReference>
                                                             </imageView>
                                                             <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="247" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="Min BG:" textAlignment="natural" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="ImY-AS-MmW">
-                                                                <rect key="frame" x="29.000000000000014" y="0.0" width="51" height="44"/>
+                                                                <rect key="frame" x="29" y="0.0" width="51" height="44"/>
                                                                 <accessibility key="accessibilityConfiguration">
                                                                     <accessibilityTraits key="traits" notEnabled="YES"/>
                                                                 </accessibility>
@@ -1112,7 +1112,7 @@
                                                                 <textInputTraits key="textInputTraits"/>
                                                             </textField>
                                                             <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="--" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="hgY-IM-3vx">
-                                                                <rect key="frame" x="88.000000000000014" y="0.0" width="35" height="44"/>
+                                                                <rect key="frame" x="88" y="0.0" width="35" height="44"/>
                                                                 <accessibility key="accessibilityConfiguration">
                                                                     <accessibilityTraits key="traits" notEnabled="YES"/>
                                                                 </accessibility>
@@ -1125,10 +1125,10 @@
                                                         </subviews>
                                                     </stackView>
                                                     <stackView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="252" verticalHuggingPriority="252" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="95y-dY-wba" userLabel="Bolus stack">
-                                                        <rect key="frame" x="211.66666666666666" y="0.0" width="107.33333333333334" height="44"/>
+                                                        <rect key="frame" x="250.66666666666671" y="0.0" width="68.333333333333343" height="44"/>
                                                         <subviews>
-                                                            <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="Beräkning:" textAlignment="right" adjustsFontSizeToFit="NO" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="mOd-tR-lbz">
-                                                                <rect key="frame" x="0.0" y="0.0" width="69" height="44"/>
+                                                            <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="Dos:" textAlignment="right" adjustsFontSizeToFit="NO" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="mOd-tR-lbz">
+                                                                <rect key="frame" x="0.0" y="0.0" width="30" height="44"/>
                                                                 <accessibility key="accessibilityConfiguration">
                                                                     <accessibilityTraits key="traits" notEnabled="YES"/>
                                                                 </accessibility>
@@ -1137,7 +1137,7 @@
                                                                 <textInputTraits key="textInputTraits"/>
                                                             </textField>
                                                             <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="--" textAlignment="right" adjustsFontSizeToFit="NO" minimumFontSize="12" translatesAutoresizingMaskIntoConstraints="NO" id="I2U-cs-0ob">
-                                                                <rect key="frame" x="77.000000000000028" y="0.0" width="13.333333333333329" height="44"/>
+                                                                <rect key="frame" x="38" y="0.0" width="13.333333333333336" height="44"/>
                                                                 <accessibility key="accessibilityConfiguration">
                                                                     <accessibilityTraits key="traits" notEnabled="YES"/>
                                                                 </accessibility>
@@ -1148,7 +1148,7 @@
                                                                 <textInputTraits key="textInputTraits"/>
                                                             </textField>
                                                             <textField opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" text="E" textAlignment="natural" adjustsFontSizeToFit="NO" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Kam-lr-gX7">
-                                                                <rect key="frame" x="98.333333333333343" y="0.0" width="9" height="44"/>
+                                                                <rect key="frame" x="59.333333333333314" y="0.0" width="9" height="44"/>
                                                                 <accessibility key="accessibilityConfiguration">
                                                                     <accessibilityTraits key="traits" notEnabled="YES"/>
                                                                 </accessibility>
@@ -1156,7 +1156,15 @@
                                                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                                 <textInputTraits key="textInputTraits"/>
                                                             </textField>
+                                                            <imageView hidden="YES" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="plus.app" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="7vo-Ec-C0X">
+                                                                <rect key="frame" x="72.333333333333314" y="1.6666666666666643" width="0.0" height="41"/>
+                                                                <color key="tintColor" red="0.1843137443" green="0.40784314269999999" blue="0.77254903320000001" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                                <preferredSymbolConfiguration key="preferredSymbolConfiguration" scale="default"/>
+                                                            </imageView>
                                                         </subviews>
+                                                        <constraints>
+                                                            <constraint firstAttribute="trailing" secondItem="7vo-Ec-C0X" secondAttribute="trailing" constant="-4" id="GdW-en-AlF"/>
+                                                        </constraints>
                                                     </stackView>
                                                 </subviews>
                                             </stackView>
@@ -1291,6 +1299,7 @@
                         <outlet property="minBGStack" destination="CDP-F4-WHL" id="3Ht-w7-tCR"/>
                         <outlet property="minPredBGValue" destination="hgY-IM-3vx" id="rHn-1o-vAP"/>
                         <outlet property="notesEntryField" destination="nEW-4g-bv5" id="OvQ-Op-sbG"/>
+                        <outlet property="plusSign" destination="7vo-Ec-C0X" id="7br-va-Hpp"/>
                         <outlet property="proteinEntryField" destination="9FK-17-HsT" id="UJM-DJ-yd8"/>
                         <outlet property="proteinGrams" destination="9FK-17-HsT" id="7fI-xl-d9D"/>
                         <outlet property="sendMealButton" destination="2mm-PR-C91" id="Hn3-MJ-5OU"/>
@@ -1922,6 +1931,7 @@
         <image name="house" catalog="system" width="128" height="104"/>
         <image name="list.bullet.clipboard" catalog="system" width="98" height="128"/>
         <image name="person.fill" catalog="system" width="128" height="120"/>
+        <image name="plus.app" catalog="system" width="128" height="114"/>
         <image name="safari" catalog="system" width="128" height="123"/>
         <image name="target" catalog="system" width="128" height="123"/>
         <image name="wand.and.stars" catalog="system" width="128" height="115"/>
@@ -1945,28 +1955,28 @@
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="quaternarySystemFillColor">
-            <color red="0.45490196078431372" green="0.45490196078431372" blue="0.50196078431372548" alpha="0.080000000000000002" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.4549019608" green="0.4549019608" blue="0.50196078430000002" alpha="0.080000000000000002" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="secondaryLabelColor">
-            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="secondarySystemBackgroundColor">
-            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGreenColor">
-            <color red="0.20392156862745098" green="0.7803921568627451" blue="0.34901960784313724" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.20392156859999999" green="0.78039215689999997" blue="0.34901960780000002" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
-            <color red="0.68627450980392157" green="0.32156862745098042" blue="0.87058823529411766" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemRedColor">
-            <color red="1" green="0.23137254901960785" blue="0.18823529411764706" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="1" green="0.23137254900000001" blue="0.18823529410000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

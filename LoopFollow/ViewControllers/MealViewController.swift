@@ -31,6 +31,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var minPredBGValue: UITextField!
     @IBOutlet weak var minBGStack: UIStackView!
     @IBOutlet weak var bolusStack: UIStackView!
+    @IBOutlet weak var plusSign: UIImageView!
+    
     var CR: Decimal = 0.0
     var minGuardBG: Decimal = 0.0
     var lowThreshold: Decimal = 0.0
@@ -120,10 +122,17 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     // Function to calculate the suggested bolus value based on CR and check for maxCarbs
     func calculateBolus() {
         guard let carbsText = carbsEntryField.text,
-              let carbsValue = Decimal(string: carbsText),
-              carbsValue > 0 else {
-            // If no valid input or input is not a positive number, clear bolusCalculated
+              let carbsValue = Decimal(string: carbsText) else {
+            // If no valid input, clear bolusCalculated and hide plus sign
             bolusCalculated.text = ""
+            hidePlusSign()
+            return
+        }
+        
+        if carbsValue > 0 {
+            showPlusSign()
+        } else {
+            hidePlusSign()
             return
         }
         
@@ -152,6 +161,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         } else {
             // If the new text is empty, clear bolusCalculated and update button state
             bolusCalculated.text = ""
+            hidePlusSign()
             updateButtonState()
             return true
         }
@@ -625,6 +635,16 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     // Function to show the bolusCalcStack
     func showBolusCalcRow() {
         bolusCalcStack.isHidden = false
+    }
+    
+    // Function to hide the plus sign
+    func hidePlusSign() {
+        plusSign.isHidden = true
+    }
+    
+    // Function to show the plus sign
+    func showPlusSign() {
+        plusSign.isHidden = false
     }
     
     @IBAction func doneButtonTapped(_ sender: Any) {
