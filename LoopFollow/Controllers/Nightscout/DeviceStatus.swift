@@ -217,6 +217,7 @@ extension MainViewController {
                         }
                     }
 
+                    /*
                     if let enactedData = lastLoopRecord["enacted"] as? [String:AnyObject] {
                         if let COB = enactedData["COB"] as? Double {
                             tableData[1].value = String(format:"%.0f", COB) + " g"
@@ -267,6 +268,76 @@ extension MainViewController {
                             }
                         
                         if let LastSMBUnits = enactedData["units"] as? Double {
+                                let formattedLastSMBUnitsString = String(format:"%.2f", LastSMBUnits)
+                                sharedLastSMBUnits = Double(formattedLastSMBUnitsString) ?? 0
+                            } else {
+                                sharedLastSMBUnits = 0
+                            }
+                        
+                    } else {
+                        // If enactedData is nil, set all tableData values to "Waiting"
+                        for i in 1..<tableData.count {
+                            tableData[i].value = "---"
+                        }
+                        
+                    }
+                     */
+                    //Daniel: Use suggested instead of enacted to populate infotable even when not enacted
+                    if let suggestedData = lastLoopRecord["suggested"] as? [String:AnyObject] {
+                        if let COB = suggestedData["COB"] as? Double {
+                            tableData[1].value = String(format:"%.0f", COB) + " g"
+                            latestCOB = String(format:"%.0f", COB)
+                            sharedLatestCOB = latestCOB
+                        }
+                        
+                        if let insulinReq = suggestedData["insulinReq"] as? Double {
+                            tableData[8].value = String(format:"%.2f", insulinReq) + " E"
+                        }
+                        
+                        if let sensitivityRatio = suggestedData["sensitivityRatio"] as? Double {
+                            let sens = sensitivityRatio * 100.0
+                            tableData[11].value = String(format:"%.0f", sens) + " %"
+                        }
+                        
+                        if let TDD = suggestedData["TDD"] as? Double {
+                            tableData[13].value = String(format:"%.1f", TDD) + " E"
+                        }
+                        
+                        if let ISF = suggestedData["ISF"] as? Double {
+                            tableData[14].value = String(format:"%.1f", ISF) + " mmol/L/E"
+                        }
+                        
+                        if let CR = suggestedData["CR"] as? Double {
+                            tableData[15].value = String(format:"%.1f", CR) + " g/E"
+                            sharedCRValue = String(format:"%.1f", CR)
+                        }
+                        
+                        if let currentTargetMgdl = suggestedData["current_target"] as? Double {
+                            let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
+                            tableData[16].value = String(format: "%.1f", currentTargetMmol) + " mmol/L"
+                        }
+                        
+                        if let carbsReq = suggestedData["carbsReq"] as? Double {
+                            tableData[17].value = String(format:"%.0f", carbsReq) + " g"
+                        }
+                        
+                        //Daniel: Added suggested data for bolus calculator and info
+                        if let minGuardBG = suggestedData["minGuardBG"] as? Double {
+                                let formattedMinGuardBGString = bgUnits.toDisplayUnits(String(format:"%.1f", minGuardBG))
+                                sharedMinGuardBG = Double(formattedMinGuardBGString) ?? 0
+                            } else {
+                                let formattedLowLine = bgUnits.toDisplayUnits(String(format:"%.1f", UserDefaultsRepository.lowLine.value))
+                                sharedMinGuardBG = Double(formattedLowLine) ?? 0
+                            }
+                        
+                        if let insulinReq = suggestedData["insulinReq"] as? Double {
+                                let formattedInsulinReqString = String(format:"%.2f", insulinReq)
+                                sharedInsulinReq = Double(formattedInsulinReqString) ?? 0
+                            } else {
+                                sharedInsulinReq = 0
+                            }
+                        
+                        if let LastSMBUnits = suggestedData["units"] as? Double {
                                 let formattedLastSMBUnitsString = String(format:"%.2f", LastSMBUnits)
                                 sharedLastSMBUnits = Double(formattedLastSMBUnitsString) ?? 0
                             } else {

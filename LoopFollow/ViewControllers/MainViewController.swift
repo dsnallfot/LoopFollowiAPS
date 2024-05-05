@@ -173,7 +173,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("Reservoar")
         UserDefaultsRepository.infoNames.value.append("Sensorbyte")
         UserDefaultsRepository.infoNames.value.append("Poddbyte")
-        UserDefaultsRepository.infoNames.value.append("Behov")
+        UserDefaultsRepository.infoNames.value.append("Behov Insulin")
         UserDefaultsRepository.infoNames.value.append("Prognos")
         UserDefaultsRepository.infoNames.value.append("Kh idag")
         UserDefaultsRepository.infoNames.value.append("Autosens")
@@ -183,6 +183,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("ISF")
         UserDefaultsRepository.infoNames.value.append("CR")
         UserDefaultsRepository.infoNames.value.append("Målvärde")
+        UserDefaultsRepository.infoNames.value.append("Behov KH")
         
         // Reset deprecated settings
         UserDefaultsRepository.debugLog.value = false;
