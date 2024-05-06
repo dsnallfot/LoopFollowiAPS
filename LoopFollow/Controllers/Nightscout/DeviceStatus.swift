@@ -319,6 +319,9 @@ extension MainViewController {
                         
                         if let carbsReq = suggestedData["carbsReq"] as? Double {
                             tableData[17].value = String(format:"%.0f", carbsReq) + " g"
+                        } else {
+                            // If "carbsReq" is not present in suggestedData, set it to 0
+                            tableData[17].value = "0 g"
                         }
                         
                         //Daniel: Added suggested data for bolus calculator and info
