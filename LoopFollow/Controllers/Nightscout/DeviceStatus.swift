@@ -296,7 +296,7 @@ extension MainViewController {
                          }*/
                         if let recbolusdata = lastLoopRecord["suggested"] as? [String: AnyObject],
                            let insulinReq = recbolusdata["insulinReq"] as? Double {
-                            tableData[8].value = String(format: "%.2fU", insulinReq) + " E"
+                            tableData[8].value = String(format: "%.2f", insulinReq) + " E"
                             UserDefaultsRepository.deviceRecBolus.value = insulinReq
                         } else {
                             tableData[8].value = "---"
