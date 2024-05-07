@@ -13,7 +13,8 @@ import EventKitUI
 
 class SettingsViewController: FormViewController {
 
-   var appStateController: AppStateController?
+    var tokenRow: TextRow?
+    var appStateController: AppStateController?
     var statusLabelRow: LabelRow!
 
     func showHideNSDetails() {
@@ -83,7 +84,54 @@ class SettingsViewController: FormViewController {
            guard let value = row.value else {
                UserDefaultsRepository.url.value = ""
                self.showHideNSDetails()
-               return }
+               return
+           }
+           
+           var useTokenUrl = false
+                      
+                      // Attempt to handle special case: pasted URL including token
+                      if let urlComponents = URLComponents(string: value), let queryItems = urlComponents.queryItems {
+                          if let tokenItem = queryItems.first(where: { $0.name.lowercased() == "token" }) {
+                              let tokenPattern = "^[^-\\s]+-[0-9a-fA-F]{16}$"
+                              if let token = tokenItem.value, let _ = token.range(of: tokenPattern, options: .regularExpression) {
+                                  var baseComponents = urlComponents
+                                  baseComponents.queryItems = nil
+                                  if let baseURL = baseComponents.string {
+                                      UserDefaultsRepository.token.value = token
+                                      self.tokenRow?.value = token
+                                      self.tokenRow?.updateCell()
+
+                                      UserDefaultsRepository.url.value = baseURL
+                                      row.value = baseURL
+                                      row.updateCell()
+                                      useTokenUrl = true
+                                  }
+                              }
+                          }
+                      }
+                      
+                      if !useTokenUrl {
+                          // Normalize input: remove unwanted characters and lowercase
+                          let filtered = value.replacingOccurrences(of: "[^A-Za-z0-9:/._-]", with: "", options: .regularExpression).lowercased()
+                          
+                          // Further clean-up: Remove trailing slashes
+                          var cleanURL = filtered
+                          while cleanURL.last == "/" {
+                              cleanURL = String(cleanURL.dropLast())
+                          }
+                          
+                          UserDefaultsRepository.url.value = cleanURL
+                          row.value = cleanURL
+                          row.updateCell()
+                      }
+                      
+                      self.showHideNSDetails()
+                      globalVariables.nsVerifiedAlert = 0
+                      
+                      // Verify Nightscout URL and token
+                      self.checkNightscoutStatus()
+                  }
+            /*
            // check the format of the URL entered by the user and trim away any spaces or "/" at the end
            var urlNSInput = value.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
            if urlNSInput.last == "/" {
@@ -92,12 +140,13 @@ class SettingsViewController: FormViewController {
            UserDefaultsRepository.url.value = urlNSInput.lowercased()
            // set the row value back to the correctly formatted URL so that the user immediately sees how it should have been written
            row.value = UserDefaultsRepository.url.value
+                          
            self.showHideNSDetails()
            globalVariables.nsVerifiedAlert = 0
            
            // Verify Nightscout URL and token
            self.checkNightscoutStatus()
-       }
+       }*/
        <<< TextRow() { row in
            row.title = "NS Token"
            row.placeholder = "Leave blank if not using tokens"
