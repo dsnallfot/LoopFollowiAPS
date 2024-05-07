@@ -348,7 +348,7 @@ extension MainViewController {
                             }
                         
                     } else {
-                        // If enactedData is nil, set all tableData values to "Waiting"
+                        // If suggestedData is nil, set all tableData values to "Waiting"
                         for i in 1..<tableData.count {
                             tableData[i].value = "---"
                         }
@@ -377,7 +377,7 @@ extension MainViewController {
                     var predictioncolor = UIColor.systemGray
                     PredictionLabel.textColor = predictioncolor
                     
-                    if let enactdata = lastLoopRecord["enacted"] as? [String:AnyObject],
+                    if let enactdata = lastLoopRecord["suggested"] as? [String:AnyObject],
                        let predbgdata = enactdata["predBGs"] as? [String:AnyObject] {
                         
                         if predbgdata["COB"] != nil {
@@ -418,7 +418,7 @@ extension MainViewController {
                         
                         let graphdata = predbgdata[graphtype] as! [Double]
                         
-                        if let eventualdata = lastLoopRecord["enacted"] as? [String: AnyObject] {
+                        if let eventualdata = lastLoopRecord["suggested"] as? [String: AnyObject] {
                             if let eventualBGValue = eventualdata["eventualBG"] as? NSNumber {
                                 let eventualBGStringValue = String(describing: eventualBGValue)
                                 let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue)
