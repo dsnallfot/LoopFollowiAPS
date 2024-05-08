@@ -7,15 +7,16 @@
 //
 
 import UIKit
+import AudioToolbox
 
-class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable {
+class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
+    var appStateController: AppStateController?
     
     @IBOutlet weak var sendOverrideButton: UIButton!
     @IBOutlet weak var overridePicker: UIPickerView!
-        
+    
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
-
     
     // Property to store the selected override option
     var selectedOverride: String?
@@ -60,22 +61,30 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     
     @IBAction func sendRemoteOverridePressed(_ sender: Any) {
         // Disable the button to prevent multiple taps
-         if !isButtonDisabled {
-             isButtonDisabled = true
-             sendOverrideButton.isEnabled = false
-         } else {
-             return // If button is already disabled, return to prevent double registration
-         }
+        if !isButtonDisabled {
+            isButtonDisabled = true
+            sendOverrideButton.isEnabled = false
+        } else {
+            return // If button is already disabled, return to prevent double registration
+        }
         guard let selectedOverride = selectedOverride else {
             print("No override option selected")
             return
         }
-        
+        /*
+        //Old formatting saved for a while
         let combinedString = "Override_\(selectedOverride)"
+        print("Combined string:", combinedString)
+         */
+        
+        //New formatting for testing (Use "Remote Override" as trigger word on receiving phone after triggering automation)
+        let name = UserDefaultsRepository.caregiverName.value
+        let secret = UserDefaultsRepository.remoteSecretCode.value
+        let combinedString = "Remote Override\n\(selectedOverride)\nEntered by: \(name)\nSecret Code: \(secret)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to activate \(selectedOverride)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirm Override", message: "Do you want to activate \(selectedOverride)?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Proceed with sending the request
@@ -83,20 +92,20 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         }))
         
         confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
-                    // Handle dismissal when "Cancel" is selected
-                    self.handleAlertDismissal()
-                }))
+            // Handle dismissal when "Cancel" is selected
+            self.handleAlertDismissal()
+        }))
         
         present(confirmationAlert, animated: true, completion: nil)
     }
     
     // Function to handle alert dismissal
-        func handleAlertDismissal() {
-            // Enable the button when alerts are dismissed
-            isAlertShowing = false
-            sendOverrideButton.isEnabled = true
-            isButtonDisabled = false // Reset button disable status
-        }
+    func handleAlertDismissal() {
+        // Enable the button when alerts are dismissed
+        isAlertShowing = false
+        sendOverrideButton.isEnabled = true
+        isButtonDisabled = false // Reset button disable status
+    }
     
     func sendOverrideRequest(combinedString: String) {
         
@@ -120,16 +129,22 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
             twilioRequest(combinedString: combinedString) { result in
                 switch result {
                 case .success:
+                    // Play success sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    
                     // Show success alert
-                    let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Success!", message: "Message delivered", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                         // Dismiss the current view controller
                         self.dismiss(animated: true, completion: nil)
                     }))
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
+                    // Play failure sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
+                    
                     // Show error alert
-                    let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Error!", message: error.localizedDescription, preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                     self.present(alertController, animated: true, completion: nil)
                 }
@@ -148,3 +163,4 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         return overrideString.components(separatedBy: ", ")
     }()
 }
+

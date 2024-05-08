@@ -8,16 +8,21 @@
 
 import UIKit
 import LocalAuthentication
+import AudioToolbox
 
-class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequestable {
+class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequestable  {
+    var appStateController: AppStateController?
     
     @IBOutlet weak var bolusEntryField: UITextField!
     @IBOutlet weak var sendBolusButton: UIButton!
     @IBOutlet weak var bolusAmount: UITextField!
+    @IBOutlet weak var bolusUnits: UITextField!
     
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
     
+    let maxBolus = UserDefaultsRepository.maxBolus.value
+
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
@@ -39,7 +44,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
             return // If button is already disabled, return to prevent double registration
         }
         // Retrieve the maximum bolus value
-        let maxBolus = UserDefaultsRepository.maxBolus.value
+        //let maxBolus = UserDefaultsRepository.maxBolus.value
         
         guard var bolusText = bolusAmount.text, !bolusText.isEmpty else {
             print("Error: Bolus amount not entered")
@@ -51,10 +56,21 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         
         guard let bolusValue = Double(bolusText) else {
             print("Error: Bolus amount conversion failed")
+            // Play failure sound
+            AudioServicesPlaySystemSound(SystemSoundID(1053))
+            // Display an alert
+            let alertController = UIAlertController(title: "Error!", message: "Bolus entry is misformatted", preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
+            present(alertController, animated: true, completion: nil)
+            self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
             return
         }
         
-        if bolusValue > maxBolus {
+        //Let code remain for now - to be cleaned
+        if bolusValue > (maxBolus + 0.01) {
+            // Play failure sound
+            AudioServicesPlaySystemSound(SystemSoundID(1053))
+            
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
             
@@ -65,10 +81,9 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
             return
         }
         // Set isAlertShowing to true before showing the alert
-        isAlertShowing = true
-        
+                            isAlertShowing = true
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Confirmation", message: "Do you want to give \(bolusValue) U bolus?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirm Bolus", message: "Do you want to give \(bolusValue) U bolus?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
@@ -79,9 +94,9 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         }))
         
         confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
-                    // Handle dismissal when "Cancel" is selected
-                    self.handleAlertDismissal()
-                }))
+            // Handle dismissal when "Cancel" is selected
+            self.handleAlertDismissal()
+        }))
         
         present(confirmationAlert, animated: true, completion: nil)
     }
@@ -108,6 +123,8 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                             if let error = authenticationError {
                                 print("Authentication failed: \(error.localizedDescription)")
                             }
+                            // Handle dismissal when authentication fails
+                            self.handleAlertDismissal()
                         }
                     }
                 }
@@ -131,6 +148,8 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                     if let error = error {
                         print("Authentication failed: \(error.localizedDescription)")
                     }
+                    // Handle dismissal when authentication fails
+                    self.handleAlertDismissal()
                 }
             }
         }
@@ -149,7 +168,10 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         // Convert bolusValue to string and trim any leading or trailing whitespace
         let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
         
-        let combinedString = "Bolus_\(trimmedBolusValue)"
+        //New formatting for testing (Use "Remote Bolus" as trigger word on receiving phone after triggering automation)
+        let name = UserDefaultsRepository.caregiverName.value
+        let secret = UserDefaultsRepository.remoteSecretCode.value
+        let combinedString = "Remote Bolus\nInsulin: \(trimmedBolusValue)U\nEntered by: \(name)\nSecret Code: \(secret)"
         print("Combined string:", combinedString)
         
         // Retrieve the method value from UserDefaultsRepository
@@ -172,16 +194,22 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
             twilioRequest(combinedString: combinedString) { result in
                 switch result {
                 case .success:
+                    // Play success sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    
                     // Show success alert
-                    let alertController = UIAlertController(title: "Success", message: "Message sent successfully!", preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Success!", message: "Message delivered", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                         // Dismiss the current view controller
                         self.dismiss(animated: true, completion: nil)
                     }))
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
+                    // Play failure sound
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
+                    
                     // Show error alert
-                    let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Error!", message: error.localizedDescription, preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                     self.present(alertController, animated: true, completion: nil)
                 }
@@ -189,7 +217,43 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         }
     }
     
+    @IBAction func editingChanged(_ sender: Any) {
+        print("Value changed in bolus amount")
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!,
+        ]
+        
+        // Check if bolusText exceeds maxBolus
+        if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
+           let bolusValue = Decimal(string: bolusText),
+           bolusValue > Decimal(maxBolus) + 0.01 { //add 0.01 to allow entry of = maxBolus due to rounding issues with double and decimals otherwise disable it when bolusValue=maxBolus
+            
+            // Disable button
+            sendBolusButton.isEnabled = false
+            
+            // Format maxBolus with two decimal places
+            let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
+            
+            // Update button title if bolus exceeds maxBolus
+            sendBolusButton.setAttributedTitle(NSAttributedString(string: "⛔️ Max Bolus \(formattedMaxBolus) U", attributes: attributes), for: .normal)
+        } else {
+            // Enable button
+            sendBolusButton.isEnabled = true
+            
+            // Update button title with bolus
+            sendBolusButton.setAttributedTitle(NSAttributedString(string: "Send Bolus", attributes: attributes), for: .normal)
+        }
+    }
+    
+    // Function to update button state
+    func updateButtonState() {
+        // Disable or enable button based on isButtonDisabled
+        sendBolusButton.isEnabled = !isButtonDisabled
+    }
+    
     @IBAction func cancelButtonPressed(_ sender: Any) {
         dismiss(animated: true, completion: nil)
     }
 }
+
