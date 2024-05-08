@@ -528,9 +528,9 @@ extension MainViewController {
         
         // Move to current reading everytime new readings load
         // Check if auto-scrolling should be performed
-                if autoScrollPauseUntil == nil || Date() > autoScrollPauseUntil! {
-                    BGChart.moveViewToAnimated(xValue: dateTimeUtils.getNowTimeIntervalUTC() - (BGChart.visibleXRange * 0.7), yValue: 0.0, axis: .right, duration: 1, easingOption: .easeInBack)
-                }
+        if autoScrollPauseUntil == nil || Date() > autoScrollPauseUntil! {
+            BGChart.moveViewToAnimated(xValue: dateTimeUtils.getNowTimeIntervalUTC() - (BGChart.visibleXRange * 0.7), yValue: 0.0, axis: .right, duration: 1, easingOption: .easeInBack)
+        }
     }
     
     func updatePredictionGraph(color: UIColor? = nil) {

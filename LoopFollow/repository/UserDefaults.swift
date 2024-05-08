@@ -76,6 +76,14 @@ class UserDefaultsRepository {
     static let useIFCC = UserDefaultsValue<Bool>(key: "useIFCC", default: false)
     static let showSmallGraph = UserDefaultsValue<Bool>(key: "showSmallGraph", default: true)
     static let speakBG = UserDefaultsValue<Bool>(key: "speakBG", default: false)
+    static let speakBGAlways = UserDefaultsValue<Bool>(key: "speakBGAlways", default: true)
+    static let speakLowBG = UserDefaultsValue<Bool>(key: "speakLowBG", default: false)
+    static let speakProactiveLowBG = UserDefaultsValue<Bool>(key: "speakProactiveLowBG", default: false)
+    static let speakFastDropDelta = UserDefaultsValue<Float>(key: "speakFastDropDelta", default: 10.0)
+    static let speakLowBGLimit = UserDefaultsValue<Float>(key: "speakLowBGLimit", default: 72.0)
+    static let speakHighBGLimit = UserDefaultsValue<Float>(key: "speakHighBGLimit", default: 180.0)
+    static let speakHighBG = UserDefaultsValue<Bool>(key: "speakHighBG", default: false)
+    static let speakLanguage = UserDefaultsValue<String>(key: "speakLanguage", default: "en")
     static let showDisplayName = UserDefaultsValue<Bool>(key: "showDisplayName", default: false)
     static let backgroundRefreshFrequency = UserDefaultsValue<Double>(key: "backgroundRefreshFrequency", default: 1)
     static let backgroundRefresh = UserDefaultsValue<Bool>(key: "backgroundRefresh", default: true)
@@ -112,7 +120,6 @@ class UserDefaultsRepository {
     static let writeCalendarEvent = UserDefaultsValue<Bool>(key: "writeCalendarEvent", default: false)
     static let watchLine1 = UserDefaultsValue<String>(key: "watchLine1", default: "%BG% %DIRECTION% %DELTA% %MINAGO%")
     static let watchLine2 = UserDefaultsValue<String>(key: "watchLine2", default: "C:%COB% I:%IOB% B:%BASAL%")
-    static let saveImage = UserDefaultsValue<Bool>(key: "saveImage", default: false)
     
     // Alarm Settings
     static let systemOutputVolume = UserDefaultsValue<Float>(key: "systemOutputVolume", default: 0.5)
@@ -468,6 +475,12 @@ class UserDefaultsRepository {
     static let twilioFromNumberString = UserDefaultsValue<String>(key: "twilioFromNumberString", default: "")
     static let twilioToNumberString = UserDefaultsValue<String>(key: "twilioToNumberString", default: "")
 
-    
-    
+    static let alertRecBolusActive = UserDefaultsValue<Bool>(key: "alertRecBolusActive", default: false)
+    static let alertRecBolusLevel = UserDefaultsValue<Double>(key: "alertRecBolusLevel", default: 1)  //Unit[s]
+    static let alertRecBolusSound = UserDefaultsValue<String>(key: "alertRecBolusSound", default: "Dhol_Shuffleloop")
+    static let alertRecBolusRepeat = UserDefaultsValue<Bool>(key: "alertRecBolusRepeat", default: false)
+    static let alertRecBolusIsSnoozed = UserDefaultsValue<Bool>(key: "alertRecBolusIsSnoozed", default: false)
+    static let alertRecBolusSnooze = UserDefaultsValue<Int>(key: "alertRecBolusSnooze", default: 5)
+    static let alertRecBolusSnoozedTime = UserDefaultsValue<Date?>(key: "alertRecBolusSnoozedTime", default: nil)
+    static var deviceRecBolus: UserDefaultsValue<Double> = UserDefaultsValue(key: "deviceRecBolus", default: 0.0)
 }
