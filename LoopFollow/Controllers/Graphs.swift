@@ -132,6 +132,7 @@ extension MainViewController {
         }
         linePredictionIOB.setDrawHighlightIndicators(false)
         linePredictionIOB.valueFont.withSize(50)
+
         
         // Setup Prediction line UAM details
         let predictionChartEntryUAM = [ChartDataEntry]()
@@ -415,9 +416,6 @@ extension MainViewController {
         data.append(linePredictionUAM) // Dataset 16
         data.append(linePredictionCOB) // Dataset 17
         
-        
-        
-        
         data.setValueFont(UIFont.systemFont(ofSize: 10))
         
         // Add marker popups for bolus and carbs
@@ -614,8 +612,7 @@ extension MainViewController {
             linePredictionZT.drawCirclesEnabled = false
             linePredictionIOB.drawCirclesEnabled = false
             linePredictionUAM.drawCirclesEnabled = false
-            linePredictionCOB.drawCirclesEnabled = false
-            
+            linePredictionCOB.drawCirclesEnabled = false 
         }
         
         BGChart.rightAxis.axisMinimum = 0
@@ -1770,10 +1767,6 @@ extension MainViewController {
         data.append(linePredictionIOB) // Dataset 15
         data.append(linePredictionUAM) // Dataset 16
         data.append(linePredictionCOB) // Dataset 17
-        
-        
-        
-        
         
         BGChartFull.highlightPerDragEnabled = true
         BGChartFull.leftAxis.enabled = false

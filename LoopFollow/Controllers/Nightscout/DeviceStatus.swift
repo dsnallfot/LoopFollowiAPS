@@ -261,6 +261,7 @@ extension MainViewController {
                             latestCOB = String(format:"%.0f", COB)
                             sharedLatestCOB = latestCOB
                         }
+                        //print("suggested data: \(suggestedData)")
                         
                         /*if let insulinReq = suggestedData["insulinReq"] as? Double {
                             tableData[8].value = String(format:"%.2f", insulinReq) + " E"
