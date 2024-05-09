@@ -478,6 +478,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             UIApplication.shared.applicationIconBadgeNumber = Int(bgUnits.removePeriodAndCommaForBadge(bgUnits.toDisplayUnits(latestBG))) ?? val
         } else {
             UIApplication.shared.applicationIconBadgeNumber = 0
+
         }
     }
     

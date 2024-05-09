@@ -451,6 +451,30 @@ class UserDefaultsRepository {
     static let alertBatterySnoozeHours = UserDefaultsValue<Int>(key: "alertBatterySnoozeHours", default: 1)
     static var deviceBatteryLevel: UserDefaultsValue<Double> = UserDefaultsValue(key: "deviceBatteryLevel", default: 100.0)
     
+    // Remote configuration
+    static let method = UserDefaultsValue<String>(key: "method", default: "SMS API")
+    static let caregiverName = UserDefaultsValue<String>(key: "caregiverName", default: "")
+    static let remoteSecretCode = UserDefaultsValue<String>(key: "remoteSecretCode", default: "")
+
+    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "")
+    static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "")
+    static let customActionsString = UserDefaultsValue<String>(key: "customActionsString", default: "")
+    
+    //Show or Hide advanced features
+        static let hideRemoteBolus = UserDefaultsValue<Bool>(key: "hideRemoteBolus", default: true)
+        static let hideRemoteCustomActions = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
+    
+    //Remote guardrails
+    static let maxCarbs = UserDefaultsValue<Double>(key: "maxCarbs", default: 30)
+    static let maxFatProtein = UserDefaultsValue<Double>(key: "maxFatProtein", default: 30)
+    static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
+    
+    // API settings
+    static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "")
+    static let twilioSecretString = UserDefaultsValue<String>(key: "twilioSecretString", default: "")
+    static let twilioFromNumberString = UserDefaultsValue<String>(key: "twilioFromNumberString", default: "")
+    static let twilioToNumberString = UserDefaultsValue<String>(key: "twilioToNumberString", default: "")
+
     static let alertRecBolusActive = UserDefaultsValue<Bool>(key: "alertRecBolusActive", default: false)
     static let alertRecBolusLevel = UserDefaultsValue<Double>(key: "alertRecBolusLevel", default: 1)  //Unit[s]
     static let alertRecBolusSound = UserDefaultsValue<String>(key: "alertRecBolusSound", default: "Dhol_Shuffleloop")
