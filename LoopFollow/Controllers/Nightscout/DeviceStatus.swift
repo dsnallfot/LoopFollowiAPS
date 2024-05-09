@@ -406,7 +406,7 @@ extension MainViewController {
                                 let eventualBGStringValue = String(describing: eventualBGValue)
                                 let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue)
                                 //PredictionLabel.text = "\(additionalText) ⇢ \(formattedBGString)"
-                                PredictionLabel.text = "   Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
                             }
                         }
                         
@@ -509,7 +509,7 @@ extension MainViewController {
                         if let predMin = graphdata.min(), let predMax = graphdata.max() {
                             let formattedPredMin = bgUnits.toDisplayUnits(String(predMin))
                             let formattedPredMax = bgUnits.toDisplayUnits(String(predMax))
-                            tableData[9].value = "\(formattedPredMin)/\(formattedPredMax) mmol/L"
+                            tableData[9].value = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
                             //updatePredictionGraph(color: predictioncolor)
                         } else {
                             tableData[9].value = "N/A"

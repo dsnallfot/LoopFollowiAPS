@@ -29,7 +29,7 @@ class UserDefaultsRepository {
         "Sensorbyte", //6
         "Poddbyte", //7
         "Behov Insulin", //8
-        "Min/Max", //9
+        "Min-Max", //9
         "Kh idag", //10
         "Autosens", //11
         "Profil", //12
