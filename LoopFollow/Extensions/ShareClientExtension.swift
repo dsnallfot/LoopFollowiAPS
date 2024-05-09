@@ -11,6 +11,7 @@ import ShareClient
 
 public struct ShareGlucoseData: Decodable {
     var sgv: Int
+    var mbg: Double
     var date: TimeInterval
     var direction: String?
 
