@@ -12,7 +12,6 @@ import EventKit
 import EventKitUI
 
 class SettingsViewController: FormViewController {
-
     var tokenRow: TextRow?
     var appStateController: AppStateController?
     var statusLabelRow: LabelRow!
@@ -39,9 +38,52 @@ class SettingsViewController: FormViewController {
         
         guard let nightscoutTab = self.tabBarController?.tabBar.items![3] else { return }
         nightscoutTab.isEnabled = isEnabled
-        
     }
    
+    // Determine if the build is from TestFlight
+    func isTestFlightBuild() -> Bool {
+#if targetEnvironment(simulator)
+        return false
+#else
+        if Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") != nil {
+            return false
+        }
+        guard let receiptName = Bundle.main.appStoreReceiptURL?.lastPathComponent else {
+            return false
+        }
+        return "sandboxReceipt".caseInsensitiveCompare(receiptName) == .orderedSame
+#endif
+    }
+    
+    // Get the build date from the build details
+    func buildDate() -> Date? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEE MMM d HH:mm:ss 'UTC' yyyy"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        
+        guard let dateString = BuildDetails.default.buildDateString,
+              let date = dateFormatter.date(from: dateString) else {
+            return nil
+        }
+        return date
+    }
+    
+    // Calculate the expiration date based on the build type
+    func calculateExpirationDate() -> Date {
+        if isTestFlightBuild(), let buildDate = buildDate() {
+            // For TestFlight, add 90 days to the build date
+            return Calendar.current.date(byAdding: .day, value: 90, to: buildDate)!
+        } else {
+            // For Xcode builds, use the provisioning profile's expiration date
+            if let provision = MobileProvision.read() {
+                return provision.expirationDate
+            } else {
+                return Date() // Fallback to current date if unable to read provisioning profile
+            }
+        }
+    }
+    
    override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
@@ -50,11 +92,12 @@ class SettingsViewController: FormViewController {
        UserDefaultsRepository.showNS.value = false
        UserDefaultsRepository.showDex.value = false
     
-        var expiration: Date = Date()
-        if let provision = MobileProvision.read() {
-            expiration = provision.expirationDate
-        }
-                        
+       let expiration = calculateExpirationDate()
+       var expirationHeaderString = "App Expiration"
+       if isTestFlightBuild() {
+          expirationHeaderString = "Beta (TestFlight) Expiration"
+       }
+       
         form
         +++ Section(header: "Data Settings", footer: "")
        <<< SegmentedRow<String>("units") { row in
@@ -88,70 +131,56 @@ class SettingsViewController: FormViewController {
            }
            
            var useTokenUrl = false
-                      
-                      // Attempt to handle special case: pasted URL including token
-                      if let urlComponents = URLComponents(string: value), let queryItems = urlComponents.queryItems {
-                          if let tokenItem = queryItems.first(where: { $0.name.lowercased() == "token" }) {
-                              let tokenPattern = "^[^-\\s]+-[0-9a-fA-F]{16}$"
-                              if let token = tokenItem.value, let _ = token.range(of: tokenPattern, options: .regularExpression) {
-                                  var baseComponents = urlComponents
-                                  baseComponents.queryItems = nil
-                                  if let baseURL = baseComponents.string {
-                                      UserDefaultsRepository.token.value = token
-                                      self.tokenRow?.value = token
-                                      self.tokenRow?.updateCell()
+           
+           // Attempt to handle special case: pasted URL including token
+           if let urlComponents = URLComponents(string: value), let queryItems = urlComponents.queryItems {
+               if let tokenItem = queryItems.first(where: { $0.name.lowercased() == "token" }) {
+                   let tokenPattern = "^[^-\\s]+-[0-9a-fA-F]{16}$"
+                   if let token = tokenItem.value, let _ = token.range(of: tokenPattern, options: .regularExpression) {
+                       var baseComponents = urlComponents
+                       baseComponents.queryItems = nil
+                       if let baseURL = baseComponents.string {
+                           UserDefaultsRepository.token.value = token
+                           self.tokenRow?.value = token
+                           self.tokenRow?.updateCell()
 
-                                      UserDefaultsRepository.url.value = baseURL
-                                      row.value = baseURL
-                                      row.updateCell()
-                                      useTokenUrl = true
-                                  }
-                              }
-                          }
-                      }
-                      
-                      if !useTokenUrl {
-                          // Normalize input: remove unwanted characters and lowercase
-                          let filtered = value.replacingOccurrences(of: "[^A-Za-z0-9:/._-]", with: "", options: .regularExpression).lowercased()
-                          
-                          // Further clean-up: Remove trailing slashes
-                          var cleanURL = filtered
-                          while cleanURL.last == "/" {
-                              cleanURL = String(cleanURL.dropLast())
-                          }
-                          
-                          UserDefaultsRepository.url.value = cleanURL
-                          row.value = cleanURL
-                          row.updateCell()
-                      }
-                      
-                      self.showHideNSDetails()
-                      globalVariables.nsVerifiedAlert = 0
-                      
-                      // Verify Nightscout URL and token
-                      self.checkNightscoutStatus()
-                  }
-            /*
-           // check the format of the URL entered by the user and trim away any spaces or "/" at the end
-           var urlNSInput = value.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
-           if urlNSInput.last == "/" {
-               urlNSInput = String(urlNSInput.dropLast())
+                           UserDefaultsRepository.url.value = baseURL
+                           row.value = baseURL
+                           row.updateCell()
+                           useTokenUrl = true
+                       }
+                   }
+               }
            }
-           UserDefaultsRepository.url.value = urlNSInput.lowercased()
-           // set the row value back to the correctly formatted URL so that the user immediately sees how it should have been written
-           row.value = UserDefaultsRepository.url.value
-                          
+           
+           if !useTokenUrl {
+               // Normalize input: remove unwanted characters and lowercase
+               let filtered = value.replacingOccurrences(of: "[^A-Za-z0-9:/._-]", with: "", options: .regularExpression).lowercased()
+               
+               // Further clean-up: Remove trailing slashes
+               var cleanURL = filtered
+               while cleanURL.last == "/" {
+                   cleanURL = String(cleanURL.dropLast())
+               }
+               
+               UserDefaultsRepository.url.value = cleanURL
+               row.value = cleanURL
+               row.updateCell()
+           }
+           
            self.showHideNSDetails()
            globalVariables.nsVerifiedAlert = 0
            
            // Verify Nightscout URL and token
            self.checkNightscoutStatus()
-       }*/
+       }
+
        <<< TextRow() { row in
            row.title = "NS Token"
            row.placeholder = "Leave blank if not using tokens"
            row.value = UserDefaultsRepository.token.value
            row.hidden = "$showNS == false"
+           self.tokenRow = row
        }.cellSetup { (cell, row) in
            cell.textField.autocorrectionType = .no
            cell.textField.autocapitalizationType = .none
@@ -178,7 +207,7 @@ class SettingsViewController: FormViewController {
            row.tag = "loopUser"
            row.value = UserDefaultsRepository.loopUser.value
            row.hidden = "$showNS == false"
-       }.onChange { [weak self] row in
+       }.onChange { row in
                    guard let value = row.value else { return }
                    UserDefaultsRepository.loopUser.value = value
            }
@@ -186,7 +215,7 @@ class SettingsViewController: FormViewController {
        <<< SwitchRow("showDex"){ row in
        row.title = "Show Dexcom Settings"
        row.value = UserDefaultsRepository.showDex.value
-       }.onChange { [weak self] row in
+       }.onChange { row in
                guard let value = row.value else { return }
                UserDefaultsRepository.showDex.value = value
        }
@@ -305,14 +334,23 @@ class SettingsViewController: FormViewController {
         }
 
        +++ Section(header: getAppVersion(), footer: "")
-
-       +++ Section(header: "App Expiration", footer: String(expiration.description))
-
-
-        showHideNSDetails()
+       
+       if !isMacApp() {
+           form +++ Section(header: expirationHeaderString, footer: String(expiration.description))
+       }
+       
+       showHideNSDetails()
        checkNightscoutStatus()
     }
     
+    func isMacApp() -> Bool {
+#if targetEnvironment(macCatalyst)
+        return true
+#else
+        return false
+#endif
+    }
+
     func getAppVersion() -> String {
         if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
             return "App Version: \(version)"

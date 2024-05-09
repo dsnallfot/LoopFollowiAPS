@@ -159,6 +159,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var lastSpeechTime: Date?
 
     var autoScrollPauseUntil: Date? = nil
+    
+    var IsNotLooping = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -184,7 +186,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("CR")
         UserDefaultsRepository.infoNames.value.append("Målvärde")
         UserDefaultsRepository.infoNames.value.append("Behov KH")
-        
+
         // Reset deprecated settings
         UserDefaultsRepository.debugLog.value = false;
         UserDefaultsRepository.alwaysDownloadAllBG.value = true;
@@ -292,6 +294,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         restartAllTimers()
         currentCage = nil
         currentSage = nil
+        lastSpeechTime = nil
         refreshControl.endRefreshing()
     }
     
@@ -314,61 +317,65 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         // check the app state
         // TODO: move to a function ?
         if let appState = self.appStateController {
-        
-           if appState.chartSettingsChanged {
-              
-              // can look at settings flags to be more fine tuned
-              self.updateBGGraphSettings()
             
-            if ChartSettingsChangeEnum.smallGraphHeight.rawValue != 0 {
-                smallGraphHeightConstraint.constant = CGFloat(UserDefaultsRepository.smallGraphHeight.value)
-                self.view.layoutIfNeeded()
+            if appState.chartSettingsChanged {
+                
+                // can look at settings flags to be more fine tuned
+                self.updateBGGraphSettings()
+                
+                if ChartSettingsChangeEnum.smallGraphHeight.rawValue != 0 {
+                    smallGraphHeightConstraint.constant = CGFloat(UserDefaultsRepository.smallGraphHeight.value)
+                    self.view.layoutIfNeeded()
+                }
+                
+                // reset the app state
+                appState.chartSettingsChanged = false
+                appState.chartSettingsChanges = 0
             }
-              
-              // reset the app state
-              appState.chartSettingsChanged = false
-              appState.chartSettingsChanges = 0
-           }
-           if appState.generalSettingsChanged {
-           
-              // settings for appBadge changed
-              if appState.generalSettingsChanges & GeneralSettingsChangeEnum.appBadgeChange.rawValue != 0 {
-                 
-              }
-              
-              // settings for textcolor changed
-              if appState.generalSettingsChanges & GeneralSettingsChangeEnum.colorBGTextChange.rawValue != 0 {
-                 self.setBGTextColor()
-              }
+            if appState.generalSettingsChanged {
+                
+                // settings for appBadge changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.appBadgeChange.rawValue != 0 {
+                    
+                }
+                
+                // settings for textcolor changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.colorBGTextChange.rawValue != 0 {
+                    self.setBGTextColor()
+                }
+                
+                // settings for showStats changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showStatsChange.rawValue != 0 {
+                    statsView.isHidden = !UserDefaultsRepository.showStats.value
+                }
+                
+                // settings for useIFCC changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.useIFCCChange.rawValue != 0 {
+                    updateStats()
+                }
+                
+                // settings for showSmallGraph changed
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showSmallGraphChange.rawValue != 0 {
+                    BGChartFull.isHidden = !UserDefaultsRepository.showSmallGraph.value
+                }
+                
+                if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showDisplayNameChange.rawValue != 0 {
+                    self.updateServerText()
+                }
+                
+                // reset the app state
+                appState.generalSettingsChanged = false
+                appState.generalSettingsChanges = 0
+            }
+            if appState.infoDataSettingsChanged {
+                createDerivedData()
+                self.infoTable.reloadData()
+                
+                // reset
+                appState.infoDataSettingsChanged = false
+            }
             
-            // settings for showStats changed
-            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showStatsChange.rawValue != 0 {
-               statsView.isHidden = !UserDefaultsRepository.showStats.value
-            }
-
-            // settings for useIFCC changed
-            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.useIFCCChange.rawValue != 0 {
-                updateStats()
-            }
-
-            // settings for showSmallGraph changed
-            if appState.generalSettingsChanges & GeneralSettingsChangeEnum.showSmallGraphChange.rawValue != 0 {
-                BGChartFull.isHidden = !UserDefaultsRepository.showSmallGraph.value
-            }
-              
-              // reset the app state
-              appState.generalSettingsChanged = false
-              appState.generalSettingsChanges = 0
-           }
-           if appState.infoDataSettingsChanged {
-              createDerivedData()
-              self.infoTable.reloadData()
-              
-              // reset
-              appState.infoDataSettingsChanged = false
-           }
-           
-           // add more processing of the app state
+            // add more processing of the app state
         }
     }
     
@@ -437,9 +444,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     @objc override func viewDidAppear(_ animated: Bool) {
         showHideNSDetails()
     }
-    
-    
-
+       
+/*
     //update Min Ago Text. We need to call this separately because it updates between readings
     func updateMinAgo(){
         if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Update min ago text") }
@@ -457,7 +463,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         }
         
     }
-    
+  */  
     //Clear the info data before next pull. This ensures we aren't displaying old data if something fails.
     func clearLastInfoData(index: Int){
         tableData[index].value = ""
@@ -479,7 +485,12 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         }
         
         LoopStatusLabel.isHidden = isHidden
-        PredictionLabel.isHidden = isHidden
+        if IsNotLooping {
+            PredictionLabel.isHidden = true
+        }
+        else {
+            PredictionLabel.isHidden = isHidden
+        }
         infoTable.isHidden = isHidden
         
         if UserDefaultsRepository.hideInfoTable.value {
@@ -496,14 +507,11 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     }
     
     func updateBadge(val: Int) {
-        DispatchQueue.main.async {
         if UserDefaultsRepository.appBadge.value {
             let latestBG = String(val)
-            UIApplication.shared.applicationIconBadgeNumber = Int(bgUnits.removePeriodForBadge(bgUnits.toDisplayUnits(latestBG))) ?? val
+            UIApplication.shared.applicationIconBadgeNumber = Int(bgUnits.removePeriodAndCommaForBadge(bgUnits.toDisplayUnits(latestBG))) ?? val
         } else {
             UIApplication.shared.applicationIconBadgeNumber = 0
-        }
-//        if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "updated badge") }
         }
     }
     
@@ -574,7 +582,10 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         }
 
             // Create Event info
-            let deltaBG = self.bgData[self.bgData.count - 1].sgv -  self.bgData[self.bgData.count - 2].sgv as Int
+        var deltaBG = 0 // protect index out of bounds
+        if self.bgData.count > 1 {
+            deltaBG = self.bgData[self.bgData.count - 1].sgv -  self.bgData[self.bgData.count - 2].sgv as Int
+        }
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - self.bgData[self.bgData.count - 1].date) / 60
             var deltaString = ""
             if deltaBG < 0 {
@@ -749,6 +760,13 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         }
     }
     
-    
+    // User has scrolled the chart
+    func chartTranslated(_ chartView: ChartViewBase, dX: CGFloat, dY: CGFloat) {
+        let isViewingLatestData = abs(BGChart.highestVisibleX - BGChart.chartXMax) < 0.001
+        if isViewingLatestData {
+            autoScrollPauseUntil = nil // User is back at the latest data, allow auto-scrolling
+        } else {
+            autoScrollPauseUntil = Date().addingTimeInterval(5 * 60) // User is viewing historical data, pause auto-scrolling
+        }
+    }
 }
-

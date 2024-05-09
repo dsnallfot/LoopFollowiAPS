@@ -35,13 +35,17 @@
 		DD7E19882ACDA5DA00DBD158 /* Notes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E19872ACDA5DA00DBD158 /* Notes.swift */; };
 		DD7E198A2ACDA62600DBD158 /* SensorStart.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E19892ACDA62600DBD158 /* SensorStart.swift */; };
 		DD7FFAFD2A72953000C3A304 /* EKEventStore+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7FFAFC2A72953000C3A304 /* EKEventStore+Extensions.swift */; };
+		DD91E4DD2BDEC3F8002D9E97 /* GlucoseConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD91E4DC2BDEC3F8002D9E97 /* GlucoseConversion.swift */; };
 		DD98F54424BCEFEE0007425A /* ShareClientExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD98F54324BCEFEE0007425A /* ShareClientExtension.swift */; };
+		DDB0AF522BB1A8BE00AFA48B /* BuildDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDB0AF512BB1A8BE00AFA48B /* BuildDetails.swift */; };
+		DDB0AF552BB1B24A00AFA48B /* BuildDetails.plist in Resources */ = {isa = PBXBuildFile; fileRef = DDB0AF542BB1B24A00AFA48B /* BuildDetails.plist */; };
 		DDCF979424C0D380002C9752 /* UIViewExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCF979324C0D380002C9752 /* UIViewExtension.swift */; };
 		DDCF979624C1443C002C9752 /* GeneralSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCF979524C1443C002C9752 /* GeneralSettingsViewController.swift */; };
 		DDCF979824C1489C002C9752 /* GraphSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCF979724C1489C002C9752 /* GraphSettingsViewController.swift */; };
 		DDCF979A24C14DB4002C9752 /* WatchSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCF979924C14DB4002C9752 /* WatchSettingsViewController.swift */; };
 		DDCF979C24C14EFB002C9752 /* AdvancedSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCF979B24C14EFB002C9752 /* AdvancedSettingsViewController.swift */; };
 		DDCF979E24C2382A002C9752 /* AppStateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDCF979D24C2382A002C9752 /* AppStateController.swift */; };
+		DDCFCAF22B17273200BE5751 /* LoopFollowDisplayNameConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = DDCFCAF12B17273200BE5751 /* LoopFollowDisplayNameConfig.xcconfig */; };
 		DDF9676E2AD08C6E00C5EB95 /* SiteChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF9676D2AD08C6E00C5EB95 /* SiteChange.swift */; };
 		FC16A97A24996673003D6245 /* NightScout.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC16A97924996673003D6245 /* NightScout.swift */; };
 		FC16A97B249966A3003D6245 /* AlarmSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7CE589248ABEA3001F83B8 /* AlarmSound.swift */; };
@@ -227,13 +231,18 @@
 		DD7E19872ACDA5DA00DBD158 /* Notes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes.swift; sourceTree = "<group>"; };
 		DD7E19892ACDA62600DBD158 /* SensorStart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorStart.swift; sourceTree = "<group>"; };
 		DD7FFAFC2A72953000C3A304 /* EKEventStore+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EKEventStore+Extensions.swift"; sourceTree = "<group>"; };
+		DD91E4DC2BDEC3F8002D9E97 /* GlucoseConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseConversion.swift; sourceTree = "<group>"; };
 		DD98F54324BCEFEE0007425A /* ShareClientExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareClientExtension.swift; sourceTree = "<group>"; };
+		DDB0AF502BB1A84500AFA48B /* capture-build-details.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "capture-build-details.sh"; sourceTree = "<group>"; };
+		DDB0AF512BB1A8BE00AFA48B /* BuildDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildDetails.swift; sourceTree = "<group>"; };
+		DDB0AF542BB1B24A00AFA48B /* BuildDetails.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = BuildDetails.plist; sourceTree = "<group>"; };
 		DDCF979324C0D380002C9752 /* UIViewExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIViewExtension.swift; sourceTree = "<group>"; };
 		DDCF979524C1443C002C9752 /* GeneralSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsViewController.swift; sourceTree = "<group>"; };
 		DDCF979724C1489C002C9752 /* GraphSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphSettingsViewController.swift; sourceTree = "<group>"; };
 		DDCF979924C14DB4002C9752 /* WatchSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSettingsViewController.swift; sourceTree = "<group>"; };
 		DDCF979B24C14EFB002C9752 /* AdvancedSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsViewController.swift; sourceTree = "<group>"; };
 		DDCF979D24C2382A002C9752 /* AppStateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateController.swift; sourceTree = "<group>"; };
+		DDCFCAF12B17273200BE5751 /* LoopFollowDisplayNameConfig.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = LoopFollowDisplayNameConfig.xcconfig; sourceTree = "<group>"; };
 		DDF9676D2AD08C6E00C5EB95 /* SiteChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteChange.swift; sourceTree = "<group>"; };
 		ECA3EFB4037410B4973BB632 /* Pods-LoopFollow.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.debug.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.debug.xcconfig"; sourceTree = "<group>"; };
 		FC16A97924996673003D6245 /* NightScout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightScout.swift; sourceTree = "<group>"; };
@@ -468,6 +477,14 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
+		DDB0AF4F2BB1A81F00AFA48B /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				DDB0AF502BB1A84500AFA48B /* capture-build-details.sh */,
+			);
+			path = Scripts;
+			sourceTree = "<group>";
+		};
 		FC16A97624995FEE003D6245 /* Application */ = {
 			isa = PBXGroup;
 			children = (
@@ -647,6 +664,9 @@
 		FC97880B2485969B00A7906C = {
 			isa = PBXGroup;
 			children = (
+				DDB0AF542BB1B24A00AFA48B /* BuildDetails.plist */,
+				DDB0AF4F2BB1A81F00AFA48B /* Scripts */,
+				DDCFCAF12B17273200BE5751 /* LoopFollowDisplayNameConfig.xcconfig */,
 				FC3AE7B3249E8E0E00AAE1E0 /* LoopFollow.xcdatamodeld */,
 				FC5A5C3C2497B229009C550E /* Config.xcconfig */,
 				FC8DEEE32485D1680075863F /* LoopFollow */,
@@ -690,6 +710,8 @@
 				FCD2A27C24C9D044009F7B7B /* Globals.swift */,
 				FC8589BE252B54F500C8FC73 /* Mobileprovision.swift */,
 				DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */,
+				DDB0AF512BB1A8BE00AFA48B /* BuildDetails.swift */,
+				DD91E4DC2BDEC3F8002D9E97 /* GlucoseConversion.swift */,
 			);
 			path = helpers;
 			sourceTree = "<group>";
@@ -731,6 +753,7 @@
 				FC9788112485969B00A7906C /* Frameworks */,
 				FC9788122485969B00A7906C /* Resources */,
 				04DA71CCA0280FA5FA2DF7A6 /* [CP] Embed Pods Frameworks */,
+				DDB0AF532BB1AA0900AFA48B /* Capture Build Details */,
 			);
 			buildRules = (
 			);
@@ -807,6 +830,7 @@
 				FC7CE53F248ABE37001F83B8 /* Siri_Alert_Glucose_Dropping_Fast.caf in Resources */,
 				FC7CE561248ABE37001F83B8 /* Wrong_Answer.caf in Resources */,
 				FCC6885C2489559400A0279D /* blank.wav in Resources */,
+				DDB0AF552BB1B24A00AFA48B /* BuildDetails.plist in Resources */,
 				FC7CE528248ABE37001F83B8 /* Cartoon_Bounce_To_Ceiling.caf in Resources */,
 				FC7CE57B248ABE37001F83B8 /* Alert_Tone_Busy.caf in Resources */,
 				FC7CE51B248ABE37001F83B8 /* Thunder_Sound_FX.caf in Resources */,
@@ -857,6 +881,7 @@
 				FC7CE518248ABE37001F83B8 /* Siri_Alert_Calibration_Needed.caf in Resources */,
 				FC5A5C3D2497B229009C550E /* Config.xcconfig in Resources */,
 				FC7CE550248ABE37001F83B8 /* Siri_Alert_High_Glucose.caf in Resources */,
+				DDCFCAF22B17273200BE5751 /* LoopFollowDisplayNameConfig.xcconfig in Resources */,
 				FC7CE525248ABE37001F83B8 /* Sci-Fi_Warning.caf in Resources */,
 				FC7CE556248ABE37001F83B8 /* Sci-Fi_Console_Alarm.caf in Resources */,
 				FC7CE55C248ABE37001F83B8 /* Big_Clock_Ticking.caf in Resources */,
@@ -944,6 +969,24 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		DDB0AF532BB1AA0900AFA48B /* Capture Build Details */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Capture Build Details";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Scripts/capture-build-details.sh\"\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -969,6 +1012,7 @@
 				FC16A97D24996747003D6245 /* Alarms.swift in Sources */,
 				FC16A97B249966A3003D6245 /* AlarmSound.swift in Sources */,
 				65A160FB2BC021F800C917F8 /* Twilio.swift in Sources */,
+				DDB0AF522BB1A8BE00AFA48B /* BuildDetails.swift in Sources */,
 				DD493AE72ACF23CF009A6922 /* DeviceStatus.swift in Sources */,
 				FCFEECA2248857A600402A7F /* SettingsViewController.swift in Sources */,
 				65047E972BAC6A7B00894A39 /* OverrideViewController.swift in Sources */,
@@ -1001,6 +1045,7 @@
 				FCC6886B24898FD800A0279D /* ObservationToken.swift in Sources */,
 				DD98F54424BCEFEE0007425A /* ShareClientExtension.swift in Sources */,
 				654CB0692BA4626E004650B3 /* Smb.swift in Sources */,
+				DD91E4DD2BDEC3F8002D9E97 /* GlucoseConversion.swift in Sources */,
 				FCC6886D2489909D00A0279D /* AnyConvertible.swift in Sources */,
 				FC97881A2485969B00A7906C /* SceneDelegate.swift in Sources */,
 				DD7E198A2ACDA62600DBD158 /* SensorStart.swift in Sources */,
@@ -1172,7 +1217,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.$(unique_id).LoopFollow";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.$(unique_id).LoopFollow$(app_suffix)";
 				PRODUCT_NAME = "Loop Follow";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
@@ -1194,7 +1239,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.$(unique_id).LoopFollow";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.$(unique_id).LoopFollow$(app_suffix)";
 				PRODUCT_NAME = "Loop Follow";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;

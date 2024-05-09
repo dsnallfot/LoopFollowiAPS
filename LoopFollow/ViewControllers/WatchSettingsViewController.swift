@@ -119,7 +119,6 @@ class WatchSettingsViewController: FormViewController {
                 guard let value = row.value else { return }
                 UserDefaultsRepository.watchLine2.value = value
             }
-            
         
             +++ Section(header: "Available Variables", footer: "")
             <<< LabelRow("BG"){ row in

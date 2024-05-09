@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 
 var sharedDeltaBG: Int = 0
 
@@ -178,9 +179,8 @@ extension MainViewController {
                 self.startBGTimer(time: 300 - secondsAgo + Double(UserDefaultsRepository.bgUpdateDelay.value))
                 let timerVal = 310 - secondsAgo
                 print("##### started 5:10 bg timer: \(timerVal)")
-                self.updateBadge(val: data[0].sgv)
-                if UserDefaultsRepository.speakBG.value {
-                    self.speakBG(currentValue: data[0].sgv, previousValue: data[1].sgv)
+                if data.count > 1 {
+                    self.evaluateSpeakConditions(currentValue: data[0].sgv, previousValue: data[1].sgv)
                 }
             }
         }
@@ -207,15 +207,24 @@ extension MainViewController {
         viewUpdateNSBG(sourceName: sourceName)
     }
     
+    func updateServerText(with serverText: String? = nil) {
+        if UserDefaultsRepository.showDisplayName.value, let displayName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String {
+            self.serverText.text = displayName
+        } else if let serverText = serverText {
+            self.serverText.text = serverText
+        }
+    }
+    
     // NS BG Data Front end updater
-    func viewUpdateNSBG (sourceName: String) {
+    func viewUpdateNSBG(sourceName: String) {
         DispatchQueue.main.async {
             if UserDefaultsRepository.debugLog.value {
                 self.writeDebugLog(value: "Display: BG")
                 self.writeDebugLog(value: "Num BG: " + self.bgData.count.description)
             }
+            
             let entries = self.bgData
-            if entries.count < 1 { return }
+            if entries.count < 2 { return } // Protect index out of bounds
             
             self.updateBGGraph()
             self.updateStats()
@@ -226,53 +235,65 @@ extension MainViewController {
             let deltaBG = latestBG - priorBG as Int
             sharedDeltaBG = deltaBG
             let lastBGTime = entries[latestEntryi].date
+
             
-            let deltaTime = (TimeInterval(Date().timeIntervalSince1970)-lastBGTime) / 60
+            let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - lastBGTime) / 60
             var userUnit = " mg/dL"
             if self.mmol {
                 userUnit = " mmol/L"
             }
             
-            self.serverText.text = sourceName
+            self.updateServerText(with: sourceName)
             
             var snoozerBG = ""
             var snoozerDirection = ""
             var snoozerDelta = ""
             
+            // Set BGText with the latest BG value
             self.BGText.text = bgUnits.toDisplayUnits(String(latestBG))
             snoozerBG = bgUnits.toDisplayUnits(String(latestBG))
             self.setBGTextColor()
             
-            if let directionBG = entries[latestEntryi].direction {
+            // Direction handling
+            if let directionBG = entries[latestEntryIndex].direction {
                 self.DirectionText.text = self.bgDirectionGraphic(directionBG)
                 snoozerDirection = self.bgDirectionGraphic(directionBG)
                 self.latestDirectionString = self.bgDirectionGraphic(directionBG)
-            }
-            else
-            {
+            } else {
                 self.DirectionText.text = ""
                 snoozerDirection = ""
                 self.latestDirectionString = ""
             }
             
+            // Delta handling
             if deltaBG < 0 {
                 self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG))
                 snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG))
                 self.latestDeltaString = String(deltaBG)
-            }
-            else
-            {
+            } else {
                 self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG))
                 snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG))
                 self.latestDeltaString = "+" + String(deltaBG)
             }
+            
+            // Apply strikethrough to BGText based on the staleness of the data
+            let bgTextStr = self.BGText.text ?? ""
+            let attributeString = NSMutableAttributedString(string: bgTextStr)
+            attributeString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: 0, length: attributeString.length))
+            if deltaTime >= 12 { // Data is stale
+                attributeString.addAttribute(.strikethroughColor, value: UIColor.systemRed, range: NSRange(location: 0, length: attributeString.length))
+                self.updateBadge(val: 0)
+            } else { // Data is fresh
+                attributeString.addAttribute(.strikethroughColor, value: UIColor.clear, range: NSRange(location: 0, length: attributeString.length))
+                self.updateBadge(val: latestBG)
+            }
+            self.BGText.attributedText = attributeString
             
             // Snoozer Display
             guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
             snoozer.BGLabel.text = snoozerBG
             snoozer.DirectionLabel.text = snoozerDirection
             snoozer.DeltaLabel.text = snoozerDelta
-            
         }
     }
 }

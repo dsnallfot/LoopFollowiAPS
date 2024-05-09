@@ -424,7 +424,6 @@ class AlarmViewController: FormViewController {
         buildCOB()
         buildBatteryAlarm()
         buildRecBolus()
-        
         buildSnoozeAll()
         buildAlarmSettings()
         
@@ -1819,7 +1818,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertNotLoopingUseLimits.value = value
         }
         <<< StepperRow("alertNotLoopingLowerLimit") { row in
-            row.title = "Below BG"
+            row.title = "If Below BG"
             row.cell.stepper.stepValue = 1
             row.cell.stepper.minimumValue = 50
             row.cell.stepper.maximumValue = 200
@@ -1834,7 +1833,7 @@ class AlarmViewController: FormViewController {
                 UserDefaultsRepository.alertNotLoopingLowerLimit.value = Float(value)
         }
         <<< StepperRow("alertNotLoopingUpperLimit") { row in
-            row.title = "Above BG"
+            row.title = "If Above BG"
             row.cell.stepper.stepValue = 1
             row.cell.stepper.minimumValue = 100
             row.cell.stepper.maximumValue = 300
@@ -3274,6 +3273,70 @@ class AlarmViewController: FormViewController {
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
             UserDefaultsRepository.alertBatteryRepeat.value = value
+        }
+    }
+
+    func buildRecBolus(){
+        form
+        +++ Section(header: "Rec. Bolus Alert", footer: "Activates a notification alert whenever recommended bolus is above a user-defined threshold, allowing for proactive manual bolusing.") { row in
+            row.hidden = "$otherAlerts4 != 'Rec. Bolus'"
+        }
+        <<< SwitchRow("alertRecBolusActive"){ row in
+            row.title = "Active"
+            row.value = UserDefaultsRepository.alertRecBolusActive.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertRecBolusActive.value = value
+        }
+        <<< StepperRow("alertRecBolusAt") { row in
+            row.title = "Rec. Bolus threshold"
+            row.cell.stepper.stepValue = 0.1
+            row.cell.stepper.minimumValue = 0.1
+            row.cell.stepper.maximumValue = 50
+            row.value = Double(UserDefaultsRepository.alertRecBolusLevel.value)
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                return "\(Double(round(10*value)/10))"
+            }
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertRecBolusLevel.value = value
+        }
+        <<< StepperRow("alertRecBolusSnooze") { row in
+            row.title = "Default Snooze"
+            row.cell.stepper.stepValue = 5
+            row.cell.stepper.minimumValue = 5
+            row.cell.stepper.maximumValue = 60
+            row.value = Double(UserDefaultsRepository.alertRecBolusSnooze.value)
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                return "\(Int(value))"
+            }
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertRecBolusSnooze.value = Int(value)
+        }
+        <<< PickerInputRow<String>("alertRecBolusSound") { row in
+            row.title = "Sound"
+            row.options = soundFiles
+            row.value = UserDefaultsRepository.alertRecBolusSound.value
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                return "\(String(value.replacingOccurrences(of: "_", with: " ")))"
+            }
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertRecBolusSound.value = value
+            AlarmSound.setSoundFile(str: value)
+            AlarmSound.stop()
+            AlarmSound.playTest()
+        }
+        <<< SwitchRow("alertRecBolusRepeat"){ row in
+            row.title = "Repeat Sound"
+            row.value = UserDefaultsRepository.alertRecBolusRepeat.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertRecBolusRepeat.value = value
         }
     }
     

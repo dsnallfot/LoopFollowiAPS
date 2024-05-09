@@ -49,6 +49,7 @@ extension MainViewController {
                 
                 offset = (bolusTime.offset || smbTime.offset) ? 75 : 25
             }
+
             if dateTimeStamp < (dateTimeUtils.getNowTimeIntervalUTC() + (3600 * UserDefaultsRepository.predictionToLoad.value)) {
                 // Make the dot
                 let dot = carbGraphStruct(value: Double(carbs), date: Double(dateTimeStamp), sgv: Int(sgv.sgv + Double(offset)), absorptionTime: absorptionTime, foodType: foodType as? String)

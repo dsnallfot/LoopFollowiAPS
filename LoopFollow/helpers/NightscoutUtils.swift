@@ -33,7 +33,7 @@ class NightscoutUtils {
             case .cage, .carbsToday, .sage, .treatments:
                 return "/api/v1/treatments.json"
             case .sgv:
-                return "/api/v1/entries/sgv.json"
+                return "/api/v1/entries.json"
             case .profile:
                 return "/api/v1/profile/current.json"
             case .deviceStatus: 
@@ -192,10 +192,12 @@ class NightscoutUtils {
         let dateFormatterWithMilliseconds = DateFormatter()
         dateFormatterWithMilliseconds.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
         dateFormatterWithMilliseconds.timeZone = TimeZone(abbreviation: "UTC")
+        dateFormatterWithMilliseconds.locale = Locale(identifier: "en_US_POSIX")
         
         let dateFormatterWithoutMilliseconds = DateFormatter()
         dateFormatterWithoutMilliseconds.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
         dateFormatterWithoutMilliseconds.timeZone = TimeZone(abbreviation: "UTC")
+        dateFormatterWithoutMilliseconds.locale = Locale(identifier: "en_US_POSIX")
         
         if let date = dateFormatterWithMilliseconds.date(from: dateString) {
             return date
@@ -205,4 +207,5 @@ class NightscoutUtils {
         
         return nil
     }
+
 }
