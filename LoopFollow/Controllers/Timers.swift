@@ -65,7 +65,7 @@ extension MainViewController {
             }
             
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
-            let minAgoDisplayText = formattedDuration + " sedan"
+            let minAgoDisplayText = formattedDuration + " sedan "
             
             MinAgoText.text = minAgoDisplayText
             latestMinAgoString = minAgoDisplayText
