@@ -180,7 +180,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("Sensorbyte")
         UserDefaultsRepository.infoNames.value.append("Poddbyte")
         UserDefaultsRepository.infoNames.value.append("Behov Insulin")
-        UserDefaultsRepository.infoNames.value.append("Prognos")
+        UserDefaultsRepository.infoNames.value.append("Min/Max")
         UserDefaultsRepository.infoNames.value.append("Kh idag")
         UserDefaultsRepository.infoNames.value.append("Autosens")
         UserDefaultsRepository.infoNames.value.append("Profil")

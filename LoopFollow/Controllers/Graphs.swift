@@ -85,29 +85,54 @@ extension MainViewController {
         linePrediction.setDrawHighlightIndicators(false)
         linePrediction.valueFont.withSize(50)
         
-        // Setup Prediction line COB details
-        let predictionChartEntryCOB = [ChartDataEntry]()
-        let linePredictionCOB = LineChartDataSet(entries:predictionChartEntryCOB, label: "")
-        linePredictionCOB.circleRadius = CGFloat(globalVariables.dotBG)
-        linePredictionCOB.circleColors = [NSUIColor.systemPurple]
-        linePredictionCOB.colors = [NSUIColor.systemPurple]
-        linePredictionCOB.drawCircleHoleEnabled = true
-        linePredictionCOB.axisDependency = YAxis.AxisDependency.right
-        linePredictionCOB.highlightEnabled = true
-        linePredictionCOB.drawValuesEnabled = false
+        // Setup Prediction line ZT details
+        let predictionChartEntryZT = [ChartDataEntry]()
+        let linePredictionZT = LineChartDataSet(entries:predictionChartEntryZT, label: "")
+        linePredictionZT.circleRadius = CGFloat(globalVariables.dotBG)
+        linePredictionZT.circleColors = [NSUIColor.systemPurple]
+        linePredictionZT.colors = [NSUIColor.systemPurple]
+        linePredictionZT.drawCircleHoleEnabled = true
+        linePredictionZT.axisDependency = YAxis.AxisDependency.right
+        linePredictionZT.highlightEnabled = true
+        linePredictionZT.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            linePredictionCOB.lineWidth = 2
+            linePredictionZT.lineWidth = 2
         } else {
-            linePredictionCOB.lineWidth = 0
+            linePredictionZT.lineWidth = 0
         }
         if UserDefaultsRepository.showDots.value {
-            linePredictionCOB.drawCirclesEnabled = true
+            linePredictionZT.drawCirclesEnabled = true
         } else {
-            linePredictionCOB.drawCirclesEnabled = false
+            linePredictionZT.drawCirclesEnabled = false
         }
-        linePredictionCOB.setDrawHighlightIndicators(false)
-        linePredictionCOB.valueFont.withSize(50)
+        linePredictionZT.setDrawHighlightIndicators(false)
+        linePredictionZT.valueFont.withSize(50)
+        
+        // Setup Prediction line IOB details
+        let predictionChartEntryIOB = [ChartDataEntry]()
+        let linePredictionIOB = LineChartDataSet(entries:predictionChartEntryIOB, label: "")
+        linePredictionIOB.circleRadius = CGFloat(globalVariables.dotBG)
+        linePredictionIOB.circleColors = [NSUIColor.systemPurple]
+        linePredictionIOB.colors = [NSUIColor.systemPurple]
+        linePredictionIOB.drawCircleHoleEnabled = true
+        linePredictionIOB.axisDependency = YAxis.AxisDependency.right
+        linePredictionIOB.highlightEnabled = true
+        linePredictionIOB.drawValuesEnabled = false
+        
+        if UserDefaultsRepository.showLines.value {
+            linePredictionIOB.lineWidth = 2
+        } else {
+            linePredictionIOB.lineWidth = 0
+        }
+        if UserDefaultsRepository.showDots.value {
+            linePredictionIOB.drawCirclesEnabled = true
+        } else {
+            linePredictionIOB.drawCirclesEnabled = false
+        }
+        linePredictionIOB.setDrawHighlightIndicators(false)
+        linePredictionIOB.valueFont.withSize(50)
+
         
         // Setup Prediction line UAM details
         let predictionChartEntryUAM = [ChartDataEntry]()
@@ -133,53 +158,29 @@ extension MainViewController {
         linePredictionUAM.setDrawHighlightIndicators(false)
         linePredictionUAM.valueFont.withSize(50)
         
-        // Setup Prediction line IOB details
-        let predictionChartEntryIOB = [ChartDataEntry]()
-        let linePredictionIOB = LineChartDataSet(entries:predictionChartEntryIOB, label: "")
-        linePredictionIOB.circleRadius = CGFloat(globalVariables.dotBG)
-        linePredictionIOB.circleColors = [NSUIColor.systemPurple]
-        linePredictionIOB.colors = [NSUIColor.systemPurple]
-        linePredictionIOB.drawCircleHoleEnabled = true
-        linePredictionIOB.axisDependency = YAxis.AxisDependency.right
-        linePredictionIOB.highlightEnabled = true
-        linePredictionIOB.drawValuesEnabled = false
+        // Setup Prediction line COB details
+        let predictionChartEntryCOB = [ChartDataEntry]()
+        let linePredictionCOB = LineChartDataSet(entries:predictionChartEntryCOB, label: "")
+        linePredictionCOB.circleRadius = CGFloat(globalVariables.dotBG)
+        linePredictionCOB.circleColors = [NSUIColor.systemPurple]
+        linePredictionCOB.colors = [NSUIColor.systemPurple]
+        linePredictionCOB.drawCircleHoleEnabled = true
+        linePredictionCOB.axisDependency = YAxis.AxisDependency.right
+        linePredictionCOB.highlightEnabled = true
+        linePredictionCOB.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            linePredictionIOB.lineWidth = 2
+            linePredictionCOB.lineWidth = 2
         } else {
-            linePredictionIOB.lineWidth = 0
+            linePredictionCOB.lineWidth = 0
         }
         if UserDefaultsRepository.showDots.value {
-            linePredictionIOB.drawCirclesEnabled = true
+            linePredictionCOB.drawCirclesEnabled = true
         } else {
-            linePredictionIOB.drawCirclesEnabled = false
+            linePredictionCOB.drawCirclesEnabled = false
         }
-        linePredictionIOB.setDrawHighlightIndicators(false)
-        linePredictionIOB.valueFont.withSize(50)
-        
-        // Setup Prediction line ZT details
-        let predictionChartEntryZT = [ChartDataEntry]()
-        let linePredictionZT = LineChartDataSet(entries:predictionChartEntryZT, label: "")
-        linePredictionZT.circleRadius = CGFloat(globalVariables.dotBG)
-        linePredictionZT.circleColors = [NSUIColor.systemPurple]
-        linePredictionZT.colors = [NSUIColor.systemPurple]
-        linePredictionZT.drawCircleHoleEnabled = true
-        linePredictionZT.axisDependency = YAxis.AxisDependency.right
-        linePredictionZT.highlightEnabled = true
-        linePredictionZT.drawValuesEnabled = false
-        
-        if UserDefaultsRepository.showLines.value {
-            linePredictionZT.lineWidth = 2
-        } else {
-            linePredictionZT.lineWidth = 0
-        }
-        if UserDefaultsRepository.showDots.value {
-            linePredictionZT.drawCirclesEnabled = true
-        } else {
-            linePredictionZT.drawCirclesEnabled = false
-        }
-        linePredictionZT.setDrawHighlightIndicators(false)
-        linePredictionZT.valueFont.withSize(50)
+        linePredictionCOB.setDrawHighlightIndicators(false)
+        linePredictionCOB.valueFont.withSize(50)
         
         // create Basal graph data
         let chartEntry = [ChartDataEntry]()
@@ -410,10 +411,10 @@ extension MainViewController {
         data.append(lineNote) // Dataset 11
         data.append(lineSmb) // Dataset 12
         data.append(linePump) // Dataset 13
-        data.append(linePredictionCOB) // Dataset 14
-        data.append(linePredictionUAM) // Dataset 15
-        data.append(linePredictionIOB) // Dataset 16
-        data.append(linePredictionZT) // Dataset 17
+        data.append(linePredictionZT) // Dataset 14
+        data.append(linePredictionIOB) // Dataset 15
+        data.append(linePredictionUAM) // Dataset 16
+        data.append(linePredictionCOB) // Dataset 17
         
         data.setValueFont(UIFont.systemFont(ofSize: 10))
         
@@ -572,42 +573,46 @@ extension MainViewController {
     func updateBGGraphSettings() {
         let dataIndex = 0
         let dataIndexPrediction = 1
+        let dataIndexPredictionZT = 14
+        let dataIndexPredictionIOB = 15
+        let dataIndexPredictionUAM = 16
+        let dataIndexPredictionCOB = 17
         let lineBG = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         let linePrediction = BGChart.lineData!.dataSets[dataIndexPrediction] as! LineChartDataSet
-        let linePredictionCOB = BGChart.lineData!.dataSets[dataIndexPrediction] as! LineChartDataSet
-        let linePredictionUAM = BGChart.lineData!.dataSets[dataIndexPrediction] as! LineChartDataSet
-        let linePredictionIOB = BGChart.lineData!.dataSets[dataIndexPrediction] as! LineChartDataSet
-        let linePredictionZT = BGChart.lineData!.dataSets[dataIndexPrediction] as! LineChartDataSet
+        let linePredictionZT = BGChart.lineData!.dataSets[dataIndexPredictionZT] as! LineChartDataSet
+        let linePredictionIOB = BGChart.lineData!.dataSets[dataIndexPredictionIOB] as! LineChartDataSet
+        let linePredictionUAM = BGChart.lineData!.dataSets[dataIndexPredictionUAM] as! LineChartDataSet
+        let linePredictionCOB = BGChart.lineData!.dataSets[dataIndexPredictionCOB] as! LineChartDataSet
+
         if UserDefaultsRepository.showLines.value {
             lineBG.lineWidth = 2
             linePrediction.lineWidth = 2
-            linePredictionCOB.lineWidth = 2
-            linePredictionUAM.lineWidth = 2
-            linePredictionIOB.lineWidth = 2
             linePredictionZT.lineWidth = 2
+            linePredictionIOB.lineWidth = 2
+            linePredictionUAM.lineWidth = 2
+            linePredictionCOB.lineWidth = 2
         } else {
             lineBG.lineWidth = 0
             linePrediction.lineWidth = 0
-            linePredictionCOB.lineWidth = 0
-            linePredictionUAM.lineWidth = 0
-            linePredictionIOB.lineWidth = 0
             linePredictionZT.lineWidth = 0
+            linePredictionIOB.lineWidth = 0
+            linePredictionUAM.lineWidth = 0
+            linePredictionCOB.lineWidth = 0
         }
         if UserDefaultsRepository.showDots.value {
             lineBG.drawCirclesEnabled = true
             linePrediction.drawCirclesEnabled = true
-            linePredictionCOB.drawCirclesEnabled = true
-            linePredictionUAM.drawCirclesEnabled = true
-            linePredictionIOB.drawCirclesEnabled = true
             linePredictionZT.drawCirclesEnabled = true
+            linePredictionIOB.drawCirclesEnabled = true
+            linePredictionUAM.drawCirclesEnabled = true
+            linePredictionCOB.drawCirclesEnabled = true
         } else {
             lineBG.drawCirclesEnabled = false
             linePrediction.drawCirclesEnabled = false
-            linePredictionCOB.drawCirclesEnabled = false
-            linePredictionUAM.drawCirclesEnabled = false
-            linePredictionIOB.drawCirclesEnabled = false
             linePredictionZT.drawCirclesEnabled = false
-            
+            linePredictionIOB.drawCirclesEnabled = false
+            linePredictionUAM.drawCirclesEnabled = false
+            linePredictionCOB.drawCirclesEnabled = false 
         }
         
         BGChart.rightAxis.axisMinimum = 0
@@ -774,7 +779,7 @@ extension MainViewController {
     }
     
     func updatePredictionGraphCOB(color: UIColor? = nil) {
-        let dataIndex = 14
+        let dataIndex = 17
         var mainChart = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         var smallChart = BGChartFull.lineData!.dataSets[dataIndex] as! LineChartDataSet
         mainChart.clear()
@@ -829,7 +834,7 @@ extension MainViewController {
     }
     
     func updatePredictionGraphUAM(color: UIColor? = nil) {
-        let dataIndex = 15
+        let dataIndex = 16
         var mainChart = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         var smallChart = BGChartFull.lineData!.dataSets[dataIndex] as! LineChartDataSet
         mainChart.clear()
@@ -884,7 +889,7 @@ extension MainViewController {
     }
     
     func updatePredictionGraphIOB(color: UIColor? = nil) {
-        let dataIndex = 16
+        let dataIndex = 15
         var mainChart = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         var smallChart = BGChartFull.lineData!.dataSets[dataIndex] as! LineChartDataSet
         mainChart.clear()
@@ -939,7 +944,7 @@ extension MainViewController {
     }
     
     func updatePredictionGraphZT(color: UIColor? = nil) {
-        let dataIndex = 17
+        let dataIndex = 14
         var mainChart = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         var smallChart = BGChartFull.lineData!.dataSets[dataIndex] as! LineChartDataSet
         mainChart.clear()
@@ -1494,19 +1499,33 @@ extension MainViewController {
         linePrediction.lineWidth = 1.5
         linePrediction.axisDependency = YAxis.AxisDependency.right
         
-        // Setup Prediction line COB details
-        var predictionChartEntryCOB = [ChartDataEntry]()
-        let linePredictionCOB = LineChartDataSet(entries:predictionChartEntryCOB, label: "")
-        linePredictionCOB.drawCirclesEnabled = false
+        // Setup Prediction line ZT details
+        var predictionChartEntryZT = [ChartDataEntry]()
+        let linePredictionZT = LineChartDataSet(entries:predictionChartEntryZT, label: "")
+        linePredictionZT.drawCirclesEnabled = false
         //line2.setDrawHighlightIndicators(false)
-        linePredictionCOB.setColor(NSUIColor.systemPurple)
-        linePredictionCOB.highlightEnabled = true
-        linePredictionCOB.drawHorizontalHighlightIndicatorEnabled = false
-        linePredictionCOB.drawVerticalHighlightIndicatorEnabled = false
-        linePredictionCOB.highlightColor = NSUIColor.label
-        linePredictionCOB.drawValuesEnabled = false
-        linePredictionCOB.lineWidth = 1.5
-        linePredictionCOB.axisDependency = YAxis.AxisDependency.right
+        linePredictionZT.setColor(NSUIColor.systemPurple)
+        linePredictionZT.highlightEnabled = true
+        linePredictionZT.drawHorizontalHighlightIndicatorEnabled = false
+        linePredictionZT.drawVerticalHighlightIndicatorEnabled = false
+        linePredictionZT.highlightColor = NSUIColor.label
+        linePredictionZT.drawValuesEnabled = false
+        linePredictionZT.lineWidth = 1.5
+        linePredictionZT.axisDependency = YAxis.AxisDependency.right
+
+        // Setup Prediction line IOB details
+        var predictionChartEntryIOB = [ChartDataEntry]()
+        let linePredictionIOB = LineChartDataSet(entries:predictionChartEntryIOB, label: "")
+        linePredictionIOB.drawCirclesEnabled = false
+        //line2.setDrawHighlightIndicators(false)
+        linePredictionIOB.setColor(NSUIColor.systemPurple)
+        linePredictionIOB.highlightEnabled = true
+        linePredictionIOB.drawHorizontalHighlightIndicatorEnabled = false
+        linePredictionIOB.drawVerticalHighlightIndicatorEnabled = false
+        linePredictionIOB.highlightColor = NSUIColor.label
+        linePredictionIOB.drawValuesEnabled = false
+        linePredictionIOB.lineWidth = 1.5
+        linePredictionIOB.axisDependency = YAxis.AxisDependency.right
         
         // Setup Prediction line UAM details
         var predictionChartEntryUAM = [ChartDataEntry]()
@@ -1522,33 +1541,19 @@ extension MainViewController {
         linePredictionUAM.lineWidth = 1.5
         linePredictionUAM.axisDependency = YAxis.AxisDependency.right
         
-        // Setup Prediction line IOB details
-        var predictionChartEntryIOB = [ChartDataEntry]()
-        let linePredictionIOB = LineChartDataSet(entries:predictionChartEntryIOB, label: "")
-        linePredictionIOB.drawCirclesEnabled = false
+        // Setup Prediction line COB details
+        var predictionChartEntryCOB = [ChartDataEntry]()
+        let linePredictionCOB = LineChartDataSet(entries:predictionChartEntryCOB, label: "")
+        linePredictionCOB.drawCirclesEnabled = false
         //line2.setDrawHighlightIndicators(false)
-        linePredictionIOB.setColor(NSUIColor.systemPurple)
-        linePredictionIOB.highlightEnabled = true
-        linePredictionIOB.drawHorizontalHighlightIndicatorEnabled = false
-        linePredictionIOB.drawVerticalHighlightIndicatorEnabled = false
-        linePredictionIOB.highlightColor = NSUIColor.label
-        linePredictionIOB.drawValuesEnabled = false
-        linePredictionIOB.lineWidth = 1.5
-        linePredictionIOB.axisDependency = YAxis.AxisDependency.right
-        
-        // Setup Prediction line ZT details
-        var predictionChartEntryZT = [ChartDataEntry]()
-        let linePredictionZT = LineChartDataSet(entries:predictionChartEntryZT, label: "")
-        linePredictionZT.drawCirclesEnabled = false
-        //line2.setDrawHighlightIndicators(false)
-        linePredictionZT.setColor(NSUIColor.systemPurple)
-        linePredictionZT.highlightEnabled = true
-        linePredictionZT.drawHorizontalHighlightIndicatorEnabled = false
-        linePredictionZT.drawVerticalHighlightIndicatorEnabled = false
-        linePredictionZT.highlightColor = NSUIColor.label
-        linePredictionZT.drawValuesEnabled = false
-        linePredictionZT.lineWidth = 1.5
-        linePredictionZT.axisDependency = YAxis.AxisDependency.right
+        linePredictionCOB.setColor(NSUIColor.systemPurple)
+        linePredictionCOB.highlightEnabled = true
+        linePredictionCOB.drawHorizontalHighlightIndicatorEnabled = false
+        linePredictionCOB.drawVerticalHighlightIndicatorEnabled = false
+        linePredictionCOB.highlightColor = NSUIColor.label
+        linePredictionCOB.drawValuesEnabled = false
+        linePredictionCOB.lineWidth = 1.5
+        linePredictionCOB.axisDependency = YAxis.AxisDependency.right
         
         // create Basal graph data
         var chartEntry = [ChartDataEntry]()
@@ -1758,11 +1763,10 @@ extension MainViewController {
         data.append(lineNote) // Dataset 11
         data.append(lineSmb) // Dataset 12
         data.append(linePump) // Dataset 13
-        data.append(linePredictionCOB) // Dataset 14
-        data.append(linePredictionUAM) // Dataset 15
-        data.append(linePredictionIOB) // Dataset 16
-        data.append(linePredictionZT) // Dataset 17
-        
+        data.append(linePredictionZT) // Dataset 14
+        data.append(linePredictionIOB) // Dataset 15
+        data.append(linePredictionUAM) // Dataset 16
+        data.append(linePredictionCOB) // Dataset 17
         
         BGChartFull.highlightPerDragEnabled = true
         BGChartFull.leftAxis.enabled = false
