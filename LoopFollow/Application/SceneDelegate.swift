@@ -40,10 +40,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 vc.appStateController = appStateController
             } else if let vc = viewControllers[i] as? SnoozeViewController {
                 vc.appStateController = appStateController
+            } else if let vc = viewControllers[i] as? SettingsViewController {
+                vc.appStateController = appStateController
+            } else if let vc = viewControllers[i] as? debugViewController {
+                vc.appStateController = appStateController
             } else {
-                // For other view controllers, add them to the customizableViewControllers array
-                customizableViewControllers.append(viewControllers[i])
-            }
+                // For Nightscout and remote view controllers, add them to the customizableViewControllers array
+                customizableViewControllers.append(viewControllers[i])            }
         }
 
         // Set the customizableViewControllers property to allow customization for specific view controllers
