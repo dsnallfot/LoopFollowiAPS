@@ -144,7 +144,7 @@ extension MainViewController {
                 UserDefaultsRepository.alertLastLoopTime.value = lastLoopTime
                 if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "lastLoopTime: " + String(lastLoopTime)) }
                 if let failure = lastLoopRecord["failureReason"] {
-                    LoopStatusLabel.text = "X"
+                    LoopStatusLabel.text = " X"
                     latestLoopStatusString = "X"
                     if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Loop Failure: X") }
                 } else {
@@ -207,17 +207,17 @@ extension MainViewController {
                             if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "lastBGTime: " + String(lastBGTime)) }
                             if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "wasEnacted: " + String(wasEnacted)) }
                             if tempBasalTime > lastBGTime && !wasEnacted {
-                                LoopStatusLabel.text = "⏀"
+                                LoopStatusLabel.text = " ⏀"
                                 latestLoopStatusString = "⏀"
                                 if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Open Loop: recommended temp. temp time > bg time, was not enacted") }
                             } else {
-                                LoopStatusLabel.text = "↻"
+                                LoopStatusLabel.text = " ↻"
                                 latestLoopStatusString = "↻"
                                 if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Looping: recommended temp, but temp time is < bg time and/or was enacted") }
                             }
                         }
                     } else {
-                        LoopStatusLabel.text = "↻"
+                        LoopStatusLabel.text = " ↻"
                         latestLoopStatusString = "↻"
                         if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Looping: no recommended temp") }
                     }
@@ -233,7 +233,7 @@ extension MainViewController {
                 UserDefaultsRepository.alertLastLoopTime.value = lastLoopTime
                 if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "lastLoopTime: " + String(lastLoopTime)) }
                 if let failure = lastLoopRecord["failureReason"] {
-                    LoopStatusLabel.text = "X"
+                    LoopStatusLabel.text = " X"
                     latestLoopStatusString = "X"
                     if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Loop Failure: X") }
                 } else {
@@ -354,8 +354,8 @@ extension MainViewController {
                     
                     //Picks COB prediction if available, else UAM, else IOB, else ZT
                     var graphtype = ""
-                    var predictioncolor = UIColor.systemGray
-                    PredictionLabel.textColor = predictioncolor
+                    /*var predictioncolor = UIColor.systemGray
+                    PredictionLabel.textColor = predictioncolor*/
                     
                     if let enactdata = lastLoopRecord["suggested"] as? [String:AnyObject],
                        let predbgdata = enactdata["predBGs"] as? [String:AnyObject] {
@@ -369,7 +369,7 @@ extension MainViewController {
                         } else {
                             graphtype = "ZT"
                         }
-                        
+                        /*
                         // Access the color based on graphtype
                         var colorName = ""
                         var additionalText = ""
@@ -394,7 +394,9 @@ extension MainViewController {
                         if let selectedColor = UIColor(named: colorName) {
                             predictioncolor = selectedColor
                             PredictionLabel.textColor = predictioncolor
-                        }
+                        }*/
+                        let predictioncolor = UIColor.systemGray
+                        PredictionLabel.textColor = predictioncolor
                         
                         let graphdata = predbgdata[graphtype] as! [Double]
                         
@@ -402,7 +404,8 @@ extension MainViewController {
                             if let eventualBGValue = eventualdata["eventualBG"] as? NSNumber {
                                 let eventualBGStringValue = String(describing: eventualBGValue)
                                 let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue)
-                                PredictionLabel.text = "\(additionalText) ⇢ \(formattedBGString)"
+                                //PredictionLabel.text = "\(additionalText) ⇢ \(formattedBGString)"
+                                PredictionLabel.text = "   Prognos ⇢ \(formattedBGString)"
                             }
                         }
                         
@@ -435,6 +438,7 @@ extension MainViewController {
                                 iCOB += 1
                             }
                         } else {
+                        predictionDataCOB.removeAll()
                           print("No COB prediction found")
                         }
                         updatePredictionGraphCOB(color: UIColor(named: "LoopYellow"))
@@ -454,6 +458,7 @@ extension MainViewController {
                                 iUAM += 1
                             }
                         } else {
+                            predictionDataUAM.removeAll()
                             print("No UAM prediction found")
                         }
                         updatePredictionGraphUAM(color: UIColor(named: "UAM"))
@@ -473,6 +478,7 @@ extension MainViewController {
                                 iIOB += 1
                             }
                     } else {
+                        predictionDataIOB.removeAll()
                         print("No IOB prediction found")
                     }
                         updatePredictionGraphIOB(color: UIColor(named: "Insulin"))
@@ -492,6 +498,7 @@ extension MainViewController {
                                 iZT += 1
                             }
                 } else {
+                    predictionDataZT.removeAll()
                     print("No ZT prediction found")
                 }
                         updatePredictionGraphZT(color: UIColor(named: "ZT"))
@@ -501,7 +508,7 @@ extension MainViewController {
                         if let predMin = graphdata.min(), let predMax = graphdata.max() {
                             let formattedPredMin = bgUnits.toDisplayUnits(String(predMin))
                             let formattedPredMax = bgUnits.toDisplayUnits(String(predMax))
-                            tableData[9].value = "\(formattedPredMin) - \(formattedPredMax) mmol/L"
+                            tableData[9].value = "\(formattedPredMin)/\(formattedPredMax) mmol/L"
                             //updatePredictionGraph(color: predictioncolor)
                         } else {
                             tableData[9].value = "N/A"
@@ -519,24 +526,24 @@ extension MainViewController {
                             if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "lastBGTime: " + String(lastBGTime)) }
                             if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "wasEnacted: " + String(wasEnacted)) }
                             if tempBasalTime > lastBGTime && !wasEnacted {
-                                LoopStatusLabel.text = "⏀"
+                                LoopStatusLabel.text = " ⏀"
                                 latestLoopStatusString = "⏀"
                                 if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Open Loop: recommended temp. temp time > bg time, was not enacted") }
                             } else {
-                                LoopStatusLabel.text = "↻"
+                                LoopStatusLabel.text = " ↻"
                                 latestLoopStatusString = "↻"
                                 if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Looping: recommended temp, but temp time is < bg time and/or was enacted") }
                             }
                         }
                     } else {
-                        LoopStatusLabel.text = "↻"
+                        LoopStatusLabel.text = " ↻"
                         latestLoopStatusString = "↻"
                         if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Looping: no recommended temp") }
                     }
                     
                 }
                 if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {
-                    LoopStatusLabel.text = "⚠"
+                    LoopStatusLabel.text = " ⚠️"
                     latestLoopStatusString = "⚠"
                 }
                 latestLoopTime = lastLoopTime
