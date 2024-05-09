@@ -261,6 +261,7 @@ extension MainViewController {
                             latestCOB = String(format:"%.0f", COB)
                             sharedLatestCOB = latestCOB
                         }
+                        //print("suggested data: \(suggestedData)")
                         
                         /*if let insulinReq = suggestedData["insulinReq"] as? Double {
                             tableData[8].value = String(format:"%.2f", insulinReq) + " E"
@@ -307,11 +308,11 @@ extension MainViewController {
                         
                         //Daniel: Added suggested data for bolus calculator and info
                         if let minGuardBG = suggestedData["minGuardBG"] as? Double {
-                                let formattedMinGuardBGString = bgUnits.toDisplayUnits(String(format:"%.1f", minGuardBG))
-                                sharedMinGuardBG = Double(formattedMinGuardBGString) ?? 0
+                                let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
+                                sharedMinGuardBG = Double(formattedMinGuardBGString)
                             } else {
-                                let formattedLowLine = bgUnits.toDisplayUnits(String(format:"%.1f", UserDefaultsRepository.lowLine.value))
-                                sharedMinGuardBG = Double(formattedLowLine) ?? 0
+                                let formattedLowLine = mgdlToMmol(Double(UserDefaultsRepository.lowLine.value))
+                                sharedMinGuardBG = Double(formattedLowLine)
                             }
                         
                         if let insulinReq = suggestedData["insulinReq"] as? Double {
