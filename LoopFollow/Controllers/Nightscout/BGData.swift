@@ -8,6 +8,9 @@
 
 import Foundation
 import UIKit
+
+var sharedDeltaBG: Int = 0
+
 extension MainViewController {
     // Dex Share Web Call
     func webLoadDexShare() {
@@ -65,7 +68,7 @@ extension MainViewController {
         var parameters: [String: String] = [:]
         let utcISODateFormatter = ISO8601DateFormatter()
         let date = Calendar.current.date(byAdding: .day, value: -1 * UserDefaultsRepository.downloadDays.value, to: Date())!
-        parameters["count"] = "1000"
+        parameters["count"] = "1200" //increased from 1000 to 1200 to allow 48h of bg data when 2 bg uploaders are used in NS (Dexcom and iAPS for instance = 576 readings/day, 1152 during 48h)
         parameters["find[dateString][$gte]"] = utcISODateFormatter.string(from: date)
         
         NightscoutUtils.executeRequest(eventType: .sgv, parameters: parameters) { (result: Result<[ShareGlucoseData], Error>) in
@@ -230,6 +233,7 @@ extension MainViewController {
             let latestBG = entries[latestEntryIndex].sgv
             let priorBG = entries[latestEntryIndex - 1].sgv
             let deltaBG = latestBG - priorBG
+            sharedDeltaBG = deltaBG
             let lastBGTime = entries[latestEntryIndex].date
             
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - lastBGTime) / 60
@@ -245,8 +249,8 @@ extension MainViewController {
             var snoozerDelta = ""
             
             // Set BGText with the latest BG value
-            self.BGText.text = bgUnits.toDisplayUnits(String(latestBG))
-            snoozerBG = bgUnits.toDisplayUnits(String(latestBG))
+            self.BGText.text = bgUnits.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
+            snoozerBG = bgUnits.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
             self.setBGTextColor()
             
             // Direction handling
@@ -262,12 +266,12 @@ extension MainViewController {
             
             // Delta handling
             if deltaBG < 0 {
-                self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG))
-                snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG))
+                self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 self.latestDeltaString = String(deltaBG)
             } else {
-                self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG))
-                snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG))
+                self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 self.latestDeltaString = "+" + String(deltaBG)
             }
             

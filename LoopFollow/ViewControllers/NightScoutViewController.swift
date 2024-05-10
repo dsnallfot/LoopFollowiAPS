@@ -45,6 +45,7 @@ class NightscoutViewController: UIViewController {
     }
     
     @objc func reloadWebView(_ sender: UIRefreshControl) {
+
         self.clearWebCache()
         self.webView.reload()
         sender.endRefreshing()

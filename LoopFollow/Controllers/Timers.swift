@@ -41,7 +41,12 @@ extension MainViewController {
                                            repeats: true)
     }
     
-    @objc func minAgoTimerDidEnd(_ timer: Timer) {
+    // Updates Min Ago display
+    //Auggie - I like to see the seconds all the time
+    @objc func minAgoTimerDidEnd(_ timer:Timer) {
+        
+        // print("min ago timer ended")
+
         if bgData.count > 0 {
             let bgSeconds = bgData.last!.date
             let now = Date().timeIntervalSince1970
@@ -53,14 +58,20 @@ extension MainViewController {
             
             if secondsAgo >= 720 { // 720 seconds = 12 minutes
                 formatter.allowedUnits = [.minute] // Only show minutes after 12 minutes have passed
-            } else if secondsAgo < 270 { // Less than 4.5 minutes
-                formatter.allowedUnits = [.minute] // Show only minutes if less than 4.5 minutes
+            /*} else if secondsAgo < 0 { // Less than 4.5 minutes //Daniel: ALways show minutes and seconds
+                formatter.allowedUnits = [.minute] // Show only minutes if less than 4.5 minutes*/
             } else {
                 formatter.allowedUnits = [.minute, .second] // Show minutes and seconds otherwise
             }
             
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
-            let minAgoDisplayText = formattedDuration + " min ago"
+            let minAgoDisplayText: String
+            
+            if secondsAgo > 60 {
+                minAgoDisplayText = formattedDuration + " sedan"
+            } else {
+                minAgoDisplayText = formattedDuration + " s sedan"
+            }
             
             MinAgoText.text = minAgoDisplayText
             latestMinAgoString = minAgoDisplayText
@@ -95,6 +106,7 @@ extension MainViewController {
                 snoozer.BGLabel.attributedText = NSAttributedString(string: "")
             }
         }
+
     }
     
     // Runs a 60 second timer when an alarm is snoozed
