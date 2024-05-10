@@ -457,15 +457,42 @@ extension MainViewController {
                             
                         }
                         
-                        let predictioncolor = UIColor.systemGray
-                        PredictionLabel.textColor = predictioncolor
-                        
-                        if let eventualdata = lastLoopRecord["suggested"] as? [String: AnyObject],
-                           let eventualBGValue = eventualdata["eventualBG"] as? NSNumber {
+                        var predictionColor = UIColor.systemGray
+                        PredictionLabel.textColor = predictionColor
+
+                        if let eventualData = lastLoopRecord["suggested"] as? [String: Any],
+                           let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
+                           let loopYellow = UIColor(named: "LoopYellow"),
+                           let loopRed = UIColor(named: "LoopRed"),
+                           let loopGreen = UIColor(named: "LoopGreen") {
+                            
+                            let eventualBGFloatValue = eventualBGValue.floatValue // Convert NSNumber to Float
+                            
                             let eventualBGStringValue = String(describing: eventualBGValue)
                             let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue)
-                            PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                            PredictionLabel.text = "    Prognos  ⇢ \(formattedBGString)"
+                            
+                            // Print statements for debugging
+                            //print("eventualBGValue:", eventualBGFloatValue)
+                            //print("High Line Value:", UserDefaultsRepository.highLine.value)
+                            //print("Low Line Value:", UserDefaultsRepository.lowLine.value)
+                            
+                            if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
+                                predictionColor = loopYellow
+                            } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
+                                predictionColor = loopRed
+                            } else if eventualBGFloatValue > UserDefaultsRepository.lowLine.value && eventualBGFloatValue < UserDefaultsRepository.highLine.value {
+                                predictionColor = loopGreen
+                            }
+                            
+                            // Debug print for the selected color
+                            //print("Selected Prediction Color:", predictionColor)
                         }
+
+                        // Update PredictionLabel with the new color
+                        PredictionLabel.textColor = predictionColor
+
+
                         
                         if let predMin = graphdata.min(), let predMax = graphdata.max() {
                             let formattedPredMin = bgUnits.toDisplayUnits(String(predMin))
