@@ -537,7 +537,7 @@ extension MainViewController {
                 
                 evaluateNotLooping(lastLoopTime: lastLoopTime)
             }
-        }*/
+        }
         
         infoTable.reloadData()
         
