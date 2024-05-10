@@ -58,14 +58,20 @@ extension MainViewController {
             
             if secondsAgo >= 720 { // 720 seconds = 12 minutes
                 formatter.allowedUnits = [.minute] // Only show minutes after 12 minutes have passed
-            } else if secondsAgo < 0 { // Less than 4.5 minutes //Daniel: ALways show minutes and seconds
-                formatter.allowedUnits = [.minute] // Show only minutes if less than 4.5 minutes
+            /*} else if secondsAgo < 0 { // Less than 4.5 minutes //Daniel: ALways show minutes and seconds
+                formatter.allowedUnits = [.minute] // Show only minutes if less than 4.5 minutes*/
             } else {
                 formatter.allowedUnits = [.minute, .second] // Show minutes and seconds otherwise
             }
             
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
-            let minAgoDisplayText = formattedDuration + " sedan "
+            let minAgoDisplayText: String
+            
+            if secondsAgo > 60 {
+                minAgoDisplayText = formattedDuration + " sedan"
+            } else {
+                minAgoDisplayText = formattedDuration + " s sedan"
+            }
             
             MinAgoText.text = minAgoDisplayText
             latestMinAgoString = minAgoDisplayText
@@ -100,6 +106,7 @@ extension MainViewController {
                 snoozer.BGLabel.attributedText = NSAttributedString(string: "")
             }
         }
+
     }
     
     // Runs a 60 second timer when an alarm is snoozed
