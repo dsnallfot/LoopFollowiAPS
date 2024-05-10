@@ -382,15 +382,15 @@ extension MainViewController {
                             if let graphdataCOB = predbgdata["COB"] {
                                 predictionDataCOB.removeAll()
                                 var predictionTimeCOB = lastLoopTime
-                                let toLoadCOB = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                                var iCOB = 0
-                                while iCOB <= toLoadCOB {
-                                    if iCOB < graphdataCOB.count {
-                                        let predictionCOB = ShareGlucoseData(sgv: Int(round(graphdataCOB[iCOB])), date: predictionTimeCOB, direction: "flat")
+                                let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                                var i = 0
+                                while i <= toLoad {
+                                    if i < graphdataCOB.count {
+                                        let predictionCOB = ShareGlucoseData(sgv: Int(round(graphdataCOB[i])), date: predictionTimeCOB, direction: "flat")
                                         predictionDataCOB.append(predictionCOB)
                                         predictionTimeCOB += 300
                                     }
-                                    iCOB += 1
+                                    i += 1
                                 }
                             } else {
                                 predictionDataCOB.removeAll()
@@ -401,15 +401,15 @@ extension MainViewController {
                             if let graphdataUAM = predbgdata["UAM"] {
                                 predictionDataUAM.removeAll()
                                 var predictionTimeUAM = lastLoopTime
-                                let toLoadUAM = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                                var iUAM = 0
-                                while iUAM <= toLoadUAM {
-                                    if iUAM < graphdataUAM.count {
-                                        let predictionUAM = ShareGlucoseData(sgv: Int(round(graphdataUAM[iUAM])), date: predictionTimeUAM, direction: "flat")
+                                let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                                var i = 0
+                                while i <= toLoad {
+                                    if i < graphdataUAM.count {
+                                        let predictionUAM = ShareGlucoseData(sgv: Int(round(graphdataUAM[i])), date: predictionTimeUAM, direction: "flat")
                                         predictionDataUAM.append(predictionUAM)
                                         predictionTimeUAM += 300
                                     }
-                                    iUAM += 1
+                                    i += 1
                                 }
                             } else {
                                 predictionDataUAM.removeAll()
@@ -420,15 +420,15 @@ extension MainViewController {
                             if let graphdataIOB = predbgdata["IOB"] {
                                 predictionDataIOB.removeAll()
                                 var predictionTimeIOB = lastLoopTime
-                                let toLoadIOB = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                                var iIOB = 0
-                                while iIOB <= toLoadIOB {
-                                    if iIOB < graphdataIOB.count {
-                                        let predictionIOB = ShareGlucoseData(sgv: Int(round(graphdataIOB[iIOB])), date: predictionTimeIOB, direction: "flat")
+                                let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                                var i = 0
+                                while i <= toLoad {
+                                    if i < graphdataIOB.count {
+                                        let predictionIOB = ShareGlucoseData(sgv: Int(round(graphdataIOB[i])), date: predictionTimeIOB, direction: "flat")
                                         predictionDataIOB.append(predictionIOB)
                                         predictionTimeIOB += 300
                                     }
-                                    iIOB += 1
+                                    i += 1
                                 }
                             } else {
                                 predictionDataIOB.removeAll()
@@ -439,15 +439,15 @@ extension MainViewController {
                             if let graphdataZT = predbgdata["ZT"] {
                                 predictionDataZT.removeAll()
                                 var predictionTimeZT = lastLoopTime
-                                let toLoadZT = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                                var iZT = 0
-                                while iZT <= toLoadZT {
-                                    if iZT < graphdataZT.count {
-                                        let predictionZT = ShareGlucoseData(sgv: Int(round(graphdataZT[iZT])), date: predictionTimeZT, direction: "flat")
+                                let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                                var i = 0
+                                while i <= toLoad {
+                                    if i < graphdataZT.count {
+                                        let predictionZT = ShareGlucoseData(sgv: Int(round(graphdataZT[i])), date: predictionTimeZT, direction: "flat")
                                         predictionDataZT.append(predictionZT)
                                         predictionTimeZT += 300
                                     }
-                                    iZT += 1
+                                    i += 1
                                 }
                             } else {
                                 predictionDataZT.removeAll()
