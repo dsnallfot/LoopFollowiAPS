@@ -63,41 +63,41 @@ extension MainViewController {
             if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {
                 IsNotLooping = true
                 /*
-                // Change the distribution to 'fill' to allow manual resizing of arranged subviews
-                statusStackView.distribution = .fill
-                
-                // Hide PredictionLabel and expand LoopStatusLabel to fill the entire stack view
-                PredictionLabel.isHidden = true
-                LoopStatusLabel.frame = CGRect(x: 0, y: 0, width: statusStackView.frame.width, height: statusStackView.frame.height)
-                
-                // Update LoopStatusLabel's properties to display Not Looping
-                LoopStatusLabel.textAlignment = .right
-                LoopStatusLabel.text = "⚠️"
-                LoopStatusLabel.textColor = UIColor.systemYellow
-                LoopStatusLabel.font = UIFont.systemFont(ofSize: 17)
+                 // Change the distribution to 'fill' to allow manual resizing of arranged subviews
+                 statusStackView.distribution = .fill
+                 
+                 // Hide PredictionLabel and expand LoopStatusLabel to fill the entire stack view
+                 PredictionLabel.isHidden = true
+                 LoopStatusLabel.frame = CGRect(x: 0, y: 0, width: statusStackView.frame.width, height: statusStackView.frame.height)
+                 
+                 // Update LoopStatusLabel's properties to display Not Looping
+                 LoopStatusLabel.textAlignment = .right
+                 LoopStatusLabel.text = "⚠️"
+                 LoopStatusLabel.textColor = UIColor.systemYellow
+                 LoopStatusLabel.font = UIFont.systemFont(ofSize: 17)
                  */
                 
             } else {
                 IsNotLooping = false
                 /*
-                // Restore the original distribution and visibility of labels
-                statusStackView.distribution = .fillEqually
-                PredictionLabel.isHidden = false
-                
-                // Reset LoopStatusLabel's properties
-                LoopStatusLabel.textAlignment = .right
-                LoopStatusLabel.font = UIFont.systemFont(ofSize: 17)
-
-                if UserDefaultsRepository.forceDarkMode.value {
-                    LoopStatusLabel.textColor = UIColor.white
-                } else {
-                    LoopStatusLabel.textColor = UIColor.black
-                }*/
+                 // Restore the original distribution and visibility of labels
+                 statusStackView.distribution = .fillEqually
+                 PredictionLabel.isHidden = false
+                 
+                 // Reset LoopStatusLabel's properties
+                 LoopStatusLabel.textAlignment = .right
+                 LoopStatusLabel.font = UIFont.systemFont(ofSize: 17)
+                 
+                 if UserDefaultsRepository.forceDarkMode.value {
+                 LoopStatusLabel.textColor = UIColor.white
+                 } else {
+                 LoopStatusLabel.textColor = UIColor.black
+                 }*/
             }
         }
         latestLoopTime = lastLoopTime
     }
-        
+    
     // NS Device Status Response Processor
     func updateDeviceStatusDisplay(jsonDeviceStatus: [[String:AnyObject]]) {
         self.clearLastInfoData(index: 0)
@@ -223,7 +223,7 @@ extension MainViewController {
                     }
                     
                 }
-
+                
                 evaluateNotLooping(lastLoopTime: lastLoopTime)
             } // end lastLoopTime
         } // end lastLoop Record
@@ -245,7 +245,7 @@ extension MainViewController {
                             // Handle lastTempBasal if needed
                         }
                     }
-
+                    
                     if let iobdata = lastLoopRecord["iob"] as? [String:AnyObject] {
                         if let iob = iobdata["iob"] as? Double {
                             tableData[0].value = String(format:"%.2f", iob) + " E"
@@ -253,7 +253,7 @@ extension MainViewController {
                             sharedLatestIOB = latestIOB
                         }
                     }
-
+                    
                     //Daniel: Use suggested instead of enacted to populate infotable even when not enacted
                     if let suggestedData = lastLoopRecord["suggested"] as? [String:AnyObject] {
                         if let COB = suggestedData["COB"] as? Double {
@@ -261,11 +261,7 @@ extension MainViewController {
                             latestCOB = String(format:"%.0f", COB)
                             sharedLatestCOB = latestCOB
                         }
-                        //print("suggested data: \(suggestedData)")
-                        
-                        /*if let insulinReq = suggestedData["insulinReq"] as? Double {
-                            tableData[8].value = String(format:"%.2f", insulinReq) + " E"
-                         }*/
+
                         if let recbolusdata = lastLoopRecord["suggested"] as? [String: AnyObject],
                            let insulinReq = recbolusdata["insulinReq"] as? Double {
                             tableData[8].value = String(format: "%.2f", insulinReq) + " E"
@@ -308,26 +304,26 @@ extension MainViewController {
                         
                         //Daniel: Added suggested data for bolus calculator and info
                         if let minGuardBG = suggestedData["minGuardBG"] as? Double {
-                                let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
-                                sharedMinGuardBG = Double(formattedMinGuardBGString)
-                            } else {
-                                let formattedLowLine = mgdlToMmol(Double(UserDefaultsRepository.lowLine.value))
-                                sharedMinGuardBG = Double(formattedLowLine)
-                            }
+                            let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
+                            sharedMinGuardBG = Double(formattedMinGuardBGString)
+                        } else {
+                            let formattedLowLine = mgdlToMmol(Double(UserDefaultsRepository.lowLine.value))
+                            sharedMinGuardBG = Double(formattedLowLine)
+                        }
                         
                         if let insulinReq = suggestedData["insulinReq"] as? Double {
-                                let formattedInsulinReqString = String(format:"%.2f", insulinReq)
-                                sharedInsulinReq = Double(formattedInsulinReqString) ?? 0
-                            } else {
-                                sharedInsulinReq = 0
-                            }
+                            let formattedInsulinReqString = String(format:"%.2f", insulinReq)
+                            sharedInsulinReq = Double(formattedInsulinReqString) ?? 0
+                        } else {
+                            sharedInsulinReq = 0
+                        }
                         
                         if let LastSMBUnits = suggestedData["units"] as? Double {
-                                let formattedLastSMBUnitsString = String(format:"%.2f", LastSMBUnits)
-                                sharedLastSMBUnits = Double(formattedLastSMBUnitsString) ?? 0
-                            } else {
-                                sharedLastSMBUnits = 0
-                            }
+                            let formattedLastSMBUnitsString = String(format:"%.2f", LastSMBUnits)
+                            sharedLastSMBUnits = Double(formattedLastSMBUnitsString) ?? 0
+                        } else {
+                            sharedLastSMBUnits = 0
+                        }
                         
                     } else {
                         // If suggestedData is nil, set all tableData values to "Waiting"
@@ -353,60 +349,18 @@ extension MainViewController {
                         tableData[3].value = "Normal profil"
                     }
                     
-                    //Picks COB prediction if available, else UAM, else IOB, else ZT
+                    // Include all values from all predBG types to be able to show min-max values
                     var graphtype = ""
-                    /*var predictioncolor = UIColor.systemGray
-                    PredictionLabel.textColor = predictioncolor*/
+                    var graphdata: [Double] = []
                     
-                    if let enactdata = lastLoopRecord["suggested"] as? [String:AnyObject],
-                       let predbgdata = enactdata["predBGs"] as? [String:AnyObject] {
+                    if let enactdata = lastLoopRecord["suggested"] as? [String: AnyObject],
+                       let predbgdata = enactdata["predBGs"] as? [String: [Double]] {
                         
-                        if predbgdata["COB"] != nil {
-                            graphtype = "COB"
-                        } else if predbgdata["UAM"] != nil {
-                            graphtype = "UAM"
-                        } else if predbgdata["IOB"] != nil {
-                            graphtype = "IOB"
-                        } else {
-                            graphtype = "ZT"
-                        }
-                        /*
-                        // Access the color based on graphtype
-                        var colorName = ""
-                        var additionalText = ""
-                        
-                        switch graphtype {
-                        case "COB":
-                            colorName = "LoopYellow"
-                            additionalText = "COB"
-                        case "UAM":
-                            colorName = "UAM"
-                            additionalText = "UAM"
-                        case "IOB":
-                            colorName = "Insulin"
-                            additionalText = "IOB"
-                        case "ZT":
-                            colorName = "ZT"
-                            additionalText = "ZT"
-                        default:
-                            break
-                        }
-                        
-                        if let selectedColor = UIColor(named: colorName) {
-                            predictioncolor = selectedColor
-                            PredictionLabel.textColor = predictioncolor
-                        }*/
-                        let predictioncolor = UIColor.systemGray
-                        PredictionLabel.textColor = predictioncolor
-                        
-                        let graphdata = predbgdata[graphtype] as! [Double]
-                        
-                        if let eventualdata = lastLoopRecord["suggested"] as? [String: AnyObject] {
-                            if let eventualBGValue = eventualdata["eventualBG"] as? NSNumber {
-                                let eventualBGStringValue = String(describing: eventualBGValue)
-                                let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue)
-                                //PredictionLabel.text = "\(additionalText) ⇢ \(formattedBGString)"
-                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                        let availableTypes = ["COB", "UAM", "IOB", "ZT"]
+                        for type in availableTypes {
+                            if let data = predbgdata[type] {
+                                graphtype = type
+                                graphdata += data // Merging all available values into one array to be able to present predmin-predmax based an all prediction values
                             }
                         }
                         
@@ -423,87 +377,94 @@ extension MainViewController {
                                 }
                                 i += 1
                             }
+                                                       
+                            // Daniel: Collect predbgdata per type to create prediction charts COB, UAM, IOB, ZT
+                            if let graphdataCOB = predbgdata["COB"] {
+                                predictionDataCOB.removeAll()
+                                var predictionTimeCOB = lastLoopTime
+                                let toLoadCOB = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                                var iCOB = 0
+                                while iCOB <= toLoadCOB {
+                                    if iCOB < graphdataCOB.count {
+                                        let predictionCOB = ShareGlucoseData(sgv: Int(round(graphdataCOB[iCOB])), date: predictionTimeCOB, direction: "flat")
+                                        predictionDataCOB.append(predictionCOB)
+                                        predictionTimeCOB += 300
+                                    }
+                                    iCOB += 1
+                                }
+                            } else {
+                                predictionDataCOB.removeAll()
+                                print("No COB prediction found")
+                            }
+                            updatePredictionGraphCOB(color: UIColor(named: "LoopYellow"))
                             
-                        if let graphdataCOB = predbgdata["COB"] as? [Double] {
-                            //print(graphdataCOB)
-                            predictionDataCOB.removeAll()
-                            var predictionTimeCOB = lastLoopTime
-                            let toLoadCOB = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                            var iCOB = 0
-                            while iCOB <= toLoadCOB {
-                                if iCOB < graphdataCOB.count {
-                                    let predictionCOB = ShareGlucoseData(sgv: Int(round(graphdataCOB[iCOB])), date: predictionTimeCOB, direction: "flat")
-                                    predictionDataCOB.append(predictionCOB)
-                                    predictionTimeCOB += 300
+                            if let graphdataUAM = predbgdata["UAM"] {
+                                predictionDataUAM.removeAll()
+                                var predictionTimeUAM = lastLoopTime
+                                let toLoadUAM = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                                var iUAM = 0
+                                while iUAM <= toLoadUAM {
+                                    if iUAM < graphdataUAM.count {
+                                        let predictionUAM = ShareGlucoseData(sgv: Int(round(graphdataUAM[iUAM])), date: predictionTimeUAM, direction: "flat")
+                                        predictionDataUAM.append(predictionUAM)
+                                        predictionTimeUAM += 300
+                                    }
+                                    iUAM += 1
                                 }
-                                iCOB += 1
+                            } else {
+                                predictionDataUAM.removeAll()
+                                print("No UAM prediction found")
                             }
-                        } else {
-                        predictionDataCOB.removeAll()
-                          print("No COB prediction found")
+                            updatePredictionGraphUAM(color: UIColor(named: "UAM"))
+                            
+                            if let graphdataIOB = predbgdata["IOB"] {
+                                predictionDataIOB.removeAll()
+                                var predictionTimeIOB = lastLoopTime
+                                let toLoadIOB = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                                var iIOB = 0
+                                while iIOB <= toLoadIOB {
+                                    if iIOB < graphdataIOB.count {
+                                        let predictionIOB = ShareGlucoseData(sgv: Int(round(graphdataIOB[iIOB])), date: predictionTimeIOB, direction: "flat")
+                                        predictionDataIOB.append(predictionIOB)
+                                        predictionTimeIOB += 300
+                                    }
+                                    iIOB += 1
+                                }
+                            } else {
+                                predictionDataIOB.removeAll()
+                                print("No IOB prediction found")
+                            }
+                            updatePredictionGraphIOB(color: UIColor(named: "Insulin"))
+                            
+                            if let graphdataZT = predbgdata["ZT"] {
+                                predictionDataZT.removeAll()
+                                var predictionTimeZT = lastLoopTime
+                                let toLoadZT = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                                var iZT = 0
+                                while iZT <= toLoadZT {
+                                    if iZT < graphdataZT.count {
+                                        let predictionZT = ShareGlucoseData(sgv: Int(round(graphdataZT[iZT])), date: predictionTimeZT, direction: "flat")
+                                        predictionDataZT.append(predictionZT)
+                                        predictionTimeZT += 300
+                                    }
+                                    iZT += 1
+                                }
+                            } else {
+                                predictionDataZT.removeAll()
+                                print("No ZT prediction found")
+                            }
+                            updatePredictionGraphZT(color: UIColor(named: "ZT"))
+                            
                         }
-                        updatePredictionGraphCOB(color: UIColor(named: "LoopYellow"))
                         
-                        if let graphdataUAM = predbgdata["UAM"] as? [Double] {
-                            //print(graphdataUAM)
-                            predictionDataUAM.removeAll()
-                            var predictionTimeUAM = lastLoopTime
-                            let toLoadUAM = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                            var iUAM = 0
-                            while iUAM <= toLoadUAM {
-                                if iUAM < graphdataUAM.count {
-                                    let predictionUAM = ShareGlucoseData(sgv: Int(round(graphdataUAM[iUAM])), date: predictionTimeUAM, direction: "flat")
-                                    predictionDataUAM.append(predictionUAM)
-                                    predictionTimeUAM += 300
-                                }
-                                iUAM += 1
-                            }
-                        } else {
-                            predictionDataUAM.removeAll()
-                            print("No UAM prediction found")
-                        }
-                        updatePredictionGraphUAM(color: UIColor(named: "UAM"))
+                        let predictioncolor = UIColor.systemGray
+                        PredictionLabel.textColor = predictioncolor
                         
-                        if let graphdataIOB = predbgdata["IOB"] as? [Double] {
-                            //print(graphdataIOB)
-                            predictionDataIOB.removeAll()
-                            var predictionTimeIOB = lastLoopTime
-                            let toLoadIOB = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                            var iIOB = 0
-                            while iIOB <= toLoadIOB {
-                                if iIOB < graphdataIOB.count {
-                                    let predictionIOB = ShareGlucoseData(sgv: Int(round(graphdataIOB[iIOB])), date: predictionTimeIOB, direction: "flat")
-                                    predictionDataIOB.append(predictionIOB)
-                                    predictionTimeIOB += 300
-                                }
-                                iIOB += 1
-                            }
-                    } else {
-                        predictionDataIOB.removeAll()
-                        print("No IOB prediction found")
-                    }
-                        updatePredictionGraphIOB(color: UIColor(named: "Insulin"))
-                        
-                    if let graphdataZT = predbgdata["ZT"] as? [Double] {
-                        //print(graphdataZT)
-                            predictionDataZT.removeAll()
-                            var predictionTimeZT = lastLoopTime
-                            let toLoadZT = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                            var iZT = 0
-                            while iZT <= toLoadZT {
-                                if iZT < graphdataZT.count {
-                                    let predictionZT = ShareGlucoseData(sgv: Int(round(graphdataZT[iZT])), date: predictionTimeZT, direction: "flat")
-                                    predictionDataZT.append(predictionZT)
-                                    predictionTimeZT += 300
-                                }
-                                iZT += 1
-                            }
-                } else {
-                    predictionDataZT.removeAll()
-                    print("No ZT prediction found")
-                }
-                        updatePredictionGraphZT(color: UIColor(named: "ZT"))
-                        
+                        if let eventualdata = lastLoopRecord["suggested"] as? [String: AnyObject],
+                           let eventualBGValue = eventualdata["eventualBG"] as? NSNumber {
+                            let eventualBGStringValue = String(describing: eventualBGValue)
+                            let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue)
+                            PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
                         }
                         
                         if let predMin = graphdata.min(), let predMax = graphdata.max() {
@@ -513,7 +474,6 @@ extension MainViewController {
                             //updatePredictionGraph(color: predictioncolor)
                         } else {
                             tableData[9].value = "N/A"
-                            // Handle the case where predMin or predMax is nil
                         }
                     }
                     
@@ -548,7 +508,7 @@ extension MainViewController {
                     latestLoopStatusString = "⚠"
                 }
                 latestLoopTime = lastLoopTime
-
+                
                 evaluateNotLooping(lastLoopTime: lastLoopTime)
             }
         }
