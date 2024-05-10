@@ -219,6 +219,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         let carbsValue = Decimal(string: carbsEntryField.text ?? "0") ?? 0
         let fatValue = Decimal(string: fatEntryField.text ?? "0") ?? 0
         let proteinValue = Decimal(string: proteinEntryField.text ?? "0") ?? 0
+      
         let numberFormatter = NumberFormatter()
         numberFormatter.maximumFractionDigits = 0
         
@@ -227,20 +228,25 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Disable button
             isButtonDisabled = true
             sendMealButton.isEnabled = false
+          
             // Format maxCarbs with zero decimals
             let formattedMaxCarbs = numberFormatter.string(from: NSNumber(value: maxCarbs)) ?? ""
+          
             // Update button title
             sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns kolhydrater \(formattedMaxCarbs) g", attributes: attributes), for: .normal)
         } else if fatValue > Decimal(maxFatProtein) || proteinValue > Decimal(maxFatProtein) {
             // Disable button
             isButtonDisabled = true
             sendMealButton.isEnabled = false
+          
             // Format maxFatProtein with zero decimals
             let formattedMaxFatProtein = numberFormatter.string(from: NSNumber(value: maxFatProtein)) ?? ""
+          
             // Update button title
             sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns fett/protein \(formattedMaxFatProtein) g", attributes: attributes), for: .normal)
         }
  else if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
+
            let bolusValue = Decimal(string: bolusText),
            bolusValue > Decimal(maxBolus) + 0.01 { //add 0.01 to allow entry of = maxBolus due to rounding issues with double and decimals otherwise disable it when bolusValue=maxBolus
             

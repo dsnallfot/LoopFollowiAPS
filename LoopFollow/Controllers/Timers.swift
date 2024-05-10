@@ -60,6 +60,7 @@ extension MainViewController {
                 formatter.allowedUnits = [.minute] // Only show minutes after 12 minutes have passed
             /*} else if secondsAgo < 0 { // Less than 4.5 minutes //Daniel: ALways show minutes and seconds
                 formatter.allowedUnits = [.minute] // Show only minutes if less than 4.5 minutes*/
+
             } else {
                 formatter.allowedUnits = [.minute, .second] // Show minutes and seconds otherwise
             }
