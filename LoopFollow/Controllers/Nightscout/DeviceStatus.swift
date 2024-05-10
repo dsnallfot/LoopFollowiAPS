@@ -13,7 +13,7 @@ var sharedCRValue: String = ""
 var sharedLatestIOB: String = ""
 var sharedLatestCOB: String = ""
 var sharedMinGuardBG: Double = 0.0
-var sharedInsulinReq: Double = 0.0
+//var sharedInsulinReq: Double = 0.0
 var sharedLastSMBUnits: Double = 0.0
 
 extension MainViewController {
@@ -262,8 +262,8 @@ extension MainViewController {
                             sharedLatestCOB = latestCOB
                         }
 
-                        if let recbolusdata = lastLoopRecord["suggested"] as? [String: AnyObject],
-                           let insulinReq = recbolusdata["insulinReq"] as? Double {
+                        //if let recbolusdata = lastLoopRecord["suggested"] as? [String: AnyObject],
+                        if let insulinReq = suggestedData["insulinReq"] as? Double {
                             tableData[8].value = String(format: "%.2f", insulinReq) + " E"
                             UserDefaultsRepository.deviceRecBolus.value = insulinReq
                         } else {
@@ -302,6 +302,31 @@ extension MainViewController {
                             tableData[17].value = "0 g"
                         }
                         
+                        if let timestampString = suggestedData["timestamp"] as? String {
+                            // Assuming "timestamp" format is "2024-05-10T18:12:37.138Z"
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+                            dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
+                            
+                            if let timestamp = dateFormatter.date(from: timestampString) {
+                                // Now you have the timestamp as a Date object, convert it to the local timezone
+                                let localTimeFormatter = DateFormatter()
+                                localTimeFormatter.dateFormat = "HH:mm:ss"
+                                localTimeFormatter.timeZone = TimeZone.autoupdatingCurrent
+                                
+                                let formattedLocalTime = localTimeFormatter.string(from: timestamp)
+                                
+                                // Set the formattedLocalTime to tableData[18].value
+                                tableData[18].value = formattedLocalTime
+                            } else {
+                                // Handle the case where conversion from string to Date fails
+                                print("Failed to convert timestamp string to Date.")
+                            }
+                        } else {
+                            // Handle the case where "timestamp" key doesn't exist or its value is not a string
+                            print("Timestamp value not found or not a string.")
+                        }
+                        
                         //Daniel: Added suggested data for bolus calculator and info
                         if let minGuardBG = suggestedData["minGuardBG"] as? Double {
                             let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
@@ -311,12 +336,12 @@ extension MainViewController {
                             sharedMinGuardBG = Double(formattedLowLine)
                         }
                         
-                        if let insulinReq = suggestedData["insulinReq"] as? Double {
+                        /*if let insulinReq = suggestedData["insulinReq"] as? Double {
                             let formattedInsulinReqString = String(format:"%.2f", insulinReq)
                             sharedInsulinReq = Double(formattedInsulinReqString) ?? 0
                         } else {
                             sharedInsulinReq = 0
-                        }
+                        }*/
                         
                         if let LastSMBUnits = suggestedData["units"] as? Double {
                             let formattedLastSMBUnitsString = String(format:"%.2f", LastSMBUnits)

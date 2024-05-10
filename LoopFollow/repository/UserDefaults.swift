@@ -37,9 +37,10 @@ class UserDefaultsRepository {
         "ISF", //14
         "CR", //15
         "Målvärde", //16
-        "Behov KH"]) //17
-    static let infoSort = UserDefaultsValue<[Int]>(key: "infoSort", default: [3,0,1,11,14,15,2,8,17,16,9,4,10,13,5,6,7,12])
-    static let infoVisible = UserDefaultsValue<[Bool]>(key: "infoVisible", default: [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false])
+        "Behov KH", //17
+        "Info uppdaterad"]) //18
+    static let infoSort = UserDefaultsValue<[Int]>(key: "infoSort", default: [3,0,1,11,14,15,2,8,17,16,9,4,10,13,5,6,7,12,18])
+    static let infoVisible = UserDefaultsValue<[Bool]>(key: "infoVisible", default: [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false, true])
     static let hideInfoTable = UserDefaultsValue<Bool>(key: "hideInfoTable", default: false)
     
     // Nightscout Settings
