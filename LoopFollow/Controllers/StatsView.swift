@@ -33,7 +33,7 @@ extension MainViewController {
             statsLowPercent.text = String(format:"%.1f%", stats.percentLow) + "%"
             statsInRangePercent.text = String(format:"%.1f%", stats.percentRange) + "%"
             statsHighPercent.text = String(format:"%.1f%", stats.percentHigh) + "%"
-            statsAvgBG.text = bgUnits.toDisplayUnits(String(format:"%.0f%", stats.avgBG))
+            statsAvgBG.text = bgUnits.toDisplayUnits(String(format:"%.0f%", stats.avgBG)).replacingOccurrences(of: ",", with: ".")
             if UserDefaultsRepository.useIFCC.value {
                 statsEstA1C.text = String(format:"%.0f%", stats.a1C)
             }

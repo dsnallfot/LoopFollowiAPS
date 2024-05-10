@@ -249,8 +249,8 @@ extension MainViewController {
             var snoozerDelta = ""
             
             // Set BGText with the latest BG value
-            self.BGText.text = bgUnits.toDisplayUnits(String(latestBG))
-            snoozerBG = bgUnits.toDisplayUnits(String(latestBG))
+            self.BGText.text = bgUnits.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
+            snoozerBG = bgUnits.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
             self.setBGTextColor()
             
             // Direction handling
@@ -266,12 +266,12 @@ extension MainViewController {
             
             // Delta handling
             if deltaBG < 0 {
-                self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG))
-                snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG))
+                self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 self.latestDeltaString = String(deltaBG)
             } else {
-                self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG))
-                snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG))
+                self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 self.latestDeltaString = "+" + String(deltaBG)
             }
             

@@ -469,7 +469,7 @@ extension MainViewController {
                             let eventualBGFloatValue = eventualBGValue.floatValue // Convert NSNumber to Float
                             
                             let eventualBGStringValue = String(describing: eventualBGValue)
-                            let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue)
+                            let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
                             PredictionLabel.text = "    Prognos  ⇢ \(formattedBGString)"
                             
                             // Print statements for debugging
@@ -495,8 +495,8 @@ extension MainViewController {
 
                         
                         if let predMin = graphdata.min(), let predMax = graphdata.max() {
-                            let formattedPredMin = bgUnits.toDisplayUnits(String(predMin))
-                            let formattedPredMax = bgUnits.toDisplayUnits(String(predMax))
+                            let formattedPredMin = bgUnits.toDisplayUnits(String(predMin)).replacingOccurrences(of: ",", with: ".")
+                            let formattedPredMax = bgUnits.toDisplayUnits(String(predMax)).replacingOccurrences(of: ",", with: ".")
                             tableData[9].value = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
                             //updatePredictionGraph(color: predictioncolor)
                         } else {
