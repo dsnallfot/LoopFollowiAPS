@@ -268,15 +268,15 @@ extension MainViewController {
             if deltaBG < 0 {
                 self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                self.latestDeltaString = String(deltaBG)
+                self.latestDeltaString = String(deltaBG).replacingOccurrences(of: ",", with: ".")
             } else {
                 self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                self.latestDeltaString = "+" + String(deltaBG)
+                self.latestDeltaString = "+" + String(deltaBG).replacingOccurrences(of: ",", with: ".")
             }
             
             // Apply strikethrough to BGText based on the staleness of the data
-            let bgTextStr = self.BGText.text ?? ""
+            let bgTextStr = (self.BGText.text ?? "").replacingOccurrences(of: ",", with: ".")
             let attributeString = NSMutableAttributedString(string: bgTextStr)
             attributeString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: 0, length: attributeString.length))
             if deltaTime >= 12 { // Data is stale
