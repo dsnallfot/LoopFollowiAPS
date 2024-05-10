@@ -79,11 +79,17 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     
     func updateDisplayWhenTriggered(bgVal: String, directionVal: String, deltaVal: String, minAgoVal: String, alertLabelVal: String){
         loadViewIfNeeded()
-        BGLabel.text = bgVal
+        
+        // Replace commas with periods in bgVal and deltaVal
+        let bgValWithPeriod = bgVal.replacingOccurrences(of: ",", with: ".")
+        let deltaValWithPeriod = deltaVal.replacingOccurrences(of: ",", with: ".")
+        
+        BGLabel.text = bgValWithPeriod
         DirectionLabel.text = directionVal
-        DeltaLabel.text = deltaVal
+        DeltaLabel.text = deltaValWithPeriod
         MinAgoLabel.text = minAgoVal
         AlertLabel.text = alertLabelVal
+        
         if alertLabelVal == "none" { return }
         sendNotification(self, bgVal: bgVal, directionVal: directionVal, deltaVal: deltaVal, minAgoVal: minAgoVal, alertLabelVal: alertLabelVal)
     }
