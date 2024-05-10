@@ -612,7 +612,7 @@ extension MainViewController {
             linePredictionZT.drawCirclesEnabled = false
             linePredictionIOB.drawCirclesEnabled = false
             linePredictionUAM.drawCirclesEnabled = false
-            linePredictionCOB.drawCirclesEnabled = false 
+            linePredictionCOB.drawCirclesEnabled = false
         }
         
         BGChart.rightAxis.axisMinimum = 0
@@ -673,7 +673,7 @@ extension MainViewController {
             }
         }
         
-        if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "Total Graph BGs: " + mainChart.entries.count.description) }        
+        if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "Total Graph BGs: " + mainChart.entries.count.description) }
         
         // Set Colors
         let lineBG = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
@@ -787,29 +787,25 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
-        for iCOB in 0..<predictionDataCOB.count {
-            var predictionValCOB = Double(predictionDataCOB[iCOB].sgv)
-            if Float(predictionValCOB) > topBG - maxBGOffset {
-                topBG = Float(predictionValCOB) + maxBGOffset
+        for i in 0..<predictionDataCOB.count {
+            var predictionVal = Double(predictionDataCOB[i].sgv)
+            if Float(predictionVal) > topBG - maxBGOffset {
+                topBG = Float(predictionVal) + maxBGOffset
             }
             
-            if iCOB == 0 {
+            if i == 0 {
                 if UserDefaultsRepository.showDots.value {
                     colors.append((color ?? NSUIColor.systemPurple).withAlphaComponent(0.0))
                 } else {
                     colors.append((color ?? NSUIColor.systemPurple).withAlphaComponent(1.0))
                 }
-            } else if predictionValCOB > 400 {
-                colors.append(color ?? NSUIColor.systemYellow)
-            } else if predictionValCOB < 0 {
-                colors.append(color ?? NSUIColor.systemRed)
             } else {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let valueCOB = ChartDataEntry(x: predictionDataCOB[iCOB].date, y: predictionValCOB, data: formatPillTextExtraLine(line1: "COB", line2: bgUnits.toDisplayUnits(String(predictionDataCOB[iCOB].sgv)) + " mmol/L", time: predictionDataCOB[iCOB].date))
-            mainChart.addEntry(valueCOB)
-            smallChart.addEntry(valueCOB)
+            let value = ChartDataEntry(x: predictionDataCOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "COB", line2: bgUnits.toDisplayUnits(String(predictionDataCOB[i].sgv)) + " mmol/L", time: predictionDataCOB[i].date))
+            mainChart.addEntry(value)
+            smallChart.addEntry(value)
         }
         
         smallChart.circleColors.removeAll()
@@ -817,11 +813,11 @@ extension MainViewController {
         mainChart.colors.removeAll()
         mainChart.circleColors.removeAll()
         if colors.count > 0 {
-            for iCOB in 0..<colors.count {
-                mainChart.addColor(colors[iCOB])
-                mainChart.circleColors.append(colors[iCOB])
-                smallChart.addColor(colors[iCOB])
-                smallChart.circleColors.append(colors[iCOB])
+            for i in 0..<colors.count {
+                mainChart.addColor(colors[i])
+                mainChart.circleColors.append(colors[i])
+                smallChart.addColor(colors[i])
+                smallChart.circleColors.append(colors[i])
             }
         }
         BGChart.rightAxis.axisMaximum = Double(topBG)
@@ -842,29 +838,25 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
-        for iUAM in 0..<predictionDataUAM.count {
-            var predictionValUAM = Double(predictionDataUAM[iUAM].sgv)
-            if Float(predictionValUAM) > topBG - maxBGOffset {
-                topBG = Float(predictionValUAM) + maxBGOffset
+        for i in 0..<predictionDataUAM.count {
+            var predictionVal = Double(predictionDataUAM[i].sgv)
+            if Float(predictionVal) > topBG - maxBGOffset {
+                topBG = Float(predictionVal) + maxBGOffset
             }
             
-            if iUAM == 0 {
+            if i == 0 {
                 if UserDefaultsRepository.showDots.value {
                     colors.append((color ?? NSUIColor.systemPurple).withAlphaComponent(0.0))
                 } else {
                     colors.append((color ?? NSUIColor.systemPurple).withAlphaComponent(1.0))
                 }
-            } else if predictionValUAM > 400 {
-                colors.append(color ?? NSUIColor.systemYellow)
-            } else if predictionValUAM < 0 {
-                colors.append(color ?? NSUIColor.systemRed)
             } else {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let valueUAM = ChartDataEntry(x: predictionDataUAM[iUAM].date, y: predictionValUAM, data: formatPillTextExtraLine(line1: "UAM", line2: bgUnits.toDisplayUnits(String(predictionDataUAM[iUAM].sgv)) + " mmol/L", time: predictionDataUAM[iUAM].date))
-            mainChart.addEntry(valueUAM)
-            smallChart.addEntry(valueUAM)
+            let value = ChartDataEntry(x: predictionDataUAM[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "UAM", line2: bgUnits.toDisplayUnits(String(predictionDataUAM[i].sgv)) + " mmol/L", time: predictionDataUAM[i].date))
+            mainChart.addEntry(value)
+            smallChart.addEntry(value)
         }
         
         smallChart.circleColors.removeAll()
@@ -872,11 +864,11 @@ extension MainViewController {
         mainChart.colors.removeAll()
         mainChart.circleColors.removeAll()
         if colors.count > 0 {
-            for iUAM in 0..<colors.count {
-                mainChart.addColor(colors[iUAM])
-                mainChart.circleColors.append(colors[iUAM])
-                smallChart.addColor(colors[iUAM])
-                smallChart.circleColors.append(colors[iUAM])
+            for i in 0..<colors.count {
+                mainChart.addColor(colors[i])
+                mainChart.circleColors.append(colors[i])
+                smallChart.addColor(colors[i])
+                smallChart.circleColors.append(colors[i])
             }
         }
         BGChart.rightAxis.axisMaximum = Double(topBG)
@@ -897,29 +889,25 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
-        for iIOB in 0..<predictionDataIOB.count {
-            var predictionValIOB = Double(predictionDataIOB[iIOB].sgv)
-            if Float(predictionValIOB) > topBG - maxBGOffset {
-                topBG = Float(predictionValIOB) + maxBGOffset
+        for i in 0..<predictionDataIOB.count {
+            var predictionVal = Double(predictionDataIOB[i].sgv)
+            if Float(predictionVal) > topBG - maxBGOffset {
+                topBG = Float(predictionVal) + maxBGOffset
             }
             
-            if iIOB == 0 {
+            if i == 0 {
                 if UserDefaultsRepository.showDots.value {
                     colors.append((color ?? NSUIColor.systemPurple).withAlphaComponent(0.0))
                 } else {
                     colors.append((color ?? NSUIColor.systemPurple).withAlphaComponent(1.0))
                 }
-            } else if predictionValIOB > 400 {
-                colors.append(color ?? NSUIColor.systemYellow)
-            } else if predictionValIOB < 0 {
-                colors.append(color ?? NSUIColor.systemRed)
             } else {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let valueIOB = ChartDataEntry(x: predictionDataIOB[iIOB].date, y: predictionValIOB, data: formatPillTextExtraLine(line1: "IOB", line2: bgUnits.toDisplayUnits(String(predictionDataIOB[iIOB].sgv)) + " mmol/L", time: predictionDataIOB[iIOB].date))
-            mainChart.addEntry(valueIOB)
-            smallChart.addEntry(valueIOB)
+            let value = ChartDataEntry(x: predictionDataIOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "IOB", line2: bgUnits.toDisplayUnits(String(predictionDataIOB[i].sgv)) + " mmol/L", time: predictionDataIOB[i].date))
+            mainChart.addEntry(value)
+            smallChart.addEntry(value)
         }
         
         smallChart.circleColors.removeAll()
@@ -927,11 +915,11 @@ extension MainViewController {
         mainChart.colors.removeAll()
         mainChart.circleColors.removeAll()
         if colors.count > 0 {
-            for iIOB in 0..<colors.count {
-                mainChart.addColor(colors[iIOB])
-                mainChart.circleColors.append(colors[iIOB])
-                smallChart.addColor(colors[iIOB])
-                smallChart.circleColors.append(colors[iIOB])
+            for i in 0..<colors.count {
+                mainChart.addColor(colors[i])
+                mainChart.circleColors.append(colors[i])
+                smallChart.addColor(colors[i])
+                smallChart.circleColors.append(colors[i])
             }
         }
         BGChart.rightAxis.axisMaximum = Double(topBG)
@@ -952,29 +940,25 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
-        for iZT in 0..<predictionDataZT.count {
-            var predictionValZT = Double(predictionDataZT[iZT].sgv)
-            if Float(predictionValZT) > topBG - maxBGOffset {
-                topBG = Float(predictionValZT) + maxBGOffset
+        for i in 0..<predictionDataZT.count {
+            var predictionVal = Double(predictionDataZT[i].sgv)
+            if Float(predictionVal) > topBG - maxBGOffset {
+                topBG = Float(predictionVal) + maxBGOffset
             }
             
-            if iZT == 0 {
+            if i == 0 {
                 if UserDefaultsRepository.showDots.value {
                     colors.append((color ?? NSUIColor.systemPurple).withAlphaComponent(0.0))
                 } else {
                     colors.append((color ?? NSUIColor.systemPurple).withAlphaComponent(1.0))
                 }
-            } else if predictionValZT > 400 {
-                colors.append(color ?? NSUIColor.systemYellow)
-            } else if predictionValZT < 0 {
-                colors.append(color ?? NSUIColor.systemRed)
             } else {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let valueZT = ChartDataEntry(x: predictionDataZT[iZT].date, y: predictionValZT, data: formatPillTextExtraLine(line1: "ZT", line2: bgUnits.toDisplayUnits(String(predictionDataZT[iZT].sgv)) + " mmol/L", time: predictionDataZT[iZT].date))
-            mainChart.addEntry(valueZT)
-            smallChart.addEntry(valueZT)
+            let value = ChartDataEntry(x: predictionDataZT[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "ZT", line2: bgUnits.toDisplayUnits(String(predictionDataZT[i].sgv)) + " mmol/L", time: predictionDataZT[i].date))
+            mainChart.addEntry(value)
+            smallChart.addEntry(value)
         }
         
         smallChart.circleColors.removeAll()
@@ -982,11 +966,11 @@ extension MainViewController {
         mainChart.colors.removeAll()
         mainChart.circleColors.removeAll()
         if colors.count > 0 {
-            for iZT in 0..<colors.count {
-                mainChart.addColor(colors[iZT])
-                mainChart.circleColors.append(colors[iZT])
-                smallChart.addColor(colors[iZT])
-                smallChart.circleColors.append(colors[iZT])
+            for i in 0..<colors.count {
+                mainChart.addColor(colors[i])
+                mainChart.circleColors.append(colors[i])
+                smallChart.addColor(colors[i])
+                smallChart.circleColors.append(colors[i])
             }
         }
         BGChart.rightAxis.axisMaximum = Double(topBG)
