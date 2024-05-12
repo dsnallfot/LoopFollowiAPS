@@ -597,7 +597,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             }
             let direction = self.bgDirectionGraphic(self.bgData[self.bgData.count - 1].direction ?? "")
             
-            var eventStartDate = Date(timeIntervalSince1970: self.bgData[self.bgData.count - 1].date)
+            let eventStartDate = Date(timeIntervalSince1970: self.bgData[self.bgData.count - 1].date)
 //                if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Calendar start date") }
             var eventEndDate = eventStartDate.addingTimeInterval(60 * 10)
             var  eventTitle = UserDefaultsRepository.watchLine1.value
@@ -605,9 +605,14 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             //if (UserDefaultsRepository.watchLine2.value.count > 1) {
                 //eventLocation += UserDefaultsRepository.watchLine2.value
             //<}
-            eventTitle = eventTitle.replacingOccurrences(of: "%BG%", with: bgUnits.toDisplayUnits(String(self.bgData[self.bgData.count - 1].sgv)))
+            // Replace commas in bgUnits result with periods
+            let bgDisplayUnits = bgUnits.toDisplayUnits(String(self.bgData[self.bgData.count - 1].sgv)).replacingOccurrences(of: ",", with: ".")
+            eventTitle = eventTitle.replacingOccurrences(of: "%BG%", with: bgDisplayUnits)
             eventTitle = eventTitle.replacingOccurrences(of: "%DIRECTION%", with: direction)
-            eventTitle = eventTitle.replacingOccurrences(of: "%DELTA%", with: deltaString)
+            // Replace commas in deltaString with periods
+            let deltaStringWithoutCommas = deltaString.replacingOccurrences(of: ",", with: ".")
+            eventTitle = eventTitle.replacingOccurrences(of: "%DELTA%", with: deltaStringWithoutCommas)
+
             if self.currentOverride != 1.0 {
                 let val = Int( self.currentOverride*100)
                 // let overrideText = String(format:"%f1", self.currentOverride*100)
