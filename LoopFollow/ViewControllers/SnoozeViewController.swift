@@ -98,11 +98,15 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         
         UNUserNotificationCenter.current().delegate = self
         
+        // Replace commas with periods in bgVal and deltaVal
+        let bgValUpdated = bgVal.replacingOccurrences(of: ",", with: ".")
+        let deltaValUpdated = deltaVal.replacingOccurrences(of: ",", with: ".")
+        
         let content = UNMutableNotificationContent()
         content.title = alertLabelVal
-        content.subtitle += bgVal + " "
+        content.subtitle += bgValUpdated + " "
         content.subtitle += directionVal + " "
-        content.subtitle += deltaVal
+        content.subtitle += deltaValUpdated
         content.categoryIdentifier = "category"
         // This is needed to trigger vibrate on watch and phone
         // TODO:
