@@ -483,35 +483,31 @@ extension MainViewController {
                         }
                         
                         var predictionColor = UIColor.systemGray
-                        PredictionLabel.textColor = predictionColor
 
                         if let eventualData = lastLoopRecord["suggested"] as? [String: Any],
-                           let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
-                           let loopYellow = UIColor(named: "LoopYellow"),
-                           let loopRed = UIColor(named: "LoopRed"),
-                           let loopGreen = UIColor(named: "LoopGreen") {
-                            
+                            let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
+                            let loopYellow = UIColor(named: "LoopYellow"),
+                            let loopRed = UIColor(named: "LoopRed"),
+                            let loopGreen = UIColor(named: "LoopGreen") {
+                                
                             let eventualBGFloatValue = eventualBGValue.floatValue // Convert NSNumber to Float
                             
                             let eventualBGStringValue = String(describing: eventualBGValue)
                             let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
-                            PredictionLabel.text = "    Prognos  ⇢ \(formattedBGString)"
-                            
-                            // Print statements for debugging
-                            //print("eventualBGValue:", eventualBGFloatValue)
-                            //print("High Line Value:", UserDefaultsRepository.highLine.value)
-                            //print("Low Line Value:", UserDefaultsRepository.lowLine.value)
                             
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
+                                PredictionLabel.text = "⚠️  Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.textColor = loopYellow
                                 predictionColor = loopYellow
                             } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
+                                PredictionLabel.text = "🆘  Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.textColor = loopRed
                                 predictionColor = loopRed
                             } else if eventualBGFloatValue > UserDefaultsRepository.lowLine.value && eventualBGFloatValue < UserDefaultsRepository.highLine.value {
+                                PredictionLabel.text = "✅  Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.textColor = loopGreen
                                 predictionColor = loopGreen
                             }
-                            
-                            // Debug print for the selected color
-                            //print("Selected Prediction Color:", predictionColor)
                         }
 
                         // Update PredictionLabel with the new color
