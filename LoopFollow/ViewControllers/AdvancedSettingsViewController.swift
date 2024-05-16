@@ -75,6 +75,14 @@ class AdvancedSettingsViewController: FormViewController {
                 guard let value = row.value else { return }
                 UserDefaultsRepository.graphOtherTreatments.value = value
             }
+        
+        <<< SwitchRow("showDetails"){ row in
+            row.title = "Show Detailed Info"
+            row.value = UserDefaultsRepository.showDetails.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.showDetails.value = value
+        }
             <<< StepperRow("bgUpdateDelay") { row in
                 row.title = "BG Update Delay (Sec)"
                 row.cell.stepper.stepValue = 1

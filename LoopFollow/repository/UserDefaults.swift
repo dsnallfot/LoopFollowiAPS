@@ -118,6 +118,7 @@ class UserDefaultsRepository {
     static let alwaysDownloadAllBG = UserDefaultsValue<Bool>(key: "alwaysDownloadAllBG", default: true)
     static let bgUpdateDelay = UserDefaultsValue<Int>(key: "bgUpdateDelay", default: 10)
     static let downloadDays = UserDefaultsValue<Int>(key: "downloadDays", default: 1)
+    static let showDetails = UserDefaultsValue<Bool>(key: "showDetails", default: true)
     
     
     // Watch Calendar Settings
