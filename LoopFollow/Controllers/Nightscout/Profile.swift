@@ -104,6 +104,9 @@ extension MainViewController {
                     let startDot = basalGraphStruct(basalRate: basalSegments[i].basalRate, date: Double(timeStart + (60 * 5)))
                     basalScheduleData.append(startDot)
                     
+                    basalNow = String(format:"%.2f", basalSegments[i].basalRate)
+                     print("Basalnow \(basalNow)")
+                    
                     // set the enddot where the next one will start
                     var endDate = basalSegments[i].endDate
                     let endDot = basalGraphStruct(basalRate: basalSegments[i].basalRate, date: endDate)

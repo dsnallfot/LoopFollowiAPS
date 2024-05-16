@@ -141,6 +141,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var latestLoopTime: Double = 0
     var latestCOB = ""
     var latestBasal = ""
+    var basalNow = ""
     var latestPumpVolume: Double = 50.0
     var latestIOB = ""
     var lastOverrideStartTime: TimeInterval = 0
