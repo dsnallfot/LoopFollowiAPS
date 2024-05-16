@@ -496,11 +496,11 @@ extension MainViewController {
                             let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
                             
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
-                                PredictionLabel.text = "⚠️  Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
                                 PredictionLabel.textColor = loopYellow
                                 predictionColor = loopYellow
                             } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
-                                PredictionLabel.text = "🆘  Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
                                 PredictionLabel.textColor = loopRed
                                 predictionColor = loopRed
                             } else if eventualBGFloatValue > UserDefaultsRepository.lowLine.value && eventualBGFloatValue < UserDefaultsRepository.highLine.value {
