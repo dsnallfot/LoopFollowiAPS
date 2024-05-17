@@ -159,7 +159,7 @@ class SettingsViewController: FormViewController {
                
                // Further clean-up: Remove trailing slashes
                var cleanURL = filtered
-               while cleanURL.last == "/" {
+               while cleanURL.count > 8 && cleanURL.last == "/" {
                    cleanURL = String(cleanURL.dropLast())
                }
                
