@@ -56,20 +56,20 @@ extension MainViewController {
             let formatter = DateComponentsFormatter()
             formatter.unitsStyle = .positional // Use the appropriate positioning for the current locale
             
-            if secondsAgo >= 720 { // 720 seconds = 12 minutes
+            //if secondsAgo >= 720 { // 720 seconds = 12 minutes
                 formatter.allowedUnits = [.minute] // Only show minutes after 12 minutes have passed
             /*} else if secondsAgo < 0 { // Less than 4.5 minutes //Daniel: ALways show minutes and seconds
                 formatter.allowedUnits = [.minute] // Show only minutes if less than 4.5 minutes*/
 
-            } else {
+            //} else {
                 formatter.allowedUnits = [.minute, .second] // Show minutes and seconds otherwise
-            }
+            //}
             
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
             let minAgoDisplayText: String
             
             if secondsAgo > 60 {
-                minAgoDisplayText = formattedDuration + " sedan"
+                minAgoDisplayText = formattedDuration + " m sedan"
             } else {
                 minAgoDisplayText = formattedDuration + " s sedan"
             }
