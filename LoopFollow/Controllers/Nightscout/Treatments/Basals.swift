@@ -137,16 +137,16 @@ extension MainViewController {
             if i == tempArray.count - 1 && duration == 0.0 {
                 lastEndDot = dateTimeStamp + (30 * 60)
                 if UserDefaultsRepository.showDetails.value {
-                    latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ") E/h"
+                    latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ") U/h"
                 } else {
-                    latestBasal = String(format:"%.2f", basalRate) + " E/h"
+                    latestBasal = String(format:"%.2f", basalRate) + " U/h"
                 }
             } else {
                 lastEndDot = dateTimeStamp + (duration * 60)
                 if UserDefaultsRepository.showDetails.value {
-                    latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ") E/h"
+                    latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ") U/h"
                 } else {
-                    latestBasal = String(format:"%.2f", basalRate) + " E/h"
+                    latestBasal = String(format:"%.2f", basalRate) + " U/h"
                 }
             }
             
@@ -195,9 +195,9 @@ extension MainViewController {
             }
             
             if UserDefaultsRepository.showDetails.value {
-                latestBasal = String(format:"%.2f", scheduled) + " (" + basalNow + ") E/h"
+                latestBasal = String(format:"%.2f", scheduled) + " (" + basalNow + ") U/h"
             } else {
-                latestBasal = String(format:"%.2f", scheduled) + " E/h"
+                latestBasal = String(format:"%.2f", scheduled) + " U/h"
             }
             // Make the starting dot at the last ending dot
             let startDot = basalGraphStruct(basalRate: scheduled, date: Double(lastEndDot))

@@ -37,7 +37,7 @@ class InfoDisplaySettingsViewController: FormViewController {
                     UserDefaultsRepository.hideInfoTable.value = value           
         }
         
-        +++ MultivaluedSection(multivaluedOptions: .Reorder, header: "Information Display Settings", footer: "Välj och sortera ordning på önskad information") {
+        +++ MultivaluedSection(multivaluedOptions: .Reorder, header: "Information Display Settings", footer: "Select and sort the order of the desired information") {
         
            // TODO: add the other display values
            $0.tag = "InfoDisplay"

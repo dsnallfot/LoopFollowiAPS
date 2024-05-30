@@ -42,7 +42,7 @@ extension MainViewController {
     }
     
     func mgdlToMmol(_ mgdl: Double) -> Double {
-        return mgdl * 0.05551
+        return mgdl// * 0.05551
     }
     
     private func handleDeviceStatusError() {
@@ -123,15 +123,15 @@ extension MainViewController {
             if let lastPumpTime = formatter.date(from: (lastPumpRecord["clock"] as! String))?.timeIntervalSince1970  {
                 if let reservoirData = lastPumpRecord["reservoir"] as? Double {
                     latestPumpVolume = reservoirData
-                    tableData[5].value = String(format:"%.0f", reservoirData) + " E"
+                    tableData[5].value = String(format:"%.0f", reservoirData) + "U"
                 } else {
                     latestPumpVolume = 50.0
-                    tableData[5].value = "50+E"
+                    tableData[5].value = "50+U"
                 }
                 
                 if let uploader = lastDeviceStatus?["uploader"] as? [String:AnyObject] {
                     let upbat = uploader["battery"] as! Double
-                    tableData[4].value = String(format:"%.0f", upbat) + " %"
+                    tableData[4].value = String(format:"%.0f", upbat) + "%"
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
                 }
             }
@@ -157,11 +157,11 @@ extension MainViewController {
                         }
                     }
                     if let iobdata = lastLoopRecord["iob"] as? [String:AnyObject] {
-                        tableData[0].value = String(format:"%.2f", (iobdata["iob"] as! Double)) + " E"
+                        tableData[0].value = String(format:"%.2f", (iobdata["iob"] as! Double)) + "U"
                         latestIOB = String(format:"%.2f", (iobdata["iob"] as! Double))
                     }
                     if let cobdata = lastLoopRecord["cob"] as? [String:AnyObject] {
-                        tableData[1].value = String(format:"%.0f", cobdata["cob"] as! Double) + " g"
+                        tableData[1].value = String(format:"%.0f", cobdata["cob"] as! Double) + "g"
                         latestCOB = String(format:"%.0f", cobdata["cob"] as! Double)
                     }
                     if let predictdata = lastLoopRecord["predicted"] as? [String:AnyObject] {
@@ -188,13 +188,13 @@ extension MainViewController {
                             
                             let predMin = prediction.min()
                             let predMax = prediction.max()
-                            tableData[9].value = bgUnits.toDisplayUnits(String(predMin!)) + "-" + bgUnits.toDisplayUnits(String(predMax!)) + " mmol/L"
+                            tableData[9].value = bgUnits.toDisplayUnits(String(predMin!)) + "-" + bgUnits.toDisplayUnits(String(predMax!))
                             
                             updatePredictionGraph()
                         }
                     }
                     if let recBolus = lastLoopRecord["recommendedBolus"] as? Double {
-                        tableData[8].value = String(format:"%.2f", recBolus) + " E"
+                        tableData[8].value = String(format:"%.2f", recBolus) + "U"
                         UserDefaultsRepository.deviceRecBolus.value = recBolus
                     }
                     if let loopStatus = lastLoopRecord["recommendedTempBasal"] as? [String:AnyObject] {
@@ -248,23 +248,24 @@ extension MainViewController {
 
                     if let iobdata = lastLoopRecord["iob"] as? [String:AnyObject] {
                         if let iob = iobdata["iob"] as? Double {
-                            tableData[0].value = String(format:"%.2f", iob) + " E"
+                            tableData[0].value = String(format:"%.2f", iob) + "U"
                             latestIOB = String(format:"%.2f", iob)
                             sharedLatestIOB = latestIOB
                         }
                     }
                     
                     //Daniel: Use suggested instead of enacted to populate infotable even when not enacted
+                    //Auggie - back to enacted
                     if let suggestedData = lastLoopRecord["suggested"] as? [String:AnyObject] {
                         if let COB = suggestedData["COB"] as? Double {
-                            tableData[1].value = String(format:"%.0f", COB) + " g"
+                            tableData[1].value = String(format:"%.0f", COB) + "g"
                             latestCOB = String(format:"%.0f", COB)
                             sharedLatestCOB = latestCOB
                         }
 
                         //if let recbolusdata = lastLoopRecord["suggested"] as? [String: AnyObject],
                         if let insulinReq = suggestedData["insulinReq"] as? Double {
-                            tableData[8].value = String(format: "%.2f", insulinReq) + " E"
+                            tableData[8].value = String(format: "%.2f", insulinReq) + "U"
                             UserDefaultsRepository.deviceRecBolus.value = insulinReq
                         } else {
                             tableData[8].value = "---"
@@ -274,29 +275,29 @@ extension MainViewController {
                         
                         if let sensitivityRatio = suggestedData["sensitivityRatio"] as? Double {
                             let sens = sensitivityRatio * 100.0
-                            tableData[11].value = String(format:"%.0f", sens) + " %"
+                            tableData[11].value = String(format:"%.0f", sens) + "%"
                         }
                         
                         if let TDD = suggestedData["TDD"] as? Double {
-                            tableData[13].value = String(format:"%.1f", TDD) + " E"
+                            tableData[13].value = String(format:"%.1f", TDD) + "U"
                         }
                         
                         if let ISF = suggestedData["ISF"] as? Double {
-                            tableData[14].value = String(format:"%.1f", ISF) + " mmol/L/E"
+                            tableData[14].value = String(format:"%.0f", ISF)
                         }
                         
                         if let CR = suggestedData["CR"] as? Double {
-                            tableData[15].value = String(format:"%.1f", CR) + " g/E"
+                            tableData[15].value = String(format:"%.1f", CR)
                             sharedCRValue = String(format:"%.1f", CR)
                         }
                         
                         if let currentTargetMgdl = suggestedData["current_target"] as? Double {
-                            let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
-                            tableData[16].value = String(format: "%.1f", currentTargetMmol) + " mmol/L"
+                            //let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
+                            tableData[16].value = String(format: "%.0f", currentTargetMgdl)
                         }
                         
                         if let carbsReq = suggestedData["carbsReq"] as? Double {
-                            tableData[17].value = String(format:"%.0f", carbsReq) + " g"
+                            tableData[17].value = String(format:"%.0f", carbsReq) + "g"
                         } else {
                             // If "carbsReq" is not present in suggestedData, set it to 0
                             tableData[17].value = "0 g"
@@ -307,11 +308,10 @@ extension MainViewController {
                             let dateFormatter = DateFormatter()
                             dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
                             dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
-                            
                             if let timestamp = dateFormatter.date(from: timestampString) {
                                 // Now you have the timestamp as a Date object, convert it to the local timezone
                                 let localTimeFormatter = DateFormatter()
-                                localTimeFormatter.dateFormat = "HH:mm:ss"
+                                localTimeFormatter.dateFormat = "h:mm:ss a"
                                 localTimeFormatter.timeZone = TimeZone.autoupdatingCurrent
                                 
                                 let formattedLocalTime = localTimeFormatter.string(from: timestamp)
@@ -329,10 +329,10 @@ extension MainViewController {
                         
                         //Daniel: Added suggested data for bolus calculator and info
                         if let minGuardBG = suggestedData["minGuardBG"] as? Double {
-                            let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
+                            let formattedMinGuardBGString = minGuardBG
                             sharedMinGuardBG = Double(formattedMinGuardBGString)
                         } else {
-                            let formattedLowLine = mgdlToMmol(Double(UserDefaultsRepository.lowLine.value))
+                            let formattedLowLine = Double(UserDefaultsRepository.lowLine.value)
                             sharedMinGuardBG = Double(formattedLowLine)
                         }
                         
@@ -369,15 +369,16 @@ extension MainViewController {
                     let recentEnd: TimeInterval = recentOverride?.endDate ?? 0
                     let now = dateTimeUtils.getNowTimeIntervalUTC()
                     if recentEnd >= now {
-                        tableData[3].value = String(overrideName ?? "Normal profil")
+                        tableData[3].value = String(overrideName ?? "Normal profile")
                     } else {
-                        tableData[3].value = "Normal profil"
+                        tableData[3].value = "Normal profile"
                     }
                     
                     // Include all values from all predBG types to be able to show min-max values
                     var graphtype = ""
                     var graphdata: [Double] = []
                     
+                    //Auggie -- suggested to enacted
                     if let enactdata = lastLoopRecord["suggested"] as? [String: AnyObject],
                        let predbgdata = enactdata["predBGs"] as? [String: [Double]] {
                         
@@ -484,7 +485,8 @@ extension MainViewController {
                         
                         var predictionColor = UIColor.systemGray
 
-                        if let eventualData = lastLoopRecord["suggested"] as? [String: Any],
+                        //auggie - sugested to enacted
+                        if let eventualData = lastLoopRecord["enacted"] as? [String: Any],
                             let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
                             let loopYellow = UIColor(named: "LoopYellow"),
                             let loopRed = UIColor(named: "LoopRed"),
@@ -496,15 +498,15 @@ extension MainViewController {
                             let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
                             
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
-                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.text = "    Predicted ⇢ \(formattedBGString)"
                                 PredictionLabel.textColor = loopYellow
                                 predictionColor = loopYellow
                             } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
-                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.text = "    Predicted ⇢ \(formattedBGString)"
                                 PredictionLabel.textColor = loopRed
                                 predictionColor = loopRed
                             } else if eventualBGFloatValue > UserDefaultsRepository.lowLine.value && eventualBGFloatValue < UserDefaultsRepository.highLine.value {
-                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.text = "    Predicted ⇢ \(formattedBGString)"
                                 PredictionLabel.textColor = loopGreen
                                 predictionColor = loopGreen
                             }
@@ -516,7 +518,7 @@ extension MainViewController {
                         if let predMin = graphdata.min(), let predMax = graphdata.max() {
                             let formattedPredMin = bgUnits.toDisplayUnits(String(predMin)).replacingOccurrences(of: ",", with: ".")
                             let formattedPredMax = bgUnits.toDisplayUnits(String(predMax)).replacingOccurrences(of: ",", with: ".")
-                            tableData[9].value = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
+                            tableData[9].value = "\(formattedPredMin)/\(formattedPredMax)"
                             //updatePredictionGraph(color: predictioncolor)
                         } else {
                             tableData[9].value = "N/A"

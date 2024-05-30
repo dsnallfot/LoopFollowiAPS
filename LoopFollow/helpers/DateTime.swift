@@ -87,7 +87,7 @@ class dateTimeUtils {
     
     static func is24Hour() -> Bool {
         let dateFormat = DateFormatter.dateFormat(fromTemplate: "j", options: 0, locale: Locale.current)!
-
-        return dateFormat.firstIndex(of: "a") == nil
+        //return dateFormat.firstIndex(of: "a") == nil
+        return false
     }
 }

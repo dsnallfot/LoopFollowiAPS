@@ -24,21 +24,21 @@ class UserDefaultsRepository {
         "COB", //1
         "Basal", //2
         "Override", //3
-        "Looptelefon", //4
-        "Reservoar", //5
-        "Sensorbyte", //6
-        "Poddbyte", //7
-        "Behov Insulin", //8
+        "Battery", //4
+        "Reservoir", //5
+        "SAGE", //6
+        "CAGE", //7
+        "Needed Insulin", //8
         "Min-Max", //9
-        "Kh idag", //10
+        "Carbs today", //10
         "Autosens", //11
-        "Profil", //12
-        "Total daglig dos", //13
+        "Profile", //12
+        "TDD", //13
         "ISF", //14
         "CR", //15
-        "Målvärde", //16
-        "Behov KH", //17
-        "Info uppdaterad"]) //18
+        "Target", //16
+        "Needed Carbs", //17
+        "Info Updated"]) //18
     static let infoSort = UserDefaultsValue<[Int]>(key: "infoSort", default: [3,11,14,15,2,0,1,8,17,4,9,16,13,10,5,7,6,18,12])
     static let infoVisible = UserDefaultsValue<[Bool]>(key: "infoVisible", default: [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false])
     static let hideInfoTable = UserDefaultsValue<Bool>(key: "hideInfoTable", default: false)
@@ -56,7 +56,7 @@ class UserDefaultsRepository {
     static let shareServer = UserDefaultsValue<String>(key: "shareServer", default: "US")
     
     // Graph Settings
-    static let chartScaleX = UserDefaultsValue<Float>(key: "chartScaleX", default: 18.0)
+    static let chartScaleX = UserDefaultsValue<Float>(key: "chartScaleX", default: 40.0)
     static let showDots = UserDefaultsValue<Bool>(key: "showDots", default: true)
     static let smallGraphTreatments = UserDefaultsValue<Bool>(key: "smallGraphTreatments", default: true)
     static let showValues = UserDefaultsValue<Bool>(key: "showValues", default: true)
@@ -78,7 +78,7 @@ class UserDefaultsRepository {
     // General Settings
     static let colorBGText = UserDefaultsValue<Bool>(key: "colorBGText", default: true)
     static let showStats = UserDefaultsValue<Bool>(key: "showStats", default: true)
-    static let useIFCC = UserDefaultsValue<Bool>(key: "useIFCC", default: true)
+    static let useIFCC = UserDefaultsValue<Bool>(key: "useIFCC", default: false)
     static let showSmallGraph = UserDefaultsValue<Bool>(key: "showSmallGraph", default: true)
     static let speakBG = UserDefaultsValue<Bool>(key: "speakBG", default: false)
     static let speakBGAlways = UserDefaultsValue<Bool>(key: "speakBGAlways", default: true)
@@ -473,8 +473,8 @@ class UserDefaultsRepository {
     static let caregiverName = UserDefaultsValue<String>(key: "caregiverName", default: "")
     static let remoteSecretCode = UserDefaultsValue<String>(key: "remoteSecretCode", default: "")
     
-    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "🚫 Avbryt Override, ⬇️ 75%, 🤢 Magsjuka, 🍬 Efter dextro, 🍬😴 Efter dextro natt, 🏃‍♂️ Hög aktivitet, ⬇️ 90%, ❌ Blocka SMB, ⚽️ Gympa, 😴 Nattläge, 🍇 Vindruvor, 🍭 Godisdag, 🐌 Ledig dag, 🤧 Förkyld, 👻 Resistens, 🥯 Sen frukost")
-    static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "🚫 Avbryt Temp Target, 🏃‍♂️ Hög aktivitet, 🍬 Efter dextro, 🍽️ Äter snart, ❌ Blocka SMB, ⬆️ Boost, ⚽️ Gympa, 🍬😴 Efter dextro natt, 😴 Nattläge")
+    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "🚫 Cancel Override, ⬇️ 75%, 🤢 Magsjuka, 🍬 Efter dextro, 🍬😴 Efter dextro natt, 🏃‍♂️ Hög aktivitet, ⬇️ 90%, ❌ Blocka SMB, ⚽️ Gympa, 😴 Nattläge, 🍇 Vindruvor, 🍭 Godisdag, 🐌 Ledig dag, 🤧 Förkyld, 👻 Resistens, 🥯 Sen frukost")
+    static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "🚫 Cancel Temp Target, 🏃‍♂️ Hög aktivitet, 🍬 Efter dextro, 🍽️ Äter snart, ❌ Blocka SMB, ⬆️ Boost, ⚽️ Gympa, 🍬😴 Efter dextro natt, 😴 Nattläge")
     static let customActionsString = UserDefaultsValue<String>(key: "customActionsString", default: "🍬 1 Dextro, 🍬 2 Dextro, 🥭 Frukt (med Insulin), 🥯 Frukost (med Insulin), 🍝 Lunch (med Insulin), 🥪 Mellis (med Insulin), 🥘 Middag (med Insulin), 🍭 Godis (med Insulin), 🍔 McDonalds (med Insulin), 🍿 Snacks (med Insulin)")
     
     //Show or Hide advanced features

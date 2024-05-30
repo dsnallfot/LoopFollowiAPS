@@ -84,7 +84,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         
         //MinGuardBG & Low Threshold
         let minGuardBG = Decimal(sharedMinGuardBG)
-        let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
+        let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value))// * 0.0555)
         
         // Format the MinGuardBG value & low threshold to have one decimal place
         let formattedMinGuardBG = numberFormatter.string(from: NSDecimalNumber(decimal: minGuardBG) as NSNumber)?.replacingOccurrences(of: ",", with: ".") ?? ""
@@ -198,7 +198,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         numberFormatter.minimumFractionDigits = 2
         numberFormatter.maximumFractionDigits = 2
         numberFormatter.minimumIntegerDigits = 1
-        numberFormatter.decimalSeparator = Locale.current.decimalSeparator
+        numberFormatter.decimalSeparator = "."//Locale.current.decimalSeparator
         
         guard let formattedString = numberFormatter.string(from: NSNumber(value: doubleValue)) else {
             fatalError("Failed to format the number.")
@@ -233,7 +233,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let formattedMaxCarbs = numberFormatter.string(from: NSNumber(value: maxCarbs)) ?? ""
           
             // Update button title
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns kolhydrater \(formattedMaxCarbs) g", attributes: attributes), for: .normal)
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maximum carbs \(formattedMaxCarbs) g", attributes: attributes), for: .normal)
         } else if fatValue > Decimal(maxFatProtein) || proteinValue > Decimal(maxFatProtein) {
             // Disable button
             isButtonDisabled = true
@@ -243,7 +243,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let formattedMaxFatProtein = numberFormatter.string(from: NSNumber(value: maxFatProtein)) ?? ""
           
             // Update button title
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns fett/protein \(formattedMaxFatProtein) g", attributes: attributes), for: .normal)
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maximum fat/protein \(formattedMaxFatProtein) g", attributes: attributes), for: .normal)
         }
  else if let bolusText = bolusUnits.text?.replacingOccurrences(of: ",", with: "."),
 
@@ -258,7 +258,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
             
             // Update button title if bolus exceeds maxBolus
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns bolus \(formattedMaxBolus) E", attributes: attributes), for: .normal)
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns bolus \(formattedMaxBolus) U", attributes: attributes), for: .normal)
         } else {
             // Enable button
             sendMealButton.isEnabled = true
@@ -266,10 +266,10 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
            // Check if bolusText is not "0" and not empty
             if let bolusText = bolusUnits.text, bolusText != "0" && !bolusText.isEmpty {
                 // Update button title with bolus
-                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid och Bolus", attributes: attributes), for: .normal)
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "Send Meal and Bolus", attributes: attributes), for: .normal)
             } else {
                 // Update button title without bolus
-                sendMealButton.setAttributedTitle(NSAttributedString(string: "Skicka Måltid", attributes: attributes), for: .normal)
+                sendMealButton.setAttributedTitle(NSAttributedString(string: "Send Meal", attributes: attributes), for: .normal)
             }
         }
     }
@@ -327,8 +327,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 // Play failure sound
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
-                let alertController = UIAlertController(title: "Fel", message: "Bolus är inmatad i fel format", preferredStyle: .alert)
-                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                let alertController = UIAlertController(title: "Alert", message: "Bolus entered in the wrong format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
                 present(alertController, animated: true, completion: nil)
                 self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
@@ -367,8 +367,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 // Play failure sound
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
-                let alertController = UIAlertController(title: "Fel", message: "Kolhydrater är inmatade i fel format", preferredStyle: .alert)
-                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                let alertController = UIAlertController(title: "Alert", message: "Carbs entered in wrong format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
                 present(alertController, animated: true, completion: nil)
                 self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
@@ -392,8 +392,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 // Play failure sound
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
-                let alertController = UIAlertController(title: "Fel", message: "Fett är inmatat i fel format", preferredStyle: .alert)
-                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                let alertController = UIAlertController(title: "Alert", message: "Fat entered in the wrong format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
                 present(alertController, animated: true, completion: nil)
                 self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
@@ -417,8 +417,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 // Play failure sound
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
-                let alertController = UIAlertController(title: "Fel", message: "Protein är inmatat i fel format", preferredStyle: .alert)
-                alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+                let alertController = UIAlertController(title: "Alert", message: "Protein entered in the wrong format", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
                 present(alertController, animated: true, completion: nil)
                 self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
                 return
@@ -458,10 +458,10 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             
             if UserDefaultsRepository.hideRemoteBolus.value {
                 // Construct and return the combinedString without bolus
-                return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInlagt av: \(name)\nHemlig kod: \(secret)"
+                return "Remote Meal\nCarbs: \(carbsValue)g\nFat: \(fatsValue)g\nProtein: \(proteinsValue)g\nNote: \(cleanedMealNotes)\nEntered by: \(name)\nSecret code: \(secret)"
             } else {
                 // Construct and return the combinedString with bolus
-                return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
+                return "Remote Meal\nCarbs: \(carbsValue)g\nFat: \(fatsValue)g\nProtein: \(proteinsValue)g\nNote: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nEntered by: \(name)\nSecret Code: \(secret)"
             }
         }
         
@@ -470,14 +470,14 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Set isAlertShowing to true before showing the alert
             isAlertShowing = true
             // Confirmation alert before sending the request
-            let confirmationAlert = UIAlertController(title: "Bekräfta måltid", message: "Vill du registrera denna måltid?", preferredStyle: .alert)
+            let confirmationAlert = UIAlertController(title: "Confirm meal", message: "Would you like to enter this meal?", preferredStyle: .alert)
             
-            confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+            confirmationAlert.addAction(UIAlertAction(title: "Confirm", style: .default, handler: { (action: UIAlertAction!) in
                 // Proceed with sending the request
                 self.sendMealRequest(combinedString: combinedString)
             }))
             
-            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
+            confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
                 // Handle dismissal when "Cancel" is selected
                 self.handleAlertDismissal()
             }))
@@ -490,9 +490,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Set isAlertShowing to true before showing the alert
             isAlertShowing = true
             // Confirmation alert before sending the request
-            let confirmationAlert = UIAlertController(title: "Bekräfta måltid och bolus", message: "Vill du registrera denna måltid och ge \(bolusValue) E bolus?", preferredStyle: .alert)
+            let confirmationAlert = UIAlertController(title: "Confirm meal and bolus", message: "Would you like to confirm this meal and send a \(bolusValue) U bolus?", preferredStyle: .alert)
             
-            confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+            confirmationAlert.addAction(UIAlertAction(title: "Confirm", style: .default, handler: { (action: UIAlertAction!) in
                 // Authenticate with Face ID
                 self.authenticateWithBiometrics {
                     // Proceed with the request after successful authentication
@@ -500,7 +500,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 }
             }))
             
-            confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
+            confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
                 // Handle dismissal when "Cancel" is selected
                 self.handleAlertDismissal()
             }))
@@ -595,7 +595,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                     AudioServicesPlaySystemSound(SystemSoundID(1322))
                     
                     // Show success alert
-                    let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades", preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Success!", message: "Message delivered.", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                         // Dismiss the current view controller
                         self.dismiss(animated: true, completion: nil)
@@ -606,7 +606,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                     AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
-                    let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Alert", message: error.localizedDescription, preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                     self.present(alertController, animated: true, completion: nil)
                 }

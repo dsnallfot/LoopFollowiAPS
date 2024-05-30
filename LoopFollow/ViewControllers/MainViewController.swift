@@ -128,7 +128,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var bgCheckData: [ShareGlucoseData] = []
     var suspendGraphData: [DataStructs.timestampOnlyStruct] = []
     var resumeGraphData: [DataStructs.timestampOnlyStruct] = []
-    var sensorChangeGraphData: [DataStructs.timestampOnlyStruct] = []
+    var sensorStartGraphData: [DataStructs.timestampOnlyStruct] = []
     var pumpChangeGraphData: [DataStructs.timestampOnlyStruct] = []
     var noteGraphData: [DataStructs.noteStruct] = []
     var chartData = LineChartData()
@@ -176,22 +176,22 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("COB")
         UserDefaultsRepository.infoNames.value.append("Basal")
         UserDefaultsRepository.infoNames.value.append("Override")
-        UserDefaultsRepository.infoNames.value.append("Looptelefon")
-        UserDefaultsRepository.infoNames.value.append("Reservoar")
-        UserDefaultsRepository.infoNames.value.append("Sensorbyte om")
-        UserDefaultsRepository.infoNames.value.append("Poddbyte om")
-        UserDefaultsRepository.infoNames.value.append("Behov Insulin")
-        UserDefaultsRepository.infoNames.value.append("Min-Max")
-        UserDefaultsRepository.infoNames.value.append("Kh idag")
-        UserDefaultsRepository.infoNames.value.append("Autosens")
-        UserDefaultsRepository.infoNames.value.append("Profil")
+        UserDefaultsRepository.infoNames.value.append("Battery")
+        UserDefaultsRepository.infoNames.value.append("Pump")
+        UserDefaultsRepository.infoNames.value.append("SAGE")
+        UserDefaultsRepository.infoNames.value.append("CAGE")
+        UserDefaultsRepository.infoNames.value.append("Needed insulin")
+        UserDefaultsRepository.infoNames.value.append("Min/Max")
+        UserDefaultsRepository.infoNames.value.append("Carbs today")
+        UserDefaultsRepository.infoNames.value.append("Dynamic sensitivity")
+        UserDefaultsRepository.infoNames.value.append("Profile")
         //Auggie
-        UserDefaultsRepository.infoNames.value.append("Total daglig dos")
+        UserDefaultsRepository.infoNames.value.append("Total daily dose")
         UserDefaultsRepository.infoNames.value.append("ISF")
-        UserDefaultsRepository.infoNames.value.append("CR")
-        UserDefaultsRepository.infoNames.value.append("Målvärde")
-        UserDefaultsRepository.infoNames.value.append("Behov KH")
-        UserDefaultsRepository.infoNames.value.append("Info uppdaterad")
+        UserDefaultsRepository.infoNames.value.append("Carb ratio")
+        UserDefaultsRepository.infoNames.value.append("Target")
+        UserDefaultsRepository.infoNames.value.append("Needed carbs")
+        UserDefaultsRepository.infoNames.value.append("Info updated")
 
         // Reset deprecated settings
         UserDefaultsRepository.debugLog.value = false;
@@ -459,9 +459,9 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         if bgData.count > 0 {
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970)-bgData[bgData.count - 1].date) / 60
             minAgoBG = Double(TimeInterval(Date().timeIntervalSince1970)-bgData[bgData.count - 1].date)
-            MinAgoText.text = String(Int(deltaTime)) + " m sedan"
-            snoozer.MinAgoLabel.text = String(Int(deltaTime)) + " m sedan"
-            latestMinAgoString = String(Int(deltaTime)) + " m sedan"
+            MinAgoText.text = String(Int(deltaTime)) + " ago"
+            snoozer.MinAgoLabel.text = String(Int(deltaTime)) + " ago"
+            latestMinAgoString = String(Int(deltaTime)) + " ago"
         } else {
             MinAgoText.text = ""
             snoozer.MinAgoLabel.text = ""
@@ -632,7 +632,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         let lastSGV = Double(self.bgData[self.bgData.count - 1].sgv) // Convert the last SGV to a Double
         let deltaBGValue = Double(deltaBG) // Convert deltaBG to a Double
 
-        let fifteenMin = (lastSGV + deltaBGValue * 2.5) * 0.0555
+        let fifteenMin = (lastSGV + deltaBGValue * 2.5)// * 0.0555
         let fifteenMinString = String(format: "%.1f", fifteenMin) // Convert to string with one decimal place
             // Use the calculated 'fifteenMinString' as needed
         let fifteenMinValue = Double(fifteenMinString) ?? 0.0
@@ -660,7 +660,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             eventTitle = eventTitle.replacingOccurrences(of: "%MINAGO%", with: minAgo)
         eventLocation = eventLocation.replacingOccurrences(of: "%IOB%", with: iob)
         eventLocation = eventLocation.replacingOccurrences(of: "%COB%", with: cob)
-        eventLocation = eventLocation.replacingOccurrences(of: "%BASAL%", with: basal + "E/h")
+        eventLocation = eventLocation.replacingOccurrences(of: "%BASAL%", with: basal + "U/h")
         
             
             

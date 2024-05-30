@@ -69,9 +69,9 @@ extension MainViewController {
             let minAgoDisplayText: String
             
             if secondsAgo > 60 {
-                minAgoDisplayText = formattedDuration + " m sedan"
+                minAgoDisplayText = formattedDuration + " ago"
             } else {
-                minAgoDisplayText = formattedDuration + " s sedan"
+                minAgoDisplayText = formattedDuration + " ago"
             }
             
             MinAgoText.text = minAgoDisplayText

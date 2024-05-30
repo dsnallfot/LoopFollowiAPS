@@ -16,7 +16,7 @@ struct globalVariables {
     static var nsVerifiedAlert: TimeInterval = 0
     
     // Graph Settings
-    static let dotBG: Float = 4
+    static let dotBG: Float = 3
     static let dotCarb: Float = 6
     static let dotBolus: Float = 6
     static let dotSmb: Float = 6

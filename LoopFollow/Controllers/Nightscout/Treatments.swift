@@ -49,24 +49,24 @@ extension MainViewController {
         var suspendPump: [[String:AnyObject]] = []
         var resumePump: [[String:AnyObject]] = []
         var pumpSiteChange: [cageData] = []
-        var cgmSensorChange: [sageData] = []
+        var cgmSensorStart: [sageData] = []
         
         for entry in entries {
-                    guard let eventType = entry["eventType"] as? String else {
-                        continue
-                    }
+            guard let eventType = entry["eventType"] as? String else {
+                continue
+            }
             
             switch eventType {
                         case "Temp Basal":
                             tempBasal.append(entry)
-                        case "Correction Bolus", "Bolus", "Insulinpenna":
+                        case "Correction Bolus", "Bolus", "External Insulin":
                             bolus.append(entry)
                         case "SMB":
                             smb.append(entry)
                         case "Meal Bolus":
                             carbs.append(entry)
                             bolus.append(entry)
-                        case "Carb Correction", "Kolhydrater", "Dextro", "Måltid":
+                        case "Carb Correction":
                             carbs.append(entry)
                         case "Temporary Override", "Temporary Target", "Exercise", "Override":
                             temporaryOverride.append(entry)
@@ -79,15 +79,15 @@ extension MainViewController {
                             suspendPump.append(entry)
                         case "Resume Pump":
                             resumePump.append(entry)
-                        case "Pump Site Change", "Site Change", "Pumpbyte":
+                        case "Pump Site Change", "Site Change":
                             if let createdAt = entry["created_at"] as? String {
                                 let newEntry = cageData(created_at: createdAt)
                                 pumpSiteChange.append(newEntry)
                             }
-                        case "Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart":
+                        case "Sensor Start":
                             if let createdAt = entry["created_at"] as? String {
                                 let newEntry = sageData(created_at: createdAt)
-                                cgmSensorChange.append(newEntry)
+                                cgmSensorStart.append(newEntry)
                             }
                         default:
                             print("No Match: \(String(describing: entry))")
@@ -152,11 +152,11 @@ extension MainViewController {
                 clearOldResume()
             }
         }
-        processSage(entries: cgmSensorChange)
-        if cgmSensorChange.count > 0 {
-            processSensorChange(entries: cgmSensorChange)
+        processSage(entries: cgmSensorStart)
+        if cgmSensorStart.count > 0 {
+            processSensorStart(entries: cgmSensorStart)
         } else {
-            if sensorChangeGraphData.count > 0 {
+            if sensorStartGraphData.count > 0 {
                 clearOldSensor()
             }
         }
@@ -168,12 +168,5 @@ extension MainViewController {
             }
         }
         processCage(entries: pumpSiteChange)
-        if pumpSiteChange.count > 0 {
-            processPumpChange(entries: pumpSiteChange)
-        } else {
-            if pumpChangeGraphData.count > 0 {
-                clearOldPump()
-            }
-        }
     }
 }

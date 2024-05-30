@@ -86,7 +86,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
             self.sendTTRequest(combinedString: combinedString)
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
+        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
             // Handle dismissal when "Cancel" is selected
             self.handleAlertDismissal()
         }))

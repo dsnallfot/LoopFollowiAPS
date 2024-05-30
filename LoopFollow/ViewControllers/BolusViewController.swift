@@ -42,7 +42,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         
         //MinGuardBG & Low Threshold
         let minGuardBG = Decimal(sharedMinGuardBG)
-        let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
+        let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value))// * 0.0555)
         
         // Format the MinGuardBG value & low threshold to have one decimal place
         let formattedMinGuardBG = numberFormatter.string(from: NSDecimalNumber(decimal: minGuardBG) as NSNumber) ?? ""
@@ -50,7 +50,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
          
         // Set the text field with the formatted value of minGuardBG or "N/A" if formattedMinGuardBG is "0.0"
         minPredBGValue.text = formattedMinGuardBG == "0" ? "N/A" : formattedMinGuardBG
-        print("Predicted Min BG: \(formattedMinGuardBG) mmol/L")
+        print("Predicted Min BG: \(formattedMinGuardBG) mg/dl")
         print("Low threshold: \(formattedLowThreshold) mmol/L")
         
         // Check if the value of minPredBG is less than lowThreshold
@@ -124,7 +124,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
             }
         }))
         
-        confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { (action: UIAlertAction!) in
+        confirmationAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { (action: UIAlertAction!) in
             // Handle dismissal when "Cancel" is selected
             self.handleAlertDismissal()
         }))
@@ -267,13 +267,13 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
             let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
             
             // Update button title if bolus exceeds maxBolus
-            sendBolusButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(formattedMaxBolus) E", attributes: attributes), for: .normal)
+            sendBolusButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(formattedMaxBolus) U", attributes: attributes), for: .normal)
         } else {
             // Enable button
             sendBolusButton.isEnabled = true
             
             // Update button title with bolus
-            sendBolusButton.setAttributedTitle(NSAttributedString(string: "Skicka Bolus", attributes: attributes), for: .normal)
+            sendBolusButton.setAttributedTitle(NSAttributedString(string: "Send Bolus", attributes: attributes), for: .normal)
         }
     }
     
