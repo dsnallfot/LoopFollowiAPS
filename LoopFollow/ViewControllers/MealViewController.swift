@@ -258,7 +258,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
             
             // Update button title if bolus exceeds maxBolus
-            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns bolus \(formattedMaxBolus) U", attributes: attributes), for: .normal)
+            sendMealButton.setAttributedTitle(NSAttributedString(string: "⛔️ Max Bolus \(formattedMaxBolus) U", attributes: attributes), for: .normal)
         } else {
             // Enable button
             sendMealButton.isEnabled = true

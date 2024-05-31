@@ -267,7 +267,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
             let formattedMaxBolus = String(format: "%.2f", UserDefaultsRepository.maxBolus.value)
             
             // Update button title if bolus exceeds maxBolus
-            sendBolusButton.setAttributedTitle(NSAttributedString(string: "⛔️ Maxgräns \(formattedMaxBolus) U", attributes: attributes), for: .normal)
+            sendBolusButton.setAttributedTitle(NSAttributedString(string: "⛔️ Max Bolus \(formattedMaxBolus) U", attributes: attributes), for: .normal)
         } else {
             // Enable button
             sendBolusButton.isEnabled = true
