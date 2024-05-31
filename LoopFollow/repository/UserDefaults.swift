@@ -39,8 +39,8 @@ class UserDefaultsRepository {
         "Målvärde", //16
         "Behov KH", //17
         "Info uppdaterad"]) //18
-    static let infoSort = UserDefaultsValue<[Int]>(key: "infoSort", default: [3,0,1,11,14,15,2,8,17,16,9,4,10,13,5,6,7,12,18])
-    static let infoVisible = UserDefaultsValue<[Bool]>(key: "infoVisible", default: [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false, true])
+    static let infoSort = UserDefaultsValue<[Int]>(key: "infoSort", default: [3,11,14,15,2,0,1,8,17,4,9,16,13,10,5,7,6,18,12])
+    static let infoVisible = UserDefaultsValue<[Bool]>(key: "infoVisible", default: [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false])
     static let hideInfoTable = UserDefaultsValue<Bool>(key: "hideInfoTable", default: false)
     
     // Nightscout Settings
@@ -48,7 +48,6 @@ class UserDefaultsRepository {
     static let url = UserDefaultsValue<String>(key: "url", default: "")
     static let token = UserDefaultsValue<String>(key: "token", default: "")
     static let units = UserDefaultsValue<String>(key: "units", default: "mg/dL")
-    static let loopUser = UserDefaultsValue<Bool>(key: "loopUser", default: false)
     
     // Dexcom Share Settings
     static let showDex = UserDefaultsValue<Bool>(key: "showDex", default: false)
@@ -118,6 +117,7 @@ class UserDefaultsRepository {
     static let alwaysDownloadAllBG = UserDefaultsValue<Bool>(key: "alwaysDownloadAllBG", default: true)
     static let bgUpdateDelay = UserDefaultsValue<Int>(key: "bgUpdateDelay", default: 10)
     static let downloadDays = UserDefaultsValue<Int>(key: "downloadDays", default: 1)
+    static let showDetails = UserDefaultsValue<Bool>(key: "showDetails", default: true)
     
     
     // Watch Calendar Settings

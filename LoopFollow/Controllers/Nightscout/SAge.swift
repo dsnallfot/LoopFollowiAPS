@@ -1,12 +1,5 @@
-//
-//  SAGE.swift
-//  LoopFollow
-//
-//  Created by Jonas Björkert on 2023-10-05.
-//  Copyright © 2023 Jon Fawcett. All rights reserved.
-//
-
 import Foundation
+
 extension MainViewController {
     // NS Sage Web Call
     func webLoadNSSage() {
@@ -40,45 +33,70 @@ extension MainViewController {
             return
         }
         currentSage = data[0]
-        var lastSageString = data[0].created_at
+        let lastSageString = data[0].created_at
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withFullDate,
                                    .withTime,
                                    .withDashSeparatorInDate,
                                    .withColonSeparatorInTime]
-        UserDefaultsRepository.alertSageInsertTime.value = formatter.date(from: (lastSageString))?.timeIntervalSince1970 as! TimeInterval
-        
-        if UserDefaultsRepository.alertAutoSnoozeCGMStart.value && (dateTimeUtils.getNowTimeIntervalUTC() - UserDefaultsRepository.alertSageInsertTime.value < 7200){
-            let snoozeTime = Date(timeIntervalSince1970: UserDefaultsRepository.alertSageInsertTime.value + 7200)
-            UserDefaultsRepository.alertSnoozeAllTime.value = snoozeTime
-            UserDefaultsRepository.alertSnoozeAllIsSnoozed.value = true
-            guard let alarms = self.tabBarController!.viewControllers?[1] as? AlarmViewController else { return }
-            alarms.reloadIsSnoozed(key: "alertSnoozeAllIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertSnoozeAllTime", setNil: false, value: snoozeTime)
-        }
-        
-        if let sageTime = formatter.date(from: (lastSageString as! String))?.timeIntervalSince1970 {
+        if let sageTime = formatter.date(from: lastSageString)?.timeIntervalSince1970 {
+            UserDefaultsRepository.alertSageInsertTime.value = sageTime
+            
+            if UserDefaultsRepository.alertAutoSnoozeCGMStart.value && (dateTimeUtils.getNowTimeIntervalUTC() - UserDefaultsRepository.alertSageInsertTime.value < 7200) {
+                let snoozeTime = Date(timeIntervalSince1970: UserDefaultsRepository.alertSageInsertTime.value + 7200)
+                UserDefaultsRepository.alertSnoozeAllTime.value = snoozeTime
+                UserDefaultsRepository.alertSnoozeAllIsSnoozed.value = true
+                guard let alarms = self.tabBarController!.viewControllers?[1] as? AlarmViewController else { return }
+                alarms.reloadIsSnoozed(key: "alertSnoozeAllIsSnoozed", value: true)
+                alarms.reloadSnoozeTime(key: "alertSnoozeAllTime", setNil: false, value: snoozeTime)
+            }
+            
             let now = dateTimeUtils.getNowTimeIntervalUTC()
             let secondsAgo = now - sageTime
             let days = 24 * 60 * 60
             
-            let formatter = DateComponentsFormatter()
-            formatter.unitsStyle = .positional // Use the appropriate positioning for the current locale
-            formatter.allowedUnits = [ .day, .hour] // Units to display in the formatted string
-            formatter.zeroFormattingBehavior = [ .pad ] // Pad with zeroes where appropriate for the locale
+            let oldFormatter = DateComponentsFormatter()
+            oldFormatter.unitsStyle = .positional // Use the appropriate positioning for the current locale
+            oldFormatter.allowedUnits = [ .day, .hour] // Units to display in the formatted string
+            oldFormatter.zeroFormattingBehavior = [ .pad ] // Pad with zeroes where appropriate for the locale
 
             // Set maximumUnitCount to 0 to include all available units
-            formatter.maximumUnitCount = 0
+            oldFormatter.maximumUnitCount = 0
             
-            if let formattedDuration = formatter.string(from: secondsAgo) {
-            // Manually add spaces between the number and units
-            let spacedDuration = formattedDuration
-            .replacingOccurrences(of: "d", with: " d")
-            .replacingOccurrences(of: "h", with: " h")
+            if let formattedDuration = oldFormatter.string(from: secondsAgo) {
+               // Manually add spaces between the number and units
+                let spacedDuration = formattedDuration
+                    .replacingOccurrences(of: "d", with: " d")
+                    .replacingOccurrences(of: "h", with: " h")
 
-            tableData[6].value = spacedDuration
+                //tableData[6].value = spacedDuration
             }
+            
+            // Add 10 days to sageTime
+            let tenDaysLater = sageTime + 10 * 24 * 60 * 60
+            
+            // Calculate the remaining time
+            let timeRemaining = tenDaysLater - now
+            
+            // Extract the components
+            let daysRemaining = Int(timeRemaining / (24 * 60 * 60))
+            let hoursRemaining = Int((timeRemaining.truncatingRemainder(dividingBy: 24 * 60 * 60)) / (60 * 60))
+            let minutesRemaining = Int((timeRemaining.truncatingRemainder(dividingBy: 60 * 60)) / 60)
+            
+            // Construct the string manually
+            var spacedRemainingDuration = ""
+            if daysRemaining > 0 {
+                spacedRemainingDuration += "\(daysRemaining)d "
+            }
+            if hoursRemaining > 0 || daysRemaining > 0 {
+                spacedRemainingDuration += "\(hoursRemaining)h "
+            }
+            if daysRemaining == 0 {
+                spacedRemainingDuration += "\(minutesRemaining)m"
+            }
+            // Update tableData[60].value with the remaining duration
+            tableData[6].value = spacedRemainingDuration
         }
         infoTable.reloadData()
     }

@@ -141,6 +141,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var latestLoopTime: Double = 0
     var latestCOB = ""
     var latestBasal = ""
+    var basalNow = ""
     var latestPumpVolume: Double = 50.0
     var latestIOB = ""
     var lastOverrideStartTime: TimeInterval = 0
@@ -177,8 +178,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("Override")
         UserDefaultsRepository.infoNames.value.append("Looptelefon")
         UserDefaultsRepository.infoNames.value.append("Reservoar")
-        UserDefaultsRepository.infoNames.value.append("Sensorbyte")
-        UserDefaultsRepository.infoNames.value.append("Poddbyte")
+        UserDefaultsRepository.infoNames.value.append("Sensorbyte om")
+        UserDefaultsRepository.infoNames.value.append("Poddbyte om")
         UserDefaultsRepository.infoNames.value.append("Behov Insulin")
         UserDefaultsRepository.infoNames.value.append("Min-Max")
         UserDefaultsRepository.infoNames.value.append("Kh idag")
@@ -484,7 +485,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     func showHideNSDetails() {
         var isHidden = false
         var isEnabled = true
-        if UserDefaultsRepository.url.value == "" || !UserDefaultsRepository.loopUser.value {
+        if UserDefaultsRepository.url.value == "" {
             isHidden = true
             isEnabled = false
         }

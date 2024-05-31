@@ -1,12 +1,5 @@
-//
-//  CAge.swift
-//  LoopFollow
-//
-//  Created by Jonas Björkert on 2023-10-05.
-//  Copyright © 2023 Jon Fawcett. All rights reserved.
-//
-
 import Foundation
+
 extension MainViewController {
     // NS Cage Web Call
     func webLoadNSCage() {
@@ -44,28 +37,50 @@ extension MainViewController {
                                    .withTime,
                                    .withDashSeparatorInDate,
                                    .withColonSeparatorInTime]
-        UserDefaultsRepository.alertCageInsertTime.value = formatter.date(from: (lastCageString))?.timeIntervalSince1970 as! TimeInterval
-        if let cageTime = formatter.date(from: (lastCageString))?.timeIntervalSince1970 {
+        if let cageTime = formatter.date(from: lastCageString)?.timeIntervalSince1970 {
+            UserDefaultsRepository.alertCageInsertTime.value = cageTime
+            
             let now = dateTimeUtils.getNowTimeIntervalUTC()
             let secondsAgo = now - cageTime
-            //let days = 24 * 60 * 60
             
-            let formatter = DateComponentsFormatter()
-            formatter.unitsStyle = .positional // Use the appropriate positioning for the current locale
-            formatter.allowedUnits = [ .day, .hour ] // Units to display in the formatted string
-            formatter.zeroFormattingBehavior = [ .pad ] // Pad with zeroes where appropriate for the locale
-
-            // Set maximumUnitCount to 0 to include all available units
-            formatter.maximumUnitCount = 0
+            let oldFormatter = DateComponentsFormatter()
+            oldFormatter.unitsStyle = .positional
+            oldFormatter.allowedUnits = [.day, .hour]
+            oldFormatter.zeroFormattingBehavior = [.pad]
+            oldFormatter.maximumUnitCount = 0
             
-            if let formattedDuration = formatter.string(from: secondsAgo) {
-        // Manually add spaces between the number and units
-            let spacedDuration = formattedDuration
-            .replacingOccurrences(of: "d", with: " d")
-            .replacingOccurrences(of: "h", with: " h")
+            if let formattedDuration = oldFormatter.string(from: secondsAgo) {
+                let spacedDuration = formattedDuration
+                    .replacingOccurrences(of: "d", with: " d")
+                    .replacingOccurrences(of: "h", with: " h")
 
-            tableData[7].value = spacedDuration
+                //tableData[7].value = spacedDuration
             }
+            
+            // Add 3 days to cageTime
+            let threeDaysLater = cageTime + 3 * 24 * 60 * 60
+            
+            // Calculate the remaining time
+            let timeRemaining = threeDaysLater - now
+            
+            // Extract the components
+            let daysRemaining = Int(timeRemaining / (24 * 60 * 60))
+            let hoursRemaining = Int((timeRemaining.truncatingRemainder(dividingBy: 24 * 60 * 60)) / (60 * 60))
+            let minutesRemaining = Int((timeRemaining.truncatingRemainder(dividingBy: 60 * 60)) / 60)
+            
+            // Construct the string manually
+            var spacedRemainingDuration = ""
+            if daysRemaining > 0 {
+                spacedRemainingDuration += "\(daysRemaining)d "
+            }
+            if hoursRemaining > 0 || daysRemaining > 0 {
+                spacedRemainingDuration += "\(hoursRemaining)h "
+            }
+            if daysRemaining == 0 {
+                spacedRemainingDuration += "\(minutesRemaining)m"
+            }
+            // Update tableData[70].value with the remaining duration
+            tableData[7].value = spacedRemainingDuration
         }
         infoTable.reloadData()
     }
