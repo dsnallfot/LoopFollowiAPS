@@ -369,9 +369,9 @@ extension MainViewController {
                     let recentEnd: TimeInterval = recentOverride?.endDate ?? 0
                     let now = dateTimeUtils.getNowTimeIntervalUTC()
                     if recentEnd >= now {
-                        tableData[3].value = String(overrideName ?? "Normal profile")
+                        tableData[3].value = String(overrideName ?? "None")
                     } else {
-                        tableData[3].value = "Normal profile"
+                        tableData[3].value = "None"
                     }
                     
                     // Include all values from all predBG types to be able to show min-max values

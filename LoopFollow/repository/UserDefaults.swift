@@ -23,7 +23,7 @@ class UserDefaultsRepository {
         "IOB", //0
         "COB", //1
         "Basal", //2
-        "Override", //3
+        "Temp", //3
         "Battery", //4
         "Reservoir", //5
         "SAGE", //6

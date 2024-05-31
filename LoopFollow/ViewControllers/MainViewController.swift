@@ -175,7 +175,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("IOB")
         UserDefaultsRepository.infoNames.value.append("COB")
         UserDefaultsRepository.infoNames.value.append("Basal")
-        UserDefaultsRepository.infoNames.value.append("Override")
+        UserDefaultsRepository.infoNames.value.append("Temp")
         UserDefaultsRepository.infoNames.value.append("Battery")
         UserDefaultsRepository.infoNames.value.append("Pump")
         UserDefaultsRepository.infoNames.value.append("SAGE")
