@@ -473,7 +473,7 @@ class UserDefaultsRepository {
     static let caregiverName = UserDefaultsValue<String>(key: "caregiverName", default: "")
     static let remoteSecretCode = UserDefaultsValue<String>(key: "remoteSecretCode", default: "")
     
-    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "❌ Cancel, 🔴 SMB off, ⚠️ 15m SMB, 🍭 Post low, 🏃‍♂️ Exercise, 🚧 85%, 🍽️ Mealtime, 🤒 120%, 🍕 165%, 🤢 Ketones")
+    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "❌ Cancel, 🔴 SMB off, ⚠️ Limited SMB, 🍭 Post low, 🏃‍♂️ Exercise, 🚧 Lower need, 🍽️ Mealtime, 🤒 Sick, 🍕 Pizza, 🤢 Ketones")
     static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "❌ Cancel, 🏃‍♂️ Exercise, 🍭 Post low, 🍽️ Mealtime")
     static let customActionsString = UserDefaultsValue<String>(key: "customActionsString", default: "🍬 1.8g low, 🧃 3.0g low, 🍬🍬 3.6g low, 🧃 4.0g low, 🥣 15g breakfast")
     
