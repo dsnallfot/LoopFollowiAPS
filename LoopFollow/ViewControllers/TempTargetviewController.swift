@@ -138,7 +138,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
                     AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
-                    let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                     self.present(alertController, animated: true, completion: nil)
                 }
