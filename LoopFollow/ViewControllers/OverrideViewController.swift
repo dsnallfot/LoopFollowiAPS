@@ -76,7 +76,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
         //let combinedString = "Remote Override\n\(selectedOverride)\nEntered by: \(name)\nSecret code: \(secret)"
-        let combinedString = "\(selectedOverride)"
+        let combinedString = "\(selectedOverride) (override)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
