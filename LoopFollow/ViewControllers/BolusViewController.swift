@@ -88,7 +88,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         guard let bolusValue = Double(bolusText) else {
             print("Error: Bolus amount conversion failed")
             // Play failure sound
-            AudioServicesPlaySystemSound(SystemSoundID(1053))
+            //AudioServicesPlaySystemSound(SystemSoundID(1053))
             // Display an alert
             let alertController = UIAlertController(title: "Error", message: "Bolus entered in incorrect format", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "Fix", style: .default, handler: nil))
@@ -100,7 +100,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         //Let code remain for now - to be cleaned
         if bolusValue > (maxBolus + 0.05) {
             // Play failure sound
-            AudioServicesPlaySystemSound(SystemSoundID(1053))
+            //AudioServicesPlaySystemSound(SystemSoundID(1053))
             
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
@@ -227,7 +227,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                 switch result {
                 case .success:
                     // Play success sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    //AudioServicesPlaySystemSound(SystemSoundID(1322))
                     
                     // Show success alert
                     let alertController = UIAlertController(title: "Sent!", message: "The message was sent.", preferredStyle: .alert)
@@ -238,7 +238,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
                     // Play failure sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1053))
+                    //AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
                     let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)

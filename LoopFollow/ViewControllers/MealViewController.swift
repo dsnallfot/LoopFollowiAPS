@@ -326,7 +326,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             guard let bolusDouble = Double(bolusText) else {
                 print("Error: Bolus amount conversion failed")
                 // Play failure sound
-                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                //AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
                 let alertController = UIAlertController(title: "Alert", message: "Bolus entered in the wrong format", preferredStyle: .alert)
                 alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
@@ -339,7 +339,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         //Let code remain for now - to be cleaned
         if bolusValue > (maxBolus + 0.05) {
             // Play failure sound
-            AudioServicesPlaySystemSound(SystemSoundID(1053))
+            //AudioServicesPlaySystemSound(SystemSoundID(1053))
             // Format maxBolus to display only one decimal place
             let formattedMaxBolus = String(format: "%.1f", maxBolus)
             
@@ -366,7 +366,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             guard let carbsDouble = Double(carbText) else {
                 print("Error: Carb input value conversion failed")
                 // Play failure sound
-                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                //AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
                 let alertController = UIAlertController(title: "Alert", message: "Carbs entered in wrong format", preferredStyle: .alert)
                 alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
@@ -391,7 +391,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             guard let fatsDouble = Double(fatText) else {
                 print("Error: Fat input value conversion failed")
                 // Play failure sound
-                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                //AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
                 let alertController = UIAlertController(title: "Alert", message: "Fat entered in the wrong format", preferredStyle: .alert)
                 alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
@@ -416,7 +416,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             guard let proteinsDouble = Double(proteinText) else {
                 print("Error: Protein input value conversion failed")
                 // Play failure sound
-                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                //AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
                 let alertController = UIAlertController(title: "Alert", message: "Protein entered in the wrong format", preferredStyle: .alert)
                 alertController.addAction(UIAlertAction(title: "Change", style: .default, handler: nil))
@@ -429,7 +429,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         
         if carbsValue > maxCarbs || fatsValue > maxCarbs || proteinsValue > maxCarbs {
             // Play failure sound
-            AudioServicesPlaySystemSound(SystemSoundID(1053))
+            //AudioServicesPlaySystemSound(SystemSoundID(1053))
             let alertController = UIAlertController(title: "Max setting exceeded", message: "The maximum allowed amount of \(maxCarbs)g is exceeded for one or more of the entries! Please try again with a smaller amount.", preferredStyle: .alert)
             alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
@@ -603,7 +603,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 switch result {
                 case .success:
                     // Play success sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    //AudioServicesPlaySystemSound(SystemSoundID(1322))
                     
                     // Show success alert
                     let alertController = UIAlertController(title: "Success!", message: "Message delivered.", preferredStyle: .alert)
@@ -614,7 +614,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
                     // Play failure sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1053))
+                    //AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
                     let alertController = UIAlertController(title: "Alert", message: error.localizedDescription, preferredStyle: .alert)

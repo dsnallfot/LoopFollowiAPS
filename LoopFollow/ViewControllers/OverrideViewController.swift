@@ -126,7 +126,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
                 switch result {
                 case .success:
                     // Play success sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    //AudioServicesPlaySystemSound(SystemSoundID(1322))
                     
                     // Show success alert
                     let alertController = UIAlertController(title: "Success!", message: "The message was sent.", preferredStyle: .alert)
@@ -137,7 +137,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
                     self.present(alertController, animated: true, completion: nil)
                 case .failure(let error):
                     // Play failure sound
-                    AudioServicesPlaySystemSound(SystemSoundID(1053))
+                    //AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
                     let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
