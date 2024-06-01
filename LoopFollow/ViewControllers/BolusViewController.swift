@@ -51,7 +51,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         // Set the text field with the formatted value of minGuardBG or "N/A" if formattedMinGuardBG is "0.0"
         minPredBGValue.text = formattedMinGuardBG == "0" ? "N/A" : formattedMinGuardBG
         print("Predicted Min BG: \(formattedMinGuardBG) mg/dl")
-        print("Low threshold: \(formattedLowThreshold) mmol/L")
+        print("Low threshold: \(formattedLowThreshold) mg/dl")
         
         // Check if the value of minPredBG is less than lowThreshold
         if minGuardBG < lowThreshold {
@@ -90,8 +90,8 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
             // Play failure sound
             AudioServicesPlaySystemSound(SystemSoundID(1053))
             // Display an alert
-            let alertController = UIAlertController(title: "Fel", message: "Bolus är inmatad i fel format", preferredStyle: .alert)
-            alertController.addAction(UIAlertAction(title: "Ändra", style: .default, handler: nil))
+            let alertController = UIAlertController(title: "Error", message: "Bolus entered in incorrect format", preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "Fix", style: .default, handler: nil))
             present(alertController, animated: true, completion: nil)
             self.handleAlertDismissal() // Enable send button after handling failure to be able to try again
             return
@@ -114,9 +114,9 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         // Set isAlertShowing to true before showing the alert
                             isAlertShowing = true
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Bekräfta bolus", message: "Vill du ge \(bolusValue) E bolus?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirm bolus", message: "Do you want to give \(bolusValue) U bolus?", preferredStyle: .alert)
         
-        confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+        confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Authenticate with Face ID
             self.authenticateWithBiometrics {
                 // Proceed with the request after successful authentication
@@ -202,7 +202,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         //New formatting for testing (Use "Remote Bolus" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
-        let combinedString = "Remote Bolus\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
+        let combinedString = "Remote Bolus\nInsulin: \(trimmedBolusValue)U\nEntered by: \(name)\nSecret code: \(secret)"
         print("Combined string:", combinedString)
         
         // Retrieve the method value from UserDefaultsRepository
@@ -229,7 +229,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                     AudioServicesPlaySystemSound(SystemSoundID(1322))
                     
                     // Show success alert
-                    let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades", preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Sent!", message: "The message was sent.", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                         // Dismiss the current view controller
                         self.dismiss(animated: true, completion: nil)
@@ -240,7 +240,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                     AudioServicesPlaySystemSound(SystemSoundID(1053))
                     
                     // Show error alert
-                    let alertController = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                     self.present(alertController, animated: true, completion: nil)
                 }
