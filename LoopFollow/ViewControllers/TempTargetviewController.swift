@@ -75,7 +75,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         //New formatting for testing (Use "Remote Temp Target" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
-        let combinedString = "Remote Temp Target\n\(selectedTempTarget)\nInlagt av: \(name)\nHemlig kod: \(secret)"
+        let combinedString = "Remote Temp Target\n\(selectedTempTarget)\nEntered by: \(name)\nSecret code: \(secret)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
@@ -127,7 +127,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
                     AudioServicesPlaySystemSound(SystemSoundID(1322))
                     
                     // Show success alert
-                    let alertController = UIAlertController(title: "Lyckades!", message: "Meddelandet levererades", preferredStyle: .alert)
+                    let alertController = UIAlertController(title: "Success!", message: "The message was sent.", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                         // Dismiss the current view controller
                         self.dismiss(animated: true, completion: nil)
