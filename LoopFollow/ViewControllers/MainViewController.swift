@@ -183,7 +183,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("Needed insulin")
         UserDefaultsRepository.infoNames.value.append("Min/Max")
         UserDefaultsRepository.infoNames.value.append("Carbs today")
-        UserDefaultsRepository.infoNames.value.append("Dynamic adjustment")
+        UserDefaultsRepository.infoNames.value.append("Dynamics")
         UserDefaultsRepository.infoNames.value.append("Profile")
         //Auggie
         UserDefaultsRepository.infoNames.value.append("TDD")
