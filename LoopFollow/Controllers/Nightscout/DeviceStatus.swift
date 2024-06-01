@@ -10,6 +10,10 @@ import Foundation
 import UIKit
 
 var sharedCRValue: String = ""
+var sharedRawCRValue: Double = 0.0
+var sharedSensValue: Double = 0.0
+var sharedProfileCRValue: String = ""
+var sharedProfileISFValue: Double = 0.0
 var sharedLatestIOB: String = ""
 var sharedLatestCOB: String = ""
 var sharedMinGuardBG: Double = 0.0
@@ -274,6 +278,7 @@ extension MainViewController {
                         }
                         
                         if let sensitivityRatio = suggestedData["sensitivityRatio"] as? Double {
+                            sharedSensValue = sensitivityRatio
                             let sens = sensitivityRatio * 100.0
                             tableData[11].value = String(format:"%.0f", sens) + "%"
                         }
@@ -283,13 +288,22 @@ extension MainViewController {
                         }
                         
                         if let ISF = suggestedData["ISF"] as? Double {
-                            tableData[14].value = String(format:"%.0f", ISF)
+                            let sharedProfileISFValue = String(format:"%.0f", round(sharedSensValue * ISF))
+                            let modifiedISF = String(format:"%.0f", ISF)
+                            let ISFString = "\(sharedProfileISFValue) ⇢ \(modifiedISF)"
+                            tableData[14].value = ISFString
                         }
                         
                         if let CR = suggestedData["CR"] as? Double {
-                            tableData[15].value = String(format:"%.1f", CR)
+                            sharedRawCRValue = CR
+                            let sharedProfileCRValue = round((sharedSensValue * sharedRawCRValue) * 10) / 10.0
+                            let modifiedCR = String(format:"%.1f", CR)
+                            let CRString = "\(sharedProfileCRValue) ⇢ \(sharedRawCRValue)"
+                            tableData[15].value = CRString
                             sharedCRValue = String(format:"%.1f", CR)
                         }
+                        
+                        let sharedProfileCRValue = round((sharedSensValue * sharedRawCRValue) * 10) / 10.0
                         
                         if let currentTargetMgdl = suggestedData["current_target"] as? Double {
                             //let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
