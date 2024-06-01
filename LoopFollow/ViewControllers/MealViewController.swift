@@ -56,8 +56,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         self.focusCarbsEntryField()
         
     //Bolus calculation preperations
-        
-        //Carb ratio
+        //Auggie --> this is where we need the CR (unmodified profile version) for the calculator if we don't want dynamic CR factored in
         if let sharedCRDouble = Double(sharedCRValue) {
             CR = Decimal(sharedCRDouble)
         } else {
