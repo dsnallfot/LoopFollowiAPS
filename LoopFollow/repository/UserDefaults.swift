@@ -23,16 +23,16 @@ class UserDefaultsRepository {
         "IOB", //0
         "COB", //1
         "Basal", //2
-        "Temp", //3
+        "Override", //3
         "Battery", //4
         "Reservoir", //5
         "SAGE", //6
         "CAGE", //7
         "Needed Insulin", //8
-        "Min-Max", //9
+        "Min/Max", //9
         "Carbs today", //10
-        "Autosens", //11
-        "Profile", //12
+        "Dynamic adjustment", //11
+        "Override", //12
         "TDD", //13
         "ISF", //14
         "CR", //15

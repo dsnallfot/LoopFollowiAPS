@@ -70,7 +70,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         numberFormatter.maximumFractionDigits = 1
         
         // Format the CR value to have one decimal place
-        let formattedCR = numberFormatter.string(from: NSDecimalNumber(decimal: CR) as NSNumber) ?? ""
+        //let formattedCR = numberFormatter.string(from: NSDecimalNumber(decimal: CR) as NSNumber) ?? ""
+        let formattedCR = CR.description
         
         // Set the text field with the formatted value of CR or "N/A" if formattedCR is "0.0"
         CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
