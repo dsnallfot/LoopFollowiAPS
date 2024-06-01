@@ -26,9 +26,9 @@ class UserDefaultsRepository {
         "Override", //3
         "Battery", //4
         "Reservoir", //5
-        "SAGE", //6
-        "CAGE", //7
-        "Needed Insulin", //8
+        "CGM expiration", //6
+        "Pod expiration", //7
+        "Needed insulin", //8
         "Min/Max", //9
         "Carbs today", //10
         "Dynamics", //11
@@ -37,8 +37,8 @@ class UserDefaultsRepository {
         "ISF", //14
         "CR", //15
         "Target", //16
-        "Needed Carbs", //17
-        "Info Updated"]) //18
+        "Needed carbs", //17
+        "Info updated"]) //18
     static let infoSort = UserDefaultsValue<[Int]>(key: "infoSort", default: [3,11,14,15,2,0,1,8,17,4,9,16,13,10,5,7,6,18,12])
     static let infoVisible = UserDefaultsValue<[Bool]>(key: "infoVisible", default: [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false])
     static let hideInfoTable = UserDefaultsValue<Bool>(key: "hideInfoTable", default: false)
