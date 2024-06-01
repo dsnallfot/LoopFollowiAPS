@@ -49,7 +49,7 @@ extension MainViewController {
         lineBG.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            lineBG.lineWidth = 1.5
+            lineBG.lineWidth = 2.0
         } else {
             lineBG.lineWidth = 0
         }
@@ -73,7 +73,7 @@ extension MainViewController {
         linePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            linePrediction.lineWidth = 1.5
+            linePrediction.lineWidth = 2.0
         } else {
             linePrediction.lineWidth = 0
         }
@@ -97,7 +97,7 @@ extension MainViewController {
         linePredictionZT.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            linePredictionZT.lineWidth = 1.5
+            linePredictionZT.lineWidth = 2.0
         } else {
             linePredictionZT.lineWidth = 0
         }
@@ -121,7 +121,7 @@ extension MainViewController {
         linePredictionIOB.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            linePredictionIOB.lineWidth = 1.5
+            linePredictionIOB.lineWidth = 2.0
         } else {
             linePredictionIOB.lineWidth = 0
         }
@@ -146,7 +146,7 @@ extension MainViewController {
         linePredictionUAM.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            linePredictionUAM.lineWidth = 1.5
+            linePredictionUAM.lineWidth = 2.0
         } else {
             linePredictionUAM.lineWidth = 0
         }
@@ -170,7 +170,7 @@ extension MainViewController {
         linePredictionCOB.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            linePredictionCOB.lineWidth = 1.5
+            linePredictionCOB.lineWidth = 2.0
         } else {
             linePredictionCOB.lineWidth = 0
         }
@@ -1472,7 +1472,7 @@ extension MainViewController {
         lineBG.drawVerticalHighlightIndicatorEnabled = false
         lineBG.highlightColor = NSUIColor.label
         lineBG.drawValuesEnabled = false
-        lineBG.lineWidth = 1.5
+        lineBG.lineWidth = 2.0
         lineBG.axisDependency = YAxis.AxisDependency.right
         
         // Setup Prediction line details
@@ -1486,7 +1486,7 @@ extension MainViewController {
         linePrediction.drawVerticalHighlightIndicatorEnabled = false
         linePrediction.highlightColor = NSUIColor.label
         linePrediction.drawValuesEnabled = false
-        linePrediction.lineWidth = 1.5
+        linePrediction.lineWidth = 2.0
         linePrediction.axisDependency = YAxis.AxisDependency.right
         
         // Setup Prediction line ZT details
@@ -1500,7 +1500,7 @@ extension MainViewController {
         linePredictionZT.drawVerticalHighlightIndicatorEnabled = false
         linePredictionZT.highlightColor = NSUIColor.label
         linePredictionZT.drawValuesEnabled = false
-        linePredictionZT.lineWidth = 1.5
+        linePredictionZT.lineWidth = 2.0
         linePredictionZT.axisDependency = YAxis.AxisDependency.right
 
         // Setup Prediction line IOB details
@@ -1514,7 +1514,7 @@ extension MainViewController {
         linePredictionIOB.drawVerticalHighlightIndicatorEnabled = false
         linePredictionIOB.highlightColor = NSUIColor.label
         linePredictionIOB.drawValuesEnabled = false
-        linePredictionIOB.lineWidth = 1.5
+        linePredictionIOB.lineWidth = 2.0
         linePredictionIOB.axisDependency = YAxis.AxisDependency.right
         
         // Setup Prediction line UAM details
@@ -1528,7 +1528,7 @@ extension MainViewController {
         linePredictionUAM.drawVerticalHighlightIndicatorEnabled = false
         linePredictionUAM.highlightColor = NSUIColor.label
         linePredictionUAM.drawValuesEnabled = false
-        linePredictionUAM.lineWidth = 1.5
+        linePredictionUAM.lineWidth = 2.0
         linePredictionUAM.axisDependency = YAxis.AxisDependency.right
         
         // Setup Prediction line COB details
@@ -1542,7 +1542,7 @@ extension MainViewController {
         linePredictionCOB.drawVerticalHighlightIndicatorEnabled = false
         linePredictionCOB.highlightColor = NSUIColor.label
         linePredictionCOB.drawValuesEnabled = false
-        linePredictionCOB.lineWidth = 1.5
+        linePredictionCOB.lineWidth = 2.0
         linePredictionCOB.axisDependency = YAxis.AxisDependency.right
         
         // create Basal graph data
