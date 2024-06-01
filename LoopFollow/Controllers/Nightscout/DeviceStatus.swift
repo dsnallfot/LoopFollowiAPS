@@ -297,8 +297,10 @@ extension MainViewController {
                         if let CR = suggestedData["CR"] as? Double {
                             sharedRawCRValue = CR
                             let sharedProfileCRValue = round((sharedSensValue * sharedRawCRValue) * 10) / 10.0
-                            let modifiedCR = String(format:"%.1f", CR)
-                            let CRString = "\(sharedProfileCRValue) ⇢ \(sharedRawCRValue)"
+                            let formattedCR = String(format:"%.1f", CR)
+                            //Only applyies if using dynamic CR
+                            //let CRString = "\(sharedProfileCRValue) ⇢ \(sharedRawCRValue)"
+                            let CRString = formattedCR
                             tableData[15].value = CRString
                             sharedCRValue = String(format:"%.1f", CR)
                         }
