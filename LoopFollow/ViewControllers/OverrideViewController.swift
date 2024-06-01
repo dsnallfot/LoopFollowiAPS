@@ -79,9 +79,9 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Bekräfta override", message: "Vill du aktivera \(selectedOverride)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirm override", message: "Do you want to activate \(selectedOverride)?", preferredStyle: .alert)
         
-        confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+        confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Proceed with sending the request
             self.sendOverrideRequest(combinedString: combinedString)
         }))

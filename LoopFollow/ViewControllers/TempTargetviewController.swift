@@ -79,9 +79,9 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
-        let confirmationAlert = UIAlertController(title: "Bekräfta tillfälligt mål", message: "Vill du aktivera \(selectedTempTarget)?", preferredStyle: .alert)
+        let confirmationAlert = UIAlertController(title: "Confirm temporary target", message: "Do you want to activate \(selectedTempTarget)?", preferredStyle: .alert)
         
-        confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
+        confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Proceed with sending the request
             self.sendTTRequest(combinedString: combinedString)
         }))
