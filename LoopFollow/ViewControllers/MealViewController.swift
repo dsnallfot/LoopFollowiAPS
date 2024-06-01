@@ -458,7 +458,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
             
             let dateFormatter = DateFormatter ()
-            dateFormatter.dateFormat = "M/d/yyyy, h: mm a"
+            dateFormatter.dateFormat = "M/d/yyyy, h:mm a"
             
             let currentDateTime = Date()
             let formattedDateTime = dateFormatter.string (from: currentDateTime)
