@@ -659,7 +659,7 @@ extension MainViewController {
             if Float(entries[i].sgv) > topBG - maxBGOffset {
                 topBG = Float(entries[i].sgv) + maxBGOffset
             }
-            let value = ChartDataEntry(x: Double(entries[i].date), y: Double(entries[i].sgv), data: formatPillTextExtraLine(line1: "BG", line2: bgUnits.toDisplayUnits(String(entries[i].sgv)) + " mgdl", time: entries[i].date))
+            let value = ChartDataEntry(x: Double(entries[i].date), y: Double(entries[i].sgv), data: formatPillTextExtraLine(line1: "BG", line2: bgUnits.toDisplayUnits(String(entries[i].sgv)) + " mg/dl", time: entries[i].date))
             if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "BG: " + value.description) }
             mainChart.append(value)
             smallChart.append(value)
@@ -752,7 +752,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionData[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "Eventual", line2: bgUnits.toDisplayUnits(String(predictionData[i].sgv)) + " mgdl", time: predictionData[i].date))
+            let value = ChartDataEntry(x: predictionData[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "Eventual", line2: bgUnits.toDisplayUnits(String(predictionData[i].sgv)) + " mg/dl", time: predictionData[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -956,7 +956,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataZT[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "ZT", line2: bgUnits.toDisplayUnits(String(predictionDataZT[i].sgv)) + " mmol/L", time: predictionDataZT[i].date))
+            let value = ChartDataEntry(x: predictionDataZT[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "ZT", line2: bgUnits.toDisplayUnits(String(predictionDataZT[i].sgv)) + " mg/dl", time: predictionDataZT[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -1304,7 +1304,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if bgCheckData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let value = ChartDataEntry(x: Double(bgCheckData[i].date), y: Double(bgCheckData[i].sgv), data: formatPillText(line1: "Fingerstick\n" + bgUnits.toDisplayUnits(String(bgCheckData[i].sgv)) + " mmol/L", time: bgCheckData[i].date))
+            let value = ChartDataEntry(x: Double(bgCheckData[i].date), y: Double(bgCheckData[i].sgv), data: formatPillText(line1: "Fingerstick\n" + bgUnits.toDisplayUnits(String(bgCheckData[i].sgv)) + " mg/dl", time: bgCheckData[i].date))
             BGChart.data?.dataSets[dataIndex].addEntry(value)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(value)
