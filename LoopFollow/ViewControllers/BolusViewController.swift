@@ -202,7 +202,8 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         //New formatting for testing (Use "Remote Bolus" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
-        let combinedString = "Remote Bolus\nInsulin: \(trimmedBolusValue)U\nEntered by: \(name)\nSecret code: \(secret)"
+        //let combinedString = "Remote Bolus\nInsulin: \(trimmedBolusValue)U\nEntered by: \(name)\nSecret code: \(secret)"
+        let combinedString = "Bolus\n\(trimmedBolusValue)"
         print("Combined string:", combinedString)
         
         // Retrieve the method value from UserDefaultsRepository

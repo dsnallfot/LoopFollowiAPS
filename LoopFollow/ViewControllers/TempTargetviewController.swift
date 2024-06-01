@@ -75,7 +75,8 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         //New formatting for testing (Use "Remote Temp Target" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
-        let combinedString = "Remote Temp Target\n\(selectedTempTarget)\nEntered by: \(name)\nSecret code: \(secret)"
+        //let combinedString = "Remote Temp Target\n\(selectedTempTarget)\nEntered by: \(name)\nSecret code: \(secret)"
+        let combinedString = "\(selectedTempTarget)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request

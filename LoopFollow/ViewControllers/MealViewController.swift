@@ -457,12 +457,22 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Convert bolusValue to string and trim any leading or trailing whitespace
             let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
             
-            if UserDefaultsRepository.hideRemoteBolus.value {
-                // Construct and return the combinedString without bolus
-                return "Remote Meal\nCarbs: \(carbsValue)g\nFat: \(fatsValue)g\nProtein: \(proteinsValue)g\nNote: \(cleanedMealNotes)\nEntered by: \(name)\nSecret code: \(secret)"
-            } else {
+            let dateFormatter = DateFormatter ()
+            dateFormatter.dateFormat = "M/d/yyyy, h: mm a"
+            
+            let currentDateTime = Date()
+            let formattedDateTime = dateFormatter.string (from: currentDateTime)
+            
+            //if UserDefaultsRepository.hideRemoteBolus.value {
+            if Double(trimmedBolusValue) ?? 0.0 > 0.0 {
                 // Construct and return the combinedString with bolus
-                return "Remote Meal\nCarbs: \(carbsValue)g\nFat: \(fatsValue)g\nProtein: \(proteinsValue)g\nNote: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nEntered by: \(name)\nSecret Code: \(secret)"
+                //return "Remote Meal\nCarbs: \(carbsValue)g\nFat: \(fatsValue)g\nProtein: \(proteinsValue)g\nNote: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nEntered by: \(name)\nSecret Code: \(secret)"
+                return "Meal and bolus entry\n\(formattedDateTime)\n\(carbsValue)\n\(fatsValue)\n\(proteinsValue)\n\(trimmedBolusValue)"
+
+            } else {
+                // Construct and return the combinedString without bolus
+                //return "Remote Meal\nCarbs: \(carbsValue)g\nFat: \(fatsValue)g\nProtein: \(proteinsValue)g\nNote: \(cleanedMealNotes)\nEntered by: \(name)\nSecret code: \(secret)"
+                return "Meal entry\n\(formattedDateTime)\n\(carbsValue)\n\(fatsValue)\n\(proteinsValue)"
             }
         }
         

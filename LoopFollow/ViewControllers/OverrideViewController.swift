@@ -75,7 +75,8 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         //New formatting for testing (Use "Remote Override" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
-        let combinedString = "Remote Override\n\(selectedOverride)\nEntered by: \(name)\nSecret code: \(secret)"
+        //let combinedString = "Remote Override\n\(selectedOverride)\nEntered by: \(name)\nSecret code: \(secret)"
+        let combinedString = "\(selectedOverride)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request

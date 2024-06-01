@@ -110,7 +110,8 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
         //New formatting for testing (Use "Remote Custom Action" as trigger word on receiving phone after triggering automation)
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
-        let combinedString = "Remote Custom Action\n\(selectedCustomAction)\nEntered by: \(name)\nSecret code: \(secret)"
+        //let combinedString = "Remote Custom Action\n\(selectedCustomAction)\nEntered by: \(name)\nSecret code: \(secret)"
+        let combinedString = "\(selectedCustomAction)"
         print("Combined string:", combinedString)
         
         // Confirmation alert before sending the request
