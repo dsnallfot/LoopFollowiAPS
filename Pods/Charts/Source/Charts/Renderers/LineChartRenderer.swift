@@ -604,8 +604,7 @@ open class LineChartRenderer: LineRadarRenderer
     }
     //Daniel: Added to filter out strings from chart rendering (but still keep it visible in highlight popup)
     func replaceTimeText(_ text: String) -> String {
-        let timePattern = "\\b(\\d{2}:\\d{2}|Carbs|Bolus|SMB|U)\\b"
-        
+        let timePattern = "\\b(\\d{2}:\\d{2}|\\d{1}:\\d{2}|Carbs|.0|[AP]M|Bolus|SMB|U|g)\\b"
         if let regex = try? NSRegularExpression(pattern: timePattern) {
             let range = NSRange(location: 0, length: text.utf16.count)
             return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
