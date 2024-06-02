@@ -30,6 +30,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var proteinGrams: UITextField!
     @IBOutlet weak var mealNotesLabel: UILabel!
     @IBOutlet weak var mealNotes: UITextField!
+    @IBOutlet weak var mealDateTime: UIDatePicker!
     @IBOutlet weak var bolusLabel: UILabel!
     @IBOutlet weak var bolusUnits: UITextField!
     @IBOutlet weak var CRValue: UITextField!
@@ -535,24 +536,35 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         } else {
             showMealConfirmationAlert(combinedString: combinedString)
         }
-        
-        //func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
-        func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
-            let mealNotesValue = mealNotes.text ?? ""
-            let cleanedMealNotes = mealNotesValue
-            let name = UserDefaultsRepository.caregiverName.value
-            let secret = UserDefaultsRepository.remoteSecretCode.value
-            // Convert bolusValue to string and trim any leading or trailing whitespace
-            let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            if UserDefaultsRepository.hideRemoteBolus.value {
-                // Construct and return the combinedString without bolus
-                return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInlagt av: \(name)\nHemlig kod: \(secret)"
-            } else {
-                // Construct and return the combinedString with bolus
-                return "Remote Måltid\nKolhydrater: \(carbsValue)g\nFett: \(fatsValue)g\nProtein: \(proteinsValue)g\nNotering: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
+
+        // Function to format date to ISO 8601
+            func formatDateToISO8601(_ date: Date) -> String {
+                let dateFormatter = ISO8601DateFormatter()
+                dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                return dateFormatter.string(from: date)
             }
-        }
+
+            // Function to create combined string with selected date
+            func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
+                let mealNotesValue = mealNotes.text ?? ""
+                let cleanedMealNotes = mealNotesValue
+                let name = UserDefaultsRepository.caregiverName.value
+                let secret = UserDefaultsRepository.remoteSecretCode.value
+                // Convert bolusValue to string and trim any leading or trailing whitespace
+                let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // Get selected date from mealDateTime and format to ISO 8601
+                let selectedDate = mealDateTime.date
+                let formattedDate = formatDateToISO8601(selectedDate)
+                
+                if UserDefaultsRepository.hideRemoteBolus.value {
+                    // Construct and return the combinedString without bolus
+                    return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInlagt av: \(name)\nHemlig kod: \(secret)"
+                } else {
+                    // Construct and return the combinedString with bolus
+                    return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
+                }
+            }
         
         //Alert for meal without bolus
         func showMealConfirmationAlert(combinedString: String) {
