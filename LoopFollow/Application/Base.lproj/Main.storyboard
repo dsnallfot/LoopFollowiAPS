@@ -1287,20 +1287,25 @@
                         <outlet property="bolusCalcStack" destination="bwx-Nh-71D" id="5A7-cT-dfR"/>
                         <outlet property="bolusCalculated" destination="I2U-cs-0ob" id="FZA-Oh-e90"/>
                         <outlet property="bolusEntryField" destination="w60-pI-Fq0" id="B1y-LA-ZYi"/>
+                        <outlet property="bolusLabel" destination="HS6-QL-gAo" id="zJ5-5e-oWw"/>
                         <outlet property="bolusRow" destination="1MG-ka-WeC" id="mBu-Yw-aqz"/>
                         <outlet property="bolusStack" destination="95y-dY-wba" id="lvz-aQ-gUw"/>
                         <outlet property="bolusUnits" destination="w60-pI-Fq0" id="fzb-I7-3Q9"/>
                         <outlet property="carbGrams" destination="4O6-tP-VAz" id="h4d-TM-Wbc"/>
+                        <outlet property="carbLabel" destination="0Cv-Q7-W6A" id="iQr-ZZ-9Us"/>
                         <outlet property="carbsEntryField" destination="4O6-tP-VAz" id="e4g-rY-clb"/>
                         <outlet property="fatEntryField" destination="ic7-Xb-WJk" id="1SU-6r-qtW"/>
                         <outlet property="fatGrams" destination="ic7-Xb-WJk" id="pYE-nL-A3C"/>
+                        <outlet property="fatLabel" destination="iun-NK-l8K" id="zwa-zC-vox"/>
                         <outlet property="mealNotes" destination="nEW-4g-bv5" id="0sT-1i-gc6"/>
+                        <outlet property="mealNotesLabel" destination="RDn-3Y-aqP" id="Oy1-1w-S1g"/>
                         <outlet property="minBGStack" destination="CDP-F4-WHL" id="3Ht-w7-tCR"/>
                         <outlet property="minPredBGValue" destination="hgY-IM-3vx" id="rHn-1o-vAP"/>
                         <outlet property="notesEntryField" destination="nEW-4g-bv5" id="OvQ-Op-sbG"/>
                         <outlet property="plusSign" destination="7vo-Ec-C0X" id="7br-va-Hpp"/>
                         <outlet property="proteinEntryField" destination="9FK-17-HsT" id="UJM-DJ-yd8"/>
                         <outlet property="proteinGrams" destination="9FK-17-HsT" id="7fI-xl-d9D"/>
+                        <outlet property="proteinLabel" destination="BvB-qu-5hy" id="5By-nd-Gmw"/>
                         <outlet property="sendMealButton" destination="2mm-PR-C91" id="Hn3-MJ-5OU"/>
                     </connections>
                 </viewController>
@@ -1952,28 +1957,28 @@
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="quaternarySystemFillColor">
-            <color red="0.45490196078431372" green="0.45490196078431372" blue="0.50196078431372548" alpha="0.080000000000000002" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.4549019608" green="0.4549019608" blue="0.50196078430000002" alpha="0.080000000000000002" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="secondaryLabelColor">
-            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="secondarySystemBackgroundColor">
-            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.5568627451" green="0.5568627451" blue="0.57647058819999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGreenColor">
-            <color red="0.20392156862745098" green="0.7803921568627451" blue="0.34901960784313724" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.20392156859999999" green="0.78039215689999997" blue="0.34901960780000002" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
-            <color red="0.68627450980392157" green="0.32156862745098042" blue="0.87058823529411766" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemRedColor">
-            <color red="1" green="0.23137254901960785" blue="0.18823529411764706" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="1" green="0.23137254900000001" blue="0.18823529410000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

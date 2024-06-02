@@ -22,10 +22,15 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var bolusCalcStack: UIStackView!
     @IBOutlet weak var bolusCalculated: UITextField!
     @IBOutlet weak var sendMealButton: UIButton!
+    @IBOutlet weak var carbLabel: UILabel!
     @IBOutlet weak var carbGrams: UITextField!
+    @IBOutlet weak var fatLabel: UILabel!
     @IBOutlet weak var fatGrams: UITextField!
+    @IBOutlet weak var proteinLabel: UILabel!
     @IBOutlet weak var proteinGrams: UITextField!
+    @IBOutlet weak var mealNotesLabel: UILabel!
     @IBOutlet weak var mealNotes: UITextField!
+    @IBOutlet weak var bolusLabel: UILabel!
     @IBOutlet weak var bolusUnits: UITextField!
     @IBOutlet weak var CRValue: UITextField!
     @IBOutlet weak var minPredBGValue: UITextField!
@@ -53,7 +58,14 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         carbsEntryField.delegate = self
         fatEntryField.delegate = self
         proteinEntryField.delegate = self
+        notesEntryField.delegate = self
+        bolusEntryField.delegate = self
+        
+        setupInputAccessoryView()
         self.focusCarbsEntryField()
+        
+        // Add tap gesture recognizers to labels
+        addGestureRecognizers()
         
     //Bolus calculation preperations
         
@@ -118,6 +130,83 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             hideBolusCalcRow()
         }
     }
+    
+    func setupInputAccessoryView() {
+            let toolbar = UIToolbar()
+            toolbar.sizeToFit()
+            
+            let nextButton = UIBarButtonItem(title: "Nästa", style: .plain, target: self, action: #selector(nextTapped))
+            //let doneButton = UIBarButtonItem(title: "Done", style: .plain, target: self, action: #selector(doneTapped))
+            let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            
+            //toolbar.setItems([flexSpace, nextButton, doneButton], animated: false)
+            toolbar.setItems([flexSpace, nextButton], animated: false)
+            
+            carbsEntryField.inputAccessoryView = toolbar
+            fatEntryField.inputAccessoryView = toolbar
+            proteinEntryField.inputAccessoryView = toolbar
+            notesEntryField.inputAccessoryView = toolbar
+            bolusEntryField.inputAccessoryView = toolbar
+        }
+        
+        @objc func nextTapped() {
+            if carbsEntryField.isFirstResponder {
+                fatEntryField.becomeFirstResponder()
+            } else if fatEntryField.isFirstResponder {
+                proteinEntryField.becomeFirstResponder()
+            } else if proteinEntryField.isFirstResponder {
+                notesEntryField.becomeFirstResponder()
+            } else if notesEntryField.isFirstResponder {
+                bolusEntryField.becomeFirstResponder()
+            }
+        }
+        
+        /*@objc func doneTapped() {
+            view.endEditing(true)
+        }*/
+    
+    // Add tap gesture recognizers to labels
+        func addGestureRecognizers() {
+            let carbLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusCarbsEntryField))
+            carbLabel.addGestureRecognizer(carbLabelTap)
+            carbLabel.isUserInteractionEnabled = true
+            
+            let fatLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusFatEntryField))
+            fatLabel.addGestureRecognizer(fatLabelTap)
+            fatLabel.isUserInteractionEnabled = true
+            
+            let proteinLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusProteinEntryField))
+            proteinLabel.addGestureRecognizer(proteinLabelTap)
+            proteinLabel.isUserInteractionEnabled = true
+            
+            let mealNotesLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusNotesEntryField))
+            mealNotesLabel.addGestureRecognizer(mealNotesLabelTap)
+            mealNotesLabel.isUserInteractionEnabled = true
+            
+            let bolusLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusBolusEntryField))
+            bolusLabel.addGestureRecognizer(bolusLabelTap)
+            bolusLabel.isUserInteractionEnabled = true
+        }
+        
+        @objc func focusCarbsEntryField() {
+            self.carbsEntryField.becomeFirstResponder()
+        }
+        
+        @objc func focusFatEntryField() {
+            self.fatEntryField.becomeFirstResponder()
+        }
+        
+        @objc func focusProteinEntryField() {
+            self.proteinEntryField.becomeFirstResponder()
+        }
+        
+        @objc func focusNotesEntryField() {
+            self.notesEntryField.becomeFirstResponder()
+        }
+        
+        @objc func focusBolusEntryField() {
+            self.bolusEntryField.becomeFirstResponder()
+        }
     
     // Function to calculate the suggested bolus value based on CR and check for maxCarbs
     func calculateBolus() {
@@ -207,9 +296,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         return formattedString
     }
     
-    func focusCarbsEntryField() {
-        self.carbsEntryField.becomeFirstResponder()
-    }
+    //func focusCarbsEntryField() {
+    //    self.carbsEntryField.becomeFirstResponder()
+    //}
     
     func sendMealorMealandBolus() {
         let attributes: [NSAttributedString.Key: Any] = [
