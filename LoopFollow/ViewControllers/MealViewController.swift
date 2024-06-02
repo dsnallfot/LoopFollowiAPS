@@ -63,6 +63,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         bolusEntryField.delegate = self
         
         setupInputAccessoryView()
+        setupDatePickerLimits()
         self.focusCarbsEntryField()
         
         // Add tap gesture recognizers to labels
@@ -132,16 +133,24 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
     }
     
+    func setupDatePickerLimits() {
+            let now = Date()
+            let oneDayInterval: TimeInterval = 23 * 60 * 60 + 59 * 60
+            
+            mealDateTime.minimumDate = now.addingTimeInterval(-oneDayInterval)
+            mealDateTime.maximumDate = now.addingTimeInterval(oneDayInterval)
+        }
+    
     func setupInputAccessoryView() {
             let toolbar = UIToolbar()
             toolbar.sizeToFit()
             
             let nextButton = UIBarButtonItem(title: "Nästa", style: .plain, target: self, action: #selector(nextTapped))
-            //let doneButton = UIBarButtonItem(title: "Done", style: .plain, target: self, action: #selector(doneTapped))
+            let doneButton = UIBarButtonItem(title: "Klar", style: .plain, target: self, action: #selector(doneTapped))
             let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
             
             //toolbar.setItems([flexSpace, nextButton, doneButton], animated: false)
-            toolbar.setItems([flexSpace, nextButton], animated: false)
+            toolbar.setItems([nextButton, flexSpace, doneButton], animated: false)
             
             carbsEntryField.inputAccessoryView = toolbar
             fatEntryField.inputAccessoryView = toolbar
@@ -162,9 +171,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             }
         }
         
-        /*@objc func doneTapped() {
+        @objc func doneTapped() {
             view.endEditing(true)
-        }*/
+        }
     
     // Add tap gesture recognizers to labels
         func addGestureRecognizers() {
@@ -538,33 +547,33 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
 
         // Function to format date to ISO 8601
-            func formatDateToISO8601(_ date: Date) -> String {
-                let dateFormatter = ISO8601DateFormatter()
-                dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                return dateFormatter.string(from: date)
-            }
+        func formatDateToISO8601(_ date: Date) -> String {
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            return dateFormatter.string(from: date)
+        }
 
-            // Function to create combined string with selected date
-            func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
-                let mealNotesValue = mealNotes.text ?? ""
-                let cleanedMealNotes = mealNotesValue
-                let name = UserDefaultsRepository.caregiverName.value
-                let secret = UserDefaultsRepository.remoteSecretCode.value
-                // Convert bolusValue to string and trim any leading or trailing whitespace
-                let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
-                
-                // Get selected date from mealDateTime and format to ISO 8601
-                let selectedDate = mealDateTime.date
-                let formattedDate = formatDateToISO8601(selectedDate)
-                
-                if UserDefaultsRepository.hideRemoteBolus.value {
-                    // Construct and return the combinedString without bolus
-                    return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInlagt av: \(name)\nHemlig kod: \(secret)"
-                } else {
-                    // Construct and return the combinedString with bolus
-                    return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
-                }
+        // Function to create combined string with selected date
+        func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
+            let mealNotesValue = mealNotes.text ?? ""
+            let cleanedMealNotes = mealNotesValue
+            let name = UserDefaultsRepository.caregiverName.value
+            let secret = UserDefaultsRepository.remoteSecretCode.value
+            // Convert bolusValue to string and trim any leading or trailing whitespace
+            let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Get selected date from mealDateTime and format to ISO 8601
+            let selectedDate = mealDateTime.date
+            let formattedDate = formatDateToISO8601(selectedDate)
+            
+            if UserDefaultsRepository.hideRemoteBolus.value {
+                // Construct and return the combinedString without bolus
+                return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInlagt av: \(name)\nHemlig kod: \(secret)"
+            } else {
+                // Construct and return the combinedString with bolus
+                return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nHemlig kod: \(secret)"
             }
+        }
         
         //Alert for meal without bolus
         func showMealConfirmationAlert(combinedString: String) {

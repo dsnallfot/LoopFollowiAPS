@@ -155,7 +155,7 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("RemoteMealBolus"){ row in
             row.title = ""
-            row.value = "Remote Meal • Remote Meal\\nCarbs: 25.5g\\nFat: 20g\\nProtein: 15g\\nNotes: Testmeal)\\nInsulin: 1.55U\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
+            row.value = "Remote Meal • Remote Meal\\nCarbs: 25.5g\\nFat: 20g\\nProtein: 15g\\nNotes: Testmeal)\\nDatum: 2024-06-02T20:03:44.849Z\\nInsulin: 1.55U\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }
@@ -163,7 +163,7 @@ class RemoteSettingsViewController: FormViewController {
         
         <<< TextRow("RemoteMeal"){ row in
             row.title = ""
-            row.value = "Remote Meal • Remote Meal\\nCarbs: 25.5g\\nFat: 20g\\nProtein: 15g\\nNotes: Testmeal)\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
+            row.value = "Remote Meal • Remote Meal\\nCarbs: 25.5g\\nFat: 20g\\nProtein: 15g\\nNotes: Testmeal)\\nDatum: 2024-06-02T20:03:44.849Z\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
             row.cellSetup { cell, row in
                 cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
             }

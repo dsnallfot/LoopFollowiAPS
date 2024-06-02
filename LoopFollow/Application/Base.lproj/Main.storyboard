@@ -1060,7 +1060,7 @@
                                                 <stackView opaque="NO" contentMode="scaleToFill" distribution="equalCentering" baselineRelativeArrangement="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6E1-G2-TEA">
                                                     <rect key="frame" x="12" y="4" width="319" height="32.333333333333336"/>
                                                     <subviews>
-                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="⌚️  Tid" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="VOr-rb-iTM">
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="⌚️Tid" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="VOr-rb-iTM">
                                                             <rect key="frame" x="0.0" y="0.0" width="120" height="32.333333333333336"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="120" id="Ab4-qj-KaZ"/>
