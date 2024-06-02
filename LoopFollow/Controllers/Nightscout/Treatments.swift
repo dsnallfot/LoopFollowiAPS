@@ -49,7 +49,7 @@ extension MainViewController {
         var suspendPump: [[String:AnyObject]] = []
         var resumePump: [[String:AnyObject]] = []
         var pumpSiteChange: [cageData] = []
-        var cgmSensorChange: [sageData] = []
+        var cgmSensorStart: [sageData] = []
         
         for entry in entries {
                     guard let eventType = entry["eventType"] as? String else {
@@ -87,7 +87,7 @@ extension MainViewController {
                         case "Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart":
                             if let createdAt = entry["created_at"] as? String {
                                 let newEntry = sageData(created_at: createdAt)
-                                cgmSensorChange.append(newEntry)
+                                cgmSensorStart.append(newEntry)
                             }
                         default:
                             print("No Match: \(String(describing: entry))")
@@ -152,11 +152,11 @@ extension MainViewController {
                 clearOldResume()
             }
         }
-        processSage(entries: cgmSensorChange)
-        if cgmSensorChange.count > 0 {
-            processSensorChange(entries: cgmSensorChange)
+        processSage(entries: cgmSensorStart)
+        if cgmSensorStart.count > 0 {
+            processSensorStart(entries: cgmSensorStart)
         } else {
-            if sensorChangeGraphData.count > 0 {
+            if sensorStartGraphData.count > 0 {
                 clearOldSensor()
             }
         }

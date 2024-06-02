@@ -64,7 +64,7 @@ class RemoteViewController: UIViewController {
     }
     
     @IBAction func calendarButtonTapped(_ sender: Any) {
-        let urlString = "shortcuts://run-shortcut?name=Healthlog"
+        let urlString = "shortcuts://run-shortcut?name=Hälsologgning"
         if let url = URL(string: urlString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
