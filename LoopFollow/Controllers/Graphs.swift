@@ -383,10 +383,10 @@ extension MainViewController {
         let chartEntryNote = [ChartDataEntry]()
         let lineNote = LineChartDataSet(entries:chartEntryNote, label: "")
         lineNote.circleRadius = CGFloat(globalVariables.dotOther)
-        lineNote.circleColors = [NSUIColor.white.withAlphaComponent(0.75)]
+        lineNote.circleColors = [NSUIColor.systemGray2.withAlphaComponent(0.75)]
         lineNote.drawCircleHoleEnabled = false
         lineNote.setDrawHighlightIndicators(false)
-        lineNote.setColor(NSUIColor.white, alpha: 1.0)
+        lineNote.setColor(NSUIColor.systemGray2, alpha: 1.0)
         lineNote.drawCirclesEnabled = true
         lineNote.lineWidth = 0
         lineNote.highlightEnabled = true
@@ -1719,10 +1719,10 @@ extension MainViewController {
         var chartEntryNote = [ChartDataEntry]()
         let lineNote = LineChartDataSet(entries:chartEntryNote, label: "")
         lineNote.circleRadius = 2
-        lineNote.circleColors = [NSUIColor.systemGray.withAlphaComponent(0.75)]
+        lineNote.circleColors = [NSUIColor.systemGray2.withAlphaComponent(0.75)]
         lineNote.drawCircleHoleEnabled = false
         lineNote.setDrawHighlightIndicators(false)
-        lineNote.setColor(NSUIColor.systemGray3, alpha: 1.0)
+        lineNote.setColor(NSUIColor.systemGray2, alpha: 1.0)
         lineNote.drawCirclesEnabled = true
         lineNote.lineWidth = 0
         lineNote.highlightEnabled = false
