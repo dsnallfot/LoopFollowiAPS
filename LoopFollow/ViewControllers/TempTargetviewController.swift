@@ -39,6 +39,21 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     
     // MARK: - UIPickerViewDataSource
     
+    func promptForCustomInputs() {
+        let tempTargetdurationMinutes = UIAlertController(title: "Enter duration in minutes", message: nil, preferredStyle: .alert)
+        tempTargetdurationMinutes.addTextField()
+
+        let submitAction = UIAlertAction(title: "Submit", style: .default) { [unowned tempTargetdurationMinutes] _ in
+            let answer = tempTargetdurationMinutes.textFields![0]
+            // do something interesting with "answer" here
+            print("Auggie: input minutes was = \(answer)")
+        }
+
+        tempTargetdurationMinutes.addAction(submitAction)
+
+        present(tempTargetdurationMinutes, animated: true)
+    }
+    
     func numberOfComponents(in pickerView: UIPickerView) -> Int {
         return 1
     }
@@ -84,6 +99,17 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         
         confirmationAlert.addAction(UIAlertAction(title: "Yes", style: .default, handler: { (action: UIAlertAction!) in
             // Proceed with sending the request
+
+            //Auggie - logic to handle custom temp target with a pop up for time and target entry
+            let selectedTempTargetText = selectedTempTarget.description
+            let customTempKeyword = "🪄 Custom"
+            if (selectedTempTargetText == customTempKeyword) {
+                print("Auggie: do some cool logic for custom temp in here")
+                //self.promptForCustomInputs()
+            }
+            else {
+                print("Auggie: Custom temp target not selected")
+            }
             self.sendTTRequest(combinedString: combinedString)
         }))
         
