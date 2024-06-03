@@ -105,11 +105,15 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
         print("CR: \(formattedCR) g/E")
         
-        /*
-        print("Latest IOB: \(sharedLatestIOB) E") // Just print for now. To use as info in bolusrecommendation later on
-        print("Latest COB: \(sharedLatestCOB) g") // Just print for now. To use as info in bolusrecommendation later on
-        print("Delta: \(Double(sharedDeltaBG) * 0.0555) mmol/L") // Just print for now. To use as info in bolusrecommendation later on
-         */
+        
+        print("Latest Autosens: \(sharedLatestSens)") // Just print for now. To use as info in bolusrecommendation later on
+        print("Latest ISF: \(sharedLatestISF)") // Just print for now. To use as info in bolusrecommendation later on
+        print("Latest IOB: \(sharedLatestIOB)") // Just print for now. To use as info in bolusrecommendation later on
+        print("Latest COB: \(sharedLatestCOB)") // Just print for now. To use as info in bolusrecommendation later on
+        print("Latest InsulinReq: \(sharedLatestInsulinReq)") // Just print for now. To use as info in bolusrecommendation later on
+        print("Latest CarbReq: \(sharedLatestCarbReq)") // Just print for now. To use as info in bolusrecommendation later on
+        //print("Delta: \(Double(sharedDeltaBG) * 0.0555) mmol/L") // Just print for now. To use as info in bolusrecommendation later on
+        
         
         //MinGuardBG & Low Threshold
         let minGuardBG = Decimal(sharedMinGuardBG)
@@ -198,8 +202,17 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 stackView.bottomAnchor.constraint(equalTo: popupView.bottomAnchor, constant: -20)
             ])
             
-            // Add mock-up rows to the stack view
-            let metrics = ["Metric first", "Metric second", "Metric third", "Metric fourth", "Metric fifth"]
+            // Daniel: Add metrics to the popup
+            let metrics = ["Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater"]
+            let values = [
+                sharedLatestSens,
+                sharedLatestISF,
+                sharedLatestIOB,
+                sharedLatestCOB,
+                sharedLatestInsulinReq,
+                sharedLatestCarbReq
+            ]
+
             for (index, metric) in metrics.enumerated() {
                 let rowStackView = UIStackView()
                 rowStackView.axis = .horizontal
@@ -216,7 +229,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 spacer.widthAnchor.constraint(equalToConstant: 20).isActive = true
                 
                 let valueLabel = UILabel()
-                valueLabel.text = String(format: "%.2f", Double(index + 1) * 1.1) // Example decimal value
+                valueLabel.text = values[index]
                 valueLabel.textAlignment = .right
                 
                 rowStackView.addArrangedSubview(label)
@@ -225,6 +238,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 
                 stackView.addArrangedSubview(rowStackView)
             }
+
             
             // Store the popup view
             self.popupView = popupView

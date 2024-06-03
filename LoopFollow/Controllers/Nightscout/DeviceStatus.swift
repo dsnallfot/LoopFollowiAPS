@@ -12,6 +12,10 @@ import UIKit
 var sharedCRValue: String = ""
 var sharedLatestIOB: String = ""
 var sharedLatestCOB: String = ""
+var sharedLatestISF: String = ""
+var sharedLatestSens: String = ""
+var sharedLatestCarbReq: String = ""
+var sharedLatestInsulinReq: String = ""
 var sharedMinGuardBG: Double = 0.0
 //var sharedInsulinReq: Double = 0.0
 var sharedLastSMBUnits: Double = 0.0
@@ -249,7 +253,8 @@ extension MainViewController {
                     if let iobdata = lastLoopRecord["iob"] as? [String:AnyObject] {
                         if let iob = iobdata["iob"] as? Double {
                             tableData[0].value = String(format:"%.2f", iob) + " E"
-                            latestIOB = String(format:"%.2f", iob)
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestIOB = String(format:"%.2f", iob) + " E"
                             sharedLatestIOB = latestIOB
                         }
                     }
@@ -258,7 +263,8 @@ extension MainViewController {
                     if let suggestedData = lastLoopRecord["suggested"] as? [String:AnyObject] {
                         if let COB = suggestedData["COB"] as? Double {
                             tableData[1].value = String(format:"%.0f", COB) + " g"
-                            latestCOB = String(format:"%.0f", COB)
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestCOB = String(format:"%.0f", COB) + " g"
                             sharedLatestCOB = latestCOB
                         }
 
@@ -266,15 +272,24 @@ extension MainViewController {
                         if let insulinReq = suggestedData["insulinReq"] as? Double {
                             tableData[8].value = String(format: "%.2f", insulinReq) + " E"
                             UserDefaultsRepository.deviceRecBolus.value = insulinReq
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestInsulinReq = String(format:"%.2f", insulinReq) + " E"
+                            sharedLatestInsulinReq = latestInsulinReq
                         } else {
                             tableData[8].value = "---"
                             UserDefaultsRepository.deviceRecBolus.value = 0
                             print("Warning: Failed to extract insulinReq from recbolusdata.")
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestInsulinReq = "---"
+                            sharedLatestInsulinReq = latestInsulinReq
                         }
                         
                         if let sensitivityRatio = suggestedData["sensitivityRatio"] as? Double {
                             let sens = sensitivityRatio * 100.0
                             tableData[11].value = String(format:"%.0f", sens) + " %"
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestSens = String(format:"%.0f", sens) + " %"
+                            sharedLatestSens = latestSens
                         }
                         
                         if let TDD = suggestedData["TDD"] as? Double {
@@ -283,6 +298,9 @@ extension MainViewController {
                         
                         if let ISF = suggestedData["ISF"] as? Double {
                             tableData[14].value = String(format:"%.1f", ISF) + " mmol/L/E"
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestISF = String(format:"%.1f", ISF) + " mmol/L/E"
+                            sharedLatestISF = latestISF
                         }
                         
                         if let CR = suggestedData["CR"] as? Double {
@@ -297,9 +315,16 @@ extension MainViewController {
                         
                         if let carbsReq = suggestedData["carbsReq"] as? Double {
                             tableData[17].value = String(format:"%.0f", carbsReq) + " g"
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestCarbReq = String(format:"%.0f", carbsReq) + " g"
+                            sharedLatestCarbReq = latestCarbReq
+                            
                         } else {
                             // If "carbsReq" is not present in suggestedData, set it to 0
                             tableData[17].value = "0 g"
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestCarbReq = "0 g"
+                            sharedLatestCarbReq = latestCarbReq
                         }
                         
                         if let timestampString = suggestedData["timestamp"] as? String {

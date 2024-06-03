@@ -140,6 +140,10 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var latestLoopStatusString = ""
     var latestLoopTime: Double = 0
     var latestCOB = ""
+    var latestInsulinReq = ""
+    var latestCarbReq = ""
+    var latestSens = ""
+    var latestISF = ""
     var latestBasal = ""
     var basalNow = ""
     var latestPumpVolume: Double = 50.0
