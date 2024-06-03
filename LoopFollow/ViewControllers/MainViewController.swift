@@ -144,6 +144,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var latestCarbReq = ""
     var latestSens = ""
     var latestISF = ""
+    var latestMinMax = ""
+    var latestEvBG = ""
     var latestBasal = ""
     var basalNow = ""
     var latestPumpVolume: Double = 50.0

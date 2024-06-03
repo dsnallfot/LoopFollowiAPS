@@ -1160,7 +1160,7 @@
                                                                 <color key="tintColor" systemColor="labelColor"/>
                                                                 <imageReference key="image" image="exclamationmark.triangle" catalog="system" symbolScale="medium" renderingMode="hierarchical">
                                                                     <hierarchicalColors>
-                                                                        <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        <color systemColor="labelColor"/>
                                                                         <color systemColor="systemRedColor"/>
                                                                         <color systemColor="systemRedColor"/>
                                                                     </hierarchicalColors>
@@ -1515,7 +1515,7 @@
                                                         <color key="tintColor" systemColor="labelColor"/>
                                                         <imageReference key="image" image="exclamationmark.triangle" catalog="system" symbolScale="medium" renderingMode="hierarchical">
                                                             <hierarchicalColors>
-                                                                <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                <color systemColor="labelColor"/>
                                                                 <color systemColor="systemRedColor"/>
                                                                 <color systemColor="systemRedColor"/>
                                                             </hierarchicalColors>
@@ -1887,7 +1887,7 @@
                                                         <color key="tintColor" systemColor="labelColor"/>
                                                         <imageReference key="image" image="exclamationmark.triangle" catalog="system" symbolScale="medium" renderingMode="hierarchical">
                                                             <hierarchicalColors>
-                                                                <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                <color systemColor="labelColor"/>
                                                                 <color systemColor="systemRedColor"/>
                                                                 <color systemColor="systemRedColor"/>
                                                             </hierarchicalColors>

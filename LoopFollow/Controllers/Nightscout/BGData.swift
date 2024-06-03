@@ -9,7 +9,9 @@
 import Foundation
 import UIKit
 
-var sharedDeltaBG: Int = 0
+var sharedLatestBG: String = ""
+var sharedLatestDirection: String = ""
+var sharedLatestDelta: String = ""
 
 extension MainViewController {
     // Dex Share Web Call
@@ -233,7 +235,6 @@ extension MainViewController {
             let latestBG = entries[latestEntryIndex].sgv
             let priorBG = entries[latestEntryIndex - 1].sgv
             let deltaBG = latestBG - priorBG
-            sharedDeltaBG = deltaBG
             let lastBGTime = entries[latestEntryIndex].date
             
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - lastBGTime) / 60
@@ -250,16 +251,22 @@ extension MainViewController {
             
             // Set BGText with the latest BG value
             self.BGText.text = bgUnits.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
+            //Daniel: Added for visualization in remote meal info popup
+            sharedLatestBG = bgUnits.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
             snoozerBG = bgUnits.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
             self.setBGTextColor()
             
             // Direction handling
             if let directionBG = entries[latestEntryIndex].direction {
                 self.DirectionText.text = self.bgDirectionGraphic(directionBG)
+                //Daniel: Added for visualization in remote meal info popup
+                sharedLatestDirection = self.bgDirectionGraphic(directionBG)
                 snoozerDirection = self.bgDirectionGraphic(directionBG)
                 self.latestDirectionString = self.bgDirectionGraphic(directionBG)
             } else {
                 self.DirectionText.text = ""
+                //Daniel: Added for visualization in remote meal info popup
+                sharedLatestDirection = ""
                 snoozerDirection = ""
                 self.latestDirectionString = ""
             }
@@ -267,10 +274,14 @@ extension MainViewController {
             // Delta handling
             if deltaBG < 0 {
                 self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                //Daniel: Added for visualization in remote meal info popup
+                sharedLatestDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 self.latestDeltaString = String(deltaBG).replacingOccurrences(of: ",", with: ".")
             } else {
                 self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                //Daniel: Added for visualization in remote meal info popup
+                sharedLatestDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 self.latestDeltaString = "+" + String(deltaBG).replacingOccurrences(of: ",", with: ".")
             }

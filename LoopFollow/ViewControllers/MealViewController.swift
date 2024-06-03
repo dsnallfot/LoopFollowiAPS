@@ -106,13 +106,17 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         print("CR: \(formattedCR) g/E")
         
         
-        print("Latest Autosens: \(sharedLatestSens)") // Just print for now. To use as info in bolusrecommendation later on
-        print("Latest ISF: \(sharedLatestISF)") // Just print for now. To use as info in bolusrecommendation later on
-        print("Latest IOB: \(sharedLatestIOB)") // Just print for now. To use as info in bolusrecommendation later on
-        print("Latest COB: \(sharedLatestCOB)") // Just print for now. To use as info in bolusrecommendation later on
-        print("Latest InsulinReq: \(sharedLatestInsulinReq)") // Just print for now. To use as info in bolusrecommendation later on
-        print("Latest CarbReq: \(sharedLatestCarbReq)") // Just print for now. To use as info in bolusrecommendation later on
+        //print("Latest Autosens: \(sharedLatestSens)") // Just print for now. To use as info in bolusrecommendation later on
+        //print("Latest ISF: \(sharedLatestISF)") // Just print for now. To use as info in bolusrecommendation later on
+        //print("Latest IOB: \(sharedLatestIOB)") // Just print for now. To use as info in bolusrecommendation later on
+        //print("Latest COB: \(sharedLatestCOB)") // Just print for now. To use as info in bolusrecommendation later on
+        //print("Latest InsulinReq: \(sharedLatestInsulinReq)") // Just print for now. To use as info in bolusrecommendation later on
+        //print("Latest CarbReq: \(sharedLatestCarbReq)") // Just print for now. To use as info in bolusrecommendation later on
         //print("Delta: \(Double(sharedDeltaBG) * 0.0555) mmol/L") // Just print for now. To use as info in bolusrecommendation later on
+
+        print("BG: \(sharedLatestBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
+        print("BG: \(sharedLatestDirection)")// Just print for now. To use as info in bolusrecommendation later on
+        print("BG: \(sharedLatestDelta) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
         
         
         //MinGuardBG & Low Threshold
@@ -190,7 +194,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             stackView.axis = .vertical
             stackView.alignment = .fill
             stackView.distribution = .equalSpacing
-            stackView.spacing = 10
+            stackView.spacing = 2
             stackView.translatesAutoresizingMaskIntoConstraints = false
             popupView.addSubview(stackView)
             
@@ -203,14 +207,18 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             ])
             
             // Daniel: Add metrics to the popup
-            let metrics = ["Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater"]
+            let metrics = ["BG", "Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater", "Min-Max BG", "Prognos BG"]
+            let latestBGString = (sharedLatestBG + "  " + sharedLatestDirection + "  (" + sharedLatestDelta + ")")
             let values = [
+                latestBGString,
                 sharedLatestSens,
                 sharedLatestISF,
                 sharedLatestIOB,
                 sharedLatestCOB,
                 sharedLatestInsulinReq,
-                sharedLatestCarbReq
+                sharedLatestCarbReq,
+                sharedLatestMinMax,
+                sharedLatestEvBG
             ]
 
             for (index, metric) in metrics.enumerated() {
@@ -218,11 +226,12 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 rowStackView.axis = .horizontal
                 rowStackView.alignment = .center
                 rowStackView.distribution = .fill
-                rowStackView.spacing = 10
+                rowStackView.spacing = 2
                 
                 let label = UILabel()
                 label.text = metric
                 label.textAlignment = .left
+                label.font = UIFont.systemFont(ofSize: 14) // Set font size to 14
                 
                 let spacer = UIView()
                 spacer.translatesAutoresizingMaskIntoConstraints = false
@@ -231,15 +240,27 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 let valueLabel = UILabel()
                 valueLabel.text = values[index]
                 valueLabel.textAlignment = .right
+                valueLabel.font = UIFont.systemFont(ofSize: 14) // Set font size to 14
                 
                 rowStackView.addArrangedSubview(label)
                 rowStackView.addArrangedSubview(spacer)
                 rowStackView.addArrangedSubview(valueLabel)
                 
                 stackView.addArrangedSubview(rowStackView)
+                
+                // Add a divider line between rows, except after the last row
+                if index < metrics.count - 1 {
+                    let divider = UIView()
+                    divider.backgroundColor = UIColor.darkGray
+                    divider.translatesAutoresizingMaskIntoConstraints = false
+                    stackView.addArrangedSubview(divider)
+                    
+                    NSLayoutConstraint.activate([
+                        divider.heightAnchor.constraint(equalToConstant: 1)
+                    ])
+                }
             }
 
-            
             // Store the popup view
             self.popupView = popupView
             
@@ -248,6 +269,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             view.addGestureRecognizer(tapGesture)
         }
     }
+
+
 
         
         @objc func dismissPopupView() {

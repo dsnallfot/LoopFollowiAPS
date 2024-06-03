@@ -16,6 +16,8 @@ var sharedLatestISF: String = ""
 var sharedLatestSens: String = ""
 var sharedLatestCarbReq: String = ""
 var sharedLatestInsulinReq: String = ""
+var sharedLatestMinMax: String = ""
+var sharedLatestEvBG: String = ""
 var sharedMinGuardBG: Double = 0.0
 //var sharedInsulinReq: Double = 0.0
 var sharedLastSMBUnits: Double = 0.0
@@ -519,6 +521,10 @@ extension MainViewController {
                             
                             let eventualBGStringValue = String(describing: eventualBGValue)
                             let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestEvBG = formattedBGString + " mmol/L"
+                            sharedLatestEvBG = latestEvBG
+                            
                             
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
                                 PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
@@ -543,8 +549,14 @@ extension MainViewController {
                             let formattedPredMax = bgUnits.toDisplayUnits(String(predMax)).replacingOccurrences(of: ",", with: ".")
                             tableData[9].value = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
                             //updatePredictionGraph(color: predictioncolor)
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestMinMax = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
+                            sharedLatestMinMax = latestMinMax
                         } else {
                             tableData[9].value = "N/A"
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestMinMax = "N/A"
+                            sharedLatestMinMax = latestMinMax
                         }
                     }
                     
