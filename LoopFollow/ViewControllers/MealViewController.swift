@@ -38,6 +38,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var minBGStack: UIStackView!
     @IBOutlet weak var bolusStack: UIStackView!
     @IBOutlet weak var plusSign: UIImageView!
+    @IBOutlet weak var infoStack: UIStackView!
     
     var CR: Decimal = 0.0
     var minGuardBG: Decimal = 0.0
@@ -50,6 +51,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     var isAlertShowing = false // Property to track if alerts are currently showing
     var isButtonDisabled = false // Property to track if the button is currently disabled
     var isBolusEntryFieldPopulated = false
+    
+    var popupView: UIView?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -72,6 +75,14 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         
         // Add tap gesture recognizers to labels
         addGestureRecognizers()
+        
+        // Add tap gesture recognizer to minBGStack
+                let minBGStackTap = UITapGestureRecognizer(target: self, action: #selector(minBGStackTapped))
+                minBGStack.addGestureRecognizer(minBGStackTap)
+        
+        // Add tap gesture recognizer to infoStack
+                let infoStackTap = UITapGestureRecognizer(target: self, action: #selector(minBGStackTapped))
+                infoStack.addGestureRecognizer(infoStackTap)
         
     //Bolus calculation preperations
         
@@ -117,9 +128,11 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         if minGuardBG < lowThreshold && minGuardBG != 0 {
             // Show Min BG stack
             minBGStack.isHidden = false
+            infoStack.isHidden = true
         } else {
             // Hide Min BG stack
             minBGStack.isHidden = true
+            infoStack.isHidden = false
         }
         
         // Add tap gesture recognizer to bolusStack
@@ -136,6 +149,97 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             hideBolusCalcRow()
         }
     }
+    
+    @objc func minBGStackTapped() {
+            togglePopupView()
+        }
+        
+        func togglePopupView() {
+            if popupView == nil {
+                showPopupView()
+            } else {
+                dismissPopupView()
+            }
+        }
+        
+    func showPopupView() {
+        if popupView == nil {
+            // Create a new UIView for the popup
+            let popupView = UIView()
+            popupView.backgroundColor = UIColor.secondarySystemBackground.withAlphaComponent(1.0)
+            popupView.layer.cornerRadius = 10
+            popupView.translatesAutoresizingMaskIntoConstraints = false
+            
+            // Add the popup view to the main view
+            view.addSubview(popupView)
+            
+            // Set up constraints for the popup view
+            NSLayoutConstraint.activate([
+                popupView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+                popupView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+                popupView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+                popupView.heightAnchor.constraint(equalToConstant: 250)
+            ])
+            
+            // Add content to the popup view
+            let stackView = UIStackView()
+            stackView.axis = .vertical
+            stackView.alignment = .fill
+            stackView.distribution = .equalSpacing
+            stackView.spacing = 10
+            stackView.translatesAutoresizingMaskIntoConstraints = false
+            popupView.addSubview(stackView)
+            
+            // Add stack view constraints
+            NSLayoutConstraint.activate([
+                stackView.leadingAnchor.constraint(equalTo: popupView.leadingAnchor, constant: 20),
+                stackView.trailingAnchor.constraint(equalTo: popupView.trailingAnchor, constant: -20),
+                stackView.topAnchor.constraint(equalTo: popupView.topAnchor, constant: 20),
+                stackView.bottomAnchor.constraint(equalTo: popupView.bottomAnchor, constant: -20)
+            ])
+            
+            // Add mock-up rows to the stack view
+            let metrics = ["Metric first", "Metric second", "Metric third", "Metric fourth", "Metric fifth"]
+            for (index, metric) in metrics.enumerated() {
+                let rowStackView = UIStackView()
+                rowStackView.axis = .horizontal
+                rowStackView.alignment = .center
+                rowStackView.distribution = .fill
+                rowStackView.spacing = 10
+                
+                let label = UILabel()
+                label.text = metric
+                label.textAlignment = .left
+                
+                let spacer = UIView()
+                spacer.translatesAutoresizingMaskIntoConstraints = false
+                spacer.widthAnchor.constraint(equalToConstant: 20).isActive = true
+                
+                let valueLabel = UILabel()
+                valueLabel.text = String(format: "%.2f", Double(index + 1) * 1.1) // Example decimal value
+                valueLabel.textAlignment = .right
+                
+                rowStackView.addArrangedSubview(label)
+                rowStackView.addArrangedSubview(spacer)
+                rowStackView.addArrangedSubview(valueLabel)
+                
+                stackView.addArrangedSubview(rowStackView)
+            }
+            
+            // Store the popup view
+            self.popupView = popupView
+            
+            // Add tap gesture recognizer to dismiss the popup view
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissPopupView))
+            view.addGestureRecognizer(tapGesture)
+        }
+    }
+
+        
+        @objc func dismissPopupView() {
+            popupView?.removeFromSuperview()
+            popupView = nil
+        }
     
     func setupDatePickerLimits() {
             let now = Date()
