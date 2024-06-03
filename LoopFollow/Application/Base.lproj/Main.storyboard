@@ -832,6 +832,7 @@
                                                     <subviews>
                                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="🥨 Kolhydrater" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="0Cv-Q7-W6A">
                                                             <rect key="frame" x="0.0" y="0.0" width="120" height="40.333333333333336"/>
+
                                                             <constraints>
                                                                 <constraint firstAttribute="width" constant="120" id="7Wn-vZ-gHI"/>
                                                             </constraints>
@@ -843,6 +844,7 @@
                                                             <subviews>
                                                                 <textField toolTip="Amount of carbs" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" highlighted="YES" selected="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="0" textAlignment="right" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="4O6-tP-VAz">
                                                                     <rect key="frame" x="0.0" y="9.3333333333333286" width="174" height="22"/>
+
                                                                     <color key="tintColor" systemColor="labelColor"/>
                                                                     <constraints>
                                                                         <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="25" id="DUz-UG-kI5"/>
@@ -1081,6 +1083,46 @@
                                                 <constraint firstItem="6E1-G2-TEA" firstAttribute="leading" secondItem="qGb-JL-JA0" secondAttribute="leadingMargin" constant="4" id="F8L-yM-1so"/>
                                                 <constraint firstAttribute="trailingMargin" secondItem="6E1-G2-TEA" secondAttribute="trailing" constant="4" id="KKY-iB-vVT"/>
                                                 <constraint firstItem="6E1-G2-TEA" firstAttribute="top" secondItem="qGb-JL-JA0" secondAttribute="top" id="Of2-AW-zGm"/>
+                                            </constraints>
+                                        </view>
+                                        <blurEffect style="regular"/>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="boolean" keyPath="layer.masksToBounds" value="YES"/>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                <integer key="value" value="10"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                    </visualEffectView>
+                                    <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="dlH-5i-A9z" userLabel="Tid">
+                                        <rect key="frame" x="0.0" y="145" width="343" height="40.333333333333343"/>
+                                        <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="qGb-JL-JA0">
+                                            <rect key="frame" x="0.0" y="0.0" width="343" height="40.333333333333343"/>
+                                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                            <subviews>
+                                                <stackView opaque="NO" contentMode="scaleToFill" distribution="equalCentering" baselineRelativeArrangement="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6E1-G2-TEA">
+                                                    <rect key="frame" x="12" y="4" width="319" height="32.333333333333336"/>
+                                                    <subviews>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="⌚️Tid" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="VOr-rb-iTM">
+                                                            <rect key="frame" x="0.0" y="0.0" width="120" height="32.333333333333336"/>
+                                                            <constraints>
+                                                                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="120" id="Ab4-qj-KaZ"/>
+                                                            </constraints>
+                                                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                            <nil key="textColor"/>
+                                                            <nil key="highlightedColor"/>
+                                                        </label>
+                                                        <datePicker contentMode="scaleToFill" ambiguous="YES" contentHorizontalAlignment="trailing" contentVerticalAlignment="center" datePickerMode="dateAndTime" minuteInterval="1" translatesAutoresizingMaskIntoConstraints="NO" id="7FO-85-4bA">
+                                                            <rect key="frame" x="120" y="0.0" width="199" height="32.333333333333336"/>
+                                                        </datePicker>
+                                                    </subviews>
+                                                </stackView>
+                                            </subviews>
+                                            <color key="backgroundColor" systemColor="quaternarySystemFillColor"/>
+                                            <constraints>
+                                                <constraint firstAttribute="bottom" secondItem="6E1-G2-TEA" secondAttribute="bottom" constant="4" id="2ez-fx-OrP"/>
+                                                <constraint firstItem="6E1-G2-TEA" firstAttribute="leading" secondItem="qGb-JL-JA0" secondAttribute="leadingMargin" constant="4" id="F8L-yM-1so"/>
+                                                <constraint firstAttribute="trailingMargin" secondItem="6E1-G2-TEA" secondAttribute="trailing" constant="4" id="KKY-iB-vVT"/>
+                                                <constraint firstItem="6E1-G2-TEA" firstAttribute="top" secondItem="qGb-JL-JA0" secondAttribute="top" constant="4" id="Of2-AW-zGm"/>
                                             </constraints>
                                         </view>
                                         <blurEffect style="regular"/>
