@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 
 var sharedCRValue: String = ""
-var sharedRawCRValue: Double = 0.0
+var sharedRawCRValue: String = ""
 var sharedSensValue: Double = 0.0
 var sharedProfileCRValue: String = ""
 var sharedProfileISFValue: Double = 0.0
@@ -295,17 +295,18 @@ extension MainViewController {
                         }
                         
                         if let CR = suggestedData["CR"] as? Double {
-                            sharedRawCRValue = CR
-                            let sharedProfileCRValue = round((sharedSensValue * sharedRawCRValue) * 10) / 10.0
-                            let formattedCR = String(format:"%.1f", CR)
+                            sharedRawCRValue = CR.description
+                            let sharedProfileCRValue = round((Double(sharedSensValue) * (Double(sharedRawCRValue) ?? 0.0)) * 10) / 10.0
+                            let formattedCR = String(format:"%.1f", sharedProfileCRValue)
+                            let CR = formattedCR
+                            //let CRString = formattedCR
                             //Only applyies if using dynamic CR
-                            //let CRString = "\(sharedProfileCRValue) ⇢ \(sharedRawCRValue)"
-                            let CRString = formattedCR
+                            let CRString = "\(sharedProfileCRValue) ⇢ \(sharedRawCRValue)"
                             tableData[15].value = CRString
-                            sharedCRValue = String(format:"%.1f", CR)
+                            sharedCRValue = String(format:"%.1f", sharedProfileCRValue)
                         }
                         
-                        let sharedProfileCRValue = round((sharedSensValue * sharedRawCRValue) * 10) / 10.0
+                        //let sharedProfileCRValue = round((sharedSensValue * sharedRawCRValue) * 10) / 10.0
                         
                         if let currentTargetMgdl = suggestedData["current_target"] as? Double {
                             //let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
