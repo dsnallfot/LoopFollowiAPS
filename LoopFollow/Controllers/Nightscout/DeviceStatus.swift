@@ -521,10 +521,10 @@ extension MainViewController {
                             
                             let eventualBGStringValue = String(describing: eventualBGValue)
                             let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
+
                             //Daniel: Added for visualization in remote meal info popup
                             latestEvBG = formattedBGString + " mmol/L"
                             sharedLatestEvBG = latestEvBG
-                            
                             
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
                                 PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
