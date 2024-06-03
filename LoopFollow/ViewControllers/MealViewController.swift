@@ -66,6 +66,10 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         setupDatePickerLimits()
         self.focusCarbsEntryField()
         
+        // Disable autocomplete and spell checking
+        notesEntryField.autocorrectionType = .no
+        notesEntryField.spellCheckingType = .no
+        
         // Add tap gesture recognizers to labels
         addGestureRecognizers()
         
@@ -168,6 +172,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 notesEntryField.becomeFirstResponder()
             } else if notesEntryField.isFirstResponder {
                 bolusEntryField.becomeFirstResponder()
+            } else if bolusEntryField.isFirstResponder {
+                carbsEntryField.becomeFirstResponder()
             }
         }
         
