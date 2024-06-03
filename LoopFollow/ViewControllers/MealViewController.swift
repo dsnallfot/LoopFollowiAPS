@@ -22,10 +22,16 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var bolusCalcStack: UIStackView!
     @IBOutlet weak var bolusCalculated: UITextField!
     @IBOutlet weak var sendMealButton: UIButton!
+    @IBOutlet weak var carbLabel: UILabel!
     @IBOutlet weak var carbGrams: UITextField!
+    @IBOutlet weak var fatLabel: UILabel!
     @IBOutlet weak var fatGrams: UITextField!
+    @IBOutlet weak var proteinLabel: UILabel!
     @IBOutlet weak var proteinGrams: UITextField!
+    @IBOutlet weak var mealNotesLabel: UILabel!
     @IBOutlet weak var mealNotes: UITextField!
+    @IBOutlet weak var mealDateTime: UIDatePicker!
+    @IBOutlet weak var bolusLabel: UILabel!
     @IBOutlet weak var bolusUnits: UITextField!
     @IBOutlet weak var CRValue: UITextField!
     @IBOutlet weak var minPredBGValue: UITextField!
@@ -53,10 +59,19 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         carbsEntryField.delegate = self
         fatEntryField.delegate = self
         proteinEntryField.delegate = self
+        notesEntryField.delegate = self
+        bolusEntryField.delegate = self
+        
+        setupInputAccessoryView()
+        setupDatePickerLimits()
         self.focusCarbsEntryField()
         
+        // Add tap gesture recognizers to labels
+        addGestureRecognizers()
+        
     //Bolus calculation preperations
-        //Auggie --> this is where we need the CR (unmodified profile version) for the calculator if we don't want dynamic CR factored in
+        
+        //Carb ratio
         if let sharedCRDouble = Double(sharedCRValue) {
             CR = Decimal(sharedCRDouble)
         } else {
@@ -69,8 +84,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         numberFormatter.maximumFractionDigits = 1
         
         // Format the CR value to have one decimal place
-        //let formattedCR = numberFormatter.string(from: NSDecimalNumber(decimal: CR) as NSNumber) ?? ""
-        let formattedCR = CR.description
+        let formattedCR = numberFormatter.string(from: NSDecimalNumber(decimal: CR) as NSNumber) ?? ""
         
         // Set the text field with the formatted value of CR or "N/A" if formattedCR is "0.0"
         CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
@@ -119,6 +133,91 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
     }
     
+    func setupDatePickerLimits() {
+            let now = Date()
+            let oneDayInterval: TimeInterval = 23 * 60 * 60 + 59 * 60
+            
+            mealDateTime.minimumDate = now.addingTimeInterval(-oneDayInterval)
+            mealDateTime.maximumDate = now.addingTimeInterval(oneDayInterval)
+        }
+    
+    func setupInputAccessoryView() {
+            let toolbar = UIToolbar()
+            toolbar.sizeToFit()
+            
+            let nextButton = UIBarButtonItem(title: "Next", style: .plain, target: self, action: #selector(nextTapped))
+            let doneButton = UIBarButtonItem(title: "Done", style: .plain, target: self, action: #selector(doneTapped))
+            let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            
+            //toolbar.setItems([flexSpace, nextButton, doneButton], animated: false)
+            toolbar.setItems([nextButton, flexSpace, doneButton], animated: false)
+            
+            carbsEntryField.inputAccessoryView = toolbar
+            fatEntryField.inputAccessoryView = toolbar
+            proteinEntryField.inputAccessoryView = toolbar
+            notesEntryField.inputAccessoryView = toolbar
+            bolusEntryField.inputAccessoryView = toolbar
+        }
+        
+        @objc func nextTapped() {
+            if carbsEntryField.isFirstResponder {
+                fatEntryField.becomeFirstResponder()
+            } else if fatEntryField.isFirstResponder {
+                proteinEntryField.becomeFirstResponder()
+            } else if proteinEntryField.isFirstResponder {
+                notesEntryField.becomeFirstResponder()
+            } else if notesEntryField.isFirstResponder {
+                bolusEntryField.becomeFirstResponder()
+            }
+        }
+        
+        @objc func doneTapped() {
+            view.endEditing(true)
+        }
+    
+    // Add tap gesture recognizers to labels
+        func addGestureRecognizers() {
+            let carbLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusCarbsEntryField))
+            carbLabel.addGestureRecognizer(carbLabelTap)
+            carbLabel.isUserInteractionEnabled = true
+            
+            let fatLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusFatEntryField))
+            fatLabel.addGestureRecognizer(fatLabelTap)
+            fatLabel.isUserInteractionEnabled = true
+            
+            let proteinLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusProteinEntryField))
+            proteinLabel.addGestureRecognizer(proteinLabelTap)
+            proteinLabel.isUserInteractionEnabled = true
+            
+            let mealNotesLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusNotesEntryField))
+            mealNotesLabel.addGestureRecognizer(mealNotesLabelTap)
+            mealNotesLabel.isUserInteractionEnabled = true
+            
+            let bolusLabelTap = UITapGestureRecognizer(target: self, action: #selector(focusBolusEntryField))
+            bolusLabel.addGestureRecognizer(bolusLabelTap)
+            bolusLabel.isUserInteractionEnabled = true
+        }
+        
+        @objc func focusCarbsEntryField() {
+            self.carbsEntryField.becomeFirstResponder()
+        }
+        
+        @objc func focusFatEntryField() {
+            self.fatEntryField.becomeFirstResponder()
+        }
+        
+        @objc func focusProteinEntryField() {
+            self.proteinEntryField.becomeFirstResponder()
+        }
+        
+        @objc func focusNotesEntryField() {
+            self.notesEntryField.becomeFirstResponder()
+        }
+        
+        @objc func focusBolusEntryField() {
+            self.bolusEntryField.becomeFirstResponder()
+        }
+    
     // Function to calculate the suggested bolus value based on CR and check for maxCarbs
     func calculateBolus() {
         guard let carbsText = carbsEntryField.text,
@@ -135,7 +234,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             hidePlusSign()
             return
         }
-        
+        //TODO: Auggie - this is where we need the CR from profile rather than dynamic CR
         var bolusValue = carbsValue / CR
         // Round down to the nearest 0.05
         bolusValue = roundDown(toNearest: Decimal(0.05), value: bolusValue)
@@ -198,7 +297,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         numberFormatter.minimumFractionDigits = 2
         numberFormatter.maximumFractionDigits = 2
         numberFormatter.minimumIntegerDigits = 1
-        numberFormatter.decimalSeparator = "."//Locale.current.decimalSeparator
+        numberFormatter.decimalSeparator = Locale.current.decimalSeparator
         
         guard let formattedString = numberFormatter.string(from: NSNumber(value: doubleValue)) else {
             fatalError("Failed to format the number.")
@@ -207,9 +306,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         return formattedString
     }
     
-    func focusCarbsEntryField() {
-        self.carbsEntryField.becomeFirstResponder()
-    }
+    //func focusCarbsEntryField() {
+    //    self.carbsEntryField.becomeFirstResponder()
+    //}
     
     func sendMealorMealandBolus() {
         let attributes: [NSAttributedString.Key: Any] = [
@@ -446,34 +545,36 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         } else {
             showMealConfirmationAlert(combinedString: combinedString)
         }
-        
-        //func createCombinedString(carbs: Int, fats: Int, proteins: Int) -> String {
-        func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
-            let mealNotesValue = mealNotes.text ?? ""
-            let cleanedMealNotes = mealNotesValue
-            let name = UserDefaultsRepository.caregiverName.value
-            let secret = UserDefaultsRepository.remoteSecretCode.value
-            // Convert bolusValue to string and trim any leading or trailing whitespace
-            let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            let dateFormatter = DateFormatter ()
-            dateFormatter.dateFormat = "M/d/yyyy, h:mm a"
-            
-            let currentDateTime = Date()
-            let formattedDateTime = dateFormatter.string (from: currentDateTime)
-            
-            //if UserDefaultsRepository.hideRemoteBolus.value {
-            if Double(trimmedBolusValue) ?? 0.0 > 0.0 {
-                // Construct and return the combinedString with bolus
-                //return "Remote Meal\nCarbs: \(carbsValue)g\nFat: \(fatsValue)g\nProtein: \(proteinsValue)g\nNote: \(cleanedMealNotes)\nInsulin: \(trimmedBolusValue)E\nEntered by: \(name)\nSecret Code: \(secret)"
-                return "Meal and bolus entry\n\(formattedDateTime)\n\(carbsValue)\n\(fatsValue)\n\(proteinsValue)\n\(trimmedBolusValue)"
 
-            } else {
-                // Construct and return the combinedString without bolus
-                //return "Remote Meal\nCarbs: \(carbsValue)g\nFat: \(fatsValue)g\nProtein: \(proteinsValue)g\nNote: \(cleanedMealNotes)\nEntered by: \(name)\nSecret code: \(secret)"
-                return "Meal entry\n\(formattedDateTime)\n\(carbsValue)\n\(fatsValue)\n\(proteinsValue)"
+        // Function to format date to ISO 8601 without seconds and milliseconds
+            func formatDateToISO8601(_ date: Date) -> String {
+                let dateFormatter = DateFormatter ()
+                dateFormatter.dateFormat = "M/d/yyyy, h:mm a"
+                //dateFormatter.formatOptions = [.withInternetDateTime, .withDashSeparatorInDate, .withColonSeparatorInTime]
+                return dateFormatter.string(from: date)
             }
-        }
+
+            // Function to create combined string with selected date
+            func createCombinedString(carbs: Double, fats: Double, proteins: Double) -> String {
+                let mealNotesValue = mealNotes.text ?? ""
+                let cleanedMealNotes = mealNotesValue
+                let name = UserDefaultsRepository.caregiverName.value
+                let secret = UserDefaultsRepository.remoteSecretCode.value
+                // Convert bolusValue to string and trim any leading or trailing whitespace
+                let trimmedBolusValue = "\(bolusValue)".trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // Get selected date from mealDateTime and format to ISO 8601
+                let selectedDate = mealDateTime.date
+                let formattedDateTime = formatDateToISO8601(selectedDate)
+                
+                if Double(trimmedBolusValue) ?? 0.0 > 0.0 {
+                    // Construct and return the combinedString with bolus
+                    return "Meal and bolus entry\n\(formattedDateTime)\n\(carbs)\n\(fats)\n\(proteins)\n\(trimmedBolusValue)"
+                } else {
+                    // Construct and return the combinedString without bolus
+                    return "Meal entry\n\(formattedDateTime)\n\(carbs)\n\(fats)\n\(proteins)"
+                }
+            }
         
         //Alert for meal without bolus
         func showMealConfirmationAlert(combinedString: String) {
