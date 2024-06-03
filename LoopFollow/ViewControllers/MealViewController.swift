@@ -248,8 +248,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 
                 stackView.addArrangedSubview(rowStackView)
                 
-                // Add a divider line between rows, except after the last row
-                if index < metrics.count - 1 {
+                // Add a divider line between rows
+                if index < metrics.count {
                     let divider = UIView()
                     divider.backgroundColor = UIColor.darkGray
                     divider.translatesAutoresizingMaskIntoConstraints = false
