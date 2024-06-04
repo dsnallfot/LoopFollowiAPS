@@ -307,7 +307,7 @@ extension MainViewController {
         let chartEntryBGCheck = [ChartDataEntry]()
         let lineBGCheck = LineChartDataSet(entries:chartEntryBGCheck, label: "")
         lineBGCheck.circleRadius = CGFloat(globalVariables.dotOther)
-        lineBGCheck.circleColors = [NSUIColor.systemRed.withAlphaComponent(0.75)]
+        lineBGCheck.circleColors = [NSUIColor.systemRed.withAlphaComponent(1.0)]
         lineBGCheck.drawCircleHoleEnabled = false
         lineBGCheck.setDrawHighlightIndicators(false)
         lineBGCheck.setColor(NSUIColor.systemRed, alpha: 1.0)

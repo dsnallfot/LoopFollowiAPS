@@ -115,8 +115,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         //print("Delta: \(Double(sharedDeltaBG) * 0.0555) mmol/L") // Just print for now. To use as info in bolusrecommendation later on
 
         //print("BG: \(sharedLatestBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
-        //print("BG: \(sharedLatestDirection)")// Just print for now. To use as info in bolusrecommendation later on
-        //print("BG: \(sharedLatestDelta) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
+        //print("Direction: \(sharedLatestDirection)")// Just print for now. To use as info in bolusrecommendation later on
+        //print("Delta: \(sharedLatestDelta) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
+        print("MinGuardBG: \(sharedRawMinGuardBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
         
         
         //MinGuardBG & Low Threshold

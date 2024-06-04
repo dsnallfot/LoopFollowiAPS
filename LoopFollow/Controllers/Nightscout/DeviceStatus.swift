@@ -15,6 +15,7 @@ var sharedSensValue: Double = 0.0 //Auggie
 var sharedProfileCRValue: String = "" //Auggie
 var sharedProfileISFValue: Double = 0.0 //Auggie
 var sharedRawEvBG: String = ""
+var sharedRawMinGuardBG: String = ""
 var sharedLatestIOB: String = ""
 var sharedLatestCOB: String = ""
 var sharedLatestISF: String = ""
@@ -389,9 +390,11 @@ extension MainViewController {
                         if let minGuardBG = suggestedData["minGuardBG"] as? Double {
                             let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
                             sharedMinGuardBG = Double(formattedMinGuardBGString)
+                            sharedRawMinGuardBG = String(format:"%.1f", formattedMinGuardBGString)
                         } else {
                             let formattedLowLine = mgdlToMmol(Double(UserDefaultsRepository.lowLine.value))
                             sharedMinGuardBG = Double(formattedLowLine)
+                            sharedRawMinGuardBG = ""
                         }
                         
                         /*if let insulinReq = suggestedData["insulinReq"] as? Double {
@@ -582,10 +585,10 @@ extension MainViewController {
                             tableData[9].value = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
                             //updatePredictionGraph(color: predictioncolor)
                             //Daniel: Added condition for visualization of values lower than the chart minimum 2.2 mmol.
-                            if formattedPredMin > sharedRawEvBG {
-                                tableData[9].value = "\(sharedRawEvBG)-\(formattedPredMax) mmol/L"
+                            if formattedPredMin > sharedRawMinGuardBG && sharedRawMinGuardBG != "" {
+                                tableData[9].value = "\(sharedRawMinGuardBG)-\(formattedPredMax) mmol/L"
                                 //Daniel: Added for visualization in remote meal info popup
-                                latestMinMax = "\(sharedRawEvBG)-\(formattedPredMax) mmol/L"
+                                latestMinMax = "\(sharedRawMinGuardBG)-\(formattedPredMax) mmol/L"
                                 sharedLatestMinMax = latestMinMax
                             } else {
                                 tableData[9].value = "\(formattedPredMin)-\(formattedPredMax) mmol/L"

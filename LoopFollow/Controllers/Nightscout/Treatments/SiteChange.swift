@@ -31,7 +31,7 @@ extension MainViewController {
                 lastFoundIndex = sgv.foundIndex
                 
                 if dateTimeStamp < (dateTimeUtils.getNowTimeIntervalUTC() + (60 * 60)) {
-                    let dot = DataStructs.timestampOnlyStruct(date: Double(dateTimeStamp), sgv: Int(sgv.sgv))
+                    let dot = DataStructs.timestampOnlyStruct(date: Double(dateTimeStamp), sgv: Int(18))
                     pumpChangeGraphData.append(dot)
                 }
             } else {
