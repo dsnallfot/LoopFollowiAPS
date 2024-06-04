@@ -10,6 +10,12 @@ import Foundation
 import UIKit
 
 var sharedCRValue: String = ""
+var sharedRawCRValue: String = "" //Auggie
+var sharedSensValue: Double = 0.0 //Auggie
+var sharedProfileCRValue: String = "" //Auggie
+var sharedProfileISFValue: Double = 0.0 //Auggie
+var sharedRawEvBG: String = ""
+var sharedRawMinGuardBG: String = ""
 var sharedLatestIOB: String = ""
 var sharedLatestCOB: String = ""
 var sharedLatestISF: String = ""
@@ -292,6 +298,8 @@ extension MainViewController {
                             //Daniel: Added for visualization in remote meal info popup
                             latestSens = String(format:"%.0f", sens) + " %"
                             sharedLatestSens = latestSens
+                            //Auggie addition for visualizing dynamic
+                            sharedSensValue = sensitivityRatio
                         }
                         
                         if let TDD = suggestedData["TDD"] as? Double {
@@ -299,15 +307,39 @@ extension MainViewController {
                         }
                         
                         if let ISF = suggestedData["ISF"] as? Double {
-                            tableData[14].value = String(format:"%.1f", ISF) + " mmol/L/E"
+                            //Auggie addition for visualizing dynamic
+                            let sharedProfileISFValue = String(format:"%.1f", round(sharedSensValue * ISF))
+                            let modifiedISF = String(format:"%.1f", ISF)
+                            let ISFString = "\(sharedProfileISFValue) ⇢ \(modifiedISF) mmol/L/E"
+                            tableData[14].value = ISFString
+                            //Daniel: Added for visualization in remote meal info popup
+                            latestISF = ISFString
+                            sharedLatestISF = latestISF
+                            
+                            
+                            //Daniel prev version
+                            /*tableData[14].value = String(format:"%.1f", ISF) + " mmol/L/E"
                             //Daniel: Added for visualization in remote meal info popup
                             latestISF = String(format:"%.1f", ISF) + " mmol/L/E"
-                            sharedLatestISF = latestISF
+                            sharedLatestISF = latestISF*/
                         }
                         
                         if let CR = suggestedData["CR"] as? Double {
-                            tableData[15].value = String(format:"%.1f", CR) + " g/E"
-                            sharedCRValue = String(format:"%.1f", CR)
+                            
+                            //Auggie addition for visualizing dynamic
+                            sharedRawCRValue = CR.description
+                            let sharedProfileCRValue = round((Double(sharedSensValue) * (Double(sharedRawCRValue) ?? 0.0)) * 10) / 10.0
+                            let formattedCR = String(format:"%.1f", sharedProfileCRValue)
+                            let CR = formattedCR
+                            //let CRString = formattedCR
+                            //Auggie !! Only applyies if using dynamic CR
+                            let CRString = "\(sharedProfileCRValue) ⇢ \(sharedRawCRValue) g/E"
+                            tableData[15].value = CRString
+                            sharedCRValue = String(format:"%.1f", sharedProfileCRValue)
+                            
+                            //Daniel prev version
+                            /*tableData[15].value = String(format:"%.1f", CR) + " g/E"
+                            sharedCRValue = String(format:"%.1f", CR)*/
                         }
                         
                         if let currentTargetMgdl = suggestedData["current_target"] as? Double {
@@ -358,9 +390,11 @@ extension MainViewController {
                         if let minGuardBG = suggestedData["minGuardBG"] as? Double {
                             let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
                             sharedMinGuardBG = Double(formattedMinGuardBGString)
+                            sharedRawMinGuardBG = String(format:"%.1f", formattedMinGuardBGString)
                         } else {
                             let formattedLowLine = mgdlToMmol(Double(UserDefaultsRepository.lowLine.value))
                             sharedMinGuardBG = Double(formattedLowLine)
+                            sharedRawMinGuardBG = ""
                         }
                         
                         /*if let insulinReq = suggestedData["insulinReq"] as? Double {
@@ -524,6 +558,7 @@ extension MainViewController {
 
                             //Daniel: Added for visualization in remote meal info popup
                             latestEvBG = formattedBGString + " mmol/L"
+                            sharedRawEvBG = formattedBGString
                             sharedLatestEvBG = latestEvBG
                             
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
@@ -549,9 +584,18 @@ extension MainViewController {
                             let formattedPredMax = bgUnits.toDisplayUnits(String(predMax)).replacingOccurrences(of: ",", with: ".")
                             tableData[9].value = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
                             //updatePredictionGraph(color: predictioncolor)
-                            //Daniel: Added for visualization in remote meal info popup
-                            latestMinMax = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
-                            sharedLatestMinMax = latestMinMax
+                            //Daniel: Added condition for visualization of values lower than the chart minimum 2.2 mmol.
+                            if formattedPredMin > sharedRawMinGuardBG && sharedRawMinGuardBG != "" {
+                                tableData[9].value = "\(sharedRawMinGuardBG)-\(formattedPredMax) mmol/L"
+                                //Daniel: Added for visualization in remote meal info popup
+                                latestMinMax = "\(sharedRawMinGuardBG)-\(formattedPredMax) mmol/L"
+                                sharedLatestMinMax = latestMinMax
+                            } else {
+                                tableData[9].value = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
+                                //Daniel: Added for visualization in remote meal info popup
+                                latestMinMax = "\(formattedPredMin)-\(formattedPredMax) mmol/L"
+                                sharedLatestMinMax = latestMinMax
+                            }
                         } else {
                             tableData[9].value = "N/A"
                             //Daniel: Added for visualization in remote meal info popup

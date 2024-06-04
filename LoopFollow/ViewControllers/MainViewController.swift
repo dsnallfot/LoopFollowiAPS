@@ -196,7 +196,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         UserDefaultsRepository.infoNames.value.append("ISF")
         UserDefaultsRepository.infoNames.value.append("CR")
         UserDefaultsRepository.infoNames.value.append("Målvärde")
-        UserDefaultsRepository.infoNames.value.append("Behov KH")
+        UserDefaultsRepository.infoNames.value.append("Behov Kh")
         UserDefaultsRepository.infoNames.value.append("Info uppdaterad")
 
         // Reset deprecated settings

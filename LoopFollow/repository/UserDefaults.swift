@@ -37,7 +37,7 @@ class UserDefaultsRepository {
         "ISF", //14
         "CR", //15
         "Målvärde", //16
-        "Behov KH", //17
+        "Behov Kh", //17
         "Info uppdaterad"]) //18
     static let infoSort = UserDefaultsValue<[Int]>(key: "infoSort", default: [3,11,14,15,2,0,1,8,17,4,9,16,13,10,5,7,6,18,12])
     static let infoVisible = UserDefaultsValue<[Bool]>(key: "infoVisible", default: [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false])

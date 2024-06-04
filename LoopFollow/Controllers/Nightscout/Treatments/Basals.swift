@@ -137,14 +137,16 @@ extension MainViewController {
             if i == tempArray.count - 1 && duration == 0.0 {
                 lastEndDot = dateTimeStamp + (30 * 60)
                 if UserDefaultsRepository.showDetails.value {
-                    latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ") E/h"
+                    //latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ") E/h"
+                    latestBasal = basalNow + " ⇢ " + String(format:"%.2f", basalRate) + " E/h"
                 } else {
                     latestBasal = String(format:"%.2f", basalRate) + " E/h"
                 }
             } else {
                 lastEndDot = dateTimeStamp + (duration * 60)
                 if UserDefaultsRepository.showDetails.value {
-                    latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ") E/h"
+                    //latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ") E/h"
+                    latestBasal = basalNow + " ⇢ " + String(format:"%.2f", basalRate) + " E/h"
                 } else {
                     latestBasal = String(format:"%.2f", basalRate) + " E/h"
                 }
@@ -195,7 +197,8 @@ extension MainViewController {
             }
             
             if UserDefaultsRepository.showDetails.value {
-                latestBasal = String(format:"%.2f", scheduled) + " (" + basalNow + ") E/h"
+                //latestBasal = String(format:"%.2f", scheduled) + " (" + basalNow + ") E/h"
+                latestBasal = basalNow + " ⇢ " + String(format:"%.2f", scheduled) + " E/h"
             } else {
                 latestBasal = String(format:"%.2f", scheduled) + " E/h"
             }
