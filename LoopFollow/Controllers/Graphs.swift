@@ -1078,10 +1078,7 @@ extension MainViewController {
             // skip if outside of visible area
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if dateTimeStamp < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
-            
-            let bolus = String(bolusData[i].value).replacingOccurrences(of: ",", with: ".")
-            
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(bolusData[i].sgv), data: formatPillTextExtraLine(line1: "Bolus", line2: bolus + " U", time: dateTimeStamp))
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(bolusData[i].sgv), data: formatPillTextExtraLine(line1: "Bolus", line2: formatter.string(from: NSNumber(value: bolusData[i].value))! + " U", time: dateTimeStamp))
             
             mainChart.addEntry(dot)
             if UserDefaultsRepository.smallGraphTreatments.value {
@@ -1156,10 +1153,7 @@ extension MainViewController {
             // skip if outside of visible area
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if dateTimeStamp < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
-            
-            let smb = String(smbData[i].value).replacingOccurrences(of: ",", with: ".")
-            
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(smbData[i].sgv), data: formatPillText(line1: "SMB\n" + smb + "U", time: dateTimeStamp))
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(smbData[i].sgv), data: formatPillText(line1: "SMB\n" + formatter.string(from: NSNumber(value: smbData[i].value))! + " U", time: dateTimeStamp))
             
             mainChart.addEntry(dot)
             if UserDefaultsRepository.smallGraphTreatments.value {
