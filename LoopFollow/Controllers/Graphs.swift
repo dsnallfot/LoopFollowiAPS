@@ -803,7 +803,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataCOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "COB", line2: bgUnits.toDisplayUnits(String(predictionDataCOB[i].sgv)) + " mmol/L", time: predictionDataCOB[i].date))
+            let value = ChartDataEntry(x: predictionDataCOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "COB", line2: bgUnits.toDisplayUnits(String(predictionDataCOB[i].sgv)) + " mg/dl", time: predictionDataCOB[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }

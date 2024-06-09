@@ -602,6 +602,7 @@ open class LineChartRenderer: LineRadarRenderer
         }
     }
     //Daniel: Added to filter out strings from chart rendering (but still keep it visible in highlight popup)
+    //Auggie: some customizing here for my own preferences in dot labels
     func replaceTimeText(_ text: String) -> String {
         let timePattern = "\\b(\\d{2}:\\d{2}|\\d{1}:\\d{2}|Carbs|Fat|Protein|Meal|.0|[AP]M|Bolus|SMB|U|g|\\d{1,3} \\/ \\d{1,3} \\/ \\d{1,3})\\b"
         
