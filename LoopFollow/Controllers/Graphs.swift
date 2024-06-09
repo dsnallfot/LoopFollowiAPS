@@ -854,7 +854,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataUAM[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "UAM", line2: bgUnits.toDisplayUnits(String(predictionDataUAM[i].sgv)) + " mmol/L", time: predictionDataUAM[i].date))
+            let value = ChartDataEntry(x: predictionDataUAM[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "UAM", line2: bgUnits.toDisplayUnits(String(predictionDataUAM[i].sgv)) + " mg/dl", time: predictionDataUAM[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -905,7 +905,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataIOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "IOB", line2: bgUnits.toDisplayUnits(String(predictionDataIOB[i].sgv)) + " mmol/L", time: predictionDataIOB[i].date))
+            let value = ChartDataEntry(x: predictionDataIOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "IOB", line2: bgUnits.toDisplayUnits(String(predictionDataIOB[i].sgv)) + " md/dl", time: predictionDataIOB[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -1250,7 +1250,6 @@ extension MainViewController {
             //let line2 = formatter.string(from: NSNumber(value: carbData[i].value))! + " g" + (foodType.isEmpty ? "" : " \(foodType)")
             let line2 = "Carbs " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g\nFat " + fatString + " g\nProtein " + proteinString + " g"
             
-            //let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: "Carbs", line2: line2, time: dateTimeStamp))
             let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: (foodType.isEmpty ? "Meal" : "\(foodType)"), line2: line2, time: dateTimeStamp))
 
              BGChart.data?.dataSets[dataIndex].addEntry(dot)
