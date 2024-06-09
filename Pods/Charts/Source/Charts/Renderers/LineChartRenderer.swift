@@ -579,7 +579,6 @@ open class LineChartRenderer: LineRadarRenderer
                                                                   dataSetIndex: i,
                                                                   viewPortHandler: viewPortHandler)
                     let replacedText = replaceTimeText(originalText)
-                    
                     if dataSet.isDrawValuesEnabled
                     {
                         context.drawText(replacedText,
@@ -604,14 +603,28 @@ open class LineChartRenderer: LineRadarRenderer
     }
     //Daniel: Added to filter out strings from chart rendering (but still keep it visible in highlight popup)
     func replaceTimeText(_ text: String) -> String {
-        let timePattern = "\\b(\\d{2}:\\d{2}|\\d{1}:\\d{2}|Carbs|.0|[AP]M|Bolus|SMB|U|g)\\b"
+        let timePattern = "\\b(\\d{2}:\\d{2}|\\d{1}:\\d{2}|Carbs|Fat|Protein|Meal|.0|[AP]M|Bolus|SMB|U|g|\\d{1,3} \\/ \\d{1,3} \\/ \\d{1,3})\\b"
+        
+        // First, strip out elements identified by timePattern
+        let strippedText: String
         if let regex = try? NSRegularExpression(pattern: timePattern) {
             let range = NSRange(location: 0, length: text.utf16.count)
-            return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
+            strippedText = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
         } else {
             print("Error creating regular expression.")
             return text
         }
+        
+        // Split the stripped text by newlines
+        let components = strippedText.components(separatedBy: .newlines)
+        
+        // Filter out empty components and components that consist only of whitespace
+        let filteredComponents = components.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        
+        // Join the components with " / "
+        let result = filteredComponents.joined(separator: "/")
+        
+        return result
     }
     
     open override func drawExtras(context: CGContext)
