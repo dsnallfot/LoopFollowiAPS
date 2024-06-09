@@ -1207,6 +1207,10 @@ extension MainViewController {
             
             var valueString: String = formatter.string(from: NSNumber(value: carbData[i].value))!
             
+            var fatString: String = formatter.string(from: NSNumber(value: carbData[i].fat)) ?? ""
+            
+            var proteinString: String = formatter.string(from: NSNumber(value: carbData[i].protein)) ?? ""
+            
             guard var foodType = String?(carbData[i].foodType ?? "") else { return }
             if (carbData[i].foodType != nil) {
                 valueString += " " + foodType
@@ -1245,8 +1249,8 @@ extension MainViewController {
             /*let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: valueString)
             BGChart.data?.dataSets[dataIndex].addEntry(dot)*/
             
-            let line2 = formatter.string(from: NSNumber(value: carbData[i].value))! + " g" + (foodType.isEmpty ? "" : " \(foodType)")
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: "Kolhydrater", line2: line2, time: dateTimeStamp))
+            let line2 = "Kolhydrater " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g\nFett " + fatString + " g\nProtein " + proteinString + " g"
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: (foodType.isEmpty ? "Måltid" : "\(foodType)"), line2: line2, time: dateTimeStamp))
 
              BGChart.data?.dataSets[dataIndex].addEntry(dot)
             

@@ -31,6 +31,8 @@ extension MainViewController {
             let absorptionTime = currentEntry["absorptionTime"] as? Int ?? 0
             
             let foodType = currentEntry["foodType"]
+            let fat = currentEntry["fat"] as? Double
+            let protein = currentEntry["protein"] as? Double
             
             guard let parsedDate = NightscoutUtils.parseDate(carbDate),
                   let carbs = currentEntry["carbs"] as? Double else { return }
@@ -52,7 +54,7 @@ extension MainViewController {
 
             if dateTimeStamp < (dateTimeUtils.getNowTimeIntervalUTC() + (3600 * UserDefaultsRepository.predictionToLoad.value)) {
                 // Make the dot
-                let dot = carbGraphStruct(value: Double(carbs), date: Double(dateTimeStamp), sgv: Int(sgv.sgv + Double(offset)), absorptionTime: absorptionTime, foodType: foodType as? String)
+                let dot = carbGraphStruct(value: Double(carbs), date: Double(dateTimeStamp), sgv: Int(sgv.sgv + Double(offset)), absorptionTime: absorptionTime, foodType: foodType as? String, fat: Double(fat ?? 0), protein: Double(protein ?? 0))
                 carbData.append(dot)
             }
         }

@@ -69,6 +69,8 @@ extension MainViewController {
         var sgv: Int
         var absorptionTime: Int
         var foodType: String?
+        var fat: Double
+        var protein: Double
     }
     
     func isStaleData() -> Bool {
