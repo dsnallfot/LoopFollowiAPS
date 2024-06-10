@@ -616,8 +616,11 @@ open class LineChartRenderer: LineRadarRenderer
             return text
         }
         
+        // Replace occurrences of "remote" with "📲"
+        let replacedText = strippedText.replacingOccurrences(of: "remote", with: "📲")
+        
         // Split the stripped text by newlines
-        let components = strippedText.components(separatedBy: .newlines)
+        let components = replacedText.components(separatedBy: .newlines)
         
         // Filter out empty components and components that consist only of whitespace
         let filteredComponents = components.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
