@@ -308,7 +308,7 @@ extension MainViewController {
                         
                         if let ISF = suggestedData["ISF"] as? Double {
                             //Auggie addition for visualizing dynamic
-                            let sharedProfileISFValue = String(format:"%.1f", round(sharedSensValue * ISF))
+                            let sharedProfileISFValue = String(format:"%.1f", sharedSensValue * ISF)
                             let modifiedISF = String(format:"%.1f", ISF)
                             let ISFString = "\(sharedProfileISFValue) ⇢ \(modifiedISF) mmol/L/E"
                             tableData[14].value = ISFString
