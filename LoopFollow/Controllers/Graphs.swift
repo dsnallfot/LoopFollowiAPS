@@ -316,7 +316,7 @@ extension MainViewController {
         lineBGCheck.highlightEnabled = true
         lineBGCheck.axisDependency = YAxis.AxisDependency.right
         lineBGCheck.valueFormatter = ChartYDataValueFormatter()
-        lineBGCheck.drawValuesEnabled = false
+        lineBGCheck.drawValuesEnabled = true
         
         // Suspend Pump
         let chartEntrySuspend = [ChartDataEntry]()
@@ -803,7 +803,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataCOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "COB", line2: bgUnits.toDisplayUnits(String(predictionDataCOB[i].sgv)) + " mmol/L", time: predictionDataCOB[i].date))
+            let value = ChartDataEntry(x: predictionDataCOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "COB Prognos", line2: bgUnits.toDisplayUnits(String(predictionDataCOB[i].sgv)) + " mmol/L", time: predictionDataCOB[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -854,7 +854,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataUAM[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "UAM", line2: bgUnits.toDisplayUnits(String(predictionDataUAM[i].sgv)) + " mmol/L", time: predictionDataUAM[i].date))
+            let value = ChartDataEntry(x: predictionDataUAM[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "UAM Prognos", line2: bgUnits.toDisplayUnits(String(predictionDataUAM[i].sgv)) + " mmol/L", time: predictionDataUAM[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -905,7 +905,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataIOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "IOB", line2: bgUnits.toDisplayUnits(String(predictionDataIOB[i].sgv)) + " mmol/L", time: predictionDataIOB[i].date))
+            let value = ChartDataEntry(x: predictionDataIOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "IOB Prognos", line2: bgUnits.toDisplayUnits(String(predictionDataIOB[i].sgv)) + " mmol/L", time: predictionDataIOB[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -956,7 +956,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataZT[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "ZT", line2: bgUnits.toDisplayUnits(String(predictionDataZT[i].sgv)) + " mmol/L", time: predictionDataZT[i].date))
+            let value = ChartDataEntry(x: predictionDataZT[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "ZT Prognos", line2: bgUnits.toDisplayUnits(String(predictionDataZT[i].sgv)) + " mmol/L", time: predictionDataZT[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -1249,7 +1249,7 @@ extension MainViewController {
             /*let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: valueString)
             BGChart.data?.dataSets[dataIndex].addEntry(dot)*/
             
-            let line2 = "Kolhydrater " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g\nFett " + fatString + " g\nProtein " + proteinString + " g"
+            let line2 = "Kolhydrater " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g\nFett " + fatString + " g Protein " + proteinString + " g"
             let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: (foodType.isEmpty ? "Måltid" : "\(foodType)"), line2: line2, time: dateTimeStamp))
 
              BGChart.data?.dataSets[dataIndex].addEntry(dot)
@@ -1437,7 +1437,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if thisData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillTextExtraLine(line1: "Notering", line2: thisData[i].note, time: thisData[i].date))
+            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: thisData[i].note, time: thisData[i].date))
             BGChart.data?.dataSets[dataIndex].addEntry(value)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(value)
