@@ -182,12 +182,13 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Add the popup view to the main view
             view.addSubview(popupView)
             
-            // Set up constraints for the popup view
+            // Set up initial constraints for the popup view
+            let initialTopConstraint = popupView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: -255)
             NSLayoutConstraint.activate([
                 popupView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
                 popupView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-                popupView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
-                popupView.heightAnchor.constraint(equalToConstant: 250)
+                initialTopConstraint,
+                popupView.heightAnchor.constraint(equalToConstant: 255)
             ])
             
             // Add content to the popup view
@@ -232,7 +233,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 let label = UILabel()
                 label.text = metric
                 label.textAlignment = .left
-                label.font = UIFont.systemFont(ofSize: 14) // Set font size to 14
+                label.font = UIFont.systemFont(ofSize: 15) // Set font size to 14
                 
                 let spacer = UIView()
                 spacer.translatesAutoresizingMaskIntoConstraints = false
@@ -241,7 +242,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 let valueLabel = UILabel()
                 valueLabel.text = values[index]
                 valueLabel.textAlignment = .right
-                valueLabel.font = UIFont.systemFont(ofSize: 14) // Set font size to 14
+                valueLabel.font = UIFont.systemFont(ofSize: 15) // Set font size to 14
                 
                 rowStackView.addArrangedSubview(label)
                 rowStackView.addArrangedSubview(spacer)
@@ -265,14 +266,11 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Store the popup view
             self.popupView = popupView
             
-            // Initial state for animation
-            popupView.alpha = 0
-            popupView.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
-            
             // Animate the popup view
-            UIView.animate(withDuration: 0.2, animations: {
-                popupView.alpha = 1
-                popupView.transform = CGAffineTransform.identity
+            view.layoutIfNeeded()
+            UIView.animate(withDuration: 0.3, animations: {
+                initialTopConstraint.constant = 10
+                self.view.layoutIfNeeded()
             })
 
             // Add tap gesture recognizer to dismiss the popup view
@@ -280,11 +278,21 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             view.addGestureRecognizer(tapGesture)
         }
     }
+
         
-        @objc func dismissPopupView() {
-            popupView?.removeFromSuperview()
-            popupView = nil
-        }
+    @objc func dismissPopupView() {
+           if let popupView = self.popupView {
+               // Animate the popup view to move up
+               UIView.animate(withDuration: 0.3, animations: {
+                   popupView.frame.origin.y = -255
+                   self.view.layoutIfNeeded()
+               }) { _ in
+                   // Remove the popup view from the superview
+                   popupView.removeFromSuperview()
+                   self.popupView = nil
+               }
+           }
+       }
     
     func setupDatePickerLimits() {
             let now = Date()
