@@ -182,12 +182,13 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Add the popup view to the main view
             view.addSubview(popupView)
             
-            // Set up constraints for the popup view
+            // Set up initial constraints for the popup view
+            let initialTopConstraint = popupView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: -255)
             NSLayoutConstraint.activate([
                 popupView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
                 popupView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-                popupView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
-                popupView.heightAnchor.constraint(equalToConstant: 250)
+                initialTopConstraint,
+                popupView.heightAnchor.constraint(equalToConstant: 255)
             ])
             
             // Add content to the popup view
@@ -207,7 +208,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 stackView.bottomAnchor.constraint(equalTo: popupView.bottomAnchor, constant: -20)
             ])
             
-            // Daniel: Add metrics to the popup
+            // Add metrics to the popup
             let metrics = ["BG", "Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater", "Min-Max BG", "Prognos BG"]
             let latestBGString = (sharedLatestBG + "  " + sharedLatestDirection + "  (" + sharedLatestDelta + ")")
             let values = [
@@ -232,7 +233,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 let label = UILabel()
                 label.text = metric
                 label.textAlignment = .left
-                label.font = UIFont.systemFont(ofSize: 14) // Set font size to 14
+                label.font = UIFont.systemFont(ofSize: 15) // Set font size to 14
                 
                 let spacer = UIView()
                 spacer.translatesAutoresizingMaskIntoConstraints = false
@@ -241,7 +242,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 let valueLabel = UILabel()
                 valueLabel.text = values[index]
                 valueLabel.textAlignment = .right
-                valueLabel.font = UIFont.systemFont(ofSize: 14) // Set font size to 14
+                valueLabel.font = UIFont.systemFont(ofSize: 15) // Set font size to 14
                 
                 rowStackView.addArrangedSubview(label)
                 rowStackView.addArrangedSubview(spacer)
@@ -265,19 +266,33 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Store the popup view
             self.popupView = popupView
             
+            // Animate the popup view
+            view.layoutIfNeeded()
+            UIView.animate(withDuration: 0.3, animations: {
+                initialTopConstraint.constant = 10
+                self.view.layoutIfNeeded()
+            })
+
             // Add tap gesture recognizer to dismiss the popup view
             let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissPopupView))
             view.addGestureRecognizer(tapGesture)
         }
     }
 
-
-
         
-        @objc func dismissPopupView() {
-            popupView?.removeFromSuperview()
-            popupView = nil
-        }
+    @objc func dismissPopupView() {
+           if let popupView = self.popupView {
+               // Animate the popup view to move up
+               UIView.animate(withDuration: 0.3, animations: {
+                   popupView.frame.origin.y = -255
+                   self.view.layoutIfNeeded()
+               }) { _ in
+                   // Remove the popup view from the superview
+                   popupView.removeFromSuperview()
+                   self.popupView = nil
+               }
+           }
+       }
     
     func setupDatePickerLimits() {
             let now = Date()

@@ -83,6 +83,7 @@ class AdvancedSettingsViewController: FormViewController {
             guard let value = row.value else { return }
             UserDefaultsRepository.showDetails.value = value
         }
+
             <<< StepperRow("bgUpdateDelay") { row in
                 row.title = "BG Update Delay (Sec)"
                 row.cell.stepper.stepValue = 1

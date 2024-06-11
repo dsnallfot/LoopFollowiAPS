@@ -764,8 +764,7 @@ open class LineChartRenderer: LineRadarRenderer
         accessibilityPostLayoutChangedNotification()
     }
     
-    open override func drawHighlighted(context: CGContext, indices: [Highlight])
-    {
+    open override func drawHighlighted(context: CGContext, indices: [Highlight]) {
         guard
             let dataProvider = dataProvider,
             let lineData = dataProvider.lineData
@@ -773,47 +772,42 @@ open class LineChartRenderer: LineRadarRenderer
         
         let chartXMax = dataProvider.chartXMax
         
+        // Calculate the center y-coordinate of the chart
+        let centerY = viewPortHandler.contentCenter.y
+        
         context.saveGState()
         
-        for high in indices
-        {
+        for high in indices {
             guard let set = lineData[high.dataSetIndex] as? LineChartDataSetProtocol,
                   set.isHighlightEnabled
             else { continue }
             
             guard let e = set.entryForXValue(high.x, closestToY: high.y) else { continue }
             
-            if !isInBoundsX(entry: e, dataSet: set)
-            {
+            if !isInBoundsX(entry: e, dataSet: set) {
                 continue
             }
 
             context.setStrokeColor(set.highlightColor.cgColor)
             context.setLineWidth(set.highlightLineWidth)
-            if set.highlightLineDashLengths != nil
-            {
+            if set.highlightLineDashLengths != nil {
                 context.setLineDash(phase: set.highlightLineDashPhase, lengths: set.highlightLineDashLengths!)
-            }
-            else
-            {
+            } else {
                 context.setLineDash(phase: 0.0, lengths: [])
             }
             
             let x = e.x // get the x-position
             let y = e.y * Double(animator.phaseY)
             
-            if x > chartXMax * animator.phaseX
-            {
+            if x > chartXMax * animator.phaseX {
                 continue
             }
             
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             
-            let pt = trans.pixelForValues(x: x, y: y)
-            /*var pt = trans.pixelForValues(x: x, y: y)
-            
-            // Offset the highlighted point 20 points down
-            pt.y += 20*/
+            var pt = trans.pixelForValues(x: x, y: y)
+            // Adjust the y-coordinate to the center of the chart and offset 50 points down
+            pt.y = centerY + 90
             
             high.setDraw(pt: pt)
             
@@ -823,6 +817,10 @@ open class LineChartRenderer: LineRadarRenderer
         
         context.restoreGState()
     }
+
+
+
+
 
 
     func drawGradientLine(context: CGContext, dataSet: LineChartDataSetProtocol, spline: CGPath, matrix: CGAffineTransform)

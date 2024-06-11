@@ -330,12 +330,21 @@ extension MainViewController {
                             sharedRawCRValue = CR.description
                             let sharedProfileCRValue = round((Double(sharedSensValue) * (Double(sharedRawCRValue) ?? 0.0)) * 10) / 10.0
                             let formattedCR = String(format:"%.1f", sharedProfileCRValue)
-                            let CR = formattedCR
+                            //let CR = formattedCR
                             //let CRString = formattedCR
                             //Auggie !! Only applyies if using dynamic CR
                             let CRString = "\(sharedProfileCRValue) ⇢ \(sharedRawCRValue) g/E"
-                            tableData[15].value = CRString
-                            sharedCRValue = String(format:"%.1f", sharedProfileCRValue)
+                            if UserDefaultsRepository.useDynCr.value {
+                                tableData[15].value = CRString
+                                if UserDefaultsRepository.useDynCrInBolusCalc.value {
+                                    sharedCRValue = sharedRawCRValue
+                                } else {
+                                    sharedCRValue = formattedCR
+                                }
+                            } else {
+                                tableData[15].value = "\(sharedRawCRValue) g/E"
+                                sharedCRValue = sharedRawCRValue
+                            }
                             
                             //Daniel prev version
                             /*tableData[15].value = String(format:"%.1f", CR) + " g/E"
