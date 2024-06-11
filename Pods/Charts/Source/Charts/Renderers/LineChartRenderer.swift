@@ -604,6 +604,30 @@ open class LineChartRenderer: LineRadarRenderer
     //Daniel: Added to filter out strings from chart rendering (but still keep it visible in highlight popup)
     //Auggie: some customizing here for my own preferences in dot labels
     func replaceTimeText(_ text: String) -> String {
+        
+        /*
+         SMB
+         .25 U
+         hh:mm AM
+         
+         Bolus
+         .25 U
+         hh:mm AM
+         
+         Meal
+         Carbs 1.2 g
+         Fat 0 g
+         Protein 0 g
+         hh:mm AM
+         
+         remote
+         Carbs 152 g
+         Fat 30 g
+         Protein 32 g
+         hh:mm AM
+        */
+        
+        
         let timePattern = "\\b(\\d{2}:\\d{2}|\\d{1}:\\d{2}|Carbs|Fat|Protein|Meal|.0|[AP]M|Bolus|SMB|U|g|\\d{1,3} \\/ \\d{1,3} \\/ \\d{1,3})\\b"
         
         // First, strip out elements identified by timePattern
@@ -628,7 +652,7 @@ open class LineChartRenderer: LineRadarRenderer
         // Join the components with " / "
         let result = filteredComponents.joined(separator: "/")
         
-        return result
+        return text
     }
     
     open override func drawExtras(context: CGContext)
