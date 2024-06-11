@@ -37,6 +37,14 @@ class InfoDisplaySettingsViewController: FormViewController {
                     UserDefaultsRepository.hideInfoTable.value = value           
         }
         
+        <<< SwitchRow("useDynCr"){ row in
+            row.title = "Use Dynamic CR"
+            row.value = UserDefaultsRepository.useDynCr.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.useDynCr.value = value
+        }
+        
         +++ MultivaluedSection(multivaluedOptions: .Reorder, header: "Information Display Settings", footer: "Välj och sortera ordning på önskad information") {
         
            // TODO: add the other display values
@@ -71,6 +79,7 @@ class InfoDisplaySettingsViewController: FormViewController {
               }
            }
        }
+    
     
         +++ ButtonRow() {
             $0.title = "DONE"

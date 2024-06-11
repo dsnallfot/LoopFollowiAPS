@@ -207,7 +207,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 stackView.bottomAnchor.constraint(equalTo: popupView.bottomAnchor, constant: -20)
             ])
             
-            // Daniel: Add metrics to the popup
+            // Add metrics to the popup
             let metrics = ["BG", "Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater", "Min-Max BG", "Prognos BG"]
             let latestBGString = (sharedLatestBG + "  " + sharedLatestDirection + "  (" + sharedLatestDelta + ")")
             let values = [
@@ -265,14 +265,21 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Store the popup view
             self.popupView = popupView
             
+            // Initial state for animation
+            popupView.alpha = 0
+            popupView.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
+            
+            // Animate the popup view
+            UIView.animate(withDuration: 0.2, animations: {
+                popupView.alpha = 1
+                popupView.transform = CGAffineTransform.identity
+            })
+
             // Add tap gesture recognizer to dismiss the popup view
             let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissPopupView))
             view.addGestureRecognizer(tapGesture)
         }
     }
-
-
-
         
         @objc func dismissPopupView() {
             popupView?.removeFromSuperview()
