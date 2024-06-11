@@ -304,6 +304,14 @@ class RemoteSettingsViewController: FormViewController {
             self?.reloadForm()
         }
         
+        <<< SwitchRow("useDynCrInBolusCalc"){ row in
+            row.title = "Use Dyn CR in Bolus Calc"
+            row.value = UserDefaultsRepository.useDynCrInBolusCalc.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.useDynCrInBolusCalc.value = value
+        }
+        
         +++ Section(header: "Guardrails and security", footer: "")
         
         <<< StepperRow("maxCarbs") { row in

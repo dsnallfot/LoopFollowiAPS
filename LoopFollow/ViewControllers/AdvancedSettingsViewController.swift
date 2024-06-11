@@ -83,6 +83,13 @@ class AdvancedSettingsViewController: FormViewController {
             guard let value = row.value else { return }
             UserDefaultsRepository.showDetails.value = value
         }
+        <<< SwitchRow("useDynCr"){ row in
+            row.title = "Use Dynamic CR"
+            row.value = UserDefaultsRepository.useDynCr.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.useDynCr.value = value
+        }
             <<< StepperRow("bgUpdateDelay") { row in
                 row.title = "BG Update Delay (Sec)"
                 row.cell.stepper.stepValue = 1

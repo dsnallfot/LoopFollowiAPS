@@ -118,6 +118,7 @@ class UserDefaultsRepository {
     static let bgUpdateDelay = UserDefaultsValue<Int>(key: "bgUpdateDelay", default: 10)
     static let downloadDays = UserDefaultsValue<Int>(key: "downloadDays", default: 1)
     static let showDetails = UserDefaultsValue<Bool>(key: "showDetails", default: true)
+    static let useDynCr = UserDefaultsValue<Bool>(key: "useDynCr", default: false)
     
     
     // Watch Calendar Settings
@@ -481,6 +482,7 @@ class UserDefaultsRepository {
     static let hideRemoteBolus = UserDefaultsValue<Bool>(key: "hideRemoteBolus", default: true)
     static let hideRemoteCustomActions = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
     static let hideBolusCalc = UserDefaultsValue<Bool>(key: "hideBolusCalc", default: true)
+    static let useDynCrInBolusCalc = UserDefaultsValue<Bool>(key: "useDynCrInBolusCalc", default: false)
     
     //Remote guardrails
     static let maxCarbs = UserDefaultsValue<Double>(key: "maxCarbs", default: 30)
