@@ -818,8 +818,8 @@ open class LineChartRenderer: LineRadarRenderer
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             
             var pt = trans.pixelForValues(x: x, y: y)
-            // Adjust the y-coordinate to the center of the chart and offset 50 points down
-            pt.y = centerY + 90
+            // Adjust the y-coordinate to the center of the chart and offset 95 points up
+            pt.y = centerY - 95
             
             high.setDraw(pt: pt)
             
