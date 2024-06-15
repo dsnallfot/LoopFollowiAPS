@@ -819,7 +819,7 @@ open class LineChartRenderer: LineRadarRenderer
             
             var pt = trans.pixelForValues(x: x, y: y)
             // Adjust the y-coordinate to the center of the chart and offset 95 points up
-            pt.y = centerY - 95
+            pt.y = centerY //- 95
             
             high.setDraw(pt: pt)
             
