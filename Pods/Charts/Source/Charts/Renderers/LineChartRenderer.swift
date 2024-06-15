@@ -604,6 +604,41 @@ open class LineChartRenderer: LineRadarRenderer
     //Daniel: Added to filter out strings from chart rendering (but still keep it visible in highlight popup)
     //Auggie: some customizing here for my own preferences in dot labels
     func replaceTimeText(_ text: String) -> String {
+     
+        // Split the text into lines
+        var lines = text.components(separatedBy: "\n")
+        
+        // Remove the first line (type of entry)
+        if !lines.isEmpty {
+            lines.removeFirst()
+        }
+        
+        // Remove the last line (time entry)
+        if !lines.isEmpty {
+            lines.removeLast()
+        }
+        
+        // Process each line to keep only numbers and periods
+        let processedLines = lines.map { line in
+            // Use regular expression to remove non-numeric characters except periods
+            let pattern = "[^0-9.]"
+            let regex = try! NSRegularExpression(pattern: pattern, options: [])
+            let range = NSRange(location: 0, length: line.utf16.count)
+            let cleanLine = regex.stringByReplacingMatches(in: line, options: [], range: range, withTemplate: "")
+            return cleanLine
+        }
+        
+        // Join the processed lines with " / "
+        var formattedText = processedLines.joined(separator: "/")
+        
+        // Trim " / 0 / 0" if it exists at the end
+        if formattedText.hasSuffix("/0/0") {
+            formattedText = String(formattedText.dropLast("/0/0".count))
+        }
+        
+        return formattedText
+    }
+        /*
         
         /*
          SMB
@@ -654,6 +689,7 @@ open class LineChartRenderer: LineRadarRenderer
         
         return text
     }
+         */
     
     open override func drawExtras(context: CGContext)
     {
