@@ -557,9 +557,9 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 let purpleHue: CGFloat = 270.0 / 360.0  // 270 degrees
                 
                 // Define the bgLevel thresholds
-                let minLevel = Int(UserDefaultsRepository.lowLine.value) - 20 // Daniel: Use low line value, and subtract some more for min, 20?
+                let minLevel = Int(UserDefaultsRepository.lowLine.value) - 5 // Daniel: Use low line value, and subtract some more for min, -5?
                 let targetLevel = Int(UserDefaultsRepository.targetLine.value)
-                let maxLevel = Int(UserDefaultsRepository.highLine.value) + 40 // Daniel: Use high line value, and add some more for max, 40?
+                let maxLevel = Int(UserDefaultsRepository.highLine.value) + 100 // Daniel: Use high line value, and add some more for max, +40?
                 
                 // Calculate the hue based on the bgLevel
                 var hue: CGFloat
