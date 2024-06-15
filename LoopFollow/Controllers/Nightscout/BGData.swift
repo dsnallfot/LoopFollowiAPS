@@ -232,10 +232,25 @@ extension MainViewController {
             self.updateStats()
             
             let latestEntryIndex = entries.count - 1
-            let latestBG = entries[latestEntryIndex].sgv
-            let priorBG = entries[latestEntryIndex - 1].sgv
-            let deltaBG = latestBG - priorBG
-            let lastBGTime = entries[latestEntryIndex].date
+            let latestBGEntry = entries[latestEntryIndex]
+            let latestBG = latestBGEntry.sgv
+            let lastBGTime = latestBGEntry.date
+            
+            var priorBGEntry: ShareGlucoseData?
+            var priorBG: Int?
+            var deltaBG: Int?
+            
+            // Daniel: Find a valid prior entry that is at least 4 minutes apart
+            for i in (0..<latestEntryIndex).reversed() {
+                let candidateEntry = entries[i]
+                let timeDifference = (latestBGEntry.date - candidateEntry.date) / 60
+                if timeDifference >= 4 {
+                    priorBGEntry = candidateEntry
+                    priorBG = candidateEntry.sgv
+                    deltaBG = latestBG - priorBG!
+                    break
+                }
+            }
             
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - lastBGTime) / 60
             var userUnit = " mg/dL"
@@ -257,7 +272,7 @@ extension MainViewController {
             self.setBGTextColor()
             
             // Direction handling
-            if let directionBG = entries[latestEntryIndex].direction {
+            if let directionBG = latestBGEntry.direction {
                 self.DirectionText.text = self.bgDirectionGraphic(directionBG)
                 //Daniel: Added for visualization in remote meal info popup
                 sharedLatestDirection = self.bgDirectionGraphic(directionBG)
@@ -272,18 +287,25 @@ extension MainViewController {
             }
             
             // Delta handling
-            if deltaBG < 0 {
-                self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                //Daniel: Added for visualization in remote meal info popup
-                sharedLatestDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                self.latestDeltaString = String(deltaBG).replacingOccurrences(of: ",", with: ".")
+            if let deltaBG = deltaBG {
+                if deltaBG < 0 {
+                    self.DeltaText.text = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                    //Daniel: Added for visualization in remote meal info popup
+                    sharedLatestDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                    snoozerDelta = bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                    self.latestDeltaString = String(deltaBG).replacingOccurrences(of: ",", with: ".")
+                } else {
+                    self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                    //Daniel: Added for visualization in remote meal info popup
+                    sharedLatestDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                    snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                    self.latestDeltaString = "+" + String(deltaBG).replacingOccurrences(of: ",", with: ".")
+                }
             } else {
-                self.DeltaText.text = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                //Daniel: Added for visualization in remote meal info popup
-                sharedLatestDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                snoozerDelta = "+" + bgUnits.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                self.latestDeltaString = "+" + String(deltaBG).replacingOccurrences(of: ",", with: ".")
+                self.DeltaText.text = "N/A"
+                sharedLatestDelta = "N/A"
+                snoozerDelta = "N/A"
+                self.latestDeltaString = "N/A"
             }
             
             // Apply strikethrough to BGText based on the staleness of the data
@@ -306,4 +328,5 @@ extension MainViewController {
             snoozer.DeltaLabel.text = snoozerDelta
         }
     }
+
 }
