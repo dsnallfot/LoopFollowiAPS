@@ -530,7 +530,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             let latestBG = bgData[bgData.count - 1].sgv
             var color: UIColor = .label // Default color
             
-            if UserDefaultsRepository.colorBGText.value {
+            //Daniel: When toggle is off -> show  ordinary red-green-yellow BGText color. When toggle on, show Auggies dynamic colors
+            if !UserDefaultsRepository.colorBGText.value {
                 if let loopYellow = UIColor(named: "LoopYellow") {
                     if Float(latestBG) >= UserDefaultsRepository.highLine.value {
                         color = loopYellow
@@ -548,6 +549,36 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                         color = loopGreen
                     }
                 }
+            } else {
+                
+                // Auggies color-thing - Define the hue values for the key points
+                let redHue: CGFloat = 0.0 / 360.0       // 0 degrees
+                let greenHue: CGFloat = 120.0 / 360.0   // 120 degrees
+                let purpleHue: CGFloat = 270.0 / 360.0  // 270 degrees
+                
+                // Define the bgLevel thresholds
+                let minLevel = Int(UserDefaultsRepository.lowLine.value) - 20 // Daniel: Use low line value, and subtract some more for min, 20?
+                let targetLevel = Int(UserDefaultsRepository.targetLine.value)
+                let maxLevel = Int(UserDefaultsRepository.highLine.value) + 40 // Daniel: Use high line value, and add some more for max, 40?
+                
+                // Calculate the hue based on the bgLevel
+                var hue: CGFloat
+                if latestBG <= minLevel {
+                    hue = redHue
+                } else if latestBG >= maxLevel {
+                    hue = purpleHue
+                } else if latestBG <= targetLevel {
+                    // Interpolate between red and green
+                    let ratio = CGFloat(latestBG - minLevel) / CGFloat(targetLevel - minLevel)
+                    hue = redHue + ratio * (greenHue - redHue)
+                } else {
+                    // Interpolate between green and purple
+                    let ratio = CGFloat(latestBG - targetLevel) / CGFloat(maxLevel - targetLevel)
+                    hue = greenHue + ratio * (purpleHue - greenHue)
+                }
+                
+                // Return the color with full saturation and brightness
+                color = UIColor(hue: hue, saturation: 0.8, brightness: 1.0, alpha: 1.0)
             }
             
             BGText.textColor = color
