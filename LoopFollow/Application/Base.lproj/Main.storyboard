@@ -24,13 +24,13 @@
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="Ptf-fu-Ue4" userLabel="BGview">
                                         <rect key="frame" x="0.0" y="0.0" width="150" height="499"/>
                                         <subviews>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="BG" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="43" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="vXU-IW-GOL">
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="BG" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="43" translatesAutoresizingMaskIntoConstraints="NO" id="vXU-IW-GOL">
                                                 <rect key="frame" x="0.0" y="0.0" width="150" height="100"/>
                                                 <constraints>
-                                                    <constraint firstAttribute="width" constant="150" id="LqE-qC-LnY"/>
-                                                    <constraint firstAttribute="height" constant="100" id="cfh-SV-6tw"/>
+                                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="150" id="LqE-qC-LnY"/>
+                                                    <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="100" id="cfh-SV-6tw"/>
                                                 </constraints>
-                                                <fontDescription key="fontDescription" type="system" weight="black" pointSize="85"/>
+                                                <fontDescription key="fontDescription" type="system" weight="medium" pointSize="80"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
@@ -39,7 +39,7 @@
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="--" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="30" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4sd-6h-LSj" userLabel="Direction">
                                                         <rect key="frame" x="0.0" y="0.0" width="75" height="65"/>
-                                                        <fontDescription key="fontDescription" type="system" weight="black" pointSize="60"/>
+                                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="32"/>
                                                         <nil key="textColor"/>
                                                         <nil key="highlightedColor"/>
                                                     </label>
@@ -342,13 +342,13 @@
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="ZaU-Ss-piB" userLabel="BGview">
                                 <rect key="frame" x="8" y="100" width="359" height="621"/>
                                 <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="888" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Iq3-I1-HX0">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BG" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Iq3-I1-HX0">
                                         <rect key="frame" x="0.0" y="0.0" width="359" height="203"/>
                                         <fontDescription key="fontDescription" type="system" weight="black" pointSize="220"/>
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                         <variation key="heightClass=regular-widthClass=compact">
-                                            <fontDescription key="fontDescription" type="system" weight="heavy" pointSize="170"/>
+                                            <fontDescription key="fontDescription" type="system" weight="medium" pointSize="170"/>
                                         </variation>
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="--" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hLM-Es-BOa" userLabel="Direction">
@@ -382,7 +382,7 @@
                                         <rect key="frame" x="0.0" y="514" width="359" height="107"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="20" translatesAutoresizingMaskIntoConstraints="NO" id="HFL-Ye-6HR">
-                                                <rect key="frame" x="62.666666666666686" y="-10.333333333333371" width="234" height="127.66666666666669"/>
+                                                <rect key="frame" x="62.666666666666686" y="-10.333333333333371" width="234" height="127.66666666666667"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Clock" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsLetterSpacingToFitWidth="YES" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="r85-eB-vVd">
                                                         <rect key="frame" x="0.0" y="0.0" width="234" height="107.66666666666667"/>
