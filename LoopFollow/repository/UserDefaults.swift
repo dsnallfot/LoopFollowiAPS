@@ -72,6 +72,7 @@ class UserDefaultsRepository {
     static let showMidnightLines = UserDefaultsValue<Bool>(key: "showMidnightMarkers", default: true)
     static let lowLine = UserDefaultsValue<Float>(key: "lowLine", default: 70.0)
     static let highLine = UserDefaultsValue<Float>(key: "highLine", default: 180.0)
+    static let targetLine = UserDefaultsValue<Float>(key: "targetLine", default: 100.0)
     static let smallGraphHeight = UserDefaultsValue<Int>(key: "smallGraphHeight", default: 40)
     
     

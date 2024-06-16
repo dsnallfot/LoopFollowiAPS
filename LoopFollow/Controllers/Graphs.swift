@@ -437,6 +437,12 @@ extension MainViewController {
         ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
         BGChart.rightAxis.addLimitLine(ul)
         
+        //Daniel: Add mid green line based on target value
+        let tl = ChartLimitLine()
+        tl.limit = Double(UserDefaultsRepository.targetLine.value)
+        tl.lineColor = NSUIColor.systemGreen.withAlphaComponent(0.3)
+        BGChart.rightAxis.addLimitLine(tl)
+        
         // Add vertical lines as configured
         createVerticalLines()
         startGraphNowTimer()
