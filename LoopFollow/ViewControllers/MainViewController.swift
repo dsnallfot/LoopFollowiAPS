@@ -579,7 +579,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 }
                 
                 // Return the color with full saturation and brightness
-                color = UIColor(hue: hue, saturation: 0.8, brightness: 0.9, alpha: 1.0)
+                color = UIColor(hue: hue, saturation: 0.6, brightness: 0.9, alpha: 1.0)
             }
             
             BGText.textColor = color
