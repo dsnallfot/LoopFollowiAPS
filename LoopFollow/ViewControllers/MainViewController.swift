@@ -140,6 +140,12 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var latestLoopStatusString = ""
     var latestLoopTime: Double = 0
     var latestCOB = ""
+    var latestInsulinReq = ""
+    var latestCarbReq = ""
+    var latestSens = ""
+    var latestISF = ""
+    var latestMinMax = ""
+    var latestEvBG = ""
     var latestBasal = ""
     var basalNow = ""
     var latestPumpVolume: Double = 50.0
@@ -524,8 +530,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             let latestBG = bgData[bgData.count - 1].sgv
             var color: UIColor = .label // Default color
             
-            /*
-            if UserDefaultsRepository.colorBGText.value {
+            //Daniel: When toggle is off -> show  ordinary red-green-yellow BGText color. When toggle on, show Auggie's dynamic colors
+            if !UserDefaultsRepository.colorBGText.value {
                 if let loopYellow = UIColor(named: "LoopYellow") {
                     if Float(latestBG) >= UserDefaultsRepository.highLine.value {
                         color = loopYellow
@@ -543,38 +549,38 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                         color = loopGreen
                     }
                 }
+            } 
+            else {
+                
+                // Auggie's dynamic color - Define the hue values for the key points
+                let redHue: CGFloat = 0.0 / 360.0       // 0 degrees
+                let greenHue: CGFloat = 120.0 / 360.0   // 120 degrees
+                let purpleHue: CGFloat = 270.0 / 360.0  // 270 degrees
+                
+                // Define the bgLevel thresholds
+                let minLevel = Int(UserDefaultsRepository.alertUrgentLowBG.value) // Use the urgent low BG alarm value for red text
+                let targetLevel = Int(UserDefaultsRepository.targetLine.value) // Use the target BG for green text
+                let maxLevel = Int(UserDefaultsRepository.alertUrgentHighBG.value) // Use the urgent high BG alarm value for purple text
+                
+                // Calculate the hue based on the bgLevel
+                var hue: CGFloat
+                if latestBG <= minLevel {
+                    hue = redHue
+                } else if latestBG >= maxLevel {
+                    hue = purpleHue
+                } else if latestBG <= targetLevel {
+                    // Interpolate between red and green
+                    let ratio = CGFloat(latestBG - minLevel) / CGFloat(targetLevel - minLevel)
+                    hue = redHue + ratio * (greenHue - redHue)
+                } else {
+                    // Interpolate between green and purple
+                    let ratio = CGFloat(latestBG - targetLevel) / CGFloat(maxLevel - targetLevel)
+                    hue = greenHue + ratio * (purpleHue - greenHue)
+                }
+                
+                // Return the color with full saturation and brightness
+                color = UIColor(hue: hue, saturation: 0.8, brightness: 0.9, alpha: 1.0)
             }
-            */
-            
-            // Define the hue values for the key points
-            let redHue: CGFloat = 0.0 / 360.0       // 0 degrees
-            let greenHue: CGFloat = 120.0 / 360.0   // 120 degrees
-            let purpleHue: CGFloat = 270.0 / 360.0  // 270 degrees
-
-            // Define the bgLevel thresholds
-            let minLevel = 55
-            let targetLevel = 90
-            let maxLevel = 180
-
-            // Calculate the hue based on the bgLevel
-            var hue: CGFloat
-            if latestBG <= minLevel {
-                hue = redHue
-            } else if latestBG >= maxLevel {
-                hue = purpleHue
-            } else if latestBG <= targetLevel {
-                // Interpolate between red and green
-                let ratio = CGFloat(latestBG - minLevel) / CGFloat(targetLevel - minLevel)
-                hue = redHue + ratio * (greenHue - redHue)
-            } else {
-                // Interpolate between green and purple
-                let ratio = CGFloat(latestBG - targetLevel) / CGFloat(maxLevel - targetLevel)
-                hue = greenHue + ratio * (purpleHue - greenHue)
-            }
-
-            // Return the color with full saturation and brightness
-            
-            color = UIColor(hue: hue, saturation: 0.9, brightness: 0.9, alpha: 1.0)
             
             BGText.textColor = color
             snoozer.BGLabel.textColor = color
