@@ -75,9 +75,9 @@
                                                 </constraints>
                                             </stackView>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Predicted ⇢ 888" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oiR-SM-6sg">
-                                                <rect key="frame" x="64.666666666666686" y="239.66666666666669" width="130" height="21.333333333333314"/>
+                                                <rect key="frame" x="59.666666666666686" y="239.66666666666669" width="140" height="21.333333333333314"/>
                                                 <constraints>
-                                                    <constraint firstAttribute="width" constant="130" id="m4V-WI-RHF"/>
+                                                    <constraint firstAttribute="width" constant="140" id="m4V-WI-RHF"/>
                                                 </constraints>
                                                 <fontDescription key="fontDescription" type="system" pointSize="15"/>
                                                 <nil key="textColor"/>
@@ -85,10 +85,10 @@
                                             </label>
                                         </subviews>
                                         <constraints>
-                                            <constraint firstItem="vXU-IW-GOL" firstAttribute="top" secondItem="2mX-T9-SAm" secondAttribute="bottom" constant="-10" id="J4j-K6-Yyo"/>
-                                            <constraint firstItem="KZc-fa-qmt" firstAttribute="top" secondItem="vXU-IW-GOL" secondAttribute="bottom" constant="-10" id="L0a-hf-Wxa"/>
-                                            <constraint firstItem="KZc-fa-qmt" firstAttribute="top" secondItem="vXU-IW-GOL" secondAttribute="bottom" constant="-20" id="YeR-C4-hJI"/>
-                                            <constraint firstItem="oiR-SM-6sg" firstAttribute="top" secondItem="iBz-Uh-tcf" secondAttribute="bottom" constant="-20" id="Z6F-ub-084"/>
+                                            <constraint firstItem="vXU-IW-GOL" firstAttribute="top" secondItem="2mX-T9-SAm" secondAttribute="bottom" constant="-5" id="J4j-K6-Yyo"/>
+                                            <constraint firstItem="KZc-fa-qmt" firstAttribute="top" secondItem="vXU-IW-GOL" secondAttribute="bottom" constant="-5" id="L0a-hf-Wxa"/>
+                                            <constraint firstItem="KZc-fa-qmt" firstAttribute="top" secondItem="vXU-IW-GOL" secondAttribute="bottom" constant="-10" id="YeR-C4-hJI"/>
+                                            <constraint firstItem="oiR-SM-6sg" firstAttribute="top" secondItem="iBz-Uh-tcf" secondAttribute="bottom" constant="-10" id="Z6F-ub-084"/>
                                             <constraint firstItem="iBz-Uh-tcf" firstAttribute="centerX" secondItem="Ptf-fu-Ue4" secondAttribute="centerX" id="gZq-Jz-uyP"/>
                                             <constraint firstItem="oiR-SM-6sg" firstAttribute="centerX" secondItem="Ptf-fu-Ue4" secondAttribute="centerX" constant="-3" id="spg-dJ-DQG"/>
                                         </constraints>
