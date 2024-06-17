@@ -1849,16 +1849,22 @@ extension MainViewController {
         for i in 0..<thisData.count{
             let thisItem = thisData[i]
             //let multiplier = thisItem.insulNeedsScaleFactor as! Double * 100.0
-            var labelText = thisItem.notes // + "\r\n"
+            /*var labelText = thisItem.notes // + "\r\n"
             //labelText += String(Int(thisItem.insulNeedsScaleFactor * 100)) + "% Mål:"
             /*if thisItem.correctionRange.count == 2 {
                 let firstValue = Double(thisItem.correctionRange[0])
                 let result = firstValue / 18.0
                 labelText! += String(result)
             }*/
+           
+            if thisItem.duration != 0 {
+                labelText! += "\nVaraktighet: " + String(format:"%.0f",(thisItem.duration / 60)) + "min"
+            }
             if thisItem.enteredBy.count > 0 {
                 labelText! += "\nInlagt av: " + thisItem.enteredBy
             }
+             */
+            var labelText = formatPillTextExtraLine(line1: thisItem.notes ?? "N/A", line2: "Varaktighet: " + String(format:"%.0f",(thisItem.duration / 60)) + " min", time: thisItem.date)
             
             
             // Start Dot
