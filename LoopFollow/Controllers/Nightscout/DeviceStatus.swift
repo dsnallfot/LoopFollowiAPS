@@ -558,7 +558,8 @@ extension MainViewController {
                             let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
                             let loopYellow = UIColor(named: "LoopYellow"),
                             let loopRed = UIColor(named: "LoopRed"),
-                            let loopGreen = UIColor(named: "LoopGreen") {
+                            let loopGreen = UIColor(named: "LoopGreen")
+                        {
                                 
                             let eventualBGFloatValue = eventualBGValue.floatValue // Convert NSNumber to Float
                             
@@ -569,11 +570,17 @@ extension MainViewController {
                             latestEvBG = formattedBGString + " mmol/L"
                             sharedRawEvBG = formattedBGString
                             sharedLatestEvBG = latestEvBG
-                            
+                           
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
-                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
-                                PredictionLabel.textColor = loopYellow
-                                predictionColor = loopYellow
+                                if UserDefaultsRepository.colorBGText.value {
+                                    PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                    PredictionLabel.textColor = UIColor.systemPurple
+                                    predictionColor = UIColor.systemPurple
+                                } else {
+                                    PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                    PredictionLabel.textColor = loopYellow
+                                    predictionColor = loopYellow
+                                }
                             } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
                                 PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
                                 PredictionLabel.textColor = loopRed
