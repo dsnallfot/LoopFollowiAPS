@@ -90,7 +90,7 @@
                                             <constraint firstItem="KZc-fa-qmt" firstAttribute="top" secondItem="vXU-IW-GOL" secondAttribute="bottom" constant="-10" id="YeR-C4-hJI"/>
                                             <constraint firstItem="oiR-SM-6sg" firstAttribute="top" secondItem="iBz-Uh-tcf" secondAttribute="bottom" constant="-10" id="Z6F-ub-084"/>
                                             <constraint firstItem="iBz-Uh-tcf" firstAttribute="centerX" secondItem="Ptf-fu-Ue4" secondAttribute="centerX" id="gZq-Jz-uyP"/>
-                                            <constraint firstItem="oiR-SM-6sg" firstAttribute="centerX" secondItem="Ptf-fu-Ue4" secondAttribute="centerX" constant="-3" id="spg-dJ-DQG"/>
+                                            <constraint firstItem="oiR-SM-6sg" firstAttribute="centerX" secondItem="Ptf-fu-Ue4" secondAttribute="centerX" constant="-15" id="spg-dJ-DQG"/>
                                         </constraints>
                                     </stackView>
                                     <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" allowsSelection="NO" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="kTs-7g-lp9">
