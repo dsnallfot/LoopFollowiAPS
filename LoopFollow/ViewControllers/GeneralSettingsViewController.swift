@@ -113,7 +113,7 @@ class GeneralSettingsViewController: FormViewController {
             }
         }
         <<< SwitchRow("colorBGText") { row in
-        row.title = "Use dynamic BG Text color"
+        row.title = "Use dynamic BG colors"
         row.value = UserDefaultsRepository.colorBGText.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
