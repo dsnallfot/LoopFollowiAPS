@@ -63,6 +63,7 @@ extension MainViewController {
             let value = PieChartDataEntry(value: slice)
             chartEntry.append(value)
             
+            /*
             let redHue: CGFloat = 0.0 / 360.0       // 0 degrees
             let greenHue: CGFloat = 120.0 / 360.0   // 120 degrees
             let purpleHue: CGFloat = 270.0 / 360.0  // 270 degrees
@@ -71,6 +72,7 @@ extension MainViewController {
             if pieData[i].name == "high" {
                 //purple
                 hue = purpleHue
+                hue = UIColor(named: "ZT")
             } else if pieData[i].name == "low" {
                 //red
                 hue = redHue
@@ -81,23 +83,23 @@ extension MainViewController {
             
             let color = UIColor(hue: hue, saturation: 0.5, brightness: 0.8, alpha: 0.9)
             colors.append(color)
+            */
             
             
-            /*
             if pieData[i].name == "high" {
-                if let color = UIColor(named: "LoopYellow") { //? }.withAlphaComponent(0.8) {
+                if let color = UIColor(named: "ZT")?.withAlphaComponent(0.8) { //? }.withAlphaComponent(0.8) {
                     colors.append(color)
                 }
             } else if pieData[i].name == "low" {
-                if let color = UIColor(named: "LoopRed") { //? }.withAlphaComponent(0.8) {
+                if let color = UIColor(named: "LoopRed")?.withAlphaComponent(0.8) { //? }.withAlphaComponent(0.8) {
                     colors.append(color)
                 }
             } else {
-                if let color = UIColor(named: "LoopGreen") { //? }.withAlphaComponent(0.8) {
+                if let color = UIColor(named: "LoopGreen")?.withAlphaComponent(0.8) { //? }.withAlphaComponent(0.8) {
                     colors.append(color)
                 }
             }
-            */
+            
         }
         
         let set = PieChartDataSet(entries: chartEntry, label: "")
