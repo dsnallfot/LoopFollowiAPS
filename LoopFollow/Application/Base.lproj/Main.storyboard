@@ -202,13 +202,13 @@
                                                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="High" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="0Zq-6s-y8B">
                                                                                 <rect key="frame" x="24.666666666666686" y="0.0" width="30.333333333333329" height="17"/>
                                                                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                                                <color key="textColor" name="LoopYellow"/>
+                                                                                <color key="textColor" name="ZT"/>
                                                                                 <nil key="highlightedColor"/>
                                                                             </label>
                                                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="HON-rt-8pC">
                                                                                 <rect key="frame" x="8.9999999999999964" y="17" width="61.666666666666657" height="28"/>
                                                                                 <fontDescription key="fontDescription" type="system" pointSize="15"/>
-                                                                                <color key="textColor" name="LoopYellow"/>
+                                                                                <color key="textColor" name="ZT"/>
                                                                                 <nil key="highlightedColor"/>
                                                                             </label>
                                                                         </subviews>
@@ -1985,8 +1985,8 @@
         <namedColor name="LoopRed">
             <color red="0.92199999094009399" green="0.34099999070167542" blue="0.34099999070167542" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
-        <namedColor name="LoopYellow">
-            <color red="1" green="0.75700002908706665" blue="0.27099999785423279" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        <namedColor name="ZT">
+            <color red="0.44299998879432678" green="0.37999999523162842" blue="0.93699997663497925" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
         <systemColor name="labelColor">
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
