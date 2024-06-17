@@ -632,10 +632,10 @@ extension MainViewController {
         ll.lineColor = NSUIColor.systemRed.withAlphaComponent(0.5)
         BGChart.rightAxis.addLimitLine(ll)
         
-        //Add upper yellow line based on low alert value
+        //Add upper purple line based on high alert value
         let ul = ChartLimitLine()
         ul.limit = Double(UserDefaultsRepository.highLine.value)
-        ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
+        ul.lineColor = NSUIColor.systemPurple.withAlphaComponent(0.5)
         BGChart.rightAxis.addLimitLine(ul)
         
         // Re-create vertical markers in case their settings changed
@@ -645,6 +645,39 @@ extension MainViewController {
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
         
+    }
+    
+    func setBGColor(_ bgValue: Int) -> NSUIColor {
+        
+        // Auggie's dynamic color - Define the hue values for the key points
+        let redHue: CGFloat = 0.0 / 360.0       // 0 degrees
+        let greenHue: CGFloat = 120.0 / 360.0   // 120 degrees
+        let purpleHue: CGFloat = 270.0 / 360.0  // 270 degrees
+        
+        // Define the bgLevel thresholds
+        let minLevel = Int(UserDefaultsRepository.alertUrgentLowBG.value) // Use the urgent low BG alarm value for red text
+        let targetLevel = Int(UserDefaultsRepository.targetLine.value) // Use the target BG for green text
+        let maxLevel = Int(UserDefaultsRepository.alertUrgentHighBG.value) // Use the urgent high BG alarm value for purple text
+        
+        // Calculate the hue based on the bgLevel
+        var hue: CGFloat
+        if bgValue <= minLevel {
+            hue = redHue
+        } else if bgValue >= maxLevel {
+            hue = purpleHue
+        } else if bgValue <= targetLevel {
+            // Interpolate between red and green
+            let ratio = CGFloat(bgValue - minLevel) / CGFloat(targetLevel - minLevel)
+            hue = redHue + ratio * (greenHue - redHue)
+        } else {
+            // Interpolate between green and purple
+            let ratio = CGFloat(bgValue - targetLevel) / CGFloat(maxLevel - targetLevel)
+            hue = greenHue + ratio * (purpleHue - greenHue)
+        }
+        
+        // Return the color with full saturation and brightness
+        let color = UIColor(hue: hue, saturation: 0.6, brightness: 0.9, alpha: 1.0)
+        return color
     }
     
     func updateBGGraph() {
@@ -670,6 +703,9 @@ extension MainViewController {
             mainChart.append(value)
             smallChart.append(value)
             
+            colors.append(setBGColor(entries[i].sgv))
+            //Auggie - here!
+            /*
             if Double(entries[i].sgv) >= Double(UserDefaultsRepository.highLine.value) {
                 colors.append(NSUIColor.systemYellow)
             } else if Double(entries[i].sgv) <= Double(UserDefaultsRepository.lowLine.value) {
@@ -677,6 +713,7 @@ extension MainViewController {
             } else {
                 colors.append(NSUIColor.systemGreen)
             }
+             */
         }
         
         if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "Total Graph BGs: " + mainChart.entries.count.description) }
