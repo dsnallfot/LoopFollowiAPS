@@ -437,6 +437,12 @@ extension MainViewController {
         ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
         BGChart.rightAxis.addLimitLine(ul)
         
+        //Daniel: Add mid green line based on target value
+        let tl = ChartLimitLine()
+        tl.limit = Double(UserDefaultsRepository.targetLine.value)
+        tl.lineColor = NSUIColor.systemGreen.withAlphaComponent(0.2)
+        BGChart.rightAxis.addLimitLine(tl)
+        
         // Add vertical lines as configured
         createVerticalLines()
         startGraphNowTimer()
@@ -1249,7 +1255,7 @@ extension MainViewController {
             /*let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: valueString)
             BGChart.data?.dataSets[dataIndex].addEntry(dot)*/
             
-            let line2 = "Kolhydrater " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g\nFett " + fatString + " g Protein " + proteinString + " g"
+            let line2 = "Kolhydrater " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g / Fett " + fatString + " g / Protein " + proteinString + " g"
             let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: (foodType.isEmpty ? "Måltid" : "\(foodType)"), line2: line2, time: dateTimeStamp))
 
              BGChart.data?.dataSets[dataIndex].addEntry(dot)

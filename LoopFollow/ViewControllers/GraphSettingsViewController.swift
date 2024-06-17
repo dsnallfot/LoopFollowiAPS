@@ -269,6 +269,26 @@ class GraphSettingsViewController: FormViewController {
                appState.chartSettingsChanges |= ChartSettingsChangeEnum.highLineChanged.rawValue
              }
         }
+        <<< StepperRow("targetLine") { row in
+            row.title = "Target BG Display Value"
+            row.cell.stepper.stepValue = 1
+            row.cell.stepper.minimumValue = 80
+            row.cell.stepper.maximumValue = 180
+            row.value = Double(UserDefaultsRepository.targetLine.value)
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                return bgUnits.toDisplayUnits(String(value))
+            }
+        }.onChange { [weak self] row in
+                guard let value = row.value else { return }
+                UserDefaultsRepository.targetLine.value = Float(value)
+            
+            // tell main screen to update
+            if let appState = self!.appStateController {
+               appState.chartSettingsChanged = true
+               appState.chartSettingsChanges |= ChartSettingsChangeEnum.targetLineChanged.rawValue
+             }
+        }
         <<< StepperRow("downloadDays") { row in
             // NS supports up to 4 days
             row.title = "Show Days Back"

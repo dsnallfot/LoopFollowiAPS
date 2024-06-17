@@ -514,21 +514,18 @@ open class LineChartRenderer: LineRadarRenderer
         return filled
     }
 
-    open override func drawValues(context: CGContext)
-    {
+    open override func drawValues(context: CGContext) {
         guard
             let dataProvider = dataProvider,
             let lineData = dataProvider.lineData
         else { return }
 
-        if isDrawingValuesAllowed(dataProvider: dataProvider)
-        {
+        if isDrawingValuesAllowed(dataProvider: dataProvider) {
             let phaseY = animator.phaseY
             
             var pt = CGPoint()
             
-            for i in lineData.indices
-            {
+            for i in lineData.indices {
                 guard let
                         dataSet = lineData[i] as? LineChartDataSetProtocol,
                       shouldDrawValues(forDataSet: dataSet)
@@ -548,51 +545,65 @@ open class LineChartRenderer: LineRadarRenderer
                 // make sure the values do not interfere with the circles
                 var valOffset = Int(dataSet.circleRadius * 1.75)
                 
-                if !dataSet.isDrawCirclesEnabled
-                {
+                if !dataSet.isDrawCirclesEnabled {
                     valOffset = valOffset / 2
                 }
                 
                 _xBounds.set(chart: dataProvider, dataSet: dataSet, animator: animator)
 
-                for j in _xBounds
-                {
+                for j in _xBounds {
                     guard let e = dataSet.entryForIndex(j) else { break }
                     
                     pt.x = CGFloat(e.x)
                     pt.y = CGFloat(e.y * phaseY)
                     pt = pt.applying(valueToPixelMatrix)
                     
-                    if (!viewPortHandler.isInBoundsRight(pt.x))
-                    {
+                    if (!viewPortHandler.isInBoundsRight(pt.x)) {
                         break
                     }
                     
-                    if (!viewPortHandler.isInBoundsLeft(pt.x) || !viewPortHandler.isInBoundsY(pt.y))
-                    {
+                    if (!viewPortHandler.isInBoundsLeft(pt.x) || !viewPortHandler.isInBoundsY(pt.y)) {
                         continue
                     }
                     
                     // Replace time text with empty string
                     let originalText = formatter.stringForValue(e.y,
-                                                                  entry: e,
-                                                                  dataSetIndex: i,
-                                                                  viewPortHandler: viewPortHandler)
+                                                                entry: e,
+                                                                dataSetIndex: i,
+                                                                viewPortHandler: viewPortHandler)
                     let replacedText = replaceTimeText(originalText)
                     
-                    if dataSet.isDrawValuesEnabled
-                    {
-                        context.drawText(replacedText,
-                                         at: CGPoint(x: pt.x,
-                                                     y: pt.y - CGFloat(valOffset) - valueFont.lineHeight - 12), // Daniel: Offset to make room for extra line in labels
-                                         align: .center,
-                                         angleRadians: angleRadians,
-                                         attributes: [.font: valueFont,
-                                                      .foregroundColor: dataSet.valueTextColorAt(j)])
+                    if dataSet.isDrawValuesEnabled {
+                        let paragraphStyle = NSMutableParagraphStyle()
+                        paragraphStyle.alignment = .center
+                        
+                        let attributes: [NSAttributedString.Key: Any] = [
+                            .font: valueFont,
+                            .foregroundColor: dataSet.valueTextColorAt(j),
+                            .paragraphStyle: paragraphStyle
+                        ]
+                        
+                        let attributedString = NSAttributedString(string: replacedText, attributes: attributes)
+                        
+                        let textStorage = NSTextStorage(attributedString: attributedString)
+                        let textContainer = NSTextContainer(size: CGSize(width: viewPortHandler.contentRect.width, height: .greatestFiniteMagnitude))
+                        let layoutManager = NSLayoutManager()
+                        
+                        layoutManager.addTextContainer(textContainer)
+                        textStorage.addLayoutManager(layoutManager)
+                        
+                        textContainer.lineFragmentPadding = 0.0
+                        textContainer.maximumNumberOfLines = 0
+                        
+                        let textBoundingRect = layoutManager.boundingRect(forGlyphRange: NSRange(location: 0, length: textStorage.length), in: textContainer)
+                        
+                        let drawPoint = CGPoint(x: pt.x - textBoundingRect.width / 2,
+                                                y: pt.y - CGFloat(valOffset) - textBoundingRect.height)
+                        
+                        layoutManager.drawGlyphs(forGlyphRange: NSRange(location: 0, length: textStorage.length), at: drawPoint)
                     }
                     
-                    if let icon = e.icon, dataSet.isDrawIconsEnabled
-                    {
+                    if let icon = e.icon, dataSet.isDrawIconsEnabled {
                         context.drawImage(icon,
                                           atCenter: CGPoint(x: pt.x + iconsOffset.x,
                                                             y: pt.y + iconsOffset.y),
@@ -602,10 +613,11 @@ open class LineChartRenderer: LineRadarRenderer
             }
         }
     }
+
     //Daniel: Added to filter out strings from chart rendering (but still keep it visible in highlight popup)
     func replaceTimeText(_ text: String) -> String {
         // Enrich the existing pattern to also match "Fett X g" and "Protein X g"
-        let timePattern = "\\b(\\d{2}:\\d{2}|Kolhydrater|Fett \\d+ g|Protein \\d+ g|0 g|Måltid|Bolus|SMB|Fingerstick|mmol/L|E)\\b"
+        let timePattern = "\\b(\\d{2}:\\d{2}|Kolhydrater| / Fett \\d+ g| / Protein \\d+ g|0 g|Måltid|Bolus|SMB|Fingerstick|mmol/L|E)\\b"
         
         if let regex = try? NSRegularExpression(pattern: timePattern) {
             let range = NSRange(location: 0, length: text.utf16.count)
@@ -806,8 +818,8 @@ open class LineChartRenderer: LineRadarRenderer
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             
             var pt = trans.pixelForValues(x: x, y: y)
-            // Adjust the y-coordinate to the center of the chart and offset 50 points down
-            pt.y = centerY + 90
+            // Adjust the y-coordinate to the center of the chart and offset 95 points up
+            pt.y = centerY //- 95
             
             high.setDraw(pt: pt)
             
