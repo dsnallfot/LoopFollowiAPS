@@ -431,10 +431,10 @@ extension MainViewController {
         ll.lineColor = NSUIColor.systemRed.withAlphaComponent(0.5)
         BGChart.rightAxis.addLimitLine(ll)
         
-        //Add upper yellow line based on low alert value
+        //Add upper yellow line based on high alert value
         let ul = ChartLimitLine()
         ul.limit = Double(UserDefaultsRepository.highLine.value)
-        ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
+        ul.lineColor = NSUIColor.systemPurple.withAlphaComponent(0.5)
         BGChart.rightAxis.addLimitLine(ul)
         
         //Daniel: Add mid green line based on target value
@@ -704,7 +704,7 @@ extension MainViewController {
             smallChart.append(value)
             
             colors.append(setBGColor(entries[i].sgv))
-            //Auggie - here!
+            //Auggie - old logic for coloring dots
             /*
             if Double(entries[i].sgv) >= Double(UserDefaultsRepository.highLine.value) {
                 colors.append(NSUIColor.systemYellow)
