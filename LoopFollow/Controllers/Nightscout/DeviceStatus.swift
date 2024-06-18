@@ -513,6 +513,8 @@ extension MainViewController {
                             let eventualBGStringValue = String(describing: eventualBGValue)
                             let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
                             
+                            //Auggie - dynamic color for prediction
+                            /*
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
                                 PredictionLabel.text = "    Predicted ⇢ \(formattedBGString)"
                                 PredictionLabel.textColor = loopYellow
@@ -526,6 +528,11 @@ extension MainViewController {
                                 PredictionLabel.textColor = loopGreen
                                 predictionColor = loopGreen
                             }
+                            */
+                            PredictionLabel.text = "    Predicted ⇢ \(formattedBGString)"
+                            PredictionLabel.textColor = setBGColor(Int(eventualBGFloatValue))
+                            predictionColor = setBGColor(Int(eventualBGFloatValue))
+
                         }
 
                         // Update PredictionLabel with the new color
