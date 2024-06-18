@@ -111,7 +111,7 @@ open class PieChartRenderer: NSObject, DataRenderer
 
     @objc open func drawDataSet(context: CGContext, dataSet: PieChartDataSetProtocol)
     {
-        guard let chart = chart else {return }
+        guard let chart = chart else { return }
 
         var angle: CGFloat = 0.0
         let rotationAngle = chart.rotationAngle
@@ -148,7 +148,7 @@ open class PieChartRenderer: NSObject, DataRenderer
         // i.e. We want to VO to say "3 Elements" even if the developer didn't specify an accessibility prefix
         // If prefix is unspecified it is safe to assume they did not want to use "Element 1", so that uses a default empty string
         let prefix: String = chart.data?.accessibilityEntryLabelPrefix ?? "Element"
-        let description = chart.chartDescription.text ?? dataSet.label ?? chart.centerText ??  "Pie Chart"
+        let description = chart.chartDescription.text ?? dataSet.label ?? chart.centerText ?? "Pie Chart"
 
         let
         element = NSUIAccessibilityElement(accessibilityContainer: chart)
@@ -277,6 +277,17 @@ open class PieChartRenderer: NSObject, DataRenderer
             context.beginPath()
             context.addPath(path)
             context.fillPath(using: .evenOdd)
+
+            // Daniel: Add the thin line around the slices
+            context.beginPath()
+            context.addPath(path)
+            if #available(iOS 13.0, *) {
+                context.setStrokeColor(UIColor.secondaryLabel.cgColor)
+            } else {
+                context.setStrokeColor(UIColor.white.cgColor)
+            }
+            context.setLineWidth(1.0 / chart.viewPortHandler.scaleX)
+            context.strokePath()
 
             let axElement = createAccessibleElement(withIndex: j,
                                                     container: chart,
