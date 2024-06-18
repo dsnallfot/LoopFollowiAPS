@@ -85,6 +85,23 @@ extension MainViewController {
             colors.append(color)
             */
             
+            /*
+            //Another way to do this - use the colors used for high and low via dynamic BG color
+             
+             if pieData[i].name == "high" {
+                 let color = setBGColor(Int(UserDefaultsRepository.alertUrgentHighBG.value))
+                 colors.append(color)
+             } else if pieData[i].name == "low" {
+                 let color = setBGColor(Int(UserDefaultsRepository.alertUrgentLowBG.value))
+                 print("Auggie: user default alertUrgentlowBG \(UserDefaultsRepository.alertUrgentLowBG.value)")
+                 colors.append(color)
+             } else {
+                 let color = setBGColor(Int(UserDefaultsRepository.targetLine.value))
+                 colors.append(color)
+             }
+             
+             */
+            
             
             if pieData[i].name == "high" {
                 if let color = UIColor(named: "ZT")?.withAlphaComponent(0.8) { //? }.withAlphaComponent(0.8) {
