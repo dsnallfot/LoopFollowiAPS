@@ -168,7 +168,7 @@ extension MainViewController {
         } else {
             webLoadNSBGData()
         }
-        
+        BackgroundAlertManager.shared.scheduleBackgroundAlert()
     }
     
     // Device Status Timer

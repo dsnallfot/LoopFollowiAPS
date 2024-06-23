@@ -37,6 +37,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
         
+        let action = UNNotificationAction(identifier: "OPEN_APP_ACTION", title: "Open App", options: .foreground)
+                 let category = UNNotificationCategory(identifier: "loopfollow.background.alert", actions: [action], intentIdentifiers: [], options: [])
+                 UNUserNotificationCenter.current().setNotificationCategories([category])
+        
         UNUserNotificationCenter.current().delegate = self
         
          return true
@@ -128,6 +132,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
     }
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+           if response.actionIdentifier == "OPEN_APP_ACTION" {
+               if let window = window {
+                   window.rootViewController?.dismiss(animated: true, completion: nil)
+                   window.rootViewController?.present(MainViewController(), animated: true, completion: nil)
+               }
+           }
+           completionHandler()
+       }
 
 }
 

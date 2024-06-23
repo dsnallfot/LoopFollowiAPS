@@ -445,6 +445,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         // Cancel the current timer and start a fresh background timer using the settings value only if background task is enabled
         
         if UserDefaultsRepository.backgroundRefresh.value {
+            BackgroundAlertManager.shared.startBackgroundAlert()
             backgroundTask.startBackgroundTask()
         }
         
@@ -457,6 +458,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         // Cancel the background tasks, start a fresh timer
         if UserDefaultsRepository.backgroundRefresh.value {
             backgroundTask.stopBackgroundTask()
+            BackgroundAlertManager.shared.stopBackgroundAlert()
         }
         
         restartAllTimers()
