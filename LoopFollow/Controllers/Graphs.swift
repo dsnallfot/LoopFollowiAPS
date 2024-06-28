@@ -698,7 +698,8 @@ extension MainViewController {
             if Float(entries[i].sgv) > topBG - maxBGOffset {
                 topBG = Float(entries[i].sgv) + maxBGOffset
             }
-            let value = ChartDataEntry(x: Double(entries[i].date), y: Double(entries[i].sgv), data: formatPillTextExtraLine(line1: "BG", line2: bgUnits.toDisplayUnits(String(entries[i].sgv)) + " mg/dl", time: entries[i].date))
+            //Auggie - constrain graph height to the min BG scale
+            let value = ChartDataEntry(x: Double(entries[i].date), y: min(Double(UserDefaultsRepository.minBGScale.value), Double(entries[i].sgv)), data: formatPillTextExtraLine(line1: "BG", line2: bgUnits.toDisplayUnits(String(entries[i].sgv)) + " mg/dl", time: entries[i].date))
             if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "BG: " + value.description) }
             mainChart.append(value)
             smallChart.append(value)
@@ -737,13 +738,14 @@ extension MainViewController {
         }
         
         if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "Total Colors: " + mainChart.colors.count.description) }
-        
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        //Auggie - constrain graph height to the min BG scale
+        BGChart.rightAxis.axisMaximum = Double(UserDefaultsRepository.minBGScale.value)
         BGChart.setVisibleXRangeMinimum(600)
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
-        BGChartFull.rightAxis.axisMaximum = Double(topBG)
+        //Auggie - constrain graph height to the min BG scale
+        BGChartFull.rightAxis.axisMaximum = Double(UserDefaultsRepository.minBGScale.value)
         BGChartFull.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChartFull.data?.notifyDataChanged()
         BGChartFull.notifyDataSetChanged()
@@ -795,7 +797,8 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionData[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "Eventual", line2: bgUnits.toDisplayUnits(String(predictionData[i].sgv)) + " mg/dl", time: predictionData[i].date))
+            //Auggie - constrain graph height to the min BG scale
+            let value = ChartDataEntry(x: predictionData[i].date, y: min(Double(UserDefaultsRepository.minBGScale.value), predictionVal), data: formatPillTextExtraLine(line1: "Eventual", line2: bgUnits.toDisplayUnits(String(predictionData[i].sgv)) + " mg/dl", time: predictionData[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -812,7 +815,8 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        //Auggie - constrain graph height to the min BG scale
+        BGChart.rightAxis.axisMaximum = Double(UserDefaultsRepository.minBGScale.value)
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -845,8 +849,8 @@ extension MainViewController {
             } else {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
-            
-            let value = ChartDataEntry(x: predictionDataCOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "COB", line2: bgUnits.toDisplayUnits(String(predictionDataCOB[i].sgv)) + " mg/dl", time: predictionDataCOB[i].date))
+            //Auggie - constrain graph height to the min BG scale
+            let value = ChartDataEntry(x: predictionDataCOB[i].date, y: min(Double(UserDefaultsRepository.minBGScale.value), predictionVal), data: formatPillTextExtraLine(line1: "COB", line2: bgUnits.toDisplayUnits(String(predictionDataCOB[i].sgv)) + " mg/dl", time: predictionDataCOB[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -863,7 +867,8 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        //Auggie - constrain graph height to the min BG scale
+        BGChart.rightAxis.axisMaximum = Double(UserDefaultsRepository.minBGScale.value)
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -897,7 +902,8 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataUAM[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "UAM", line2: bgUnits.toDisplayUnits(String(predictionDataUAM[i].sgv)) + " mg/dl", time: predictionDataUAM[i].date))
+            //Auggie - constrain graph height to the min BG scale
+            let value = ChartDataEntry(x: predictionDataUAM[i].date, y: min(Double(UserDefaultsRepository.minBGScale.value), predictionVal), data: formatPillTextExtraLine(line1: "UAM", line2: bgUnits.toDisplayUnits(String(predictionDataUAM[i].sgv)) + " mg/dl", time: predictionDataUAM[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -914,7 +920,8 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        //Auggie - constrain graph height to the min BG scale
+        BGChart.rightAxis.axisMaximum = Double(UserDefaultsRepository.minBGScale.value)
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -948,7 +955,8 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataIOB[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "IOB", line2: bgUnits.toDisplayUnits(String(predictionDataIOB[i].sgv)) + " md/dl", time: predictionDataIOB[i].date))
+            //Auggie - constrain graph height to the min BG scale
+            let value = ChartDataEntry(x: predictionDataIOB[i].date, y: min(Double(UserDefaultsRepository.minBGScale.value) ,predictionVal), data: formatPillTextExtraLine(line1: "IOB", line2: bgUnits.toDisplayUnits(String(predictionDataIOB[i].sgv)) + " md/dl", time: predictionDataIOB[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -965,7 +973,8 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        //Auggie - constrain graph height to the min BG scale
+        BGChart.rightAxis.axisMaximum = Double(UserDefaultsRepository.minBGScale.value)
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -999,7 +1008,8 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionDataZT[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "ZT", line2: bgUnits.toDisplayUnits(String(predictionDataZT[i].sgv)) + " mg/dl", time: predictionDataZT[i].date))
+            //Auggie - constrain graph height to the min BG scale
+            let value = ChartDataEntry(x: predictionDataZT[i].date, y: min(Double(UserDefaultsRepository.minBGScale.value), predictionVal), data: formatPillTextExtraLine(line1: "ZT", line2: bgUnits.toDisplayUnits(String(predictionDataZT[i].sgv)) + " mg/dl", time: predictionDataZT[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -1016,7 +1026,8 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        //Auggie - constrain graph height to the min BG scale
+        BGChart.rightAxis.axisMaximum = Double(UserDefaultsRepository.minBGScale.value)
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -1083,8 +1094,10 @@ extension MainViewController {
     
     func updateBolusGraph() {
         var dataIndex = 3
-        var yTop: Double = 370
-        var yBottom: Double = 345
+        //Auggie - keep graph below 300
+        //Was 370 and 345
+        var yTop: Double = 300
+        var yBottom: Double = 275
         var mainChart = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         var smallChart = BGChartFull.lineData!.dataSets[dataIndex] as! LineChartDataSet
         mainChart.clear()
@@ -1821,8 +1834,9 @@ extension MainViewController {
     
     func updateOverrideGraph() {
         var dataIndex = 6
-        var yTop: Double = Double(topBG - 5)
-        var yBottom: Double = Double(topBG - 25)
+        //Auggie - constrain graph height to the min BG scale
+        var yTop: Double = Double(UserDefaultsRepository.minBGScale.value - 5)
+        var yBottom: Double = Double(UserDefaultsRepository.minBGScale.value - 25)
         var chart = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         var smallChart = BGChartFull.lineData!.dataSets[dataIndex] as! LineChartDataSet
         chart.clear()
