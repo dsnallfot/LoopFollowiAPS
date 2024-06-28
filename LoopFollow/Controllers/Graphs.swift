@@ -751,7 +751,7 @@ extension MainViewController {
         BGChartFull.notifyDataSetChanged()
         
         if firstGraphLoad {
-            var scaleX = CGFloat(UserDefaultsRepository.chartScaleX.value)
+            var scaleX = 40.0 //CGFloat(UserDefaultsRepository.chartScaleX.value)
             print("Scale: \(scaleX)")
             if( scaleX > CGFloat(ScaleXMax) ) {
                 scaleX = CGFloat(ScaleXMax)
