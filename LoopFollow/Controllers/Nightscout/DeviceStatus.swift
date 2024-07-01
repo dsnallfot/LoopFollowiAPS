@@ -492,7 +492,6 @@ extension MainViewController {
                                 print("No COB prediction found")
                             }
                             updatePredictionGraphCOB(color: UIColor(named: "LoopYellow"))
-                            topPredictionBGCOB = UserDefaultsRepository.minBGScale.value
                             
                             if let graphdataUAM = predbgdata["UAM"] {
                                 predictionDataUAM.removeAll()
@@ -512,7 +511,6 @@ extension MainViewController {
                                 print("No UAM prediction found")
                             }
                             updatePredictionGraphUAM(color: UIColor(named: "UAM"))
-                            topPredictionBGUAM = UserDefaultsRepository.minBGScale.value
                             
                             if let graphdataIOB = predbgdata["IOB"] {
                                 predictionDataIOB.removeAll()
@@ -532,7 +530,6 @@ extension MainViewController {
                                 print("No IOB prediction found")
                             }
                             updatePredictionGraphIOB(color: UIColor(named: "Insulin"))
-                            topPredictionBGIOB = UserDefaultsRepository.minBGScale.value
                             
                             if let graphdataZT = predbgdata["ZT"] {
                                 predictionDataZT.removeAll()
@@ -552,7 +549,6 @@ extension MainViewController {
                                 print("No ZT prediction found")
                             }
                             updatePredictionGraphZT(color: UIColor(named: "ZT"))
-                            topPredictionBGZT = UserDefaultsRepository.minBGScale.value
                             
                         }
                         
@@ -598,7 +594,6 @@ extension MainViewController {
 
                         // Update PredictionLabel with the new color
                         PredictionLabel.textColor = predictionColor
-                        topPredictionBG = UserDefaultsRepository.minBGScale.value
                         
                         if let predMin = graphdata.min(), let predMax = graphdata.max() {
                             let formattedPredMin = bgUnits.toDisplayUnits(String(predMin)).replacingOccurrences(of: ",", with: ".")

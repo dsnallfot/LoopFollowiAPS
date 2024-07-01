@@ -798,7 +798,7 @@ extension MainViewController {
         for i in 0..<predictionData.count {
             var predictionVal = Double(predictionData[i].sgv)
             if Float(predictionVal) > topPredictionBG - maxBGOffset {
-                             topPredictionBG = Float(predictionVal) + maxBGOffset
+            topPredictionBG = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -855,7 +855,7 @@ extension MainViewController {
         for i in 0..<predictionDataCOB.count {
             var predictionVal = Double(predictionDataCOB[i].sgv)
             if Float(predictionVal) > topPredictionBGCOB - maxBGOffset {
-                             topPredictionBGCOB = Float(predictionVal) + maxBGOffset
+            topPredictionBGCOB = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -908,7 +908,7 @@ extension MainViewController {
         for i in 0..<predictionDataUAM.count {
             var predictionVal = Double(predictionDataUAM[i].sgv)
             if Float(predictionVal) > topPredictionBGUAM - maxBGOffset {
-                             topPredictionBGUAM = Float(predictionVal) + maxBGOffset
+            topPredictionBGUAM = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -961,7 +961,7 @@ extension MainViewController {
         for i in 0..<predictionDataIOB.count {
             var predictionVal = Double(predictionDataIOB[i].sgv)
             if Float(predictionVal) > topPredictionBGIOB - maxBGOffset {
-                             topPredictionBGIOB = Float(predictionVal) + maxBGOffset
+            topPredictionBGIOB = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -1014,7 +1014,7 @@ extension MainViewController {
         for i in 0..<predictionDataZT.count {
             var predictionVal = Double(predictionDataZT[i].sgv)
             if Float(predictionVal) > topPredictionBGZT - maxBGOffset {
-                             topPredictionBGZT = Float(predictionVal) + maxBGOffset
+            topPredictionBGZT = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
