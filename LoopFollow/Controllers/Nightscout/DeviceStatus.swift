@@ -595,6 +595,8 @@ extension MainViewController {
                         // Update PredictionLabel with the new color
                         PredictionLabel.textColor = predictionColor
                 
+                        topPredictionBG = UserDefaultsRepository.minBGScale.value
+                        
                         if let predMin = graphdata.min(), let predMax = graphdata.max() {
                             let formattedPredMin = bgUnits.toDisplayUnits(String(predMin)).replacingOccurrences(of: ",", with: ".")
                             let formattedPredMax = bgUnits.toDisplayUnits(String(predMax)).replacingOccurrences(of: ",", with: ".")

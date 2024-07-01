@@ -708,6 +708,8 @@ extension MainViewController {
         let maxBGOffset: Float = 50
         
         var colors = [NSUIColor]()
+        
+        topBG = UserDefaultsRepository.minBGScale.value
         for i in 0..<entries.count{
             if Float(entries[i].sgv) > topBG - maxBGOffset {
                 topBG = Float(entries[i].sgv) + maxBGOffset
@@ -754,12 +756,12 @@ extension MainViewController {
         
         if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "Total Colors: " + mainChart.colors.count.description) }
         
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        BGChart.rightAxis.axisMaximum = Double(calculateMaxBgGraphValue())
         BGChart.setVisibleXRangeMinimum(600)
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
-        BGChartFull.rightAxis.axisMaximum = Double(topBG)
+        BGChartFull.rightAxis.axisMaximum = Double(calculateMaxBgGraphValue())
         BGChartFull.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChartFull.data?.notifyDataChanged()
         BGChartFull.notifyDataSetChanged()
@@ -791,10 +793,12 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
+        
+        topPredictionBG = UserDefaultsRepository.minBGScale.value
         for i in 0..<predictionData.count {
             var predictionVal = Double(predictionData[i].sgv)
-            if Float(predictionVal) > topBG - maxBGOffset {
-                topBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBG - maxBGOffset {
+                             topPredictionBG = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -828,7 +832,7 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        BGChart.rightAxis.axisMaximum = Double(calculateMaxBgGraphValue())
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -846,10 +850,12 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
+        
+        topPredictionBG = UserDefaultsRepository.minBGScale.value
         for i in 0..<predictionDataCOB.count {
             var predictionVal = Double(predictionDataCOB[i].sgv)
-            if Float(predictionVal) > topBG - maxBGOffset {
-                topBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBG - maxBGOffset {
+                             topPredictionBG = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -879,7 +885,7 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        BGChart.rightAxis.axisMaximum = Double(calculateMaxBgGraphValue())
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -897,10 +903,12 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
+        
+        topPredictionBG = UserDefaultsRepository.minBGScale.value
         for i in 0..<predictionDataUAM.count {
             var predictionVal = Double(predictionDataUAM[i].sgv)
-            if Float(predictionVal) > topBG - maxBGOffset {
-                topBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBG - maxBGOffset {
+                             topPredictionBG = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -930,7 +938,7 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        BGChart.rightAxis.axisMaximum = Double(calculateMaxBgGraphValue())
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -948,10 +956,12 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
+        
+        topPredictionBG = UserDefaultsRepository.minBGScale.value
         for i in 0..<predictionDataIOB.count {
             var predictionVal = Double(predictionDataIOB[i].sgv)
-            if Float(predictionVal) > topBG - maxBGOffset {
-                topBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBG - maxBGOffset {
+                             topPredictionBG = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -981,7 +991,7 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        BGChart.rightAxis.axisMaximum = Double(calculateMaxBgGraphValue())
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
@@ -1001,8 +1011,8 @@ extension MainViewController {
         let maxBGOffset: Float = 20
         for i in 0..<predictionDataZT.count {
             var predictionVal = Double(predictionDataZT[i].sgv)
-            if Float(predictionVal) > topBG - maxBGOffset {
-                topBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBG - maxBGOffset {
+                             topPredictionBG = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -1837,8 +1847,8 @@ extension MainViewController {
     
     func updateOverrideGraph() {
         var dataIndex = 6
-        var yTop: Double = Double(topBG - 5)
-        var yBottom: Double = Double(topBG - 25)
+        var yTop: Double = Double(calculateMaxBgGraphValue() - 5)
+        var yBottom: Double = Double(calculateMaxBgGraphValue() - 25)
         var chart = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         var smallChart = BGChartFull.lineData!.dataSets[dataIndex] as! LineChartDataSet
         chart.clear()

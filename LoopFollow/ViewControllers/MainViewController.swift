@@ -154,6 +154,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var lastOverrideStartTime: TimeInterval = 0
     var lastOverrideEndTime: TimeInterval = 0
     var topBG: Float = UserDefaultsRepository.minBGScale.value
+    var topPredictionBG: Float = UserDefaultsRepository.minBGScale.value
     var lastOverrideAlarm: TimeInterval = 0
     
     // share
@@ -813,4 +814,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             autoScrollPauseUntil = Date().addingTimeInterval(5 * 60) // User is viewing historical data, pause auto-scrolling
         }
     }
+    
+    func calculateMaxBgGraphValue() -> Float {
+             return max(topBG, topPredictionBG)
+         }
 }
