@@ -155,6 +155,10 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var lastOverrideEndTime: TimeInterval = 0
     var topBG: Float = UserDefaultsRepository.minBGScale.value
     var topPredictionBG: Float = UserDefaultsRepository.minBGScale.value
+    var topPredictionBGCOB: Float = UserDefaultsRepository.minBGScale.value
+    var topPredictionBGUAM: Float = UserDefaultsRepository.minBGScale.value
+    var topPredictionBGIOB: Float = UserDefaultsRepository.minBGScale.value
+    var topPredictionBGZT: Float = UserDefaultsRepository.minBGScale.value
     var lastOverrideAlarm: TimeInterval = 0
     
     // share
@@ -816,6 +820,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     }
     
     func calculateMaxBgGraphValue() -> Float {
-             return max(topBG, topPredictionBG)
+             return max(topBG, topPredictionBG, topPredictionBGCOB, topPredictionBGUAM, topPredictionBGIOB, topPredictionBGZT)
          }
 }

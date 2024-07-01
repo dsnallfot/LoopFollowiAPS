@@ -851,11 +851,11 @@ extension MainViewController {
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
         
-        topPredictionBG = UserDefaultsRepository.minBGScale.value
+        topPredictionBGCOB = UserDefaultsRepository.minBGScale.value
         for i in 0..<predictionDataCOB.count {
             var predictionVal = Double(predictionDataCOB[i].sgv)
-            if Float(predictionVal) > topPredictionBG - maxBGOffset {
-                             topPredictionBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBGCOB - maxBGOffset {
+                             topPredictionBGCOB = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -904,11 +904,11 @@ extension MainViewController {
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
         
-        topPredictionBG = UserDefaultsRepository.minBGScale.value
+        topPredictionBGUAM = UserDefaultsRepository.minBGScale.value
         for i in 0..<predictionDataUAM.count {
             var predictionVal = Double(predictionDataUAM[i].sgv)
-            if Float(predictionVal) > topPredictionBG - maxBGOffset {
-                             topPredictionBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBGUAM - maxBGOffset {
+                             topPredictionBGUAM = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -957,11 +957,11 @@ extension MainViewController {
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
         
-        topPredictionBG = UserDefaultsRepository.minBGScale.value
+        topPredictionBGIOB = UserDefaultsRepository.minBGScale.value
         for i in 0..<predictionDataIOB.count {
             var predictionVal = Double(predictionDataIOB[i].sgv)
-            if Float(predictionVal) > topPredictionBG - maxBGOffset {
-                             topPredictionBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBGIOB - maxBGOffset {
+                             topPredictionBGIOB = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -1009,10 +1009,12 @@ extension MainViewController {
         
         var colors = [NSUIColor]()
         let maxBGOffset: Float = 20
+        
+        topPredictionBGZT = UserDefaultsRepository.minBGScale.value
         for i in 0..<predictionDataZT.count {
             var predictionVal = Double(predictionDataZT[i].sgv)
-            if Float(predictionVal) > topPredictionBG - maxBGOffset {
-                             topPredictionBG = Float(predictionVal) + maxBGOffset
+            if Float(predictionVal) > topPredictionBGZT - maxBGOffset {
+                             topPredictionBGZT = Float(predictionVal) + maxBGOffset
             }
             
             if i == 0 {
@@ -1042,7 +1044,7 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        BGChart.rightAxis.axisMaximum = Double(topBG)
+        BGChart.rightAxis.axisMaximum = Double(calculateMaxBgGraphValue())
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
