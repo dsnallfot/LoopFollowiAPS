@@ -35,7 +35,7 @@ extension MainViewController {
             self.writeDebugLog(value: "Download: device status")
         }
         
-        let parameters: [String: String] = ["count": "288"]
+        let parameters: [String: String] = ["count": "1"]
         NightscoutUtils.executeDynamicRequest(eventType: .deviceStatus, parameters: parameters) { result in
             switch result {
             case .success(let json):
