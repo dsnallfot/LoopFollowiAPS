@@ -53,7 +53,7 @@
                                                     </label>
                                                 </subviews>
                                                 <constraints>
-                                                    <constraint firstItem="sb7-g9-JNv" firstAttribute="centerY" secondItem="4sd-6h-LSj" secondAttribute="centerY" constant="-1" id="UVP-Zd-nVX"/>
+                                                    <constraint firstItem="sb7-g9-JNv" firstAttribute="centerY" secondItem="4sd-6h-LSj" secondAttribute="centerY" constant="-1.5" id="UVP-Zd-nVX"/>
                                                 </constraints>
                                             </stackView>
                                             <stackView opaque="NO" contentMode="scaleToFill" distribution="fillProportionally" alignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="iBz-Uh-tcf" userLabel="MinAgo LoopStatusStack">
