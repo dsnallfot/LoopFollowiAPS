@@ -127,7 +127,7 @@ extension MainViewController {
             if let lastPumpTime = formatter.date(from: (lastPumpRecord["clock"] as! String))?.timeIntervalSince1970  {
                 if let reservoirData = lastPumpRecord["reservoir"] as? Double {
                     latestPumpVolume = reservoirData
-                    tableData[5].value = String(format:"%.0f", reservoirData) + "U"
+                    tableData[5].value = String(format:"%.0f", reservoirData)// + "U"
                 } else {
                     latestPumpVolume = 50.0
                     tableData[5].value = "50+U"
@@ -161,11 +161,11 @@ extension MainViewController {
                         }
                     }
                     if let iobdata = lastLoopRecord["iob"] as? [String:AnyObject] {
-                        tableData[0].value = String(format:"%.2f", (iobdata["iob"] as! Double)) + "U"
+                        tableData[0].value = String(format:"%.2f", (iobdata["iob"] as! Double))// + "U"
                         latestIOB = String(format:"%.2f", (iobdata["iob"] as! Double))
                     }
                     if let cobdata = lastLoopRecord["cob"] as? [String:AnyObject] {
-                        tableData[1].value = String(format:"%.0f", cobdata["cob"] as! Double) + "g"
+                        tableData[1].value = String(format:"%.0f", cobdata["cob"] as! Double)// + "g"
                         latestCOB = String(format:"%.0f", cobdata["cob"] as! Double)
                     }
                     if let predictdata = lastLoopRecord["predicted"] as? [String:AnyObject] {
@@ -198,7 +198,7 @@ extension MainViewController {
                         }
                     }
                     if let recBolus = lastLoopRecord["recommendedBolus"] as? Double {
-                        tableData[8].value = String(format:"%.2f", recBolus) + "U"
+                        tableData[8].value = String(format:"%.2f", recBolus)// + "U"
                         UserDefaultsRepository.deviceRecBolus.value = recBolus
                     }
                     if let loopStatus = lastLoopRecord["recommendedTempBasal"] as? [String:AnyObject] {
@@ -252,7 +252,7 @@ extension MainViewController {
 
                     if let iobdata = lastLoopRecord["iob"] as? [String:AnyObject] {
                         if let iob = iobdata["iob"] as? Double {
-                            tableData[0].value = String(format:"%.2f", iob) + "U"
+                            tableData[0].value = String(format:"%.2f", iob)// + "U"
                             latestIOB = String(format:"%.2f", iob)
                             sharedLatestIOB = latestIOB
                         }
@@ -261,14 +261,14 @@ extension MainViewController {
                     //Daniel: Use suggested instead of enacted to populate infotable even when not enacted
                     if let suggestedData = lastLoopRecord["suggested"] as? [String:AnyObject] {
                         if let COB = suggestedData["COB"] as? Double {
-                            tableData[1].value = String(format:"%.0f", COB) + "g"
+                            tableData[1].value = String(format:"%.0f", COB)// + "g"
                             latestCOB = String(format:"%.0f", COB)
                             sharedLatestCOB = latestCOB
                         }
 
                         //if let recbolusdata = lastLoopRecord["suggested"] as? [String: AnyObject],
                         if let insulinReq = suggestedData["insulinReq"] as? Double {
-                            tableData[8].value = String(format: "%.2f", insulinReq) + "U"
+                            tableData[8].value = String(format: "%.2f", insulinReq)// + "U"
                             UserDefaultsRepository.deviceRecBolus.value = insulinReq
                         } else {
                             tableData[8].value = "---"
@@ -283,7 +283,7 @@ extension MainViewController {
                         }
                         
                         if let TDD = suggestedData["TDD"] as? Double {
-                            tableData[13].value = String(format:"%.1f", TDD) + "U"
+                            tableData[13].value = String(format:"%.1f", TDD)// + "U"
                         }
                         
                         if let ISF = suggestedData["ISF"] as? Double {
@@ -313,7 +313,7 @@ extension MainViewController {
                         }
                         
                         if let carbsReq = suggestedData["carbsReq"] as? Double {
-                            tableData[17].value = String(format:"%.0f", carbsReq) + "g"
+                            tableData[17].value = String(format:"%.0f", carbsReq)// + "g"
                         } else {
                             // If "carbsReq" is not present in suggestedData, set it to 0
                             tableData[17].value = "0 g"

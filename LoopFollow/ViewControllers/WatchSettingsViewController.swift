@@ -150,7 +150,23 @@ class WatchSettingsViewController: FormViewController {
             }
             <<< LabelRow("15MIN"){ row in
                 row.title = "%15MIN% : Display 15min trend"
-        }
+            }
+            //Auggie adding eA1C
+            <<< LabelRow("A1C"){ row in
+                row.title = "%A1C% : Displays estimated A1C"
+            }
+            //Auggie adding average BG
+            <<< LabelRow("Avg BG"){ row in
+                row.title = "%AVG% : Displays average BG"
+            }
+            //Auggie adding time in range
+            <<< LabelRow("TIR"){ row in
+                row.title = "%TIR% : Displays time in range"
+            }
+            //Auggie adding target
+            <<< LabelRow("TAR"){ row in
+                row.title = "%TAR% : Displays target"
+            }
             
             
         +++ ButtonRow() {
