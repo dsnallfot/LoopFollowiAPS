@@ -187,11 +187,11 @@ extension MainViewController {
         let maxBasal = UserDefaultsRepository.minBasalScale.value
         let lineBasal = LineChartDataSet(entries:chartEntry, label: "")
         lineBasal.setDrawHighlightIndicators(false)
-        lineBasal.setColor(NSUIColor.systemBlue, alpha: 0.5)
+        lineBasal.setColor(NSUIColor.systemBlue, alpha: 0.3)
         lineBasal.lineWidth = 0
         lineBasal.drawFilledEnabled = true
         lineBasal.fillColor = NSUIColor.systemBlue
-        lineBasal.fillAlpha = 0.5
+        lineBasal.fillAlpha = 0.3
         lineBasal.drawCirclesEnabled = false
         lineBasal.axisDependency = YAxis.AxisDependency.left
         lineBasal.highlightEnabled = true
@@ -1618,11 +1618,11 @@ extension MainViewController {
         var maxBasal = UserDefaultsRepository.minBasalScale.value
         let lineBasal = LineChartDataSet(entries:chartEntry, label: "")
         lineBasal.setDrawHighlightIndicators(false)
-        lineBasal.setColor(NSUIColor.systemBlue, alpha: 0.5)
+        lineBasal.setColor(NSUIColor.systemBlue, alpha: 0.4)
         lineBasal.lineWidth = 0
         lineBasal.drawFilledEnabled = true
         lineBasal.fillColor = NSUIColor.systemBlue
-        lineBasal.fillAlpha = 0.35
+        lineBasal.fillAlpha = 0.4
         lineBasal.drawCirclesEnabled = false
         lineBasal.axisDependency = YAxis.AxisDependency.left
         lineBasal.highlightEnabled = false
