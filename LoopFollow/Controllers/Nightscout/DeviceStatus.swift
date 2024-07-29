@@ -308,8 +308,8 @@ extension MainViewController {
                         //let sharedProfileCRValue = round((sharedSensValue * sharedRawCRValue) * 10) / 10.0
                         
                         if let currentTargetMgdl = suggestedData["current_target"] as? Double {
-                            //let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
-                            tableData[16].value = String(format: "%.0f", currentTargetMgdl)
+                            let currentTargetString = String(currentTargetMgdl)
+                            tableData[16].value = bgUnits.toDisplayUnits(currentTargetString).replacingOccurrences(of: ",", with: ".")
                         }
                         
                         if let carbsReq = suggestedData["carbsReq"] as? Double {
