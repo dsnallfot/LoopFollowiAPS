@@ -27,7 +27,7 @@ extension MainViewController {
             self.writeDebugLog(value: "Download: device status")
         }
         
-        let parameters: [String: String] = ["count": "288"]
+        let parameters: [String: String] = ["count": "1"]
         NightscoutUtils.executeDynamicRequest(eventType: .deviceStatus, parameters: parameters) { result in
             switch result {
             case .success(let json):
@@ -46,7 +46,7 @@ extension MainViewController {
     }
     
     func mgdlToMmol(_ mgdl: Double) -> Double {
-        return mgdl// * 0.05551
+        return mgdl * 0.05551
     }
     
     private func handleDeviceStatusError() {
@@ -287,8 +287,8 @@ extension MainViewController {
                         }
                         
                         if let ISF = suggestedData["ISF"] as? Double {
-                            let sharedProfileISFValue = String(format:"%.0f", round(sharedSensValue * ISF))
-                            let modifiedISF = String(format:"%.0f", ISF)
+                            let sharedProfileISFValue = String(format:"%.1f", sharedSensValue * ISF)
+                            let modifiedISF = String(format:"%.1f", ISF)
                             let ISFString = "\(sharedProfileISFValue) ⇢ \(modifiedISF)"
                             tableData[14].value = ISFString
                         }
@@ -345,7 +345,7 @@ extension MainViewController {
                         
                         //Daniel: Added suggested data for bolus calculator and info
                         if let minGuardBG = suggestedData["minGuardBG"] as? Double {
-                            let formattedMinGuardBGString = minGuardBG
+                            let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
                             sharedMinGuardBG = Double(formattedMinGuardBGString)
                         } else {
                             let formattedLowLine = Double(UserDefaultsRepository.lowLine.value)

@@ -51,7 +51,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
         
         //MinGuardBG & Low Threshold
         let minGuardBG = Decimal(sharedMinGuardBG)
-        let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value))// * 0.0555)
+        let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
         
         // Format the MinGuardBG value & low threshold to have one decimal place
         let formattedMinGuardBG = numberFormatter.string(from: NSDecimalNumber(decimal: minGuardBG) as NSNumber) ?? ""
