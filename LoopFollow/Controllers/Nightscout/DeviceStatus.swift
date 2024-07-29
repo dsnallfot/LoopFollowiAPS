@@ -568,8 +568,10 @@ extension MainViewController {
                             }
                         }
                     } else if let enacted = lastLoopRecord["enacted"] as? [String: AnyObject],
-                              let received = enacted["recieved"] as? Bool, !received {
+                              //let received = enacted["recieved"] as? Bool, !received {
+                              let received = (enacted["received"] as? Bool) ?? (enacted["recieved"] as? Bool), !received {
                         // Daniel: If "recieved" is false, it means there's a failure. received is misspelled as recieved in iAPS upload to NS Device status
+                        //Auggie: also check for "received", because this is corrected in newer Trio
                         LoopStatusLabel.text = " ᮰"
                         LoopStatusLabel.textColor = UIColor(named: "LoopYellow")
                         latestLoopStatusString = "᮰"
