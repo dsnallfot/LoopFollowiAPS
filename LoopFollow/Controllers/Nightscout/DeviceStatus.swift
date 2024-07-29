@@ -352,8 +352,8 @@ extension MainViewController {
                         }
                         
                         if let currentTargetMgdl = suggestedData["current_target"] as? Double {
-                            let currentTargetMmol = mgdlToMmol(currentTargetMgdl)
-                            tableData[16].value = String(format: "%.1f", currentTargetMmol) + " mmol/L"
+                            let currentTargetString = String(currentTargetMgdl)
+                            tableData[16].value = bgUnits.toDisplayUnits(currentTargetString).replacingOccurrences(of: ",", with: ".") + " mmol/L"
                         }
                         
                         if let carbsReq = suggestedData["carbsReq"] as? Double {
