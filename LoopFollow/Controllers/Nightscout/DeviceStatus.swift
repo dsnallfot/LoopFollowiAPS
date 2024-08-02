@@ -130,7 +130,7 @@ extension MainViewController {
                     tableData[5].value = String(format:"%.0f", reservoirData)// + "U"
                 } else {
                     latestPumpVolume = 50.0
-                    tableData[5].value = "50+U"
+                    tableData[5].value = "50"
                 }
                 
                 if let uploader = lastDeviceStatus?["uploader"] as? [String:AnyObject] {
@@ -316,7 +316,7 @@ extension MainViewController {
                             tableData[17].value = String(format:"%.0f", carbsReq)// + "g"
                         } else {
                             // If "carbsReq" is not present in suggestedData, set it to 0
-                            tableData[17].value = "0 g"
+                            tableData[17].value = "0"
                         }
                         
                         if let timestampString = suggestedData["timestamp"] as? String {
