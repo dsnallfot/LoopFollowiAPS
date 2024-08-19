@@ -394,7 +394,6 @@ extension MainViewController {
                     var graphtype = ""
                     var graphdata: [Double] = []
                     
-                    //Auggie -- suggested to enacted
                     if let enactdata = lastLoopRecord["suggested"] as? [String: AnyObject],
                        let predbgdata = enactdata["predBGs"] as? [String: [Double]] {
                         
@@ -502,7 +501,7 @@ extension MainViewController {
                         var predictionColor = UIColor.systemGray
 
                         //auggie - sugested to enacted
-                        if let eventualData = lastLoopRecord["enacted"] as? [String: Any],
+                        if let eventualData = lastLoopRecord["suggested"] as? [String: Any],
                             let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
                             let loopYellow = UIColor(named: "LoopYellow"),
                             let loopRed = UIColor(named: "LoopRed"),

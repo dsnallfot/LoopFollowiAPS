@@ -137,8 +137,8 @@ extension MainViewController {
             if i == tempArray.count - 1 && duration == 0.0 {
                 lastEndDot = dateTimeStamp + (30 * 60)
                 if UserDefaultsRepository.showDetails.value {
-                    latestBasal = String(format:"%.2f", basalRate)
-                    //latestBasal = basalNow + " ⇢ " + String(format:"%.2f", basalRate)
+                    //latestBasal = String(format:"%.2f", basalRate)
+                    latestBasal = basalNow + " ⇢ " + String(format:"%.2f", basalRate)
                     //latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ")"// U/h"
                 } else {
                     latestBasal = String(format:"%.2f", basalRate)// + " U/h"
@@ -146,8 +146,8 @@ extension MainViewController {
             } else {
                 lastEndDot = dateTimeStamp + (duration * 60)
                 if UserDefaultsRepository.showDetails.value {
-                    latestBasal = String(format:"%.2f", basalRate)
-                    //latestBasal = basalNow + " ⇢ " + String(format:"%.2f", basalRate)
+                    //latestBasal = String(format:"%.2f", basalRate)
+                    latestBasal = basalNow + " ⇢ " + String(format:"%.2f", basalRate)
                     //latestBasal = String(format:"%.2f", basalRate) + " (" + basalNow + ")"// U/h"
                 } else {
                     latestBasal = String(format:"%.2f", basalRate)// + " U/h"
@@ -199,8 +199,8 @@ extension MainViewController {
             }
             
             if UserDefaultsRepository.showDetails.value {
-                latestBasal = String(format:"%.2f", scheduled)
-                //latestBasal = basalNow + " ⇢ " + String(format:"%.2f", scheduled)
+                //latestBasal = String(format:"%.2f", scheduled)
+                latestBasal = basalNow + " ⇢ " + String(format:"%.2f", scheduled)
                 //latestBasal = String(format:"%.2f", scheduled) + " (" + basalNow + ")"// U/h"
             } else {
                 latestBasal = String(format:"%.2f", scheduled)// + " U/h"
