@@ -766,9 +766,15 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             let confirmationAlert = UIAlertController(title: "Bekräfta måltid och bolus", message: "Vill du registrera denna måltid och ge \(bolusValue) E bolus?", preferredStyle: .alert)
             
             confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
-                // Authenticate with Face ID
-                self.authenticateWithBiometrics {
-                    // Proceed with the request after successful authentication
+                let method = UserDefaultsRepository.method.value
+                
+                if method == "SMS API" {
+                    // Authenticate with Face ID
+                    self.authenticateWithBiometrics {
+                        // Proceed with the request after successful authentication
+                        self.sendMealRequest(combinedString: combinedString)
+                    }
+                } else {
                     self.sendMealRequest(combinedString: combinedString)
                 }
             }))

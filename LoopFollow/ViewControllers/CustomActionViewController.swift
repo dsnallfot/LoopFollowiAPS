@@ -117,9 +117,15 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
         let confirmationAlert = UIAlertController(title: "Bekräfta förval", message: "Observera att flera av förvalen både registrerar en måltid och ger en bolus!\n\nVill du registrera \(selectedCustomAction)?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
-            // Authenticate with Face ID
-            self.authenticateWithBiometrics {
-                // Proceed with the request after successful authentication
+            let method = UserDefaultsRepository.method.value
+            
+            if method == "SMS API" {
+                // Authenticate with Face ID
+                self.authenticateWithBiometrics {
+                    // Proceed with the request after successful authentication
+                    self.sendCustomActionRequest(combinedString: combinedString)
+                }
+            } else {
                 self.sendCustomActionRequest(combinedString: combinedString)
             }
         }))

@@ -117,9 +117,15 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         let confirmationAlert = UIAlertController(title: "Bekräfta bolus", message: "Vill du ge \(bolusValue) E bolus?", preferredStyle: .alert)
         
         confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { (action: UIAlertAction!) in
-            // Authenticate with Face ID
-            self.authenticateWithBiometrics {
-                // Proceed with the request after successful authentication
+            let method = UserDefaultsRepository.method.value
+            
+            if method == "SMS API" {
+                // Authenticate with Face ID
+                self.authenticateWithBiometrics {
+                    // Proceed with the request after successful authentication
+                    self.sendBolusRequest(bolusValue: bolusValue)
+                }
+            } else {
                 self.sendBolusRequest(bolusValue: bolusValue)
             }
         }))
