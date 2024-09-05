@@ -35,6 +35,12 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         
         // Set the initial selected override
         selectedOverride = overrideOptions[0]
+        
+        // Register observers for shortcut callback notifications
+        NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutSuccess), name: NSNotification.Name("ShortcutSuccess"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutError), name: NSNotification.Name("ShortcutError"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutCancel), name: NSNotification.Name("ShortcutCancel"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
     }
     
     // MARK: - UIPickerViewDataSource
@@ -114,11 +120,30 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
                 print("Failed to encode URL string")
                 return
             }
-            let urlString = "shortcuts://run-shortcut?name=Remote%20Override&input=text&text=\(encodedString)"
+            
+            // Define your custom callback URLs
+            let successCallback = "loop://completed" // Add completed for future use when the shortcut has run, but for instance the passcode was wrong. NOTE: not to mixed up with loop://success that should be returned by the remote meal shortcut to proceed with the meal registration)
+            let errorCallback = "loop://error"
+            let cancelCallback = "loop://cancel"
+            
+            // Encode the callback URLs
+            guard let successEncoded = successCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let errorEncoded = errorCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let cancelEncoded = cancelCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                print("Failed to encode callback URLs")
+                return
+            }
+            /*let urlString = "shortcuts://run-shortcut?name=Remote%20Override&input=text&text=\(encodedString)"
+            if let url = URL(string: urlString) {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)*/
+            let urlString = "shortcuts://x-callback-url/run-shortcut?name=Remote%20Override&input=text&text=\(encodedString)&x-success=\(successEncoded)&x-error=\(errorEncoded)&x-cancel=\(cancelEncoded)"
+            
             if let url = URL(string: urlString) {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
-            dismiss(animated: true, completion: nil)
+            
+            print("Waiting for shortcut completion...")
+            //dismiss(animated: true, completion: nil)
         } else {
             // If method is "SMS API", proceed with sending the request
             twilioRequest(combinedString: combinedString) { result in
@@ -145,6 +170,60 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
                 }
             }
         }
+    }
+    
+    
+    @objc private func handleShortcutSuccess() {
+        print("Shortcut succeeded")
+        
+        // Play a success sound
+        AudioServicesPlaySystemSound(SystemSoundID(1322))
+        
+        // Show success alert with "Lyckades"
+        showAlert(title: NSLocalizedString("Lyckades", comment: "Lyckades"), message: NSLocalizedString("Overrideregistreringen skickades", comment: "Overrideregistreringen skickades"), completion: {
+            self.dismiss(animated: true, completion: nil)  // Dismiss the view controller after showing the alert
+        })
+    }
+
+    @objc private func handleShortcutError() {
+        print("Shortcut failed, showing error alert...")
+        
+        // Play a error sound
+        AudioServicesPlaySystemSound(SystemSoundID(1053))
+        
+        showAlert(title: NSLocalizedString("Misslyckades", comment: "Misslyckades"), message: NSLocalizedString("Ett fel uppstod när genvägen skulle köras. Du kan försöka igen.", comment: "Ett fel uppstod när genvägen skulle köras. Du kan försöka igen."), completion: {
+            self.handleAlertDismissal()  // Re-enable the send button after error handling
+        })
+    }
+
+    @objc private func handleShortcutCancel() {
+        print("Shortcut was cancelled, showing cancellation alert...")
+        
+        // Play a error sound
+        AudioServicesPlaySystemSound(SystemSoundID(1053))
+        
+        showAlert(title: NSLocalizedString("Avbröts", comment: "Avbröts"), message: NSLocalizedString("Genvägen avbröts innan den körts färdigt. Du kan försöka igen.", comment: "Genvägen avbröts innan den körts färdigt. Du kan försöka igen.") , completion: {
+            self.handleAlertDismissal()  // Re-enable the send button after cancellation
+        })
+    }
+    
+    @objc private func handleShortcutPasscode() {
+        print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
+        
+        // Play a error sound
+        AudioServicesPlaySystemSound(SystemSoundID(1053))
+        
+        showAlert(title: NSLocalizedString("Fel lösenkod", comment: "Fel lösenkod"), message: NSLocalizedString("Genvägen avbröts pga fel lösenkod. Du kan försöka igen.", comment: "Genvägen avbröts pga fel lösenkod. Du kan försöka igen.") , completion: {
+            self.handleAlertDismissal()  // Re-enable the send button after cancellation
+        })
+    }
+
+    private func showAlert(title: String, message: String, completion: @escaping () -> Void) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+            completion()  // Call the completion handler after dismissing the alert
+        }))
+        present(alert, animated: true, completion: nil)
     }
     
     @IBAction func cancelButtonPressed(_ sender: Any) {
