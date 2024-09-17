@@ -273,11 +273,14 @@ extension MainViewController {
                     }
 
                     func processData(_ data: [String: AnyObject]) {
-                        if let COB = data["COB"] as? Double {
-                            tableData[1].value = String(format: "%.0f", COB) // + "g"
-                            latestCOB = String(format: "%.0f", COB)
-                            sharedLatestCOB = latestCOB
-                        }
+                        // Retrieve COB value, default to 0 if nil
+                        let COB = data["COB"] as? Double ?? 0.0
+                        
+                        // Set tableData, latestCOB, and sharedLatestCOB using the COB value
+                        tableData[1].value = String(format: "%.0f", COB) // + "g"
+                        latestCOB = String(format: "%.0f", COB)
+                        sharedLatestCOB = latestCOB
+                            
 
                         if let insulinReq = data["insulinReq"] as? Double {
                             tableData[8].value = String(format: "%.2f", insulinReq) // + "U"
@@ -314,11 +317,17 @@ extension MainViewController {
                             sharedCRValue = String(format: "%.1f", sharedProfileCRValue)
                         }
 
-                        if let currentTargetMgdl = data["current_target"] as? Double {
-                            let currentTargetString = String(currentTargetMgdl)
-                            tableData[16].value = bgUnits.toDisplayUnits(currentTargetString).replacingOccurrences(of: ",", with: ".")
+                        if let currentTarget = data["current_target"] as? Double {
+                            let currentTargetString = String(currentTarget)
+                            if let currentTarget = data["current_target"] as? Double {
+                                if currentTarget < 30.0 {
+                                    tableData[16].value = currentTargetString.replacingOccurrences(of: ",", with: ".")
+                                } else {
+                                    tableData[16].value = bgUnits.toDisplayUnits(currentTargetString).replacingOccurrences(of: ",", with: ".")
+                                }
+                            }
                         }
-
+                            
                         if let carbsReq = data["carbsReq"] as? Double {
                             tableData[17].value = String(format: "%.0f", carbsReq) // + "g"
                         } else {
