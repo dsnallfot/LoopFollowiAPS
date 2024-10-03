@@ -267,6 +267,120 @@ extension MainViewController {
                         }
                     }
                     
+                    // First check for enacted data, otherwise fallback to suggested
+                    if let enactedData = lastLoopRecord["enacted"] as? [String: AnyObject] {
+                        // Use enacted data
+                        processData(enactedData)
+                    } else if let suggestedData = lastLoopRecord["suggested"] as? [String: AnyObject] {
+                        // Use suggested data as a fallback
+                        processData(suggestedData)
+                    } else {
+                        // Handle case where neither enacted nor suggested data is available
+                        for i in 1..<tableData.count {
+                            tableData[i].value = "---"
+                        }
+                    }
+
+                    func processData(_ data: [String: AnyObject]) {
+                        if let COB = data["COB"] as? Double {
+                            tableData[1].value = String(format: "%.0f", COB) + " g"
+                            latestCOB = String(format: "%.0f", COB) + " g"
+                            sharedLatestCOB = latestCOB
+                        }
+
+                        if let insulinReq = data["insulinReq"] as? Double {
+                            tableData[8].value = String(format: "%.2f", insulinReq) + " E"
+                            UserDefaultsRepository.deviceRecBolus.value = insulinReq
+                            latestInsulinReq = String(format: "%.2f", insulinReq) + " E"
+                            sharedLatestInsulinReq = latestInsulinReq
+                        } else {
+                            tableData[8].value = "---"
+                            UserDefaultsRepository.deviceRecBolus.value = 0
+                            latestInsulinReq = "---"
+                            sharedLatestInsulinReq = latestInsulinReq
+                        }
+
+                        if let sensitivityRatio = data["sensitivityRatio"] as? Double {
+                            let sens = sensitivityRatio * 100.0
+                            tableData[11].value = String(format: "%.0f", sens) + " %"
+                            latestSens = String(format: "%.0f", sens) + " %"
+                            sharedLatestSens = latestSens
+                            sharedSensValue = sensitivityRatio
+                        }
+
+                        if let TDD = data["TDD"] as? Double {
+                            tableData[13].value = String(format: "%.1f", TDD) + " E"
+                        }
+
+                        if let ISF = data["ISF"] as? Double {
+                            let sharedProfileISFValue = String(format: "%.1f", sharedSensValue * ISF)
+                            let modifiedISF = String(format: "%.1f", ISF)
+                            let ISFString = "\(sharedProfileISFValue) ⇢ \(modifiedISF) mmol/L/E"
+                            tableData[14].value = ISFString
+                            latestISF = ISFString
+                            sharedLatestISF = latestISF
+                        }
+
+                        if let CR = data["CR"] as? Double {
+                            sharedRawCRValue = CR.description
+                            let sharedProfileCRValue = round((Double(sharedSensValue) * (Double(sharedRawCRValue) ?? 0.0)) * 10) / 10.0
+                            let CRString = "\(sharedProfileCRValue) ⇢ \(sharedRawCRValue) g/E"
+                            if UserDefaultsRepository.useDynCr.value {
+                                tableData[15].value = CRString
+                                sharedCRValue = UserDefaultsRepository.useDynCrInBolusCalc.value ? sharedRawCRValue : String(format: "%.1f", sharedProfileCRValue)
+                            } else {
+                                tableData[15].value = "\(sharedRawCRValue) g/E"
+                                sharedCRValue = sharedRawCRValue
+                            }
+                        }
+
+                        if let currentTargetMgdl = data["current_target"] as? Double {
+                            let currentTargetString = String(currentTargetMgdl)
+                            tableData[16].value = bgUnits.toDisplayUnits(currentTargetString).replacingOccurrences(of: ",", with: ".") + " mmol/L"
+                        }
+
+                        if let carbsReq = data["carbsReq"] as? Double {
+                            tableData[17].value = String(format: "%.0f", carbsReq) + " g"
+                            latestCarbReq = String(format: "%.0f", carbsReq) + " g"
+                            sharedLatestCarbReq = latestCarbReq
+                        } else {
+                            tableData[17].value = "0 g"
+                            latestCarbReq = "0 g"
+                            sharedLatestCarbReq = latestCarbReq
+                        }
+
+                        if let timestampString = data["timestamp"] as? String {
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+                            dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
+                            
+                            if let timestamp = dateFormatter.date(from: timestampString) {
+                                let localTimeFormatter = DateFormatter()
+                                localTimeFormatter.dateFormat = "HH:mm:ss"
+                                localTimeFormatter.timeZone = TimeZone.autoupdatingCurrent
+                                let formattedLocalTime = localTimeFormatter.string(from: timestamp)
+                                tableData[18].value = formattedLocalTime
+                            }
+                        }
+
+                        if let minGuardBG = data["minGuardBG"] as? Double {
+                            let formattedMinGuardBGString = mgdlToMmol(minGuardBG)
+                            sharedMinGuardBG = Double(formattedMinGuardBGString)
+                            sharedRawMinGuardBG = String(format: "%.1f", formattedMinGuardBGString)
+                        } else {
+                            let formattedLowLine = mgdlToMmol(Double(UserDefaultsRepository.lowLine.value))
+                            sharedMinGuardBG = Double(formattedLowLine)
+                            sharedRawMinGuardBG = ""
+                        }
+
+                        if let LastSMBUnits = data["units"] as? Double {
+                            let formattedLastSMBUnitsString = String(format: "%.2f", LastSMBUnits)
+                            sharedLastSMBUnits = Double(formattedLastSMBUnitsString) ?? 0
+                        } else {
+                            sharedLastSMBUnits = 0
+                        }
+                    }
+                    /*
                     //Daniel: Use suggested instead of enacted to populate infotable even when not enacted
                     if let suggestedData = lastLoopRecord["suggested"] as? [String:AnyObject] {
                         if let COB = suggestedData["COB"] as? Double {
@@ -290,8 +404,8 @@ extension MainViewController {
                             //Daniel: Added for visualization in remote meal info popup
                             latestInsulinReq = "---"
                             sharedLatestInsulinReq = latestInsulinReq
-                        }
-                        
+                        }*/
+                        /*
                         if let sensitivityRatio = suggestedData["sensitivityRatio"] as? Double {
                             let sens = sensitivityRatio * 100.0
                             tableData[11].value = String(format:"%.0f", sens) + " %"
@@ -404,14 +518,14 @@ extension MainViewController {
                             let formattedLowLine = mgdlToMmol(Double(UserDefaultsRepository.lowLine.value))
                             sharedMinGuardBG = Double(formattedLowLine)
                             sharedRawMinGuardBG = ""
-                        }
+                        }*/
                         
                         /*if let insulinReq = suggestedData["insulinReq"] as? Double {
                             let formattedInsulinReqString = String(format:"%.2f", insulinReq)
                             sharedInsulinReq = Double(formattedInsulinReqString) ?? 0
                         } else {
                             sharedInsulinReq = 0
-                        }*/
+                        }
                         
                         if let LastSMBUnits = suggestedData["units"] as? Double {
                             let formattedLastSMBUnitsString = String(format:"%.2f", LastSMBUnits)
@@ -426,7 +540,7 @@ extension MainViewController {
                             tableData[i].value = "---"
                         }
                         
-                    }
+                    }*/
                     
                     //Auggie - override name
                     let recentOverride = overrideGraphData.last
@@ -447,130 +561,178 @@ extension MainViewController {
                     // Include all values from all predBG types to be able to show min-max values
                     var graphtype = ""
                     var graphdata: [Double] = []
-                    
-                    if let enactdata = lastLoopRecord["suggested"] as? [String: AnyObject],
-                       let predbgdata = enactdata["predBGs"] as? [String: [Double]] {
-                        
+
+                    var predbgdata: [String: [Double]]?
+
+                    // Check if enacted data exists, if not, fallback to suggested data
+                    if let enactedData = lastLoopRecord["enacted"] as? [String: AnyObject],
+                       let enactedPredbgData = enactedData["predBGs"] as? [String: [Double]] {
+                        // Use enacted data if it exists
+                        predbgdata = enactedPredbgData
+                    } else if let suggestedData = lastLoopRecord["suggested"] as? [String: AnyObject],
+                              let suggestedPredbgData = suggestedData["predBGs"] as? [String: [Double]] {
+                        // Fallback to suggested data if enacted does not exist
+                        predbgdata = suggestedPredbgData
+                    }
+
+                    // Now we can safely use predbgdata outside the if blocks
+                    if let predbgdata = predbgdata {
                         let availableTypes = ["COB", "UAM", "IOB", "ZT"]
                         for type in availableTypes {
                             if let data = predbgdata[type] {
                                 graphtype = type
-                                graphdata += data // Merging all available values into one array to be able to present predmin-predmax based an all prediction values
+                                graphdata += data // Merging all available values into one array to be able to present predmin-predmax based on all prediction values
                             }
                         }
-                        
-                        if UserDefaultsRepository.downloadPrediction.value && latestLoopTime < lastLoopTime {
-                            predictionData.removeAll()
-                            var predictionTime = lastLoopTime
+
+                    if UserDefaultsRepository.downloadPrediction.value && latestLoopTime < lastLoopTime {
+                        predictionData.removeAll()
+                        var predictionTime = lastLoopTime
+                        let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                        var i = 0
+                        while i <= toLoad {
+                            if i < graphdata.count {
+                                let prediction = ShareGlucoseData(sgv: Int(round(graphdata[i])), date: predictionTime, direction: "flat")
+                                predictionData.append(prediction)
+                                predictionTime += 300
+                            }
+                            i += 1
+                        }
+
+                        // Daniel: Collect predbgdata per type to create prediction charts COB, UAM, IOB, ZT
+                        if let graphdataCOB = predbgdata["COB"] {
+                            predictionDataCOB.removeAll()
+                            var predictionTimeCOB = lastLoopTime
                             let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
                             var i = 0
                             while i <= toLoad {
-                                if i < graphdata.count {
-                                    let prediction = ShareGlucoseData(sgv: Int(round(graphdata[i])), date: predictionTime, direction: "flat")
-                                    predictionData.append(prediction)
-                                    predictionTime += 300
+                                if i < graphdataCOB.count {
+                                    let predictionCOB = ShareGlucoseData(sgv: Int(round(graphdataCOB[i])), date: predictionTimeCOB, direction: "flat")
+                                    predictionDataCOB.append(predictionCOB)
+                                    predictionTimeCOB += 300
                                 }
                                 i += 1
                             }
-                                                       
-                            // Daniel: Collect predbgdata per type to create prediction charts COB, UAM, IOB, ZT
-                            if let graphdataCOB = predbgdata["COB"] {
-                                predictionDataCOB.removeAll()
-                                var predictionTimeCOB = lastLoopTime
-                                let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                                var i = 0
-                                while i <= toLoad {
-                                    if i < graphdataCOB.count {
-                                        let predictionCOB = ShareGlucoseData(sgv: Int(round(graphdataCOB[i])), date: predictionTimeCOB, direction: "flat")
-                                        predictionDataCOB.append(predictionCOB)
-                                        predictionTimeCOB += 300
-                                    }
-                                    i += 1
-                                }
-                            } else {
-                                predictionDataCOB.removeAll()
-                                print("No COB prediction found")
-                            }
-                            updatePredictionGraphCOB(color: UIColor(named: "LoopYellow"))
-                            
-                            if let graphdataUAM = predbgdata["UAM"] {
-                                predictionDataUAM.removeAll()
-                                var predictionTimeUAM = lastLoopTime
-                                let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                                var i = 0
-                                while i <= toLoad {
-                                    if i < graphdataUAM.count {
-                                        let predictionUAM = ShareGlucoseData(sgv: Int(round(graphdataUAM[i])), date: predictionTimeUAM, direction: "flat")
-                                        predictionDataUAM.append(predictionUAM)
-                                        predictionTimeUAM += 300
-                                    }
-                                    i += 1
-                                }
-                            } else {
-                                predictionDataUAM.removeAll()
-                                print("No UAM prediction found")
-                            }
-                            updatePredictionGraphUAM(color: UIColor(named: "UAM"))
-                            
-                            if let graphdataIOB = predbgdata["IOB"] {
-                                predictionDataIOB.removeAll()
-                                var predictionTimeIOB = lastLoopTime
-                                let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                                var i = 0
-                                while i <= toLoad {
-                                    if i < graphdataIOB.count {
-                                        let predictionIOB = ShareGlucoseData(sgv: Int(round(graphdataIOB[i])), date: predictionTimeIOB, direction: "flat")
-                                        predictionDataIOB.append(predictionIOB)
-                                        predictionTimeIOB += 300
-                                    }
-                                    i += 1
-                                }
-                            } else {
-                                predictionDataIOB.removeAll()
-                                print("No IOB prediction found")
-                            }
-                            updatePredictionGraphIOB(color: UIColor(named: "Insulin"))
-                            
-                            if let graphdataZT = predbgdata["ZT"] {
-                                predictionDataZT.removeAll()
-                                var predictionTimeZT = lastLoopTime
-                                let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-                                var i = 0
-                                while i <= toLoad {
-                                    if i < graphdataZT.count {
-                                        let predictionZT = ShareGlucoseData(sgv: Int(round(graphdataZT[i])), date: predictionTimeZT, direction: "flat")
-                                        predictionDataZT.append(predictionZT)
-                                        predictionTimeZT += 300
-                                    }
-                                    i += 1
-                                }
-                            } else {
-                                predictionDataZT.removeAll()
-                                print("No ZT prediction found")
-                            }
-                            updatePredictionGraphZT(color: UIColor(named: "ZT"))
-                            
+                        } else {
+                            predictionDataCOB.removeAll()
+                            print("No COB prediction found")
                         }
-                        
+                        updatePredictionGraphCOB(color: UIColor(named: "LoopYellow"))
+
+                        if let graphdataUAM = predbgdata["UAM"] {
+                            predictionDataUAM.removeAll()
+                            var predictionTimeUAM = lastLoopTime
+                            let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                            var i = 0
+                            while i <= toLoad {
+                                if i < graphdataUAM.count {
+                                    let predictionUAM = ShareGlucoseData(sgv: Int(round(graphdataUAM[i])), date: predictionTimeUAM, direction: "flat")
+                                    predictionDataUAM.append(predictionUAM)
+                                    predictionTimeUAM += 300
+                                }
+                                i += 1
+                            }
+                        } else {
+                            predictionDataUAM.removeAll()
+                            print("No UAM prediction found")
+                        }
+                        updatePredictionGraphUAM(color: UIColor(named: "UAM"))
+
+                        if let graphdataIOB = predbgdata["IOB"] {
+                            predictionDataIOB.removeAll()
+                            var predictionTimeIOB = lastLoopTime
+                            let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                            var i = 0
+                            while i <= toLoad {
+                                if i < graphdataIOB.count {
+                                    let predictionIOB = ShareGlucoseData(sgv: Int(round(graphdataIOB[i])), date: predictionTimeIOB, direction: "flat")
+                                    predictionDataIOB.append(predictionIOB)
+                                    predictionTimeIOB += 300
+                                }
+                                i += 1
+                            }
+                        } else {
+                            predictionDataIOB.removeAll()
+                            print("No IOB prediction found")
+                        }
+                        updatePredictionGraphIOB(color: UIColor(named: "Insulin"))
+
+                        if let graphdataZT = predbgdata["ZT"] {
+                            predictionDataZT.removeAll()
+                            var predictionTimeZT = lastLoopTime
+                            let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                            var i = 0
+                            while i <= toLoad {
+                                if i < graphdataZT.count {
+                                    let predictionZT = ShareGlucoseData(sgv: Int(round(graphdataZT[i])), date: predictionTimeZT, direction: "flat")
+                                    predictionDataZT.append(predictionZT)
+                                    predictionTimeZT += 300
+                                }
+                                i += 1
+                            }
+                        } else {
+                            predictionDataZT.removeAll()
+                            print("No ZT prediction found")
+                        }
+                        updatePredictionGraphZT(color: UIColor(named: "ZT"))
+                    }
                         var predictionColor = UIColor.systemGray
 
-                        if let eventualData = lastLoopRecord["suggested"] as? [String: Any],
-                            let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
-                            let loopYellow = UIColor(named: "LoopYellow"),
-                            let loopRed = UIColor(named: "LoopRed"),
-                            let loopGreen = UIColor(named: "LoopGreen")
-                        {
-                                
+                        // Check if enacted data exists, if not, fallback to suggested data
+                        if let eventualData = lastLoopRecord["enacted"] as? [String: Any],
+                           let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
+                           let loopYellow = UIColor(named: "LoopYellow"),
+                           let loopRed = UIColor(named: "LoopRed"),
+                           let loopGreen = UIColor(named: "LoopGreen") {
+
+                            // Use enacted data if available
                             let eventualBGFloatValue = eventualBGValue.floatValue // Convert NSNumber to Float
-                            
                             let eventualBGStringValue = String(describing: eventualBGValue)
                             let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
 
-                            //Daniel: Added for visualization in remote meal info popup
+                            // Update visualization for remote meal info popup
                             latestEvBG = formattedBGString + " mmol/L"
                             sharedRawEvBG = formattedBGString
                             sharedLatestEvBG = latestEvBG
-                           
+
+                            // Update PredictionLabel with color based on eventualBG value
+                            if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
+                                if UserDefaultsRepository.colorBGText.value {
+                                    PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                    PredictionLabel.textColor = UIColor.systemPurple
+                                    predictionColor = UIColor.systemPurple
+                                } else {
+                                    PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                    PredictionLabel.textColor = loopYellow
+                                    predictionColor = loopYellow
+                                }
+                            } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
+                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.textColor = loopRed
+                                predictionColor = loopRed
+                            } else if eventualBGFloatValue > UserDefaultsRepository.lowLine.value && eventualBGFloatValue < UserDefaultsRepository.highLine.value {
+                                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                                PredictionLabel.textColor = loopGreen
+                                predictionColor = loopGreen
+                            }
+
+                        } else if let eventualData = lastLoopRecord["suggested"] as? [String: Any],
+                                  let eventualBGValue = eventualData["eventualBG"] as? NSNumber,
+                                  let loopYellow = UIColor(named: "LoopYellow"),
+                                  let loopRed = UIColor(named: "LoopRed"),
+                                  let loopGreen = UIColor(named: "LoopGreen") {
+
+                            // Fallback to suggested data if enacted does not exist
+                            let eventualBGFloatValue = eventualBGValue.floatValue // Convert NSNumber to Float
+                            let eventualBGStringValue = String(describing: eventualBGValue)
+                            let formattedBGString = bgUnits.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".")
+
+                            // Update visualization for remote meal info popup
+                            latestEvBG = formattedBGString + " mmol/L"
+                            sharedRawEvBG = formattedBGString
+                            sharedLatestEvBG = latestEvBG
+
+                            // Update PredictionLabel with color based on eventualBG value
                             if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
                                 if UserDefaultsRepository.colorBGText.value {
                                     PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
