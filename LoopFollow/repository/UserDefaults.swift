@@ -31,7 +31,7 @@ class UserDefaultsRepository {
         "Needed insulin", //8
         "Min/Max", //9
         "Carbs today", //10
-        "Dynamics", //11
+        "Autosens", //11
         "Override", //12
         "TDD", //13
         "ISF", //14

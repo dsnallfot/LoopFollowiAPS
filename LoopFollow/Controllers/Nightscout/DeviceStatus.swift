@@ -260,11 +260,11 @@ extension MainViewController {
                     
                     //Daniel: Use suggested instead of enacted to populate infotable even when not enacted
                     if let suggestedData = lastLoopRecord["suggested"] as? [String:AnyObject] {
-                        if let COB = suggestedData["COB"] as? Double {
-                            tableData[1].value = String(format:"%.0f", COB)// + "g"
-                            latestCOB = String(format:"%.0f", COB)
-                            sharedLatestCOB = latestCOB
-                        }
+                        let COB = suggestedData["COB"] as? Double ?? 0.0
+                        tableData[1].value = String(format:"%.0f", COB)// + "g"
+                        latestCOB = String(format:"%.0f", COB)
+                        sharedLatestCOB = latestCOB
+
 
                         //if let recbolusdata = lastLoopRecord["suggested"] as? [String: AnyObject],
                         if let insulinReq = suggestedData["insulinReq"] as? Double {
