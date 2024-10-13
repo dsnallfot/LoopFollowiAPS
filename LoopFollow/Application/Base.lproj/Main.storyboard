@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="32700.99.1234" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="49e-Tb-3d3">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23094" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="49e-Tb-3d3">
     <device id="retina5_9" orientation="portrait" appearance="dark"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22684"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23084"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
@@ -36,8 +36,8 @@
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
-                                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillProportionally" alignment="center" spacing="2" translatesAutoresizingMaskIntoConstraints="NO" id="KZc-fa-qmt" userLabel="Trend Delta Stack View">
-                                                <rect key="frame" x="77.333333333333314" y="136.33333333333334" width="104.66666666666669" height="38"/>
+                                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillProportionally" alignment="center" spacing="6" translatesAutoresizingMaskIntoConstraints="NO" id="KZc-fa-qmt" userLabel="Trend Delta Stack View">
+                                                <rect key="frame" x="75.333333333333314" y="136.33333333333334" width="108.66666666666669" height="38"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="→" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="30" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="4sd-6h-LSj" userLabel="Direction">
                                                         <rect key="frame" x="0.0" y="0.0" width="29.666666666666668" height="38"/>
@@ -46,7 +46,7 @@
                                                         <nil key="highlightedColor"/>
                                                     </label>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" horizontalCompressionResistancePriority="1000" text="-888" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="sb7-g9-JNv" userLabel="Delta">
-                                                        <rect key="frame" x="31.666666666666671" y="0.0" width="73" height="38"/>
+                                                        <rect key="frame" x="35.666666666666671" y="0.0" width="73" height="38"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="32"/>
                                                         <nil key="textColor"/>
                                                         <color key="highlightedColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -364,11 +364,11 @@
                                             <fontDescription key="fontDescription" type="boldSystem" pointSize="180"/>
                                         </variation>
                                     </label>
-                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="fillProportionally" alignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="LSM-u3-WvK">
+                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="fillProportionally" alignment="center" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="LSM-u3-WvK">
                                         <rect key="frame" x="0.0" y="215" width="359" height="131.33333333333337"/>
                                         <subviews>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="center" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="--" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hLM-Es-BOa" userLabel="Direction">
-                                                <rect key="frame" x="0.0" y="6.0000000000000071" width="101.33333333333333" height="119.66666666666669"/>
+                                                <rect key="frame" x="0.0" y="6.0000000000000071" width="97.333333333333329" height="119.66666666666669"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="90"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
@@ -377,7 +377,7 @@
                                                 </variation>
                                             </label>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Delta" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="YCF-22-z3g" userLabel="Delta">
-                                                <rect key="frame" x="101.33333333333334" y="6.0000000000000071" width="257.66666666666663" height="119.66666666666669"/>
+                                                <rect key="frame" x="109.33333333333333" y="6.0000000000000071" width="249.66666666666669" height="119.66666666666669"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="90"/>
                                                 <nil key="textColor"/>
                                                 <color key="highlightedColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -1984,7 +1984,7 @@
         <image name="plus.app" catalog="system" width="128" height="114"/>
         <image name="safari" catalog="system" width="128" height="123"/>
         <image name="target" catalog="system" width="128" height="123"/>
-        <image name="wand.and.stars" catalog="system" width="128" height="115"/>
+        <image name="wand.and.stars" catalog="system" width="128" height="112"/>
         <image name="zzz" catalog="system" width="119" height="128"/>
         <namedColor name="Basal">
             <color red="0.11800000071525574" green="0.58799999952316284" blue="0.98799997568130493" alpha="0.5" colorSpace="custom" customColorSpace="sRGB"/>
