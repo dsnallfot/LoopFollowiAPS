@@ -107,6 +107,7 @@ class PushNotificationManager {
         protein: HKQuantity,
         fat: HKQuantity,
         bolusAmount: HKQuantity,
+        notes: String?,
         scheduledTime: Date?,
         completion: @escaping (Bool, String?) -> Void
     ) {
@@ -139,6 +140,7 @@ class PushNotificationManager {
             carbs: carbsValue,
             protein: proteinValue,
             fat: fatValue,
+            notes: notes,
             sharedSecret: sharedSecret,
             timestamp: Date().timeIntervalSince1970,
             scheduledTime: scheduledTimeInterval

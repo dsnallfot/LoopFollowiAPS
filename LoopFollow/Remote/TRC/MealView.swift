@@ -15,7 +15,8 @@ struct MealView: View {
     @State private var protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
     @State private var fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
     @State private var bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
-
+    @State private var notes: String = ""
+    
     private let pushNotificationManager = PushNotificationManager()
 
     @ObservedObject private var maxCarbs = Storage.shared.maxCarbs
@@ -90,7 +91,14 @@ struct MealView: View {
                                 }
                             )
                         }
-
+                        
+                        HStack {
+                            Text("Notes")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            TextField("Add notes", text: $notes)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        
                         if mealWithBolus.value {
                             HKQuantityInputView(
                                 label: "Bolus Amount",
@@ -187,6 +195,10 @@ struct MealView: View {
                         message += String(format: "\nBolus: %.2f U", bolusAmount)
                     }
 
+                    if !notes.isEmpty {
+                        message += String(format: "\nNotes: %@", notes)
+                    }
+
                     return Alert(
                         title: Text("Confirm Meal"),
                         message: Text(message),
@@ -248,6 +260,7 @@ struct MealView: View {
             protein: protein,
             fat: fat,
             bolusAmount: bolusAmount,
+            notes: notes,
             scheduledTime: scheduledDate
         ) { success, errorMessage in
             DispatchQueue.main.async {
@@ -257,6 +270,7 @@ struct MealView: View {
                     carbs = HKQuantity(unit: .gram(), doubleValue: 0.0)
                     protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
                     fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
+                    notes = ""
                     selectedTime = nil
                     isScheduling = false
                     alertType = .statusSuccess
