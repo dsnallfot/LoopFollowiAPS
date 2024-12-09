@@ -18,6 +18,7 @@ struct PushMessage: Encodable {
     var carbs: Int?
     var protein: Int?
     var fat: Int?
+    var notes: String?
     var sharedSecret: String
     var timestamp: TimeInterval
     var overrideName: String?
@@ -33,6 +34,7 @@ struct PushMessage: Encodable {
         case carbs
         case protein
         case fat
+        case notes
         case sharedSecret = "shared_secret"
         case timestamp
         case overrideName
@@ -50,6 +52,7 @@ struct PushMessage: Encodable {
         try container.encode(carbs, forKey: .carbs)
         try container.encode(protein, forKey: .protein)
         try container.encode(fat, forKey: .fat)
+        try container.encode(notes, forKey: .notes)
         try container.encode(sharedSecret, forKey: .sharedSecret)
         try container.encode(timestamp, forKey: .timestamp)
         try container.encode(overrideName, forKey: .overrideName)
