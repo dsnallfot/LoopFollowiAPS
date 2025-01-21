@@ -20,15 +20,13 @@ extension MainViewController {
     
     
     func checkAlarms(bgs: [ShareGlucoseData]) {
-        if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Checking Alarms") }
         // Don't check or fire alarms within 1 minute of prior alarm
         if checkAlarmTimer.isValid {  return }
         
         let date = Date()
         let now = date.timeIntervalSince1970
         let currentBG = bgs[bgs.count - 1].sgv
-        //let lastBG = bgs[bgs.count - 2].sgv // not used, protect index out of bounds
-        
+
         var skipZero = false
         if UserDefaultsRepository.alertIgnoreZero.value && currentBG == 0 {
             skipZero = true
@@ -1065,7 +1063,7 @@ extension MainViewController {
             try audioSession.setCategory(.playback, mode: .default)
             try audioSession.setActive(true)
         } catch {
-            print("Failed to set up audio session: \(error)")
+            LogManager.shared.log(category: .alarm, message: "speakBG, Failed to set up audio session: \(error)")
         }
         
         // Get the current time
