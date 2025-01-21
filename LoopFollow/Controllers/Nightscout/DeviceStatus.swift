@@ -66,12 +66,13 @@ extension MainViewController {
                 // Reset LoopStatusLabel's properties
                 LoopStatusLabel.textAlignment = .right
                 LoopStatusLabel.font = UIFont.systemFont(ofSize: 17)
-
+/*
                 if UserDefaultsRepository.forceDarkMode.value {
                     LoopStatusLabel.textColor = UIColor.white
                 } else {
                     LoopStatusLabel.textColor = UIColor.black
                 }
+ */
             }
         }
         latestLoopTime = lastLoopTime
@@ -98,15 +99,15 @@ extension MainViewController {
             if let lastPumpTime = formatter.date(from: (lastPumpRecord["clock"] as! String))?.timeIntervalSince1970  {
                 if let reservoirData = lastPumpRecord["reservoir"] as? Double {
                     latestPumpVolume = reservoirData
-                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + "U")
+                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + "E")
                 } else {
                     latestPumpVolume = 50.0
-                    infoManager.updateInfoData(type: .pump, value: "50+U")
+                    infoManager.updateInfoData(type: .pump, value: "50+E")
                 }
 
                 if let uploader = lastDeviceStatus?["uploader"] as? [String: AnyObject],
                    let upbat = uploader["battery"] as? Double {
-                    infoManager.updateInfoData(type: .battery, value: String(format: "%.0f", upbat) + "%")
+                    infoManager.updateInfoData(type: .battery, value: String(format: "%.0f", upbat) + " %")
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
                 }
             }

@@ -106,12 +106,15 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var newBGPulled = false
     var lastCalDate: Double = 0
     var latestDirectionString = ""
+    var latestEvBG = ""
     var latestMinAgoString = ""
     var latestDeltaString = ""
     var latestLoopStatusString = ""
     var latestLoopTime: Double = 0
     var latestCOB: CarbMetric?
     var latestBasal = ""
+    var latestCarbReq = ""
+    var latestSens = ""
     var latestPumpVolume: Double = 50.0
     var latestIOB: InsulinMetric?
     var lastOverrideStartTime: TimeInterval = 0

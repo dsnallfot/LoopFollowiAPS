@@ -7,6 +7,19 @@ import Foundation
 import UIKit
 import HealthKit
 
+var sharedCRValue: String = ""
+var sharedRawEvBG: String = ""
+var sharedRawMinGuardBG: String = ""
+var sharedMinGuardBG: Double = 0.0
+var sharedLatestIOB: String = ""
+var sharedLatestCOB: String = ""
+var sharedLatestISF: String = ""
+var sharedLatestSens: String = ""
+var sharedLatestCarbReq: String = ""
+var sharedLatestInsulinReq: String = ""
+var sharedLatestMinMax: String = ""
+var sharedLatestEvBG: String = ""
+
 extension MainViewController {
     func DeviceStatusOpenAPS(formatter: ISO8601DateFormatter, lastDeviceStatus: [String: AnyObject]?, lastLoopRecord: [String: AnyObject]) {
         if let createdAtString = lastDeviceStatus?["created_at"] as? String,
@@ -17,6 +30,7 @@ extension MainViewController {
                 latestLoopStatusString = "X"
                 evaluateNotLooping(lastLoopTime: UserDefaultsRepository.alertLastLoopTime.value)
             } else {
+                
                 guard let enactedOrSuggested = lastLoopRecord["enacted"] as? [String: AnyObject] ?? lastLoopRecord["suggested"] as? [String: AnyObject] else {
                     LoopStatusLabel.text = "↻"
                     latestLoopStatusString = "↻"
@@ -45,9 +59,17 @@ extension MainViewController {
                 // ISF
                 let profileISF = profileManager.currentISF()
                 var enactedISF: HKQuantity?
+                var sharedISF: String = ""
                 if let enactedISFValue = enactedOrSuggested["ISF"] as? Double {
+                    
+                    // Convert ISF to mmol/L if it's in mg/dL
+                    let isfInMmol = enactedISFValue * 0.0555 // Conversion factor: 1 mmol/L = 18 mg/dL
+                    let isfUnit = "mmol/L"
+                    // Format the value for display
+                    sharedISF = String(format: "%.1f %@", isfInMmol, isfUnit)
+                    
                     var determinedISFUnit: HKUnit = .milligramsPerDeciliter
-                    if enactedISFValue < 15 {
+                    if enactedISFValue < 25 {
                         determinedISFUnit = .millimolesPerLiter
                     }
                     enactedISF = HKQuantity(unit: determinedISFUnit, doubleValue: enactedISFValue)
@@ -56,6 +78,21 @@ extension MainViewController {
                     infoManager.updateInfoData(type: .isf, firstValue: profileISF, secondValue: enactedISF, separator: .arrow)
                 } else if let profileISF = profileISF {
                     infoManager.updateInfoData(type: .isf, value: profileISF)
+                }
+                
+                // MinGuardBG // Daniel TODO fix mgdl & mmol support
+                if let minGuardBG = enactedOrSuggested["minGuardBG"] as? Double {
+                    // Convert mg/dL to mmol/L
+                    let convertedMinGuardBG = minGuardBG * 0.0555
+                    let formattedMinGuardBGString = String(format: "%.1f", convertedMinGuardBG) // Format to one decimal place
+                    sharedMinGuardBG = convertedMinGuardBG
+                    sharedRawMinGuardBG = formattedMinGuardBGString
+                } else {
+                    // Fallback: Convert UserDefaultsRepository.lowLine from mg/dL to mmol/L
+                    let convertedLowLine = Double(UserDefaultsRepository.lowLine.value) / 18.0
+                    let formattedLowLine = String(format: "%.1f", convertedLowLine)
+                    sharedMinGuardBG = convertedLowLine
+                    sharedRawMinGuardBG = formattedLowLine
                 }
 
                 // Carb Ratio (CR)
@@ -74,6 +111,7 @@ extension MainViewController {
 
                 if let profileCR = profileCR, let enactedCR = enactedCR, profileCR != enactedCR {
                     infoManager.updateInfoData(type: .carbRatio, value: profileCR, enactedValue: enactedCR, separator: .arrow)
+                    sharedCRValue = String(format: "%.1f", enactedCR)
                 } else if let profileCR = profileCR {
                     infoManager.updateInfoData(type: .carbRatio, value: profileCR)
                 }
@@ -82,12 +120,15 @@ extension MainViewController {
                 if let iobMetric = InsulinMetric(from: lastLoopRecord["iob"], key: "iob") {
                     infoManager.updateInfoData(type: .iob, value: iobMetric)
                     latestIOB = iobMetric
+                    // Convert `latestIOB` to a string
+                    sharedLatestIOB = String(format: "%.2f E", latestIOB?.value ?? 0.00)
                 }
 
                 // COB
                 if let cobMetric = CarbMetric(from: enactedOrSuggested, key: "COB") {
                     infoManager.updateInfoData(type: .cob, value: cobMetric)
                     latestCOB = cobMetric
+                    sharedLatestCOB = String(format: "%.0f E", latestCOB?.value ?? 0)
                 } else if let reasonString = enactedOrSuggested["reason"] as? String {
                     // Fallback: Extract COB from reason string
                     let cobPattern = "COB: (\\d+(?:\\.\\d+)?)"
@@ -114,20 +155,68 @@ extension MainViewController {
                 if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
                     infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric)
                     UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
+                    sharedLatestInsulinReq = String(format: "%.2f E", insulinReqMetric.value)
                 } else {
                     UserDefaultsRepository.deviceRecBolus.value = 0
+                    sharedLatestInsulinReq = "0 E"
+                }
+                
+                // Daniel: Carbs Required for later use
+                if let carbsReq = enactedOrSuggested["carbsReq"] as? Double {
+                    latestCarbReq = String(format: "%.0f", carbsReq) + " g"
+                    sharedLatestCarbReq = latestCarbReq
+                } else {
+                    latestCarbReq = "0 g"
+                    sharedLatestCarbReq = latestCarbReq
                 }
 
                 // Autosens
                 if let sens = enactedOrSuggested["sensitivityRatio"] as? Double {
-                    let formattedSens = String(format: "%.0f", sens * 100.0) + "%"
+                    let formattedSens = String(format: "%.0f", sens * 100.0) + " %"
+                    sharedLatestSens = formattedSens
                     infoManager.updateInfoData(type: .autosens, value: formattedSens)
                 }
+                
+                var predictionColor = UIColor.systemGray
 
-                // Eventual BG
-                if let eventualBGValue = enactedOrSuggested["eventualBG"] as? Double {
-                    let eventualBGQuantity = HKQuantity(unit: .milligramsPerDeciliter, doubleValue: eventualBGValue)
-                    PredictionLabel.text = Localizer.formatQuantity(eventualBGQuantity)
+                // Eventual BG Handling
+                if let eventualBGValue = enactedOrSuggested["eventualBG"] as? Double,
+                   let loopYellow = UIColor(named: "LoopYellow"),
+                   let loopRed = UIColor(named: "LoopRed"),
+                   let loopGreen = UIColor(named: "LoopGreen") {
+
+                    // Convert eventualBGValue to necessary formats
+                    let eventualBGFloatValue = Float(eventualBGValue) // Convert Double to Float for compatibility
+                    let eventualBGStringValue = String(describing: eventualBGValue) // Convert to String
+                    let formattedBGString = Localizer.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".") // Format for display
+
+                    // Update visualization for remote meal info popup
+                    latestEvBG = formattedBGString + " mmol/L"
+                    sharedRawEvBG = formattedBGString
+                    sharedLatestEvBG = latestEvBG
+
+                    // Update PredictionLabel with color based on eventualBG value
+                    if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
+                        if UserDefaultsRepository.colorBGText.value {
+                            PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                            predictionColor = UIColor.systemPurple
+                        } else {
+                            PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                            predictionColor = loopYellow
+                        }
+                    } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
+                        PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                        predictionColor = loopRed
+                    } else if eventualBGFloatValue > UserDefaultsRepository.lowLine.value && eventualBGFloatValue < UserDefaultsRepository.highLine.value {
+                        PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+                        predictionColor = loopGreen
+                    }
+                }
+
+                // Ensure the color is updated on the main thread
+                DispatchQueue.main.async {
+                    //print("Setting PredictionLabel color to \(predictionColor)")
+                    self.PredictionLabel.textColor = predictionColor
                 }
 
                 // Target
@@ -202,13 +291,35 @@ extension MainViewController {
                     }
 
                     if minPredBG != Double.infinity && maxPredBG != -Double.infinity {
-                        let value = "\(Localizer.toDisplayUnits(String(minPredBG)))/\(Localizer.toDisplayUnits(String(maxPredBG)))"
+                        let value = "\(Localizer.toDisplayUnits(String(minPredBG))) / \(Localizer.toDisplayUnits(String(maxPredBG)))"
                         infoManager.updateInfoData(type: .minMax, value: value)
+                        sharedLatestMinMax = value
                     } else {
                         infoManager.updateInfoData(type: .minMax, value: "N/A")
+                        sharedLatestMinMax = "N/A"
+                    }
+                    
+                    if let enacted = lastLoopRecord["enacted"] as? [String: AnyObject],
+                            let received = (enacted["received"] as? Bool) ?? (enacted["recieved"] as? Bool), !received {
+                            // Daniel: If "recieved" is false, it means there's a failure. received is misspelled as recieved in iAPS upload to NS Device status
+                            //Auggie: also check for "received", because this is corrected in newer Trio
+                        LoopStatusLabel.text = " ᮰"
+                        LoopStatusLabel.textColor = UIColor(named: "LoopYellow")
+                        latestLoopStatusString = "᮰"
+                        if UserDefaultsRepository.debugLog.value {
+                            self.writeDebugLog(value: "Trio Not Enacted: X")
+                        }
+                    } else {
+                        LoopStatusLabel.text = " ᮰"
+                        LoopStatusLabel.textColor = UIColor(named: "LoopGreen")
+                        latestLoopStatusString = "᮰"
+                        
+                        // Daniel: Update `latestEnactedTime` in UserDefaults
+                        UserDefaultsRepository.latestEnactedTime.value = Date().timeIntervalSince1970
                     }
                 }
-
+                
+                /*
                 if let loopStatus = lastLoopRecord["recommendedTempBasal"] as? [String: AnyObject] {
                     if let tempBasalTime = formatter.date(from: (loopStatus["timestamp"] as! String))?.timeIntervalSince1970 {
                         var lastBGTime = lastLoopTime
@@ -226,8 +337,18 @@ extension MainViewController {
                 } else {
                     LoopStatusLabel.text = "↻"
                     latestLoopStatusString = "↻"
-                }
+                }*/
             }
+            
+            if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {
+                LoopStatusLabel.text = " ᮰"
+                LoopStatusLabel.textColor = UIColor(named: "LoopRed")
+                latestLoopStatusString = "᮰"
+
+            }
+            latestLoopTime = lastLoopTime
+            
+            evaluateNotLooping(lastLoopTime: lastLoopTime)
         }
     }
 }

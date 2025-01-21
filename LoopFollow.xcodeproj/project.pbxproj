@@ -9,6 +9,13 @@
 /* Begin PBXBuildFile section */
 		3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
+		65B3E5CD2D3FFB3000622194 /* TempTargetviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5CA2D3FFB3000622194 /* TempTargetviewController.swift */; };
+		65B3E5CE2D3FFB3000622194 /* BolusViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C82D3FFB3000622194 /* BolusViewController.swift */; };
+		65B3E5CF2D3FFB3000622194 /* CustomActionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5CC2D3FFB3000622194 /* CustomActionViewController.swift */; };
+		65B3E5D02D3FFB3000622194 /* RemoteSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5CB2D3FFB3000622194 /* RemoteSettingsViewController.swift */; };
+		65B3E5D12D3FFB3000622194 /* SMSRemoteViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C62D3FFB3000622194 /* SMSRemoteViewController.swift */; };
+		65B3E5D22D3FFB3000622194 /* OverrideViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C92D3FFB3000622194 /* OverrideViewController.swift */; };
+		65B3E5D32D3FFB3000622194 /* MealViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C72D3FFB3000622194 /* MealViewController.swift */; };
 		DD07B5C929E2F9C400C6A635 /* NightscoutUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */; };
 		DD0C0C602C415B9D00DBADDF /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0C0C5F2C415B9D00DBADDF /* ProfileManager.swift */; };
 		DD0C0C622C4175FD00DBADDF /* NSProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0C0C612C4175FD00DBADDF /* NSProfile.swift */; };
@@ -279,6 +286,13 @@
 /* Begin PBXFileReference section */
 		059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.release.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.release.xcconfig"; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
+		65B3E5C62D3FFB3000622194 /* SMSRemoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSRemoteViewController.swift; sourceTree = "<group>"; };
+		65B3E5C72D3FFB3000622194 /* MealViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealViewController.swift; sourceTree = "<group>"; };
+		65B3E5C82D3FFB3000622194 /* BolusViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BolusViewController.swift; sourceTree = "<group>"; };
+		65B3E5C92D3FFB3000622194 /* OverrideViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverrideViewController.swift; sourceTree = "<group>"; };
+		65B3E5CA2D3FFB3000622194 /* TempTargetviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TempTargetviewController.swift; sourceTree = "<group>"; };
+		65B3E5CB2D3FFB3000622194 /* RemoteSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteSettingsViewController.swift; sourceTree = "<group>"; };
+		65B3E5CC2D3FFB3000622194 /* CustomActionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomActionViewController.swift; sourceTree = "<group>"; };
 		A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_LoopFollow.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutUtils.swift; sourceTree = "<group>"; };
 		DD0C0C5F2C415B9D00DBADDF /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
@@ -566,6 +580,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		65B3E5C52D3FFAAD00622194 /* SMSRemote */ = {
+			isa = PBXGroup;
+			children = (
+				65B3E5C62D3FFB3000622194 /* SMSRemoteViewController.swift */,
+				65B3E5C72D3FFB3000622194 /* MealViewController.swift */,
+				65B3E5C82D3FFB3000622194 /* BolusViewController.swift */,
+				65B3E5C92D3FFB3000622194 /* OverrideViewController.swift */,
+				65B3E5CA2D3FFB3000622194 /* TempTargetviewController.swift */,
+				65B3E5CB2D3FFB3000622194 /* RemoteSettingsViewController.swift */,
+				65B3E5CC2D3FFB3000622194 /* CustomActionViewController.swift */,
+			);
+			path = SMSRemote;
+			sourceTree = "<group>";
+		};
 		6A5880E0B811AF443B05AB02 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -598,6 +626,7 @@
 		DD0C0C6E2C4AFFB800DBADDF /* Remote */ = {
 			isa = PBXGroup;
 			children = (
+				65B3E5C52D3FFAAD00622194 /* SMSRemote */,
 				DD4878112C7B74F90048F05C /* TRC */,
 				DD4878062C7B2E9E0048F05C /* Settings */,
 				DDF699972C5AA2E50058A8D9 /* TempTargetPreset */,
@@ -1382,6 +1411,13 @@
 				FC97881E2485969B00A7906C /* NightScoutViewController.swift in Sources */,
 				DD608A0A2C23593900F91132 /* SMB.swift in Sources */,
 				DDCF979824C1489C002C9752 /* GraphSettingsViewController.swift in Sources */,
+				65B3E5CD2D3FFB3000622194 /* TempTargetviewController.swift in Sources */,
+				65B3E5CE2D3FFB3000622194 /* BolusViewController.swift in Sources */,
+				65B3E5CF2D3FFB3000622194 /* CustomActionViewController.swift in Sources */,
+				65B3E5D02D3FFB3000622194 /* RemoteSettingsViewController.swift in Sources */,
+				65B3E5D12D3FFB3000622194 /* SMSRemoteViewController.swift in Sources */,
+				65B3E5D22D3FFB3000622194 /* OverrideViewController.swift in Sources */,
+				65B3E5D32D3FFB3000622194 /* MealViewController.swift in Sources */,
 				FC3AE7B5249E8E0E00AAE1E0 /* LoopFollow.xcdatamodeld in Sources */,
 				FCC6886F2489A53800A0279D /* AppConstants.swift in Sources */,
 				DD7E19842ACDA50C00DBD158 /* Overrides.swift in Sources */,

@@ -92,6 +92,6 @@ extension MainViewController {
         
         let resultString = String(format: "%.0f", totalCarbs) + " g"
         infoManager.updateInfoData(type: .carbsToday, value: resultString)
-        infoTable.reloadData()
+        //infoTable.reloadData()
     }
 }
