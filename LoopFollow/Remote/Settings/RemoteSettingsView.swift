@@ -46,6 +46,7 @@ struct RemoteSettingsView: View {
                         if BuildDetails.default.branch?.lowercased() != "main" {
                             Text("Trio Remote Control").tag(RemoteType.trc)
                         }
+                        Text("SMS Remote Control").tag(RemoteType.sms) // New option
                     }
                     .pickerStyle(MenuPickerStyle())
 

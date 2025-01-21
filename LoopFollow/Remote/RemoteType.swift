@@ -12,4 +12,5 @@ enum RemoteType: String, Codable {
     case none = "None"
     case nightscout = "Nightscout"
     case trc = "Trio Remote Control"
+    case sms // New case for SMS Remote Control
 }

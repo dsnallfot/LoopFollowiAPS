@@ -40,30 +40,63 @@ class RemoteViewController: UIViewController {
         }
 
         if remoteType == .nightscout {
-            let remoteView = TrioNightscoutRemoteView()
-            hostingController = UIHostingController(rootView: AnyView(remoteView))
-        } else if remoteType == .trc {
-            let trioRemoteControlViewModel = TrioRemoteControlViewModel()
-            let trioRemoteControlView = TrioRemoteControlView(viewModel: trioRemoteControlViewModel)
-            hostingController = UIHostingController(rootView: AnyView(trioRemoteControlView))
-        } else {
-            hostingController = UIHostingController(rootView: AnyView(Text("Please select a Remote Type in Settings.")))
-        }
+                let remoteView = TrioNightscoutRemoteView()
+                hostingController = UIHostingController(rootView: AnyView(remoteView))
+            } else if remoteType == .trc {
+                let trioRemoteControlViewModel = TrioRemoteControlViewModel()
+                let trioRemoteControlView = TrioRemoteControlView(viewModel: trioRemoteControlViewModel)
+                hostingController = UIHostingController(rootView: AnyView(trioRemoteControlView))
+            } else if remoteType == .sms {
+                // Instantiate SMSRemoteViewController from storyboard
+                let storyboard = UIStoryboard(name: "Main", bundle: nil) // Use the storyboard name containing SMSRemoteViewController
+                let smsRemoteVC = storyboard.instantiateViewController(withIdentifier: "SMSRemoteViewController")
+                if let smsVC = smsRemoteVC as? SMSRemoteViewController {
+                    // Successfully instantiated
+                    addChild(smsVC)
+                    view.addSubview(smsVC.view)
+                    smsVC.view.translatesAutoresizingMaskIntoConstraints = false
+                    NSLayoutConstraint.activate([
+                        smsVC.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                        smsVC.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                        smsVC.view.topAnchor.constraint(equalTo: view.topAnchor),
+                        smsVC.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+                    ])
+                    smsVC.didMove(toParent: self)
+                } else {
+                    print("Error: SMSRemoteViewController could not be cast.")
+                    return
+                }
 
-        if let hostingController = hostingController {
-            addChild(hostingController)
-            view.addSubview(hostingController.view)
+                // Add as child view controller
+                addChild(smsRemoteVC)
+                view.addSubview(smsRemoteVC.view)
+                smsRemoteVC.view.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    smsRemoteVC.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                    smsRemoteVC.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                    smsRemoteVC.view.topAnchor.constraint(equalTo: view.topAnchor),
+                    smsRemoteVC.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+                ])
+                smsRemoteVC.didMove(toParent: self)
+            } else {
+                hostingController = UIHostingController(rootView: AnyView(Text("Please select a Remote Type in Settings.")))
+            }
 
-            hostingController.view.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
-                hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-            ])
+        // Attach hosting controller if present
+            if let hostingController = hostingController {
+                addChild(hostingController)
+                view.addSubview(hostingController.view)
 
-            hostingController.didMove(toParent: self)
-        }
+                hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                    hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                    hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
+                    hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+                ])
+
+                hostingController.didMove(toParent: self)
+            }
 
         if remoteType == .nightscout, !ObservableUserDefaults.shared.nsWriteAuth.value {
             NightscoutUtils.verifyURLAndToken { error, jwtToken, nsWriteAuth in
