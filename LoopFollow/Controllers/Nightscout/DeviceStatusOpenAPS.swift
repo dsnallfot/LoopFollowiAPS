@@ -59,14 +59,13 @@ extension MainViewController {
                 // ISF
                 let profileISF = profileManager.currentISF()
                 var enactedISF: HKQuantity?
-                var sharedISF: String = ""
                 if let enactedISFValue = enactedOrSuggested["ISF"] as? Double {
                     
                     // Convert ISF to mmol/L if it's in mg/dL
                     let isfInMmol = enactedISFValue * 0.0555 // Conversion factor: 1 mmol/L = 18 mg/dL
                     let isfUnit = "mmol/L"
                     // Format the value for display
-                    sharedISF = String(format: "%.1f %@", isfInMmol, isfUnit)
+                    sharedLatestISF = String(format: "%.1f %@", isfInMmol, isfUnit)
                     
                     var determinedISFUnit: HKUnit = .milligramsPerDeciliter
                     if enactedISFValue < 25 {
@@ -114,6 +113,7 @@ extension MainViewController {
                     sharedCRValue = String(format: "%.1f", enactedCR)
                 } else if let profileCR = profileCR {
                     infoManager.updateInfoData(type: .carbRatio, value: profileCR)
+                    sharedCRValue = String(format: "%.1f", profileCR)
                 }
 
                 // IOB
