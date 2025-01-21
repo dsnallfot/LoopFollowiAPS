@@ -42,7 +42,7 @@ extension MainViewController {
     
     func evaluateNotLooping(lastLoopTime: TimeInterval) {
         if let statusStackView = LoopStatusLabel.superview as? UIStackView {
-            if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {
+            /*if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {
                 IsNotLooping = true
                 // Change the distribution to 'fill' to allow manual resizing of arranged subviews
                 statusStackView.distribution = .fill
@@ -64,8 +64,8 @@ extension MainViewController {
                 PredictionLabel.isHidden = false
                 
                 // Reset LoopStatusLabel's properties
-                LoopStatusLabel.textAlignment = .right
-                LoopStatusLabel.font = UIFont.systemFont(ofSize: 17)
+                LoopStatusLabel.textAlignment = .center
+                LoopStatusLabel.font = UIFont.systemFont(ofSize: 28)
 /*
                 if UserDefaultsRepository.forceDarkMode.value {
                     LoopStatusLabel.textColor = UIColor.white
@@ -73,7 +73,7 @@ extension MainViewController {
                     LoopStatusLabel.textColor = UIColor.black
                 }
  */
-            }
+            }*/
         }
         latestLoopTime = lastLoopTime
     }

@@ -42,8 +42,10 @@ extension MainViewController {
             
             if duration < 300 { return }
 
-            guard let enteredBy = currentEntry["enteredBy"] as? String,
-                  let notes = currentEntry["notes"] as? String ?? currentEntry["reason"] as? String else {
+            let reason = currentEntry["reason"] as? String ?? ""
+            let notes = currentEntry["notes"] as? String ?? ""
+
+            guard let enteredBy = currentEntry["enteredBy"] as? String else {
                 return
             }
 
@@ -57,6 +59,7 @@ extension MainViewController {
                 range = [low ?? 0, high ?? 0]
             }
             
+            
             //let endDate = dateTimeStamp + duration
             //Limit charts to ony vizualize very long overrides just as long as user set prediction hours into the future
             let currentTimestamp = Date().timeIntervalSince1970
@@ -68,6 +71,10 @@ extension MainViewController {
                 endDate = predictionHoursFromNow
             } else {
                 endDate = dateTimeStamp + duration
+            }
+            
+            if dateTimeStamp <= now && now < endDate {
+                activeOverrideNote = currentEntry["notes"] as? String
             }
             
             let dot = DataStructs.overrideStruct(insulNeedsScaleFactor: multiplier, date: dateTimeStamp, endDate: endDate, duration: duration, correctionRange: range, enteredBy: enteredBy, notes: notes, reason: currentEntry["reason"] as? String ?? "", sgv: -20)

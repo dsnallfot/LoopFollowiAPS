@@ -41,6 +41,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     @IBOutlet weak var serverText: UILabel!
     @IBOutlet weak var statsView: UIView!
     @IBOutlet weak var smallGraphHeightConstraint: NSLayoutConstraint!
+    @IBOutlet weak var highStack: UIStackView!
     var refreshScrollView: UIScrollView!
     var refreshControl: UIRefreshControl!
 
@@ -167,7 +168,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         infoTable.dataSource = self
         infoTable.tableFooterView = UIView(frame: .zero)
         infoTable.bounces = false
-        infoTable.addBorder(toSide: .Left, withColor: UIColor.darkGray.cgColor, andThickness: 2)
+        //infoTable.addBorder(toSide: .Left, withColor: UIColor.darkGray.cgColor, andThickness: 2)
         
         self.infoManager = InfoManager(tableView: infoTable)
 
@@ -233,6 +234,15 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         
         refreshScrollView.delegate = self
         NotificationCenter.default.addObserver(self, selector: #selector(refresh), name: NSNotification.Name("refresh"), object: nil)
+        
+        // Check UserDefaults and change text color if needed
+            if UserDefaultsRepository.colorBGText.value {
+                for view in highStack.arrangedSubviews {
+                    if let label = view as? UILabel {
+                        label.textColor = .systemPurple
+                    }
+                }
+            }
     }
     
     deinit {

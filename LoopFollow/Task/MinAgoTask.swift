@@ -42,26 +42,34 @@ extension MainViewController {
         formatter.unitsStyle = .positional
         formatter.zeroFormattingBehavior = .dropLeading
 
-        let shouldDisplaySeconds = secondsAgo >= 270 && secondsAgo < 720 // 4.5 to 12 minutes
+        let displayText: String
 
-        if shouldDisplaySeconds {
+        if secondsAgo >= 0 && secondsAgo < 60 {
+            // Display only seconds with "sek sedan"
+            formatter.allowedUnits = [.second]
+            let formattedDuration = formatter.string(from: secondsAgo) ?? ""
+            displayText = formattedDuration + " sek sedan"
+        } else if secondsAgo >= 60 && secondsAgo < 720 {
+            // Display minutes and seconds with "min sedan"
             formatter.allowedUnits = [.minute, .second]
+            let formattedDuration = formatter.string(from: secondsAgo) ?? ""
+            displayText = formattedDuration + " min sedan"
         } else {
+            // Display only minutes with "min sedan"
             formatter.allowedUnits = [.minute]
+            let formattedDuration = formatter.string(from: secondsAgo) ?? ""
+            displayText = formattedDuration + " min sedan"
         }
 
-        let formattedDuration = formatter.string(from: secondsAgo) ?? ""
-        let minAgoDisplayText = formattedDuration + " min ago"
-
         // Update UI only if the display text has changed
-        if minAgoDisplayText != latestMinAgoString {
+        if displayText != latestMinAgoString {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                self.MinAgoText.text = minAgoDisplayText
-                self.latestMinAgoString = minAgoDisplayText
+                self.MinAgoText.text = displayText
+                self.latestMinAgoString = displayText
 
                 if let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController {
-                    snoozer.MinAgoLabel.text = minAgoDisplayText
+                    snoozer.MinAgoLabel.text = displayText
 
                     let bgLabelText = snoozer.BGLabel.text ?? ""
                     let attributeString = NSMutableAttributedString(string: bgLabelText)
@@ -78,14 +86,11 @@ extension MainViewController {
 
         // Determine the next run interval based on the current state
         let nextUpdateInterval: TimeInterval
-        if shouldDisplaySeconds {
+        if secondsAgo < 720 {
             // Update every second when showing seconds
             nextUpdateInterval = 1.0
-        } else if secondsAgo >= 240 && secondsAgo < 720 {
-            // Schedule exactly at the transition point to start showing seconds
-            nextUpdateInterval = 270.0 - secondsAgo
         } else {
-            // Schedule exactly at the transition point to next minute
+            // Schedule exactly at the transition point to the next minute or second
             let secondsToNextMinute = 60.0 - (secondsAgo.truncatingRemainder(dividingBy: 60.0))
             nextUpdateInterval = secondsToNextMinute
         }
@@ -95,4 +100,6 @@ extension MainViewController {
 
         TaskScheduler.shared.rescheduleTask(id: .minAgoUpdate, to: Date().addingTimeInterval(safeNextInterval))
     }
+
+
 }
