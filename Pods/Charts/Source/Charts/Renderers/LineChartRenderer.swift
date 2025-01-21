@@ -513,22 +513,19 @@ open class LineChartRenderer: LineRadarRenderer
         
         return filled
     }
-    
-    open override func drawValues(context: CGContext)
-    {
+
+    open override func drawValues(context: CGContext) {
         guard
             let dataProvider = dataProvider,
             let lineData = dataProvider.lineData
         else { return }
 
-        if isDrawingValuesAllowed(dataProvider: dataProvider)
-        {
+        if isDrawingValuesAllowed(dataProvider: dataProvider) {
             let phaseY = animator.phaseY
             
             var pt = CGPoint()
             
-            for i in lineData.indices
-            {
+            for i in lineData.indices {
                 guard let
                         dataSet = lineData[i] as? LineChartDataSetProtocol,
                       shouldDrawValues(forDataSet: dataSet)
@@ -545,50 +542,68 @@ open class LineChartRenderer: LineRadarRenderer
                 
                 let iconsOffset = dataSet.iconsOffset
                 
-                // make sure the values do not interfear with the circles
+                // make sure the values do not interfere with the circles
                 var valOffset = Int(dataSet.circleRadius * 1.75)
                 
-                if !dataSet.isDrawCirclesEnabled
-                {
+                if !dataSet.isDrawCirclesEnabled {
                     valOffset = valOffset / 2
                 }
                 
                 _xBounds.set(chart: dataProvider, dataSet: dataSet, animator: animator)
 
-                for j in _xBounds
-                {
+                for j in _xBounds {
                     guard let e = dataSet.entryForIndex(j) else { break }
                     
                     pt.x = CGFloat(e.x)
                     pt.y = CGFloat(e.y * phaseY)
                     pt = pt.applying(valueToPixelMatrix)
                     
-                    if (!viewPortHandler.isInBoundsRight(pt.x))
-                    {
+                    if (!viewPortHandler.isInBoundsRight(pt.x)) {
                         break
                     }
                     
-                    if (!viewPortHandler.isInBoundsLeft(pt.x) || !viewPortHandler.isInBoundsY(pt.y))
-                    {
+                    if (!viewPortHandler.isInBoundsLeft(pt.x) || !viewPortHandler.isInBoundsY(pt.y)) {
                         continue
                     }
                     
-                    if dataSet.isDrawValuesEnabled
-                    {
-                        context.drawText(formatter.stringForValue(e.y,
-                                                                  entry: e,
-                                                                  dataSetIndex: i,
-                                                                  viewPortHandler: viewPortHandler),
-                                         at: CGPoint(x: pt.x,
-                                                     y: pt.y - CGFloat(valOffset) - valueFont.lineHeight),
-                                         align: .center,
-                                         angleRadians: angleRadians,
-                                         attributes: [.font: valueFont,
-                                                      .foregroundColor: dataSet.valueTextColorAt(j)])
+                    // Replace time text with empty string
+                    let originalText = formatter.stringForValue(e.y,
+                                                                entry: e,
+                                                                dataSetIndex: i,
+                                                                viewPortHandler: viewPortHandler)
+                    let replacedText = replaceTimeText(originalText)
+                    
+                    if dataSet.isDrawValuesEnabled {
+                        let paragraphStyle = NSMutableParagraphStyle()
+                        paragraphStyle.alignment = .center
+                        
+                        let attributes: [NSAttributedString.Key: Any] = [
+                            .font: valueFont,
+                            .foregroundColor: dataSet.valueTextColorAt(j),
+                            .paragraphStyle: paragraphStyle
+                        ]
+                        
+                        let attributedString = NSAttributedString(string: replacedText, attributes: attributes)
+                        
+                        let textStorage = NSTextStorage(attributedString: attributedString)
+                        let textContainer = NSTextContainer(size: CGSize(width: viewPortHandler.contentRect.width, height: .greatestFiniteMagnitude))
+                        let layoutManager = NSLayoutManager()
+                        
+                        layoutManager.addTextContainer(textContainer)
+                        textStorage.addLayoutManager(layoutManager)
+                        
+                        textContainer.lineFragmentPadding = 0.0
+                        textContainer.maximumNumberOfLines = 0
+                        
+                        let textBoundingRect = layoutManager.boundingRect(forGlyphRange: NSRange(location: 0, length: textStorage.length), in: textContainer)
+                        
+                        let drawPoint = CGPoint(x: pt.x - textBoundingRect.width / 2,
+                                                y: pt.y - CGFloat(valOffset) - textBoundingRect.height)
+                        
+                        layoutManager.drawGlyphs(forGlyphRange: NSRange(location: 0, length: textStorage.length), at: drawPoint)
                     }
                     
-                    if let icon = e.icon, dataSet.isDrawIconsEnabled
-                    {
+                    if let icon = e.icon, dataSet.isDrawIconsEnabled {
                         context.drawImage(icon,
                                           atCenter: CGPoint(x: pt.x + iconsOffset.x,
                                                             y: pt.y + iconsOffset.y),
@@ -596,6 +611,20 @@ open class LineChartRenderer: LineRadarRenderer
                     }
                 }
             }
+        }
+    }
+
+    //Daniel: Added to filter out strings from chart rendering (but still keep it visible in highlight popup)
+    func replaceTimeText(_ text: String) -> String {
+        // Enrich the existing pattern to also match "Fett X g" and "Protein X g"
+        let timePattern = "\\b(\\d{2}:\\d{2}|Kolhydrater| / Fett \\d+,\\d+ g| / Fett \\d+ g| / Protein \\d+,\\d+ g| / Protein \\d+ g|Måltid|Bolus|SMB|Fingerstick|mmol/L|E)\\b"
+        
+        if let regex = try? NSRegularExpression(pattern: timePattern) {
+            let range = NSRange(location: 0, length: text.utf16.count)
+            return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
+        } else {
+            print("Error creating general regular expression.")
+            return text
         }
     }
     
@@ -747,8 +776,7 @@ open class LineChartRenderer: LineRadarRenderer
         accessibilityPostLayoutChangedNotification()
     }
     
-    open override func drawHighlighted(context: CGContext, indices: [Highlight])
-    {
+    open override func drawHighlighted(context: CGContext, indices: [Highlight]) {
         guard
             let dataProvider = dataProvider,
             let lineData = dataProvider.lineData
@@ -756,43 +784,42 @@ open class LineChartRenderer: LineRadarRenderer
         
         let chartXMax = dataProvider.chartXMax
         
+        // Calculate the center y-coordinate of the chart
+        let centerY = viewPortHandler.contentCenter.y
+        
         context.saveGState()
         
-        for high in indices
-        {
+        for high in indices {
             guard let set = lineData[high.dataSetIndex] as? LineChartDataSetProtocol,
                   set.isHighlightEnabled
             else { continue }
             
             guard let e = set.entryForXValue(high.x, closestToY: high.y) else { continue }
             
-            if !isInBoundsX(entry: e, dataSet: set)
-            {
+            if !isInBoundsX(entry: e, dataSet: set) {
                 continue
             }
 
             context.setStrokeColor(set.highlightColor.cgColor)
             context.setLineWidth(set.highlightLineWidth)
-            if set.highlightLineDashLengths != nil
-            {
+            if set.highlightLineDashLengths != nil {
                 context.setLineDash(phase: set.highlightLineDashPhase, lengths: set.highlightLineDashLengths!)
-            }
-            else
-            {
+            } else {
                 context.setLineDash(phase: 0.0, lengths: [])
             }
             
             let x = e.x // get the x-position
             let y = e.y * Double(animator.phaseY)
             
-            if x > chartXMax * animator.phaseX
-            {
+            if x > chartXMax * animator.phaseX {
                 continue
             }
             
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             
-            let pt = trans.pixelForValues(x: x, y: y)
+            var pt = trans.pixelForValues(x: x, y: y)
+            // Adjust the y-coordinate to the center of the chart and offset 95 points up
+            pt.y = centerY //- 95
             
             high.setDraw(pt: pt)
             
@@ -802,6 +829,11 @@ open class LineChartRenderer: LineRadarRenderer
         
         context.restoreGState()
     }
+
+
+
+
+
 
     func drawGradientLine(context: CGContext, dataSet: LineChartDataSetProtocol, spline: CGPath, matrix: CGAffineTransform)
     {

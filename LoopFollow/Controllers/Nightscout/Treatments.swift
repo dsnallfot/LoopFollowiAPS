@@ -61,7 +61,7 @@ extension MainViewController {
             switch eventType {
             case "Temp Basal":
                 tempBasal.append(entry)
-            case "Correction Bolus", "Bolus":
+            case "Correction Bolus", "Bolus", "Insulinpenna":
                 if let automatic = entry["automatic"] as? Bool, automatic {
                     smb.append(entry)
                 } else {
@@ -72,13 +72,13 @@ extension MainViewController {
             case "Meal Bolus":
                 carbs.append(entry)
                 bolus.append(entry)
-            case "Carb Correction":
+            case "Carb Correction", "Kolhydrater", "Dextro", "Måltid":
                 carbs.append(entry)
-            case "Temporary Override", "Exercise":
+            case "Temporary Override", "Exercise", "Override":
                 temporaryOverride.append(entry)
             case "Temporary Target":
                 temporaryTarget.append(entry)
-            case "Note":
+            case "Note", "Announcement":
                 note.append(entry)
             case "BG Check":
                 bgCheck.append(entry)
@@ -86,12 +86,12 @@ extension MainViewController {
                 suspendPump.append(entry)
             case "Resume Pump":
                 resumePump.append(entry)
-            case "Pump Site Change", "Site Change":
+            case "Pump Site Change", "Site Change", "Pumpbyte":
                 if let createdAt = entry["created_at"] as? String {
                     let newEntry = cageData(created_at: createdAt)
                     pumpSiteChange.append(newEntry)
                 }
-            case "Sensor Start":
+            case "Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart":
                 if let createdAt = entry["created_at"] as? String {
                     let newEntry = sageData(created_at: createdAt)
                     cgmSensorStart.append(newEntry)
@@ -188,5 +188,12 @@ extension MainViewController {
             }
         }
         processCage(entries: pumpSiteChange)
+        if pumpSiteChange.count > 0 {
+            processPumpChange(entries: pumpSiteChange)
+        } else {
+            if pumpChangeGraphData.count > 0 {
+                clearOldPump()
+            }
+        }
     }
 }

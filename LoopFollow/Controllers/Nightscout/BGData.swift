@@ -8,6 +8,9 @@
 
 import Foundation
 import UIKit
+
+var sharedDeltaBG: Int = 0
+
 extension MainViewController {
     // Dex Share Web Call
     func webLoadDexShare() {
@@ -217,6 +220,7 @@ extension MainViewController {
             let latestBG = entries[latestEntryIndex].sgv
             let priorBG = entries[latestEntryIndex - 1].sgv
             let deltaBG = latestBG - priorBG
+            sharedDeltaBG = deltaBG
             let lastBGTime = entries[latestEntryIndex].date
             
             let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - lastBGTime) / 60

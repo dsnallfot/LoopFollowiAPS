@@ -31,6 +31,7 @@ enum GraphDataIndex: Int {
     case uamPrediction = 15
     case smb = 16
     case tempTarget = 17
+    case pump = 18
 }
 
 extension GraphDataIndex {
@@ -54,6 +55,7 @@ extension GraphDataIndex {
         case .uamPrediction: return "UAM Prediction"
         case .smb: return "SMB"
         case .tempTarget: return "Temp Target"
+        case .pump: return "Pump Change"
         }
     }
 }
@@ -298,11 +300,11 @@ extension MainViewController {
         let maxBasal = UserDefaultsRepository.minBasalScale.value
         let lineBasal = LineChartDataSet(entries:chartEntry, label: "")
         lineBasal.setDrawHighlightIndicators(false)
-        lineBasal.setColor(NSUIColor.systemBlue, alpha: 0.5)
+        lineBasal.setColor(NSUIColor.systemBlue, alpha: 0.3)
         lineBasal.lineWidth = 0
         lineBasal.drawFilledEnabled = true
         lineBasal.fillColor = NSUIColor.systemBlue
-        lineBasal.fillAlpha = 0.5
+        lineBasal.fillAlpha = 0.3
         lineBasal.drawCirclesEnabled = false
         lineBasal.axisDependency = YAxis.AxisDependency.left
         lineBasal.highlightEnabled = true
@@ -329,7 +331,7 @@ extension MainViewController {
         
         if UserDefaultsRepository.showValues.value  {
             lineBolus.drawValuesEnabled = true
-            lineBolus.highlightEnabled = false
+            lineBolus.highlightEnabled = true
         } else {
             lineBolus.drawValuesEnabled = false
             lineBolus.highlightEnabled = true
@@ -355,7 +357,7 @@ extension MainViewController {
         
         if UserDefaultsRepository.showValues.value {
             lineCarbs.drawValuesEnabled = true
-            lineCarbs.highlightEnabled = false
+            lineCarbs.highlightEnabled = true
         } else {
             lineCarbs.drawValuesEnabled = false
             lineCarbs.highlightEnabled = true
@@ -381,7 +383,7 @@ extension MainViewController {
         lineOverride.lineWidth = 0
         lineOverride.drawFilledEnabled = true
         lineOverride.fillFormatter = OverrideFillFormatter()
-        lineOverride.fillColor = NSUIColor.systemGreen
+        lineOverride.fillColor = NSUIColor.systemPurple.withAlphaComponent(0.7)
         lineOverride.fillAlpha = 0.6
         lineOverride.drawCirclesEnabled = false
         lineOverride.axisDependency = YAxis.AxisDependency.right
@@ -437,7 +439,7 @@ extension MainViewController {
         let chartEntrySensor = [ChartDataEntry]()
         let lineSensor = LineChartDataSet(entries:chartEntrySensor, label: "")
         lineSensor.circleRadius = CGFloat(globalVariables.dotOther)
-        lineSensor.circleColors = [NSUIColor.systemIndigo.withAlphaComponent(0.75)]
+        lineSensor.circleColors = [NSUIColor.white.withAlphaComponent(0.75)]
         lineSensor.drawCircleHoleEnabled = false
         lineSensor.setDrawHighlightIndicators(false)
         lineSensor.setColor(NSUIColor.systemGray3, alpha: 1.0)
@@ -448,14 +450,29 @@ extension MainViewController {
         lineSensor.valueFormatter = ChartYDataValueFormatter()
         lineSensor.drawValuesEnabled = false
         
+        // Pump Change
+        var chartEntryPump = [ChartDataEntry]()
+        let linePump = LineChartDataSet(entries:chartEntryPump, label: "")
+        linePump.circleRadius = CGFloat(globalVariables.dotOther)
+        linePump.circleColors = [NSUIColor.white.withAlphaComponent(0.75)]
+        linePump.drawCircleHoleEnabled = false
+        linePump.setDrawHighlightIndicators(false)
+        linePump.setColor(NSUIColor.systemGray3, alpha: 1.0)
+        linePump.drawCirclesEnabled = true
+        linePump.lineWidth = 0
+        linePump.highlightEnabled = true
+        linePump.axisDependency = YAxis.AxisDependency.right
+        linePump.valueFormatter = ChartYDataValueFormatter()
+        linePump.drawValuesEnabled = false
+        
         // Notes
         let chartEntryNote = [ChartDataEntry]()
         let lineNote = LineChartDataSet(entries:chartEntryNote, label: "")
         lineNote.circleRadius = CGFloat(globalVariables.dotOther)
-        lineNote.circleColors = [NSUIColor.systemGray.withAlphaComponent(0.75)]
+        lineNote.circleColors = [NSUIColor.white.withAlphaComponent(0.75)]
         lineNote.drawCircleHoleEnabled = false
         lineNote.setDrawHighlightIndicators(false)
-        lineNote.setColor(NSUIColor.systemGray3, alpha: 1.0)
+        lineNote.setColor(NSUIColor.white, alpha: 1.0)
         lineNote.drawCirclesEnabled = true
         lineNote.lineWidth = 0
         lineNote.highlightEnabled = true
@@ -469,7 +486,7 @@ extension MainViewController {
         COBlinePrediction.circleRadius = CGFloat(globalVariables.dotBG)
         COBlinePrediction.circleColors = [NSUIColor.systemPurple]
         COBlinePrediction.colors = [NSUIColor.systemPurple]
-        COBlinePrediction.drawCircleHoleEnabled = false
+        COBlinePrediction.drawCircleHoleEnabled = true
         COBlinePrediction.axisDependency = YAxis.AxisDependency.right
         COBlinePrediction.highlightEnabled = true
         COBlinePrediction.drawValuesEnabled = false
@@ -493,7 +510,7 @@ extension MainViewController {
         IOBlinePrediction.circleRadius = CGFloat(globalVariables.dotBG)
         IOBlinePrediction.circleColors = [NSUIColor.systemPurple]
         IOBlinePrediction.colors = [NSUIColor.systemPurple]
-        IOBlinePrediction.drawCircleHoleEnabled = false
+        IOBlinePrediction.drawCircleHoleEnabled = true
         IOBlinePrediction.axisDependency = YAxis.AxisDependency.right
         IOBlinePrediction.highlightEnabled = true
         IOBlinePrediction.drawValuesEnabled = false
@@ -517,7 +534,7 @@ extension MainViewController {
         UAMlinePrediction.circleRadius = CGFloat(globalVariables.dotBG)
         UAMlinePrediction.circleColors = [NSUIColor.systemPurple]
         UAMlinePrediction.colors = [NSUIColor.systemPurple]
-        UAMlinePrediction.drawCircleHoleEnabled = false
+        UAMlinePrediction.drawCircleHoleEnabled = true
         UAMlinePrediction.axisDependency = YAxis.AxisDependency.right
         UAMlinePrediction.highlightEnabled = true
         UAMlinePrediction.drawValuesEnabled = false
@@ -541,7 +558,7 @@ extension MainViewController {
         ZTlinePrediction.circleRadius = CGFloat(globalVariables.dotBG)
         ZTlinePrediction.circleColors = [NSUIColor.systemPurple]
         ZTlinePrediction.colors = [NSUIColor.systemPurple]
-        ZTlinePrediction.drawCircleHoleEnabled = false
+        ZTlinePrediction.drawCircleHoleEnabled = true
         ZTlinePrediction.axisDependency = YAxis.AxisDependency.right
         ZTlinePrediction.highlightEnabled = true
         ZTlinePrediction.drawValuesEnabled = false
@@ -563,21 +580,23 @@ extension MainViewController {
         let chartEntrySmb = [ChartDataEntry]()
         let lineSmb = LineChartDataSet(entries: chartEntrySmb, label: "")
         lineSmb.circleRadius = CGFloat(globalVariables.dotBolus)
-        lineSmb.circleColors = [NSUIColor.systemBlue.withAlphaComponent(1.0)]
-        lineSmb.drawCircleHoleEnabled = false
+        lineSmb.circleColors = [NSUIColor.systemBlue.withAlphaComponent(0.75)]
+        lineSmb.drawCircleHoleEnabled = true
         lineSmb.setDrawHighlightIndicators(false)
-        lineSmb.setColor(NSUIColor.red, alpha: 1.0)
+        lineSmb.setColor(NSUIColor.systemBlue, alpha: 1.0)
         lineSmb.lineWidth = 0
         lineSmb.axisDependency = YAxis.AxisDependency.right
         lineSmb.valueFormatter = ChartYDataValueFormatter()
         lineSmb.valueTextColor = NSUIColor.label
+        lineSmb.fillColor = NSUIColor.systemBlue
+        lineSmb.fillAlpha = 0.6
         
-        lineSmb.drawCirclesEnabled = false
+        lineSmb.drawCirclesEnabled = true
         lineSmb.drawFilledEnabled = false
         
         if UserDefaultsRepository.showValues.value {
             lineSmb.drawValuesEnabled = true
-            lineSmb.highlightEnabled = false
+            lineSmb.highlightEnabled = true
         } else {
             lineSmb.drawValuesEnabled = false
             lineSmb.highlightEnabled = true
@@ -617,8 +636,9 @@ extension MainViewController {
         data.append(UAMlinePrediction) // Dataset 15
         data.append(lineSmb) // Dataset 16
         data.append(lineTempTarget)
+        data.append(linePump)
 
-        data.setValueFont(UIFont.systemFont(ofSize: 12))
+        data.setValueFont(UIFont.systemFont(ofSize: 10))
         
         // Add marker popups for bolus and carbs
         let marker = PillMarker(color: .secondarySystemBackground, font: UIFont.boldSystemFont(ofSize: 14), textColor: .label)
@@ -633,11 +653,21 @@ extension MainViewController {
         ll.lineColor = NSUIColor.systemRed.withAlphaComponent(0.5)
         BGChart.rightAxis.addLimitLine(ll)
         
-        //Add upper yellow line based on low alert value
+        //Add upper yellow line based on high alert value
         let ul = ChartLimitLine()
         ul.limit = Double(UserDefaultsRepository.highLine.value)
-        ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
+        if UserDefaultsRepository.colorBGText.value {
+            ul.lineColor = NSUIColor.systemPurple.withAlphaComponent(0.5)
+        } else {
+            ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
+        }
         BGChart.rightAxis.addLimitLine(ul)
+        
+        //Daniel: Add mid green line based on target value
+        let tl = ChartLimitLine()
+        tl.limit = Double(UserDefaultsRepository.targetLine.value)
+        tl.lineColor = NSUIColor.systemGreen.withAlphaComponent(0.2)
+        BGChart.rightAxis.addLimitLine(tl)
         
         // Add vertical lines as configured
         createVerticalLines()
@@ -690,9 +720,18 @@ extension MainViewController {
     func createNowAndDIALines() {
         let ul = ChartLimitLine()
         ul.limit = Double(dateTimeUtils.getNowTimeIntervalUTC())
-        ul.lineColor = NSUIColor.systemGray.withAlphaComponent(0.5)
+        ul.lineColor = NSUIColor.label
+        ul.lineDashLengths = [CGFloat(4), CGFloat(2)]
         ul.lineWidth = 1
         BGChart.xAxis.addLimitLine(ul)
+        
+        // Small chart
+        let sl = ChartLimitLine()
+        sl.limit = Double(dateTimeUtils.getNowTimeIntervalUTC())
+        sl.lineColor = NSUIColor.label
+        sl.lineDashLengths = [CGFloat(2), CGFloat(2)]
+        sl.lineWidth = 1
+        BGChartFull.xAxis.addLimitLine(sl)
         
         if UserDefaultsRepository.show30MinLine.value {
             let ul2 = ChartLimitLine()
@@ -706,7 +745,7 @@ extension MainViewController {
             for i in 1..<7 {
                 let ul = ChartLimitLine()
                 ul.limit = Double(dateTimeUtils.getNowTimeIntervalUTC() - Double(i * 60 * 60))
-                ul.lineColor = NSUIColor.systemGray.withAlphaComponent(0.3)
+                ul.lineColor = NSUIColor.systemGray.withAlphaComponent(0.5)
                 let dash = 10.0 - Double(i)
                 let space = 5.0 + Double(i)
                 ul.lineDashLengths = [CGFloat(dash), CGFloat(space)]
@@ -714,13 +753,24 @@ extension MainViewController {
                 BGChart.xAxis.addLimitLine(ul)
             }
         }
-
+        
+        // Daniel: Changed below show -90 min to instead show -24 h (to quickly campare now with yesterday same time)
         if UserDefaultsRepository.show90MinLine.value {
+            // Large chart
             let ul3 = ChartLimitLine()
-            ul3.limit = Double(dateTimeUtils.getNowTimeIntervalUTC().advanced(by: -90 * 60))
-            ul3.lineColor = NSUIColor.systemOrange.withAlphaComponent(0.5)
+            ul3.limit = Double(dateTimeUtils.getNowTimeIntervalUTC().advanced(by: -1440 * 60))
+            ul3.lineColor = NSUIColor.systemOrange.withAlphaComponent(0.8)
+            ul3.lineDashLengths = [CGFloat(4), CGFloat(2)]
             ul3.lineWidth = 1
             BGChart.xAxis.addLimitLine(ul3)
+            
+            // Small chart
+            let sl3 = ChartLimitLine()
+            sl3.limit = Double(dateTimeUtils.getNowTimeIntervalUTC().advanced(by: -1440 * 60))
+            sl3.lineColor = NSUIColor.systemOrange.withAlphaComponent(0.8)
+            sl3.lineDashLengths = [CGFloat(2), CGFloat(2)]
+            sl3.lineWidth = 1
+            BGChartFull.xAxis.addLimitLine(sl3)
         }
     }
     
@@ -734,15 +784,15 @@ extension MainViewController {
                 // Large chart
                 let ul = ChartLimitLine()
                 ul.limit = Double(midnightTimeInterval)
-                ul.lineColor = NSUIColor.systemTeal.withAlphaComponent(0.5)
-                ul.lineDashLengths = [CGFloat(2), CGFloat(5)]
+                ul.lineColor = NSUIColor.systemIndigo //.withAlphaComponent(0.7)
+                ul.lineDashLengths = [CGFloat(4), CGFloat(2)]
                 ul.lineWidth = 1
                 BGChart.xAxis.addLimitLine(ul)
 
                 // Small chart
                 let sl = ChartLimitLine()
                 sl.limit = Double(midnightTimeInterval)
-                sl.lineColor = NSUIColor.systemTeal
+                sl.lineColor = NSUIColor.systemIndigo //.withAlphaComponent(0.7)
                 sl.lineDashLengths = [CGFloat(2), CGFloat(2)]
                 sl.lineWidth = 1
                 BGChartFull.xAxis.addLimitLine(sl)
@@ -783,10 +833,14 @@ extension MainViewController {
         ll.lineColor = NSUIColor.systemRed.withAlphaComponent(0.5)
         BGChart.rightAxis.addLimitLine(ll)
         
-        //Add upper yellow line based on low alert value
+        //Add upper purple line based on low alert value
         let ul = ChartLimitLine()
         ul.limit = Double(UserDefaultsRepository.highLine.value)
-        ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
+        if UserDefaultsRepository.colorBGText.value {
+            ul.lineColor = NSUIColor.systemPurple.withAlphaComponent(0.5)
+        } else {
+            ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
+        }
         BGChart.rightAxis.addLimitLine(ul)
         
         // Re-create vertical markers in case their settings changed
@@ -797,6 +851,39 @@ extension MainViewController {
         BGChart.notifyDataSetChanged()
         
     }
+    
+    func setBGColor(_ bgValue: Int) -> NSUIColor {
+
+             // Auggie's dynamic color - Define the hue values for the key points
+             let redHue: CGFloat = 0.0 / 360.0       // 0 degrees
+             let greenHue: CGFloat = 120.0 / 360.0   // 120 degrees
+             let purpleHue: CGFloat = 270.0 / 360.0  // 270 degrees
+
+             // Define the bgLevel thresholds
+             let minLevel = Int(UserDefaultsRepository.alertUrgentLowBG.value) // Use the urgent low BG alarm value for red text
+             let targetLevel = Int(UserDefaultsRepository.targetLine.value) // Use the target BG for green text
+             let maxLevel = Int(UserDefaultsRepository.alertUrgentHighBG.value) // Use the urgent high BG alarm value for purple text
+
+             // Calculate the hue based on the bgLevel
+             var hue: CGFloat
+             if bgValue <= minLevel {
+                 hue = redHue
+             } else if bgValue >= maxLevel {
+                 hue = purpleHue
+             } else if bgValue <= targetLevel {
+                 // Interpolate between red and green
+                 let ratio = CGFloat(bgValue - minLevel) / CGFloat(targetLevel - minLevel)
+                 hue = redHue + ratio * (greenHue - redHue)
+             } else {
+                 // Interpolate between green and purple
+                 let ratio = CGFloat(bgValue - targetLevel) / CGFloat(maxLevel - targetLevel)
+                 hue = greenHue + ratio * (purpleHue - greenHue)
+             }
+
+             // Return the color with full saturation and brightness
+             let color = UIColor(hue: hue, saturation: 0.9, brightness: 0.9, alpha: 1.0)
+             return color
+         }
     
     func updateBGGraph() {
         if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "##### Start BG Graph #####") }
@@ -818,17 +905,22 @@ extension MainViewController {
             if Float(entries[i].sgv) > topBG - maxBGOffset {
                 topBG = Float(entries[i].sgv) + maxBGOffset
             }
-            let value = ChartDataEntry(x: Double(entries[i].date), y: Double(entries[i].sgv), data: formatPillText(line1: Localizer.toDisplayUnits(String(entries[i].sgv)), time: entries[i].date))
+            let value = ChartDataEntry(x: Double(entries[i].date), y: Double(entries[i].sgv), data: formatPillTextExtraLine(line1: "Blodsocker", line2: Localizer.toDisplayUnits(String(entries[i].sgv)) + " mmol/L", time: entries[i].date))
             if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "BG: " + value.description) }
             mainChart.append(value)
             smallChart.append(value)
             
-            if Double(entries[i].sgv) >= Double(UserDefaultsRepository.highLine.value) {
-                colors.append(NSUIColor.systemYellow)
-            } else if Double(entries[i].sgv) <= Double(UserDefaultsRepository.lowLine.value) {
-               colors.append(NSUIColor.systemRed)
+            if UserDefaultsRepository.colorBGText.value {
+            colors.append(setBGColor(entries[i].sgv))
+            //Auggie - here!
             } else {
-                colors.append(NSUIColor.systemGreen)
+                if Double(entries[i].sgv) >= Double(UserDefaultsRepository.highLine.value) {
+                    colors.append(NSUIColor.systemYellow)
+                } else if Double(entries[i].sgv) <= Double(UserDefaultsRepository.lowLine.value) {
+                    colors.append(NSUIColor.systemRed)
+                } else {
+                    colors.append(NSUIColor.systemGreen)
+                }
             }
         }
         
@@ -912,7 +1004,7 @@ extension MainViewController {
                 colors.append(color ?? NSUIColor.systemPurple)
             }
             
-            let value = ChartDataEntry(x: predictionData[i].date, y: predictionVal, data: formatPillText(line1: Localizer.toDisplayUnits(String(predictionData[i].sgv)), time: predictionData[i].date))
+            let value = ChartDataEntry(x: predictionData[i].date, y: predictionVal, data: formatPillTextExtraLine(line1: "Prognos", line2: Localizer.toDisplayUnits(String(predictionData[i].sgv)) + " mmol/L", time: predictionData[i].date))
             mainChart.addEntry(value)
             smallChart.addEntry(value)
         }
@@ -945,7 +1037,7 @@ extension MainViewController {
         var maxBasal = UserDefaultsRepository.minBasalScale.value
         var maxBasalSmall: Double = 0.0
         for i in 0..<basalData.count{
-            let value = ChartDataEntry(x: Double(basalData[i].date), y: Double(basalData[i].basalRate), data: formatPillText(line1: String(basalData[i].basalRate), time: basalData[i].date))
+            let value = ChartDataEntry(x: Double(basalData[i].date), y: Double(basalData[i].basalRate), data: formatPillTextExtraLine(line1: "Basal", line2: String(basalData[i].basalRate) + " E/h", time: basalData[i].date))
             BGChart.data?.dataSets[dataIndex].addEntry(value)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(value)
@@ -1010,7 +1102,7 @@ extension MainViewController {
             formatter.maximumFractionDigits = 2
             formatter.minimumIntegerDigits = 0
             
-            // Check overlapping carbs to shift left if needed
+            // Check overlapping bolus to shift left if needed
             let bolusShift = findNextBolusTime(timeWithin: 240, needle: bolusData[i].date, haystack: bolusData, startingIndex: i)
             var dateTimeStamp = bolusData[i].date
             
@@ -1025,7 +1117,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if dateTimeStamp < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
   
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(bolusData[i].sgv), data: formatter.string(from: NSNumber(value: bolusData[i].value)))
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(bolusData[i].sgv), data: formatPillTextExtraLine(line1: "Bolus", line2: formatter.string(from: NSNumber(value: bolusData[i].value))! + " E", time: dateTimeStamp))
             mainChart.addEntry(dot)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 smallChart.addEntry(dot)
@@ -1097,7 +1189,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if dateTimeStamp < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(smbData[i].sgv), data: formatter.string(from: NSNumber(value: smbData[i].value)))
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(smbData[i].sgv), data: formatPillText(line1: "SMB\n" + formatter.string(from: NSNumber(value: smbData[i].value))! + " E", time: dateTimeStamp))
             mainChart.addEntry(dot)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 smallChart.addEntry(dot)
@@ -1131,6 +1223,15 @@ extension MainViewController {
             
             var valueString: String = formatter.string(from: NSNumber(value: carbData[i].value))!
             
+            var fatString: String = formatter.string(from: NSNumber(value: carbData[i].fat)) ?? ""
+            
+            var proteinString: String = formatter.string(from: NSNumber(value: carbData[i].protein)) ?? ""
+            
+            guard var foodType = String?(carbData[i].foodType ?? "") else { return }
+            if (carbData[i].foodType != nil) {
+                valueString += " " + foodType
+            }
+            
             var hours = 3
             if carbData[i].absorptionTime > 0 && UserDefaultsRepository.showAbsorption.value {
                 hours = carbData[i].absorptionTime / 60
@@ -1151,8 +1252,13 @@ extension MainViewController {
                 dateTimeStamp = dateTimeStamp - 250
             }
             
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: valueString)
-            BGChart.data?.dataSets[dataIndex].addEntry(dot)
+            /*let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: valueString)
+            BGChart.data?.dataSets[dataIndex].addEntry(dot)*/
+            
+            let line2 = "Kolhydrater " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g / Fett " + fatString + " g / Protein " + proteinString + " g"
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: (foodType.isEmpty ? "Måltid" : "\(foodType)"), line2: line2, time: dateTimeStamp))
+
+             BGChart.data?.dataSets[dataIndex].addEntry(dot)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(dot)
             }
@@ -1203,7 +1309,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if bgCheckData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let value = ChartDataEntry(x: Double(bgCheckData[i].date), y: Double(bgCheckData[i].sgv), data: formatPillText(line1: Localizer.toDisplayUnits(String(bgCheckData[i].sgv)), time: bgCheckData[i].date))
+            let value = ChartDataEntry(x: Double(bgCheckData[i].date), y: Double(bgCheckData[i].sgv), data: formatPillText(line1: "Fingerstick\n" + Localizer.toDisplayUnits(String(bgCheckData[i].sgv)) + " mmol/L", time: bgCheckData[i].date))
             BGChart.data?.dataSets[dataIndex].addEntry(value)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(value)
@@ -1231,7 +1337,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if thisData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: "Suspend Pump", time: thisData[i].date))
+            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: "Pausa pump", time: thisData[i].date))
             BGChart.data?.dataSets[dataIndex].addEntry(value)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(value)
@@ -1258,7 +1364,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if thisData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: "Resume Pump", time: thisData[i].date))
+            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: "Återuppta pump", time: thisData[i].date))
             BGChart.data?.dataSets[dataIndex].addEntry(value)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(value)
@@ -1285,7 +1391,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if thisData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: "Start Sensor", time: thisData[i].date))
+            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: "Sensorbyte", time: thisData[i].date))
             BGChart.data?.dataSets[dataIndex].addEntry(value)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(value)
@@ -1302,6 +1408,24 @@ extension MainViewController {
         }
     }
     
+    func updatePumpChange() {
+        var dataIndex = 18
+        BGChart.lineData?.dataSets[dataIndex].clear()
+        BGChartFull.lineData?.dataSets[dataIndex].clear()
+        let thisData = pumpChangeGraphData
+        for i in 0..<thisData.count{
+            // skip if outside of visible area
+            let graphHours = 24 * UserDefaultsRepository.downloadDays.value
+            if thisData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
+            
+            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: "Pumpbyte", time: thisData[i].date))
+            BGChart.data?.dataSets[dataIndex].addEntry(value)
+            if UserDefaultsRepository.smallGraphTreatments.value {
+                BGChartFull.data?.dataSets[dataIndex].addEntry(value)
+            }
+        }
+    }
+    
     func updateNotes() {
         var dataIndex = 11
         BGChart.lineData?.dataSets[dataIndex].clear()
@@ -1313,7 +1437,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if thisData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillText(line1: thisData[i].note, time: thisData[i].date))
+            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillTextNotes(line1: thisData[i].note, time: thisData[i].date))
             BGChart.data?.dataSets[dataIndex].addEntry(value)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(value)
@@ -1367,11 +1491,11 @@ extension MainViewController {
         var maxBasal = UserDefaultsRepository.minBasalScale.value
         let lineBasal = LineChartDataSet(entries:chartEntry, label: "")
         lineBasal.setDrawHighlightIndicators(false)
-        lineBasal.setColor(NSUIColor.systemBlue, alpha: 0.5)
+        lineBasal.setColor(NSUIColor.systemBlue, alpha: 0.4)
         lineBasal.lineWidth = 0
         lineBasal.drawFilledEnabled = true
         lineBasal.fillColor = NSUIColor.systemBlue
-        lineBasal.fillAlpha = 0.35
+        lineBasal.fillAlpha = 0.4
         lineBasal.drawCirclesEnabled = false
         lineBasal.axisDependency = YAxis.AxisDependency.left
         lineBasal.highlightEnabled = false
@@ -1440,7 +1564,7 @@ extension MainViewController {
         lineOverride.lineWidth = 0
         lineOverride.drawFilledEnabled = true
         lineOverride.fillFormatter = OverrideFillFormatter()
-        lineOverride.fillColor = NSUIColor.systemGreen
+        lineOverride.fillColor = NSUIColor.systemPurple.withAlphaComponent(0.7)
         lineOverride.fillAlpha = 0.6
         lineOverride.drawCirclesEnabled = false
         lineOverride.axisDependency = YAxis.AxisDependency.right
@@ -1506,6 +1630,21 @@ extension MainViewController {
         lineSensor.axisDependency = YAxis.AxisDependency.right
         lineSensor.valueFormatter = ChartYDataValueFormatter()
         lineSensor.drawValuesEnabled = false
+        
+        // Pump Change
+        var chartEntryPump = [ChartDataEntry]()
+        let linePump = LineChartDataSet(entries:chartEntryPump, label: "")
+        linePump.circleRadius = 2
+        linePump.circleColors = [NSUIColor.systemIndigo.withAlphaComponent(0.75)]
+        linePump.drawCircleHoleEnabled = false
+        linePump.setDrawHighlightIndicators(false)
+        linePump.setColor(NSUIColor.systemGray3, alpha: 1.0)
+        linePump.drawCirclesEnabled = true
+        linePump.lineWidth = 0
+        linePump.highlightEnabled = false
+        linePump.axisDependency = YAxis.AxisDependency.right
+        linePump.valueFormatter = ChartYDataValueFormatter()
+        linePump.drawValuesEnabled = false
         
         // Notes
         var chartEntryNote = [ChartDataEntry]()
@@ -1626,6 +1765,7 @@ extension MainViewController {
         data.append(UAMlinePrediction) // Dataset 15
         data.append(lineSmb) // Dataset 16
         data.append(lineTempTarget)
+        data.append(linePump)
 
         BGChartFull.highlightPerDragEnabled = true
         BGChartFull.leftAxis.enabled = false
@@ -1659,15 +1799,19 @@ extension MainViewController {
         var colors = [NSUIColor]()
         for i in 0..<thisData.count{
             let thisItem = thisData[i]
-            let multiplier = thisItem.insulNeedsScaleFactor as! Double * 100.0
-            var labelText = thisItem.reason + "\r\n"
-            labelText += String(Int(thisItem.insulNeedsScaleFactor * 100)) + "% "
-            if thisItem.correctionRange.count == 2 {
-                labelText += String(thisItem.correctionRange[0]) + "-" + String(thisItem.correctionRange[1])
-            }
+            //let multiplier = thisItem.insulNeedsScaleFactor as! Double * 100.0
+            /*var labelText = thisItem.notes // + "\r\n"
+            //labelText += String(Int(thisItem.insulNeedsScaleFactor * 100)) + "% Mål:"
+            /*if thisItem.correctionRange.count == 2 {
+                let firstValue = Double(thisItem.correctionRange[0])
+                let result = firstValue / 18.0
+                labelText! += String(result)
+            }*/
             if thisItem.enteredBy.count > 0 {
-                labelText += "\r\nEntered By: " + thisItem.enteredBy
+                labelText! += "\nInlagt av: " + thisItem.enteredBy
             }
+             */
+            var labelText = formatPillTextExtraLine(line1: thisItem.notes ?? "N/A", line2: "Varaktighet: " + String(format:"%.0f",(thisItem.duration / 60)) + " min", time: thisItem.date)
             
             
             // Start Dot
@@ -1859,25 +2003,59 @@ extension MainViewController {
         return lines.joined(separator: "\r\n")
     }
 
-    func formatPillText(line1: String, time: TimeInterval, line2: String? = nil) -> String {
-        let dateFormatter = DateFormatter()
-        if dateTimeUtils.is24Hour() {
-            dateFormatter.setLocalizedDateFormatFromTemplate("HH:mm")
-        } else {
-            dateFormatter.setLocalizedDateFormatFromTemplate("hh:mm")
+        func formatPillText(line1: String, time: TimeInterval) -> String {
+            let dateFormatter = DateFormatter()
+            //let timezoneOffset = TimeZone.current.secondsFromGMT()
+            //let epochTimezoneOffset = value + Double(timezoneOffset)
+            if dateTimeUtils.is24Hour() {
+                dateFormatter.setLocalizedDateFormatFromTemplate("HH:mm")
+            } else {
+                dateFormatter.setLocalizedDateFormatFromTemplate("hh:mm")
+            }
+            
+            //let date = Date(timeIntervalSince1970: epochTimezoneOffset)
+            let date = Date(timeIntervalSince1970: time)
+            let formattedDate = dateFormatter.string(from: date)
+
+            return line1 + "\r\n" + formattedDate
         }
-
-        let wrappedLine1 = wrapText(line1, maxLineLength: 40)
-
-        let date = Date(timeIntervalSince1970: time)
-        let formattedDate = dateFormatter.string(from: date)
         
-        if let line2 = line2 {
-            return wrappedLine1 + "\r\n" + line2 + "\r\n" + formattedDate
-        } else {
+        func formatPillTextNotes(line1: String, time: TimeInterval) -> String {
+            let dateFormatter = DateFormatter()
+            //let timezoneOffset = TimeZone.current.secondsFromGMT()
+            //let epochTimezoneOffset = value + Double(timezoneOffset)
+            if dateTimeUtils.is24Hour() {
+                dateFormatter.setLocalizedDateFormatFromTemplate("HH:mm")
+            } else {
+                dateFormatter.setLocalizedDateFormatFromTemplate("hh:mm")
+            }
+            
+            let wrappedLine1 = wrapText(line1, maxLineLength: 35)
+            
+            //let date = Date(timeIntervalSince1970: epochTimezoneOffset)
+            let date = Date(timeIntervalSince1970: time)
+            let formattedDate = dateFormatter.string(from: date)
+
             return wrappedLine1 + "\r\n" + formattedDate
         }
-    }
+        
+        func formatPillTextExtraLine(line1: String, line2: String, time: TimeInterval) -> String {
+            let dateFormatter = DateFormatter()
+            //let timezoneOffset = TimeZone.current.secondsFromGMT()
+            //let epochTimezoneOffset = value + Double(timezoneOffset)
+            if dateTimeUtils.is24Hour() {
+                dateFormatter.setLocalizedDateFormatFromTemplate("HH:mm")
+            } else {
+                dateFormatter.setLocalizedDateFormatFromTemplate("hh:mm")
+            }
+            
+            
+            //let date = Date(timeIntervalSince1970: epochTimezoneOffset)
+            let date = Date(timeIntervalSince1970: time)
+            let formattedDate = dateFormatter.string(from: date)
+            
+            return line1 + "\r\n" + line2 + "\r\n" + formattedDate
+        }
   
     func updatePredictionGraphGeneric(
         dataIndex: Int,
@@ -1914,8 +2092,8 @@ extension MainViewController {
                 y: predictionVal,
                 data: formatPillText(
                     line1: chartLabel,
-                    time: predictionData[i].date,
-                    line2: Localizer.toDisplayUnits(String(predictionVal))
+                    time: predictionData[i].date//,
+                    //line2: Localizer.toDisplayUnits(String(predictionVal))
                 )
             )
             mainChart.addEntry(value)

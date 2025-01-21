@@ -43,12 +43,15 @@ extension MainViewController {
         var sgv: Int
     }
     
-    //NS Bolus Data  Struct
+    //NS Carbs Data  Struct
     struct carbGraphStruct: Codable {
         var value: Double
         var date: TimeInterval
         var sgv: Int
         var absorptionTime: Int
+        var foodType: String?
+        var fat: Double
+        var protein: Double
     }
     
     func isStaleData() -> Bool {
@@ -126,6 +129,12 @@ extension MainViewController {
     {
         sensorStartGraphData.removeAll()
         updateSensorStart()
+    }
+    
+    func clearOldPump()
+    {
+        pumpChangeGraphData.removeAll()
+        updatePumpChange()
     }
     
     func clearOldNotes()

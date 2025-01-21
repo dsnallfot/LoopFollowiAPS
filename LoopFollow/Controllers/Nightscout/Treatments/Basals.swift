@@ -149,7 +149,7 @@ extension MainViewController {
 
         if let profileBasal = profileManager.currentBasal(),
            profileBasal != latestBasal {
-            latestBasal = "\(profileBasal) → \(latestBasal)"
+            latestBasal = "\(profileBasal) → \(latestBasal) E/h"
         }
         infoManager.updateInfoData(type: .basal, value: latestBasal)
     }
