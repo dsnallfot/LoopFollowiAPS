@@ -52,6 +52,8 @@ struct ContactSettingsView: View {
                                     viewModel.contactTrend = false
                                 }
                             }
+                        Toggle("Also create 15m delta contact", isOn: $viewModel.contactFifteenMinutes)
+                            .toggleStyle(SwitchToggleStyle())
                     }
                 }
             }

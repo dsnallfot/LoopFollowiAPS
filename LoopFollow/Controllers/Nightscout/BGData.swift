@@ -206,7 +206,7 @@ extension MainViewController {
     func viewUpdateNSBG(sourceName: String) {
         DispatchQueue.main.async {
             TaskScheduler.shared.rescheduleTask(id: .minAgoUpdate, to: Date())
-
+            
             let entries = self.bgData
             if entries.count < 2 { return } // Protect index out of bounds
             
@@ -219,7 +219,7 @@ extension MainViewController {
             let deltaBG = latestBG - priorBG
             let lastBGTime = entries[latestEntryIndex].date
             
-            let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - lastBGTime) / 60            
+            let deltaTime = (TimeInterval(Date().timeIntervalSince1970) - lastBGTime) / 60
             self.updateServerText(with: sourceName)
             
             var snoozerBG = ""
@@ -257,7 +257,7 @@ extension MainViewController {
             let bgTextStr = self.BGText.text ?? ""
             let attributeString = NSMutableAttributedString(string: bgTextStr)
             attributeString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: 0, length: attributeString.length))
-            if deltaTime >= 12 { // Data is stale
+            if deltaTime >= 6 { // Data is stale
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.systemRed, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: 0)
             } else { // Data is fresh
@@ -271,19 +271,87 @@ extension MainViewController {
             snoozer.BGLabel.text = snoozerBG
             snoozer.DirectionLabel.text = snoozerDirection
             snoozer.DeltaLabel.text = snoozerDelta
+            
+            //FifteenMinutesTrend
+            
+            // Clean up bgTextStr and snoozerDelta
+            let cleanedBGTextStr = bgTextStr.replacingOccurrences(of: ",", with: ".")
+            let cleanedSnoozerDelta = snoozerDelta
+                .replacingOccurrences(of: ",", with: ".")
+                .replacingOccurrences(of: "+", with: "") // Remove leading plus sign if present
+            // Convert to Double
+            let bgValue = Double(cleanedBGTextStr)
+            let deltaBGValue = Double(cleanedSnoozerDelta)
+            // Log cleaned and converted values
+            print("Cleaned bgValue: \(bgValue ?? 0.0)")
+            print("Cleaned deltaBGValue: \(deltaBGValue ?? 0.0)")
+            // Perform calculation
+            let fifteenMin = ((bgValue ?? 0.0) + (deltaBGValue ?? 0.0) * 2.5)
+            print("Raw fifteenMin calculation: \(fifteenMin)")
+            // Format the calculated value to a string
+            let fifteenMinString = String(format: "%.1f", fifteenMin)
+            // Convert back to Double for conditional checks
+            let fifteenMinValue = Double(fifteenMinString) ?? 0.0
+            // Use the calculated 'fifteenMinValue' to build the color-coded string
+            var fifteenMinColorString: String = ""
+            if deltaTime >= 6 {
+                fifteenMinColorString = " ❔ "
+            } else if fifteenMinValue < 3.9 {
+                fifteenMinColorString = " 🆘 "
+            } else if fifteenMinValue > 7.8 {
+                fifteenMinColorString = " ⚠️ "
+            } else {
+                fifteenMinColorString = " ✅ "
+            }
+            
+            var cob = "N/A g"
+            if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
+                cob = latestCOB
+            }
+            print("cob: \(cob)")
 
+            var iob = "N/A E"
+            if let latestIOB = self.latestIOB?.description, !latestIOB.isEmpty {
+                if let numericPart = Double(latestIOB.replacingOccurrences(of: "E", with: "").trimmingCharacters(in: .whitespaces)) {
+                    // Format to one decimal place and reconstruct the string with "E"
+                    iob = String(format: "%.1f", numericPart) + "E"
+                } else {
+                    iob = latestIOB // Fallback to original if parsing fails
+                }
+            }
+            print("iob: \(iob)")
+            
             // Update contact
             if ObservableUserDefaults.shared.contactEnabled.value {
                 var extra: String = ""
-
+                
                 if ObservableUserDefaults.shared.contactTrend.value {
                     extra = snoozerDirection
                 } else if ObservableUserDefaults.shared.contactDelta.value {
                     extra = snoozerDelta
                 }
-
-                self.contactImageUpdater.updateContactImage(bgValue: bgTextStr, extra: extra, stale: deltaTime >= 12)
+                
+                var extra2: String = ""
+                var extra3: String = ""
+                if ObservableUserDefaults.shared.contactFifteenMinutes.value {
+                    extra2 = fifteenMinColorString
+                    extra3 = fifteenMinString
+                }
+                
+                self.contactImageUpdater.updateContactImage(bgValue: bgTextStr, extra: extra, extra2: extra2, extra3: extra3, iob: iob, cob: cob, stale: deltaTime >= 6)//>= 12)
             }
         }
+    }
+}
+
+extension CarbMetric: CustomStringConvertible {
+    var description: String {
+        return String(format: "%.0f", value) // Adjust format as needed
+    }
+}
+
+extension InsulinMetric: CustomStringConvertible {
+    var description: String {
+        return String(format: "%.2f", value) // Adjust format as needed
     }
 }

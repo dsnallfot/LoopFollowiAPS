@@ -46,6 +46,13 @@ class ContactSettingsViewModel: ObservableObject {
             triggerRefresh()
         }
     }
+    
+    @Published var contactFifteenMinutes: Bool {
+             didSet {
+                 storage.contactFifteenMinutes.value = contactFifteenMinutes
+                 triggerRefresh()
+             }
+         }
 
     private let storage = ObservableUserDefaults.shared
     private var cancellables = Set<AnyCancellable>()
@@ -54,6 +61,7 @@ class ContactSettingsViewModel: ObservableObject {
         self.contactEnabled = storage.contactEnabled.value
         self.contactTrend = storage.contactTrend.value
         self.contactDelta = storage.contactDelta.value
+        self.contactFifteenMinutes = storage.contactFifteenMinutes.value
 
         storage.contactEnabled.$value
             .assign(to: &$contactEnabled)
@@ -63,6 +71,9 @@ class ContactSettingsViewModel: ObservableObject {
 
         storage.contactDelta.$value
             .assign(to: &$contactDelta)
+        
+        storage.contactFifteenMinutes.$value
+            .assign(to: &$contactFifteenMinutes)
     }
 
     private func triggerRefresh() {

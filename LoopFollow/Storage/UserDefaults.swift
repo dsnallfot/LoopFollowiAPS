@@ -58,7 +58,7 @@ class UserDefaultsRepository {
 
     // Nightscout Settings
     static let token = UserDefaultsValue<String>(key: "token", default: "")
-    static let units = UserDefaultsValue<String>(key: "units", default: "mg/dL")
+    static let units = UserDefaultsValue<String>(key: "units", default: "mmol/L")
 
     static func getPreferredUnit() -> HKUnit {
         let unitString = units.value
@@ -89,18 +89,19 @@ class UserDefaultsRepository {
     static let smallGraphTreatments = UserDefaultsValue<Bool>(key: "smallGraphTreatments", default: true)
     static let showValues = UserDefaultsValue<Bool>(key: "showValues", default: true)
     static let showAbsorption = UserDefaultsValue<Bool>(key: "showAbsorption", default: true)
-    static let showLines = UserDefaultsValue<Bool>(key: "showLines", default: true)
+    static let showLines = UserDefaultsValue<Bool>(key: "showLines", default: false)
     static let hoursToLoad = UserDefaultsValue<Int>(key: "hoursToLoad", default: 24)
     static let predictionToLoad = UserDefaultsValue<Double>(key: "predictionToLoad", default: 1)
-    static let minBasalScale = UserDefaultsValue<Double>(key: "minBasalScale", default: 5.0)
+    static let minBasalScale = UserDefaultsValue<Double>(key: "minBasalScale", default: 2.0)
     static let minBGScale = UserDefaultsValue<Float>(key: "minBGScale", default: 250.0)
     static let showDIALines = UserDefaultsValue<Bool>(key: "showDIAMarkers", default: true)
     static let show30MinLine = UserDefaultsValue<Bool>(key: "show30MinLine", default: false)
     static let show90MinLine = UserDefaultsValue<Bool>(key: "show90MinLine", default: false)
     static let showMidnightLines = UserDefaultsValue<Bool>(key: "showMidnightMarkers", default: false)
     static let lowLine = UserDefaultsValue<Float>(key: "lowLine", default: 70.0)
-    static let highLine = UserDefaultsValue<Float>(key: "highLine", default: 180.0)
-    static let smallGraphHeight = UserDefaultsValue<Int>(key: "smallGraphHeight", default: 40)
+    static let highLine = UserDefaultsValue<Float>(key: "highLine", default: 140.0)
+    static let targetLine = UserDefaultsValue<Float>(key: "targetLine", default: 100.0)
+    static let smallGraphHeight = UserDefaultsValue<Int>(key: "smallGraphHeight", default: 60)
     
     
     // General Settings
@@ -141,10 +142,13 @@ class UserDefaultsRepository {
     static let graphOtherTreatments = UserDefaultsValue<Bool>(key: "graphOtherTreatments", default: true)
     static let graphBasal = UserDefaultsValue<Bool>(key: "graphBasal", default: true)
     static let graphBolus = UserDefaultsValue<Bool>(key: "graphBolus", default: true)
+    static let graphSmb = UserDefaultsValue<Bool>(key: "graphSmb", default: true)
     static let graphCarbs = UserDefaultsValue<Bool>(key: "graphCarbs", default: true)
     static let debugLog = UserDefaultsValue<Bool>(key: "debugLog", default: false)
     static let bgUpdateDelay = UserDefaultsValue<Int>(key: "bgUpdateDelay", default: 10)
-    static let downloadDays = UserDefaultsValue<Int>(key: "downloadDays", default: 1)
+    static let downloadDays = UserDefaultsValue<Int>(key: "downloadDays", default: 2)
+    static let showDetails = UserDefaultsValue<Bool>(key: "showDetails", default: true)
+    static let useDynCr = UserDefaultsValue<Bool>(key: "useDynCr", default: false)
     
     
     // Watch Calendar Settings
@@ -327,6 +331,9 @@ class UserDefaultsRepository {
     static let alertNotLoopingAutosnooze = UserDefaultsValue<String>(key: "alertNotLoopingAutosnooze", default: "Never")
     static let alertNotLoopingAutosnoozeDay = UserDefaultsValue<Bool>(key: "alertNotLoopingAutosnoozeDay", default: false)
     static let alertNotLoopingAutosnoozeNight = UserDefaultsValue<Bool>(key: "alertNotLoopingAutosnoozeNight", default: false)
+    
+    //Daniel: Added to be used for notlooping based on latest enacted insgtead of latest bg
+    static let latestEnactedTime = UserDefaultsValue<Double>(key: "latestEnactedTime", default: 0)
     
     static let alertMissedBolusActive = UserDefaultsValue<Bool>(key: "alertMissedBolusActive", default: false)
     static let alertMissedBolus = UserDefaultsValue<Int>(key: "alertMissedBolus", default: 10)
@@ -540,4 +547,31 @@ class UserDefaultsRepository {
     
     // Tracking the last time the expiration notification was shown
     static let lastExpirationNotificationShown = UserDefaultsValue<Date?>(key: "lastExpirationNotificationShown", default: nil)
+    
+    // Remote configuration
+    static let method = UserDefaultsValue<String>(key: "method", default: "SMS API")
+    static let caregiverName = UserDefaultsValue<String>(key: "caregiverName", default: "")
+    static let remoteSecretCode = UserDefaultsValue<String>(key: "remoteSecretCode", default: "")
+    
+    static let overrideString = UserDefaultsValue<String>(key: "overrideString", default: "🚫 Avbryt Override, ⬇️ 75%, 🤢 Magsjuka, 🍬 Efter dextro, 🍬😴 Efter dextro natt, 🏃‍♂️ Hög aktivitet, ⬇️ 90%, ❌ Blocka SMB, ⚽️ Gympa, 😴 Nattläge, 🍇 Vindruvor, 🍭 Godisdag, 🐌 Ledig dag, 🤧 Förkyld, 👻 Resistens, 🥯 Sen frukost")
+    static let tempTargetsString = UserDefaultsValue<String>(key: "tempTargetsString", default: "🚫 Avbryt Temp Target, 🏃‍♂️ Hög aktivitet, 🍬 Efter dextro, 🍽️ Äter snart, ❌ Blocka SMB, ⬆️ Boost, ⚽️ Gympa, 🍬😴 Efter dextro natt, 😴 Nattläge")
+    static let customActionsString = UserDefaultsValue<String>(key: "customActionsString", default: "🍬 1 Dextro, 🍬 2 Dextro, 🥭 Frukt (med Insulin), 🥯 Frukost (med Insulin), 🍝 Lunch (med Insulin), 🥪 Mellis (med Insulin), 🥘 Middag (med Insulin), 🍭 Godis (med Insulin), 🍔 McDonalds (med Insulin), 🍿 Snacks (med Insulin)")
+    
+    //Show or Hide advanced features
+    static let hideRemoteBolus = UserDefaultsValue<Bool>(key: "hideRemoteBolus", default: true)
+    static let hideRemoteCustomActions = UserDefaultsValue<Bool>(key: "hideCustomActions", default: true)
+    static let hideBolusCalc = UserDefaultsValue<Bool>(key: "hideBolusCalc", default: true)
+    static let useDynCrInBolusCalc = UserDefaultsValue<Bool>(key: "useDynCrInBolusCalc", default: false)
+    
+    //Remote guardrails
+    static let maxCarbs = UserDefaultsValue<Double>(key: "maxCarbs", default: 30)
+    static let maxFatProtein = UserDefaultsValue<Double>(key: "maxFatProtein", default: 30)
+    static let maxBolus = UserDefaultsValue<Double>(key: "maxBolus", default: 2.0)
+    static let carbRatio = UserDefaultsValue<Double>(key: "carbRatio", default: 30)
+    
+    // API settings
+    static let twilioSIDString = UserDefaultsValue<String>(key: "twilioSIDString", default: "")
+    static let twilioSecretString = UserDefaultsValue<String>(key: "twilioSecretString", default: "")
+    static let twilioFromNumberString = UserDefaultsValue<String>(key: "twilioFromNumberString", default: "")
+    static let twilioToNumberString = UserDefaultsValue<String>(key: "twilioToNumberString", default: "")
 }
