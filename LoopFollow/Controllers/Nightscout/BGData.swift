@@ -252,10 +252,10 @@ extension MainViewController {
             var snoozerDelta = ""
             
             // Set BGText with the latest BG value
-            self.BGText.text = Localizer.toDisplayUnits(String(latestBG))
+            self.BGText.text = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
             //Daniel: Added for visualization in remote meal info popup
             sharedLatestBG = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
-            snoozerBG = Localizer.toDisplayUnits(String(latestBG))
+            snoozerBG = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
             self.setBGTextColor()
             
             // Direction handling
@@ -307,7 +307,7 @@ extension MainViewController {
             }
             */
             // Apply strikethrough to BGText based on the staleness of the data
-            let bgTextStr = self.BGText.text ?? ""
+            let bgTextStr = (self.BGText.text ?? "").replacingOccurrences(of: ",", with: ".")
             let attributeString = NSMutableAttributedString(string: bgTextStr)
             attributeString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: 0, length: attributeString.length))
             if deltaTime >= 6 { // Data is stale

@@ -613,9 +613,13 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         //if (UserDefaultsRepository.watchLine2.value.count > 1) {
             //eventLocation += UserDefaultsRepository.watchLine2.value
         //<}
-        eventTitle = eventTitle.replacingOccurrences(of: "%BG%", with: Localizer.toDisplayUnits(String(self.bgData[self.bgData.count - 1].sgv)))
+        // Replace commas in bgUnits result with periods
+        let bgDisplayUnits = Localizer.toDisplayUnits(String(self.bgData[self.bgData.count - 1].sgv)).replacingOccurrences(of: ",", with: ".")
+        eventTitle = eventTitle.replacingOccurrences(of: "%BG%", with: bgDisplayUnits)
         eventTitle = eventTitle.replacingOccurrences(of: "%DIRECTION%", with: direction)
-        eventTitle = eventTitle.replacingOccurrences(of: "%DELTA%", with: deltaString)
+        // Replace commas in deltaString with periods
+        let deltaStringWithoutCommas = deltaString.replacingOccurrences(of: ",", with: ".")
+        eventTitle = eventTitle.replacingOccurrences(of: "%DELTA%", with: deltaStringWithoutCommas)
         if self.currentOverride != 1.0 {
             let val = Int( self.currentOverride*100)
             // let overrideText = String(format:"%f1", self.currentOverride*100)
@@ -698,7 +702,20 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     {
         if UserDefaultsRepository.persistentNotification.value && bgTime > UserDefaultsRepository.persistentNotificationLastBGTime.value && bgData.count > 0 {
             guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
-            snoozer.sendNotification(self, bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)), directionVal: latestDirectionString, deltaVal: Localizer.toDisplayUnits(String(latestDeltaString)), minAgoVal: latestMinAgoString, alertLabelVal: "Latest BG")
+            
+            let iobString = latestIOB?.formattedValue() ?? "N/A"
+            let cobString = latestCOB?.formattedValue() ?? "N/A"
+            
+            snoozer.sendNotification(
+                self,
+                bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
+                directionVal: latestDirectionString,
+                deltaVal: Localizer.toDisplayUnits(String(latestDeltaString)),
+                minAgoVal: latestMinAgoString,
+                alertLabelVal: "Latest BG",
+                latestIOB: iobString,
+                latestCOB: cobString
+            )
         }
     }
 

@@ -278,6 +278,17 @@ open class PieChartRenderer: NSObject, DataRenderer
             context.addPath(path)
             context.fillPath(using: .evenOdd)
 
+            // Daniel: Add the thin line around the slices
+            context.beginPath()
+            context.addPath(path)
+            if #available(iOS 13.0, *) {
+                context.setStrokeColor(UIColor.secondaryLabel.cgColor)
+            } else {
+                context.setStrokeColor(UIColor.white.cgColor)
+            }
+            context.setLineWidth(1.0 / chart.viewPortHandler.scaleX)
+            context.strokePath()
+            
             let axElement = createAccessibleElement(withIndex: j,
                                                     container: chart,
                                                     dataSet: dataSet)

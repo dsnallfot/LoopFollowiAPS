@@ -48,17 +48,17 @@ extension MainViewController {
             // Display only seconds with "sek sedan"
             formatter.allowedUnits = [.second]
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
-            displayText = formattedDuration + " sek sedan"
+            displayText = formattedDuration + " s sedan"
         } else if secondsAgo >= 60 && secondsAgo < 720 {
-            // Display minutes and seconds with "min sedan"
+            // Display minutes and seconds with "m sedan"
             formatter.allowedUnits = [.minute, .second]
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
-            displayText = formattedDuration + " min sedan"
+            displayText = formattedDuration + " m sedan"
         } else {
             // Display only minutes with "min sedan"
             formatter.allowedUnits = [.minute]
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
-            displayText = formattedDuration + " min sedan"
+            displayText = formattedDuration + " m sedan"
         }
 
         // Update UI only if the display text has changed

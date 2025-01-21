@@ -23,3 +23,4 @@ class CarbMetric: Metric {
         super.init(value: value, maxFractionDigits: 0, minFractionDigits: 0)
     }
 }
+

@@ -21,6 +21,9 @@ extension MainViewController {
         let predictionLoadSeconds = predictionLoadHours * 3600
         let maxEndDate = now + predictionLoadSeconds
 
+        var persistentNote: String? = nil
+        let notePersistenceInterval: TimeInterval = 60 // Persist the note for 1 minute
+
         entries.reversed().enumerated().forEach { (index, currentEntry) in
             guard let dateStr = currentEntry["timestamp"] as? String ?? currentEntry["created_at"] as? String else { return }
             guard let parsedDate = NightscoutUtils.parseDate(dateStr) else { return }
@@ -59,9 +62,6 @@ extension MainViewController {
                 range = [low ?? 0, high ?? 0]
             }
             
-            
-            //let endDate = dateTimeStamp + duration
-            //Limit charts to ony vizualize very long overrides just as long as user set prediction hours into the future
             let currentTimestamp = Date().timeIntervalSince1970
             let predictionHoursFromNow = currentTimestamp + UserDefaultsRepository.predictionToLoad.value * 3600
             
@@ -77,15 +77,18 @@ extension MainViewController {
                 activeOverrideNote = currentEntry["notes"] as? String
             }
             
+            if let note = activeOverrideNote, persistentNote == nil || (now - dateTimeStamp < notePersistenceInterval) {
+                persistentNote = note
+            }
+
             let dot = DataStructs.overrideStruct(insulNeedsScaleFactor: multiplier, date: dateTimeStamp, endDate: endDate, duration: duration, correctionRange: range, enteredBy: enteredBy, notes: notes, reason: currentEntry["reason"] as? String ?? "", sgv: -20)
             overrideGraphData.append(dot)
         }
         
-        Observable.shared.override.value = activeOverrideNote
+        Observable.shared.override.value = persistentNote
 
         if ObservableUserDefaults.shared.device.value == "Trio" {
-            if let note = activeOverrideNote
-            {
+            if let note = persistentNote {
                 infoManager.updateInfoData(type: .override, value: note)
             } else {
                 infoManager.clearInfoData(type: .override)
@@ -96,4 +99,5 @@ extension MainViewController {
             updateOverrideGraph()
         }
     }
+
 }
