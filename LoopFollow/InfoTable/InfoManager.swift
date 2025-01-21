@@ -59,7 +59,7 @@ class InfoManager {
     }
     
     func clearInfoData(type: InfoType) {
-        tableData[type.rawValue].value = ""
+        tableData[type.rawValue].value = "Normal profil"
         tableView?.reloadData()
     }
 

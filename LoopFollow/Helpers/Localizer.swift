@@ -15,7 +15,7 @@ class Localizer {
         numberFormatter.numberStyle = .decimal
         numberFormatter.maximumFractionDigits = maxFractionDigits
         numberFormatter.minimumFractionDigits = minFractionDigits
-        numberFormatter.locale = Locale.current
+        numberFormatter.locale = Locale(identifier: "en_US_POSIX") // Always use '.' as the decimal separator
 
         let numberValue = NSNumber(value: value)
         return numberFormatter.string(from: numberValue) ?? String(value)
@@ -55,7 +55,7 @@ class Localizer {
             numberFormatter.minimumFractionDigits = 1 // This ensures even .0 is displayed
         }
 
-        numberFormatter.locale = Locale.current
+        numberFormatter.locale = Locale(identifier: "en_US_POSIX") // Always use '.' as the decimal separator
 
         let numberValue = NSNumber(value: value)
         return numberFormatter.string(from: numberValue) ?? String(value)
@@ -64,27 +64,27 @@ class Localizer {
     static func toDisplayUnits(_ value: String) -> String {
         let numberFormatter = NumberFormatter()
         numberFormatter.numberStyle = .decimal
-        
+
         if UserDefaultsRepository.units.value == "mg/dL" {
             numberFormatter.maximumFractionDigits = 0 // No decimal places for mg/dL
         } else {
             numberFormatter.maximumFractionDigits = 1 // Always one decimal place for mmol/L
             numberFormatter.minimumFractionDigits = 1 // This ensures even .0 is displayed
         }
-        
-        numberFormatter.locale = Locale.current
-        
+
+        numberFormatter.locale = Locale(identifier: "en_US_POSIX") // Always use '.' as the decimal separator
+
         if let number = Float(value) {
             if UserDefaultsRepository.units.value == "mg/dL" {
                 let numberValue = NSNumber(value: number)
                 return numberFormatter.string(from: numberValue) ?? value
             } else {
-                let mmolValue = Double(number) * GlucoseConversion.mgDlToMmolL  // Convert number to Double
+                let mmolValue = Double(number) * GlucoseConversion.mgDlToMmolL // Convert number to Double
                 let numberValue = NSNumber(value: mmolValue)
                 return numberFormatter.string(from: numberValue) ?? value
             }
         }
-        
+
         return value
     }
 
