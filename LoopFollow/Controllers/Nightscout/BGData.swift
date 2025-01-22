@@ -356,13 +356,24 @@ extension MainViewController {
             } else {
                 fifteenMinColorString = " ✅ "
             }
-            
+            /*
             var cob = "N/A g"
             if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
                 cob = latestCOB
             }
+            print("cob: \(cob)")*/
+            
+            var cob = "N/A g"
+            if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
+                if let numericPart = Double(latestCOB.replacingOccurrences(of: "g", with: "").trimmingCharacters(in: .whitespaces)) {
+                    // Format to one decimal place and reconstruct the string with "E"
+                    cob = String(format: "%.0f", numericPart) + "g"
+                } else {
+                    cob = latestCOB // Fallback to original if parsing fails
+                }
+            }
             print("cob: \(cob)")
-
+            
             var iob = "N/A E"
             if let latestIOB = self.latestIOB?.description, !latestIOB.isEmpty {
                 if let numericPart = Double(latestIOB.replacingOccurrences(of: "E", with: "").trimmingCharacters(in: .whitespaces)) {
