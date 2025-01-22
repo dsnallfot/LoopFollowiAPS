@@ -528,14 +528,12 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 
     func setBGTextColor() {
         if bgData.count > 0 {
-            guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
+            guard let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController else { return }
             let latestBG = bgData[bgData.count - 1].sgv
             var color: UIColor = .label // Default color
             if UserDefaultsRepository.colorBGText.value {
-                if let loopYellow = UIColor(named: "LoopYellow") {
-                    if Float(latestBG) >= UserDefaultsRepository.highLine.value {
-                        color = loopYellow
-                    }
+                if Float(latestBG) >= UserDefaultsRepository.highLine.value {
+                    color = UIColor.systemPurple.withAlphaComponent(0.8) // Directly use systemPurple with alpha
                 }
                 
                 if let loopRed = UIColor(named: "LoopRed") {
