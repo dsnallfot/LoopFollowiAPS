@@ -13,6 +13,9 @@ class SMSRemoteViewController: UIViewController {
     
     @IBOutlet weak var customActionButton: UIButton!
     @IBOutlet weak var remoteBolusButton: UIButton!
+    @IBOutlet weak var remoteMealButton: UIButton!
+    @IBOutlet weak var remoteOverrideButton: UIButton!
+    @IBOutlet weak var remoteTempButton: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
