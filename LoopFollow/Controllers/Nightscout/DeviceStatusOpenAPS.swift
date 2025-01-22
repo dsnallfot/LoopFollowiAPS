@@ -9,8 +9,8 @@ import HealthKit
 
 var sharedCRValue: String = ""
 var sharedRawEvBG: String = ""
-var sharedRawMinGuardBG: String = ""
-var sharedMinGuardBG: Double = 0.0
+var sharedRawMinPredBG: String = ""
+var sharedMinPredBG: Double = 0.0
 var sharedLatestIOB: String = ""
 var sharedLatestCOB: String = ""
 var sharedLatestISF: String = ""
@@ -79,19 +79,31 @@ extension MainViewController {
                     infoManager.updateInfoData(type: .isf, value: profileISF, unit: "mmol/L/E")
                 }
                 
-                // MinGuardBG // Daniel TODO fix mgdl & mmol support
-                if let minGuardBG = enactedOrSuggested["minGuardBG"] as? Double {
-                    // Convert mg/dL to mmol/L
-                    let convertedMinGuardBG = minGuardBG * 0.0555
-                    let formattedMinGuardBGString = String(format: "%.1f", convertedMinGuardBG) // Format to one decimal place
-                    sharedMinGuardBG = convertedMinGuardBG
-                    sharedRawMinGuardBG = formattedMinGuardBGString
+                // MinPredBG
+                if let reasonString = enactedOrSuggested["reason"] as? String {
+                    let pattern = "minPredBG: (-?\\d+(?:\\.\\d+)?)"
+                    if let regex = try? NSRegularExpression(pattern: pattern),
+                       let match = regex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count)) {
+                        let nsString = reasonString as NSString
+                        let minPredBGString = nsString.substring(with: match.range(at: 1))
+                        if let minPredBG = Double(minPredBGString) {
+                            let formattedMinPredBGString = String(format: "%.1f", minPredBG)
+                            sharedMinPredBG = minPredBG
+                            sharedRawMinPredBG = formattedMinPredBGString
+                            print("Extracted MinPredBG from reason: \(formattedMinPredBGString)")
+                        } else {
+                            print("Failed to convert extracted MinPredBG to Double: \(minPredBGString)")
+                        }
+                    } else {
+                        print("MinPredBG not found in reason string.")
+                    }
                 } else {
-                    // Fallback: Convert UserDefaultsRepository.lowLine from mg/dL to mmol/L
-                    let convertedLowLine = Double(UserDefaultsRepository.lowLine.value) / 18.0
-                    let formattedLowLine = String(format: "%.1f", convertedLowLine)
-                    sharedMinGuardBG = convertedLowLine
-                    sharedRawMinGuardBG = formattedLowLine
+                    // Fallback: Use UserDefaultsRepository.lowLine (already in correct units)
+                    let fallbackMinPredBG = Double(UserDefaultsRepository.lowLine.value)  * 0.0555
+                    let formattedFallbackMinPredBG = String(format: "%.1f", fallbackMinPredBG)
+                    sharedMinPredBG = fallbackMinPredBG
+                    sharedRawMinPredBG = formattedFallbackMinPredBG
+                    print("Reason string not available, using fallback MinPredBG: \(formattedFallbackMinPredBG)")
                 }
 
                 // Carb Ratio (CR)
@@ -162,22 +174,26 @@ extension MainViewController {
                 }
                 
                 // Daniel: Carbs Required for later use
-                guard let carbsReq = enactedOrSuggested["carbsReq"] as? Double else {
+                if let carbsReq = enactedOrSuggested["carbsReq"] as? Double {
+                    let latestCarbReq = String(format: "%.0f g", carbsReq)
+                    sharedLatestCarbReq = latestCarbReq
+                    infoManager.updateInfoData(type: .carbReq, value: latestCarbReq)
+                    print("Carbs Required updated: \(latestCarbReq)")
+                } else {
                     let defaultCarbReq = "0 g"
                     sharedLatestCarbReq = defaultCarbReq
                     infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq)
-                    return
+                    print("Carbs Required not available, using default: \(defaultCarbReq)")
                 }
-                let latestCarbReq = String(format: "%.0f", carbsReq) + " g"
-                sharedLatestCarbReq = latestCarbReq
-                infoManager.updateInfoData(type: .carbReq, value: latestCarbReq)
 
                 // Autosens
                 if let sens = enactedOrSuggested["sensitivityRatio"] as? Double {
                     let formattedSens = String(format: "%.0f", sens * 100.0) + " %"
                     sharedLatestSens = formattedSens
                     infoManager.updateInfoData(type: .autosens, value: formattedSens)
-                    print("Autosens updated with: \(formattedSens)")
+                    print("Sensitivity Ratio updated: \(formattedSens)")
+                } else {
+                    print("Missing or invalid sensitivityRatio in enactedOrSuggested.")
                 }
 
                 

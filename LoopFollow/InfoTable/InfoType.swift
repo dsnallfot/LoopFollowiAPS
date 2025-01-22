@@ -17,11 +17,11 @@ enum InfoType: Int, CaseIterable {
         case .cob: return "COB"
         case .basal: return "Basal"
         case .override: return "Override"
-        case .battery: return "Looptelefon"
+        case .battery: return "Trio Batteri"
         case .pump: return "Reservoar"
         case .sage: return "Sensorbyte om"
         case .cage: return "Poddbyte om"
-        case .recBolus: return "Behov insulin"
+        case .recBolus: return "Behov Insulin"
         case .minMax: return "Min/Max"
         case .carbsToday: return "Kh idag"
         case .autosens: return "Autosens"
@@ -29,10 +29,10 @@ enum InfoType: Int, CaseIterable {
         case .target: return "Målvärde"
         case .isf: return "ISF"
         case .carbRatio: return "CR"
-        case .updated: return "Info uppdaterad"
-        case .tdd: return "Total daglig dos"
-        case .iage: return "Insulin"
-        case .carbReq: return "Behov kh"
+        case .updated: return "Info Uppdaterad"
+        case .tdd: return "Total Daglig Dos"
+        case .iage: return "Insulinålder"
+        case .carbReq: return "Behov Kh"
         }
     }
 

@@ -61,14 +61,19 @@ extension MainViewController {
             let remainingSeconds = maxUsageSeconds - elapsedSeconds
 
             let formatter = DateComponentsFormatter()
-            formatter.unitsStyle = .positional
-            formatter.allowedUnits = [.day, .hour]
-            formatter.zeroFormattingBehavior = [.pad]
+            formatter.unitsStyle = .abbreviated // Use abbreviated for better control of output
+            formatter.zeroFormattingBehavior = [] // Disable padding with leading zeros
+
+            if abs(remainingSeconds) < 86_400 { // Less than 24 hours
+                formatter.allowedUnits = [.hour]
+            } else {
+                formatter.allowedUnits = [.day, .hour]
+            }
 
             if let formattedDuration = formatter.string(from: abs(remainingSeconds)) {
-                let spacedDuration = formattedDuration
-                    .replacingOccurrences(of: "d", with: " d")
-                    .replacingOccurrences(of: "h", with: " h")
+                //let spacedDuration = formattedDuration
+                  //  .replacingOccurrences(of: "h", with: " h") // Add space before "h"
+                    //.replacingOccurrences(of: "d", with: " d") // Add space before "d"
 
                 // Add a negative sign for overdue time
                 let countdown = remainingSeconds < 0 ? "-\(formattedDuration)" : formattedDuration

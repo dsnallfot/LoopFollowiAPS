@@ -41,7 +41,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     @IBOutlet weak var infoStack: UIStackView!
     
     var CR: Decimal = 0.0
-    var minGuardBG: Decimal = 0.0
+    var minPredBG: Decimal = 0.0
     var lowThreshold: Decimal = 0.0
     
     let maxCarbs = UserDefaultsRepository.maxCarbs.value
@@ -123,24 +123,24 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         //print("BG: \(sharedLatestBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
         //print("Direction: \(sharedLatestDirection)")// Just print for now. To use as info in bolusrecommendation later on
         //print("Delta: \(sharedLatestDelta) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
-        print("MinGuardBG: \(sharedRawMinGuardBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
+        print("MinPredBG: \(sharedRawMinPredBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
         
         
-        //MinGuardBG & Low Threshold
-        let minGuardBG = Decimal(sharedMinGuardBG)
+        //MinPredBG & Low Threshold
+        let minPredBG = Decimal(sharedMinPredBG)
         let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
         
-        // Format the MinGuardBG value & low threshold to have one decimal place
-        let formattedMinGuardBG = numberFormatter.string(from: NSDecimalNumber(decimal: minGuardBG) as NSNumber)?.replacingOccurrences(of: ",", with: ".") ?? ""
-        let formattedLowThreshold = numberFormatter.string(from: NSDecimalNumber(decimal: lowThreshold) as NSNumber) ?? ""
+        // Format the MinPredBG value & low threshold to have one decimal place
+        let formattedMinPredBG = numberFormatter.string(from: NSDecimalNumber(decimal: minPredBG) as NSNumber)?.replacingOccurrences(of: ",", with: ".") ?? ""
+        let formattedLowThreshold = numberFormatter.string(from: NSDecimalNumber(decimal: lowThreshold) as NSNumber)?.replacingOccurrences(of: ",", with: ".") ?? ""
          
-        // Set the text field with the formatted value of minGuardBG or "N/A" if formattedMinGuardG is "0.0"
-        minPredBGValue.text = formattedMinGuardBG == "0" ? "N/A" : formattedMinGuardBG
-        print("Predicted Min BG: \(formattedMinGuardBG) mmol/L")
+        // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinGuardG is "0.0"
+        minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
+        print("Predicted Min BG: \(formattedMinPredBG) mmol/L")
         print("Low threshold: \(formattedLowThreshold) mmol/L")
         
-        // Check if the value of minGuardBG is less than lowThreshold
-        if minGuardBG < lowThreshold && minGuardBG != 0 {
+        // Check if the value of minPredBG is less than lowThreshold
+        if minPredBG < lowThreshold && minPredBG != 0 {
             // Show Min BG stack
             minBGStack.isHidden = false
             infoStack.isHidden = true
@@ -215,7 +215,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             ])
             
             // Add metrics to the popup
-            let metrics = ["BG", "Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater", "Min-Max BG", "Prognos BG"]
+            let metrics = ["BG", "Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater", "Min/Max BG", "Prognos BG"]
             let latestBGString = (sharedLatestBG + "  " + sharedLatestDirection + "  (" + sharedLatestDelta + ")")
             let values = [
                 latestBGString,
