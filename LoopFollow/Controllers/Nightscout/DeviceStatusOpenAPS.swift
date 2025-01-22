@@ -74,9 +74,9 @@ extension MainViewController {
                     enactedISF = HKQuantity(unit: determinedISFUnit, doubleValue: enactedISFValue)
                 }
                 if let profileISF = profileISF, let enactedISF = enactedISF, profileISF != enactedISF {
-                    infoManager.updateInfoData(type: .isf, firstValue: profileISF, secondValue: enactedISF, separator: .arrow)
+                    infoManager.updateInfoData(type: .isf, firstValue: profileISF, secondValue: enactedISF, separator: .arrow, unit: "mmol/L/E")
                 } else if let profileISF = profileISF {
-                    infoManager.updateInfoData(type: .isf, value: profileISF)
+                    infoManager.updateInfoData(type: .isf, value: profileISF, unit: "mmol/L/E")
                 }
                 
                 // MinGuardBG // Daniel TODO fix mgdl & mmol support
@@ -109,16 +109,16 @@ extension MainViewController {
                 }
 
                 if let profileCR = profileCR, let enactedCR = enactedCR, profileCR != enactedCR {
-                    infoManager.updateInfoData(type: .carbRatio, value: profileCR, enactedValue: enactedCR, separator: .arrow)
+                    infoManager.updateInfoData(type: .carbRatio, value: profileCR, enactedValue: enactedCR, separator: .arrow, unit: " g/E")
                     sharedCRValue = String(format: "%.1f", enactedCR)
                 } else if let profileCR = profileCR {
-                    infoManager.updateInfoData(type: .carbRatio, value: profileCR)
+                    infoManager.updateInfoData(type: .carbRatio, value: profileCR, unit: "g/E")
                     sharedCRValue = String(format: "%.1f", profileCR)
                 }
 
                 // IOB
                 if let iobMetric = InsulinMetric(from: lastLoopRecord["iob"], key: "iob") {
-                    infoManager.updateInfoData(type: .iob, value: iobMetric)
+                    infoManager.updateInfoData(type: .iob, value: iobMetric, unit: "E")
                     latestIOB = iobMetric
                     // Convert `latestIOB` to a string
                     sharedLatestIOB = String(format: "%.2f E", latestIOB?.value ?? 0.00)
@@ -126,7 +126,7 @@ extension MainViewController {
 
                 // COB
                 if let cobMetric = CarbMetric(from: enactedOrSuggested, key: "COB") {
-                    infoManager.updateInfoData(type: .cob, value: cobMetric)
+                    infoManager.updateInfoData(type: .cob, value: cobMetric, unit: "g")
                     latestCOB = cobMetric
                     sharedLatestCOB = String(format: "%.0f E", latestCOB?.value ?? 0)
                 } else if let reasonString = enactedOrSuggested["reason"] as? String {
@@ -138,7 +138,7 @@ extension MainViewController {
                         if let cobValue = Double(cobValueString) {
                             let tempDict: [String: AnyObject] = ["COB": cobValue as AnyObject]
                             if let fallbackCobMetric = CarbMetric(from: tempDict, key: "COB") {
-                                infoManager.updateInfoData(type: .cob, value: fallbackCobMetric)
+                                infoManager.updateInfoData(type: .cob, value: fallbackCobMetric, unit: "g")
                                 latestCOB = fallbackCobMetric
                             } else {
                                 print("Failed to create CarbMetric from extracted COB value: \(cobValue)")
@@ -153,7 +153,7 @@ extension MainViewController {
 
                 // Insulin Required
                 if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
-                    infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric)
+                    infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: "E")
                     UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
                     sharedLatestInsulinReq = String(format: "%.2f E", insulinReqMetric.value)
                 } else {
@@ -177,7 +177,9 @@ extension MainViewController {
                     let formattedSens = String(format: "%.0f", sens * 100.0) + " %"
                     sharedLatestSens = formattedSens
                     infoManager.updateInfoData(type: .autosens, value: formattedSens)
+                    print("Autosens updated with: \(formattedSens)")
                 }
+
                 
                 var predictionColor = UIColor.systemGray
 
@@ -236,18 +238,17 @@ extension MainViewController {
                     let profileTargetHighFormatted = Localizer.formatQuantity(profileTargetHigh)
                     let enactedTargetFormatted = Localizer.formatQuantity(enactedTarget)
 
-                    // Compare formatted values to avoid issues with minor floating-point differences
-                    // Profile target could be in another unit than enacted target
+                    // Compare using formatted strings to avoid floating-point issues
                     if profileTargetHighFormatted != enactedTargetFormatted {
-                        infoManager.updateInfoData(type: .target, firstValue: profileTargetHigh, secondValue: enactedTarget, separator: .arrow)
+                        infoManager.updateInfoData(type: .target, firstValue: profileTargetHigh, secondValue: enactedTarget, separator: .arrow, unit: "mmol/L")
                     } else {
-                        infoManager.updateInfoData(type: .target, value: profileTargetHigh)
+                        infoManager.updateInfoData(type: .target, value: profileTargetHigh, unit: "mmol/L")
                     }
                 }
 
                 // TDD
                 if let tddMetric = InsulinMetric(from: enactedOrSuggested, key: "TDD") {
-                    infoManager.updateInfoData(type: .tdd, value: tddMetric)
+                    infoManager.updateInfoData(type: .tdd, value: tddMetric, unit: "E")
                 }
 
                 let predictioncolor = UIColor.systemGray
@@ -293,11 +294,11 @@ extension MainViewController {
                     }
 
                     if minPredBG != Double.infinity && maxPredBG != -Double.infinity {
-                        let value = "\(Localizer.toDisplayUnits(String(minPredBG))) / \(Localizer.toDisplayUnits(String(maxPredBG)))"
-                        infoManager.updateInfoData(type: .minMax, value: value)
+                        let value = "\(Localizer.toDisplayUnits(String(minPredBG)))/\(Localizer.toDisplayUnits(String(maxPredBG)))"
+                        infoManager.updateInfoData(type: .minMax, value: value, unit: "mmol/L")
                         sharedLatestMinMax = value
                     } else {
-                        infoManager.updateInfoData(type: .minMax, value: "N/A")
+                        infoManager.updateInfoData(type: .minMax, value: "N/A", unit: "mmol/L")
                         sharedLatestMinMax = "N/A"
                     }
                     

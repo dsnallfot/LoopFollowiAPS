@@ -63,7 +63,7 @@ extension MainViewController {
                     .replacingOccurrences(of: "h", with: " h")
 
                 // Add a negative sign for overdue time
-                let countdown = remainingSeconds < 0 ? "-\(spacedDuration)" : spacedDuration
+                let countdown = remainingSeconds < 0 ? "-\(formattedDuration)" : formattedDuration
 
                 infoManager.updateInfoData(type: .cage, value: countdown)
             }

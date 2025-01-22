@@ -99,7 +99,7 @@ extension MainViewController {
             if let lastPumpTime = formatter.date(from: (lastPumpRecord["clock"] as! String))?.timeIntervalSince1970  {
                 if let reservoirData = lastPumpRecord["reservoir"] as? Double {
                     latestPumpVolume = reservoirData
-                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + "E")
+                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + " E")
                 } else {
                     latestPumpVolume = 50.0
                     infoManager.updateInfoData(type: .pump, value: "50+E")
