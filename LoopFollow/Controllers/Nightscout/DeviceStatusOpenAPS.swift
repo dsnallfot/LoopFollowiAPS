@@ -162,13 +162,15 @@ extension MainViewController {
                 }
                 
                 // Daniel: Carbs Required for later use
-                if let carbsReq = enactedOrSuggested["carbsReq"] as? Double {
-                    latestCarbReq = String(format: "%.0f", carbsReq) + " g"
-                    sharedLatestCarbReq = latestCarbReq
-                } else {
-                    latestCarbReq = "0 g"
-                    sharedLatestCarbReq = latestCarbReq
+                guard let carbsReq = enactedOrSuggested["carbsReq"] as? Double else {
+                    let defaultCarbReq = "0 g"
+                    sharedLatestCarbReq = defaultCarbReq
+                    infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq)
+                    return
                 }
+                let latestCarbReq = String(format: "%.0f", carbsReq) + " g"
+                sharedLatestCarbReq = latestCarbReq
+                infoManager.updateInfoData(type: .carbReq, value: latestCarbReq)
 
                 // Autosens
                 if let sens = enactedOrSuggested["sensitivityRatio"] as? Double {
