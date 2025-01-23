@@ -25,29 +25,27 @@ extension MainViewController {
         if let createdAtString = lastDeviceStatus?["created_at"] as? String,
            let lastLoopTime = formatter.date(from: createdAtString)?.timeIntervalSince1970 {
             ObservableUserDefaults.shared.device.value = lastDeviceStatus?["device"] as? String ?? ""
-            if lastLoopRecord["failureReason"] != nil {
-                LoopStatusLabel.text = "X"
-                latestLoopStatusString = "X"
-                evaluateNotLooping(lastLoopTime: UserDefaultsRepository.alertLastLoopTime.value)
-            } else {
-                
-                guard let enactedOrSuggested = lastLoopRecord["enacted"] as? [String: AnyObject] ?? lastLoopRecord["suggested"] as? [String: AnyObject] else {
-                    LoopStatusLabel.text = "↻"
-                    latestLoopStatusString = "↻"
-                    evaluateNotLooping(lastLoopTime: UserDefaultsRepository.alertLastLoopTime.value)
-                    return
-                }
 
-                var wasEnacted : Bool
+            if let enactedOrSuggested = lastLoopRecord["enacted"] as? [String: AnyObject] ?? lastLoopRecord["suggested"] as? [String: AnyObject] {
+                var wasEnacted: Bool = false
                 if let enacted = lastLoopRecord["enacted"] as? [String: AnyObject] {
                     wasEnacted = NSDictionary(dictionary: enacted).isEqual(to: enactedOrSuggested)
-                } else {
-                    wasEnacted = false
                 }
 
                 if wasEnacted {
                     UserDefaultsRepository.alertLastLoopTime.value = lastLoopTime
+                    
+                    // Format the `lastLoopTime` as HH.mm:ss
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "HH.mm:ss"
+                    let formattedLastLoopTime = dateFormatter.string(from: Date(timeIntervalSince1970: lastLoopTime))
+                    
+                    // Log the formatted time
+                    LogManager.shared.log(category: .alarm, message: "New LastLoopTime: \(formattedLastLoopTime)")
+                    
                     evaluateNotLooping(lastLoopTime: UserDefaultsRepository.alertLastLoopTime.value)
+                } else {
+                    LogManager.shared.log(category: .alarm, message: "Last devicestatus was not enacted")
                 }
 
                 if let timestamp = enactedOrSuggested["timestamp"] as? String,
@@ -60,13 +58,10 @@ extension MainViewController {
                 let profileISF = profileManager.currentISF()
                 var enactedISF: HKQuantity?
                 if let enactedISFValue = enactedOrSuggested["ISF"] as? Double {
-                    
-                    // Convert ISF to mmol/L if it's in mg/dL
-                    let isfInMmol = enactedISFValue * 0.0555 // Conversion factor: 1 mmol/L = 18 mg/dL
+                    let isfInMmol = enactedISFValue * 0.0555 // Conversion factor
                     let isfUnit = "mmol/L"
-                    // Format the value for display
                     sharedLatestISF = String(format: "%.1f %@", isfInMmol, isfUnit)
-                    
+
                     var determinedISFUnit: HKUnit = .milligramsPerDeciliter
                     if enactedISFValue < 25 {
                         determinedISFUnit = .millimolesPerLiter
@@ -337,26 +332,6 @@ extension MainViewController {
                         UserDefaultsRepository.latestEnactedTime.value = Date().timeIntervalSince1970
                     }
                 }
-                
-                /*
-                if let loopStatus = lastLoopRecord["recommendedTempBasal"] as? [String: AnyObject] {
-                    if let tempBasalTime = formatter.date(from: (loopStatus["timestamp"] as! String))?.timeIntervalSince1970 {
-                        var lastBGTime = lastLoopTime
-                        if bgData.count > 0 {
-                            lastBGTime = bgData[bgData.count - 1].date
-                        }
-                        if tempBasalTime > lastBGTime && !wasEnacted {
-                            LoopStatusLabel.text = "⏀"
-                            latestLoopStatusString = "⏀"
-                        } else {
-                            LoopStatusLabel.text = "↻"
-                            latestLoopStatusString = "↻"
-                        }
-                    }
-                } else {
-                    LoopStatusLabel.text = "↻"
-                    latestLoopStatusString = "↻"
-                }*/
             }
             
             if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {

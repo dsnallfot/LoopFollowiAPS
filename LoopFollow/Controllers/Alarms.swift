@@ -340,6 +340,7 @@ extension MainViewController {
         
         //check for not looping alert
         if IsNightscoutEnabled() {
+            LogManager.shared.log(category: .alarm, message: "Checking NotLooping LastLoopTime was \(UserDefaultsRepository.alertLastLoopTime.value) that gives a diff of: \(Double(dateTimeUtils.getNowTimeIntervalUTC() - UserDefaultsRepository.alertLastLoopTime.value))")
             /*
             if UserDefaultsRepository.alertNotLoopingActive.value
                 && !UserDefaultsRepository.alertNotLoopingIsSnoozed.value
@@ -373,7 +374,6 @@ extension MainViewController {
                 && (Double(dateTimeUtils.getNowTimeIntervalUTC() - UserDefaultsRepository.latestEnactedTime.value) >= Double(UserDefaultsRepository.alertNotLooping.value * 60))
                 && UserDefaultsRepository.latestEnactedTime.value > 0 {
                 
-                var trigger = true
                 if (UserDefaultsRepository.alertNotLoopingUseLimits.value
                     && (
                         (Float(currentBG) >= UserDefaultsRepository.alertNotLoopingUpperLimit.value
@@ -393,6 +393,9 @@ extension MainViewController {
                         if !UserDefaultsRepository.alertNotLoopingDayTimeAudible.value { playSound = false }
                     }
                     triggerAlarm(sound: UserDefaultsRepository.alertNotLoopingSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertNotLoopingSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                    
+                    LogManager.shared.log(category: .alarm, message: "!!!Not Looping!!!")
+                    
                     return
                 }
             }

@@ -156,5 +156,6 @@ extension MainViewController {
                 )
             }
         }
+        LogManager.shared.log(category: .alarm, message: "updateDeviceStatusDisplay done")
     }
 }
