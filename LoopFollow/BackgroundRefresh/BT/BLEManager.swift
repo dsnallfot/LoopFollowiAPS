@@ -182,6 +182,7 @@ extension BLEManager: BluetoothDeviceDelegate {
     }
 
     func heartBeat() {
+        LogManager.shared.log(category: .bluetooth, message: "Bluetooth ping received", isDebug: true)
         guard let device = activeDevice else {
             return
         }
