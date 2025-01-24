@@ -1858,7 +1858,7 @@ extension MainViewController {
               index.rawValue < chart.dataSets.count,
               let smallChartData = BGChartFull.lineData,
               index.rawValue < smallChartData.dataSets.count else {
-            print("Warning: Invalid GraphDataIndex \(index.description) or lineData is nil.")
+            //print("Warning: Invalid GraphDataIndex \(index.description) or lineData is nil.")
             return (nil, nil)
         }
 
