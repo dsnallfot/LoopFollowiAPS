@@ -44,21 +44,26 @@ extension MainViewController {
 
         let displayText: String
 
-        if secondsAgo >= 0 && secondsAgo < 60 {
-            // Display only seconds with "sek sedan"
+        if (secondsAgo >= 0 && secondsAgo < 60) {
+            // Display only seconds with "s sedan"
             formatter.allowedUnits = [.second]
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
             displayText = formattedDuration + " s sedan"
-        } else if secondsAgo >= 60 && secondsAgo < 720 {
+        } else if (secondsAgo >= 60 && secondsAgo < 300) {
+            // Display only minutes with "m sedan"
+            formatter.allowedUnits = [.minute]
+            let formattedDuration = formatter.string(from: secondsAgo) ?? ""
+            displayText = formattedDuration + " m sedan"
+        } else if (secondsAgo >= 300 && secondsAgo < 360) {
             // Display minutes and seconds with "m sedan"
             formatter.allowedUnits = [.minute, .second]
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
             displayText = formattedDuration + " m sedan"
         } else {
-            // Display only minutes with "min sedan"
+            // Display only minutes with "min sedan" and strike-through after 360 seconds
             formatter.allowedUnits = [.minute]
             let formattedDuration = formatter.string(from: secondsAgo) ?? ""
-            displayText = formattedDuration + " m sedan"
+            displayText = formattedDuration + " min sedan"
         }
 
         // Update UI only if the display text has changed
@@ -77,7 +82,7 @@ extension MainViewController {
                                                  value: NSUnderlineStyle.single.rawValue,
                                                  range: NSRange(location: 0, length: attributeString.length))
                     attributeString.addAttribute(.strikethroughColor,
-                                                 value: secondsAgo >= 720 ? UIColor.systemRed : UIColor.clear,
+                                                 value: secondsAgo >= 360 ? UIColor.systemGray : UIColor.clear,
                                                  range: NSRange(location: 0, length: attributeString.length))
                     snoozer.BGLabel.attributedText = attributeString
                 }
@@ -86,20 +91,18 @@ extension MainViewController {
 
         // Determine the next run interval based on the current state
         let nextUpdateInterval: TimeInterval
-        if secondsAgo < 720 {
+        if (secondsAgo >= 0 && secondsAgo < 60) || (secondsAgo >= 300 && secondsAgo < 360) {
             // Update every second when showing seconds
             nextUpdateInterval = 1.0
         } else {
-            // Schedule exactly at the transition point to the next minute or second
+            // Update at the next minute boundary
             let secondsToNextMinute = 60.0 - (secondsAgo.truncatingRemainder(dividingBy: 60.0))
             nextUpdateInterval = secondsToNextMinute
         }
 
-        // Ensure the nextUpdateInterval is not negative or too small
+        // Ensure the next update interval is not negative or too small
         let safeNextInterval = max(nextUpdateInterval, 1.0)
 
         TaskScheduler.shared.rescheduleTask(id: .minAgoUpdate, to: Date().addingTimeInterval(safeNextInterval))
     }
-
-
 }

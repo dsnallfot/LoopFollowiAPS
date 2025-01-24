@@ -38,8 +38,8 @@ extension MainViewController {
             let latestDate = data[0].date
             let now = dateTimeUtils.getNowTimeIntervalUTC()
             if (latestDate + 330) < now && IsNightscoutEnabled() {
+                LogManager.shared.log(category: .dexcom, message: "Dexcom data is old, loading from NS instead")
                 self.webLoadNSBGData()
-                print("Dex data is old, loading from NS instead")
                 return
             }
             
@@ -311,7 +311,7 @@ extension MainViewController {
             let attributeString = NSMutableAttributedString(string: bgTextStr)
             attributeString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: 0, length: attributeString.length))
             if deltaTime >= 6 { // Data is stale
-                attributeString.addAttribute(.strikethroughColor, value: UIColor.systemRed, range: NSRange(location: 0, length: attributeString.length))
+                attributeString.addAttribute(.strikethroughColor, value: UIColor.systemGray, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: 0)
             } else { // Data is fresh
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.clear, range: NSRange(location: 0, length: attributeString.length))

@@ -340,7 +340,23 @@ extension MainViewController {
         
         //check for not looping alert
         if IsNightscoutEnabled() {
-            LogManager.shared.log(category: .alarm, message: "Checking NotLooping LastLoopTime was \(UserDefaultsRepository.alertLastLoopTime.value) that gives a diff of: \(Double(dateTimeUtils.getNowTimeIntervalUTC() - UserDefaultsRepository.alertLastLoopTime.value))")
+            // Create a DateFormatter for HH:mm:ss
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "HH:mm:ss"
+
+            // Convert alertLastLoopTime to a formatted string
+            let alertLastLoopTimeDate = Date(timeIntervalSince1970: UserDefaultsRepository.alertLastLoopTime.value)
+            let formattedAlertLastLoopTime = dateFormatter.string(from: alertLastLoopTimeDate)
+
+            // Calculate the time difference as an integer (no decimals)
+            let timeDiff = Int(dateTimeUtils.getNowTimeIntervalUTC() - UserDefaultsRepository.alertLastLoopTime.value)
+
+            // Log the formatted time and the difference without decimals
+            LogManager.shared.log(
+                category: .alarm,
+                message: "Checking NotLooping LastLoopTime was \(formattedAlertLastLoopTime) that gives a diff of: \(timeDiff) seconds",
+                isDebug: true
+            )
             /*
             if UserDefaultsRepository.alertNotLoopingActive.value
                 && !UserDefaultsRepository.alertNotLoopingIsSnoozed.value

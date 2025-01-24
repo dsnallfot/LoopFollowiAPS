@@ -41,7 +41,7 @@ extension MainViewController {
                     let formattedLastLoopTime = dateFormatter.string(from: Date(timeIntervalSince1970: lastLoopTime))
                     
                     // Log the formatted time
-                    LogManager.shared.log(category: .alarm, message: "New LastLoopTime: \(formattedLastLoopTime)")
+                    LogManager.shared.log(category: .alarm, message: "New LastLoopTime: \(formattedLastLoopTime)", isDebug: true)
                     
                     evaluateNotLooping(lastLoopTime: UserDefaultsRepository.alertLastLoopTime.value)
                 } else {

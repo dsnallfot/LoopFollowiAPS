@@ -42,18 +42,20 @@ class LogManager {
         dateFormatter.dateFormat = "yyyy-MM-dd"
     }
 
-    func log(category: Category, message: String) {
+    func log(category: Category, message: String, isDebug: Bool = false) {
         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
         let logMessage = "[\(timestamp)] [\(category.rawValue)] \(message)"
 
         consoleQueue.async {
             print(logMessage)
         }
-
-        let logFileURL = currentLogFileURL
-        append(logMessage + "\n", to: logFileURL)
+        
+        if !isDebug || Storage.shared.debugLogLevel.value {
+            let logFileURL = self.currentLogFileURL
+            self.append(logMessage + "\n", to: logFileURL)
+        }
     }
-
+    
     func cleanupOldLogs() {
         let today = dateFormatter.string(from: Date())
         let yesterday = dateFormatter.string(from: Calendar.current.date(byAdding: .day, value: -1, to: Date())!)
