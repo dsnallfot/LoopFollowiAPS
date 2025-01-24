@@ -320,9 +320,9 @@ extension MainViewController {
                         LoopStatusLabel.text = " ᮰"
                         LoopStatusLabel.textColor = UIColor(named: "LoopYellow")
                         latestLoopStatusString = "᮰"
-                        if UserDefaultsRepository.debugLog.value {
-                            self.writeDebugLog(value: "Trio Not Enacted: X")
-                        }
+                        //if UserDefaultsRepository.debugLog.value {
+                            //self.writeDebugLog(value: "Trio Not Enacted: X")
+                        //}
                     } else {
                         LoopStatusLabel.text = " ᮰"
                         LoopStatusLabel.textColor = UIColor(named: "LoopGreen")
