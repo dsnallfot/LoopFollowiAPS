@@ -160,9 +160,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 
         // Synchronize info types to ensure arrays are the correct size
         UserDefaultsRepository.synchronizeInfoTypes()
-
-        // Reset deprecated settings
-        UserDefaultsRepository.debugLog.value = false;
         
         infoTable.rowHeight = 20
         infoTable.dataSource = self
@@ -714,19 +711,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 latestIOB: iobString,
                 latestCOB: cobString
             )
-        }
-    }
-
-    @available(*, deprecated, message: "Use LogManager instead.")
-    func writeDebugLog(value: String) {
-        DispatchQueue.main.async {
-            var logText = "\n" + dateTimeUtils.printNow() + " - " + value
-            print(logText)
-            guard let debug = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
-            if debug.debugTextView.text.lengthOfBytes(using: .utf8) > 20000 {
-                debug.debugTextView.text = ""
-            }
-            debug.debugTextView.text += logText
         }
     }
 
