@@ -1782,8 +1782,11 @@ extension MainViewController {
     
     func updateOverrideGraph() {
         var dataIndex = 6
-        var yTop: Double = Double(calculateMaxBgGraphValue() - 5)
-        var yBottom: Double = Double(calculateMaxBgGraphValue() - 25)
+        //var yTop: Double = Double(calculateMaxBgGraphValue() - 5)
+        //var yBottom: Double = Double(calculateMaxBgGraphValue() - 25)
+        //Daniel: Adjust alignment to leave no space between to top of chart area and top of override rectangle
+        var yTop: Double = Double(calculateMaxBgGraphValue())
+        var yBottom: Double = Double(calculateMaxBgGraphValue() - 20)
         var chart = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
         var smallChart = BGChartFull.lineData!.dataSets[dataIndex] as! LineChartDataSet
         chart.clear()

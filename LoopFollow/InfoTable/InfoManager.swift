@@ -28,9 +28,13 @@ class InfoManager {
     func updateInfoData(type: InfoType, value: String? = nil, unit: String? = nil) {
         let displayValue: String
 
-        // Daniel: Set a default value for the "Override" case
+        // Set a default value for the "Override" case
         if type == .override {
-            displayValue = value?.isEmpty == false ? (unit != nil ? "\(value!) \(unit!)" : value!) : "Normal profil"
+            if let persistentNote = Observable.shared.override.value, !persistentNote.isEmpty {
+                displayValue = unit != nil ? "\(persistentNote) \(unit!)" : persistentNote
+            } else {
+                displayValue = value?.isEmpty == false ? (unit != nil ? "\(value!) \(unit!)" : value!) : "Normal profil"
+            }
         } else {
             displayValue = unit != nil ? "\(value ?? "") \(unit!)" : (value ?? "")
         }
@@ -76,7 +80,11 @@ class InfoManager {
     func clearInfoData(type: InfoType) {
         // Prevent clearing the default value for .override
         if type == .override {
-            tableData[type.rawValue].value = "Normal profil" // Reset to default instead of clearing
+            if let persistentNote = Observable.shared.override.value, !persistentNote.isEmpty {
+                tableData[type.rawValue].value = persistentNote // Use the persistent note if available
+            } else {
+                tableData[type.rawValue].value = "Normal profil" // Fallback to "Normal profil"
+            }
         } else {
             tableData[type.rawValue].value = "N/A"
         }
@@ -87,7 +95,11 @@ class InfoManager {
         for type in types {
             // Prevent clearing the default value for .override
             if type == .override {
-                tableData[type.rawValue].value = "Normal profil" // Reset to default instead of clearing
+                if let persistentNote = Observable.shared.override.value, !persistentNote.isEmpty {
+                    tableData[type.rawValue].value = persistentNote // Use the persistent note if available
+                } else {
+                    tableData[type.rawValue].value = "Normal profil" // Fallback to "Normal profil"
+                }
             } else {
                 tableData[type.rawValue].value = "N/A"
             }
