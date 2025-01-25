@@ -29,7 +29,6 @@ extension MainViewController {
     func updateSage(data: [sageData]) {
         infoManager.clearInfoData(type: .sage)
 
-        //if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Process/Display: SAGE") }
         guard let firstSageData = data.first else { return }
 
         currentSage = firstSageData

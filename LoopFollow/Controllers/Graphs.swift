@@ -886,7 +886,6 @@ extension MainViewController {
          }
     
     func updateBGGraph() {
-        //if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "##### Start BG Graph #####") }
         let dataIndex = 0
         let entries = bgData
         guard !entries.isEmpty else {
@@ -906,7 +905,6 @@ extension MainViewController {
                 topBG = Float(entries[i].sgv) + maxBGOffset
             }
             let value = ChartDataEntry(x: Double(entries[i].date), y: Double(entries[i].sgv), data: formatPillTextExtraLine(line1: "Blodsocker", line2: Localizer.toDisplayUnits(String(entries[i].sgv)) + " mmol/L", time: entries[i].date))
-            //if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "BG: " + value.description) }
             mainChart.append(value)
             smallChart.append(value)
             
@@ -923,9 +921,7 @@ extension MainViewController {
                 }
             }
         }
-        
-        //if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "Total Graph BGs: " + mainChart.entries.count.description) }
-        
+                
         // Set Colors
         let lineBG = BGChart.lineData!.dataSets[dataIndex] as! LineChartDataSet
 
@@ -943,9 +939,7 @@ extension MainViewController {
                 smallChart.circleColors.append(colors[i])
             }
         }
-        
-        //if UserDefaultsRepository.debugLog.value { writeDebugLog(value: "Total Colors: " + mainChart.colors.count.description) }
-        
+                
         BGChart.rightAxis.axisMaximum = Double(calculateMaxBgGraphValue())
         BGChart.setVisibleXRangeMinimum(600)
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()

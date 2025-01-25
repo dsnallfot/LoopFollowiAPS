@@ -82,7 +82,7 @@ extension MainViewController {
                     let isCharging = uploader["isCharging"] as? Bool ?? false
                     
                     // Add ⚡ symbol if charging
-                    let batteryDisplay = (isCharging ? "⚡" : "") + String(format: "%.0f", upbat) + " %"
+                    let batteryDisplay = String(format: "%.0f", upbat) + " %" + (isCharging ? "⚡" : "")
                     
                     // Update info manager
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)

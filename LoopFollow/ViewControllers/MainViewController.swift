@@ -606,7 +606,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         let direction = self.bgDirectionGraphic(self.bgData[self.bgData.count - 1].direction ?? "")
         
         var eventStartDate = Date(timeIntervalSince1970: self.bgData[self.bgData.count - 1].date)
-        //                if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Calendar start date") }
         var eventEndDate = eventStartDate.addingTimeInterval(60 * 10)
         var  eventTitle = UserDefaultsRepository.watchLine1.value
         var  eventLocation = UserDefaultsRepository.watchLine2.value
@@ -670,9 +669,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             for i in eVDelete! {
                 do {
                     try self.store.remove(i, span: EKSpan.thisEvent, commit: true)
-                    //if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Calendar Delete") }
                 } catch let error {
-                    //if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Error - Calendar Delete") }
                     print(error)
                 }
             }
@@ -690,7 +687,6 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             self.lastCalendarWriteAttemptTime = now
 
             self.lastCalDate = self.bgData[self.bgData.count - 1].date
-            //if UserDefaultsRepository.debugLog.value { self.writeDebugLog(value: "Calendar Write: " + eventTitle) }
             //UserDefaultsRepository.savedEventID.value = event.eventIdentifier //save event id to access this particular event later
         } catch {
             LogManager.shared.log(category: .calendar, message: "Error storing to the calendar")
