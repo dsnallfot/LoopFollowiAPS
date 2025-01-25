@@ -310,9 +310,12 @@ extension MainViewController {
             let bgTextStr = (self.BGText.text ?? "").replacingOccurrences(of: ",", with: ".")
             let attributeString = NSMutableAttributedString(string: bgTextStr)
             attributeString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: NSRange(location: 0, length: attributeString.length))
-            if deltaTime >= 6 { // Data is stale
-                attributeString.addAttribute(.strikethroughColor, value: UIColor.systemGray, range: NSRange(location: 0, length: attributeString.length))
+            if deltaTime >= 11 { // Data is stale for 11 min +
+                attributeString.addAttribute(.strikethroughColor, value: UIColor.systemRed, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: 0)
+            } else if deltaTime >= 6 { // Data is stale for 6-11 min
+                    attributeString.addAttribute(.strikethroughColor, value: UIColor.darkGray, range: NSRange(location: 0, length: attributeString.length))
+                    self.updateBadge(val: 0)
             } else { // Data is fresh
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.clear, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: latestBG)

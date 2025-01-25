@@ -43,7 +43,7 @@ extension MainViewController {
                     // Log the formatted time
                     LogManager.shared.log(category: .alarm, message: "New LastLoopTime: \(formattedLastLoopTime)", isDebug: true)
                     
-                    evaluateNotLooping(lastLoopTime: UserDefaultsRepository.alertLastLoopTime.value)
+                    //evaluateNotLooping(lastLoopTime: UserDefaultsRepository.alertLastLoopTime.value)
                 } else {
                     LogManager.shared.log(category: .alarm, message: "Last devicestatus was not enacted")
                 }
@@ -211,7 +211,11 @@ extension MainViewController {
                     sharedLatestEvBG = latestEvBG
 
                     // Update PredictionLabel with color based on eventualBG value
-                    if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
+                    if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {
+                        PredictionLabel.text = "  ⚠️  Loopar inte"
+                        predictionColor = UIColor.systemOrange
+                        
+                    } else if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
                         if UserDefaultsRepository.colorBGText.value {
                             PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
                             predictionColor = UIColor.systemPurple
@@ -222,6 +226,7 @@ extension MainViewController {
                     } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
                         PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
                         predictionColor = loopRed
+                        
                     } else if eventualBGFloatValue > UserDefaultsRepository.lowLine.value && eventualBGFloatValue < UserDefaultsRepository.highLine.value {
                         PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
                         predictionColor = loopGreen
@@ -339,7 +344,7 @@ extension MainViewController {
             }
             latestLoopTime = lastLoopTime
             
-            evaluateNotLooping(lastLoopTime: lastLoopTime)
+            //evaluateNotLooping(lastLoopTime: lastLoopTime)
         }
     }
 }

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Combine
 
 class LogManager {
     static let shared = LogManager()
@@ -15,6 +16,8 @@ class LogManager {
     private let logDirectory: URL
     private let dateFormatter: DateFormatter
     private let consoleQueue = DispatchQueue(label: "com.loopfollow.log.console", qos: .background)
+    
+    let logUpdateSubject = PassthroughSubject<Void, Never>() // Notify when logs are updated
 
     enum Category: String, CaseIterable {
         case bluetooth = "Bluetooth"
@@ -53,6 +56,7 @@ class LogManager {
         if !isDebug || Storage.shared.debugLogLevel.value {
             let logFileURL = self.currentLogFileURL
             self.append(logMessage + "\n", to: logFileURL)
+            logUpdateSubject.send() // Notify subscribers of the log update
         }
     }
     

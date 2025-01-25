@@ -499,7 +499,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         
         LoopStatusLabel.isHidden = isHidden
         if IsNotLooping {
-            PredictionLabel.isHidden = true
+            //PredictionLabel.isHidden = true
         }
         else {
             PredictionLabel.isHidden = isHidden

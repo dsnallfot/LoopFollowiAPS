@@ -40,7 +40,7 @@ extension MainViewController {
     
     func evaluateNotLooping(lastLoopTime: TimeInterval) {
         if let statusStackView = LoopStatusLabel.superview as? UIStackView {
-            if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 15 {
+            if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 16 {
                 IsNotLooping = true
             } else {
                 IsNotLooping = false
@@ -82,7 +82,7 @@ extension MainViewController {
                     let isCharging = uploader["isCharging"] as? Bool ?? false
                     
                     // Add ⚡ symbol if charging
-                    let batteryDisplay = String(format: "%.0f", upbat) + " %" + (isCharging ? "⚡" : "")
+                    let batteryDisplay = (isCharging ? "⚡ " : "") + String(format: "%.0f", upbat) + " %"
                     
                     // Update info manager
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)

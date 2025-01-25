@@ -23,15 +23,24 @@ class LogViewModel: ObservableObject {
                 self?.filterLogs(category: category, searchText: search)
             }
             .store(in: &cancellables)
+        
+        // Daniel: Test to subscribe to log updates from LogManager instead of using timer
+                LogManager.shared.logUpdateSubject
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] in
+                        self?.loadLogEntries()
+                    }
+                    .store(in: &cancellables)
 
         loadLogEntries()
-
+/*
         Timer.publish(every: 5.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.loadLogEntries()
             }
             .store(in: &cancellables)
+ */
     }
 
     func loadLogEntries() {

@@ -89,8 +89,11 @@ extension MainViewController {
         if ObservableUserDefaults.shared.device.value == "Trio" {
             if let note = persistentNote {
                 infoManager.updateInfoData(type: .override, value: note)
+                LogManager.shared.log(category: .general, message: "Override \(note) presented in infotable", isDebug: true)
             } else {
-                infoManager.clearInfoData(type: .override)
+                let note = "Normal profil"
+                infoManager.updateInfoData(type: .override, value: note)
+                LogManager.shared.log(category: .general, message: "\(note) presented in infotable", isDebug: true)
             }
         }
 

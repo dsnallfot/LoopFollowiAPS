@@ -18,9 +18,23 @@ class InfoManager {
         self.tableData = InfoType.allCases.map { InfoData(name: $0.name) }
         self.tableView = tableView
     }
-
+/*
     func updateInfoData(type: InfoType, value: String, unit: String? = nil) {
         let displayValue = unit != nil ? "\(value) \(unit!)" : value
+        tableData[type.rawValue].value = displayValue
+        tableView?.reloadData()
+    }
+*/
+    func updateInfoData(type: InfoType, value: String? = nil, unit: String? = nil) {
+        let displayValue: String
+
+        // Daniel: Set a default value for the "Override" case
+        if type == .override {
+            displayValue = value?.isEmpty == false ? (unit != nil ? "\(value!) \(unit!)" : value!) : "Normal profil"
+        } else {
+            displayValue = unit != nil ? "\(value ?? "") \(unit!)" : (value ?? "")
+        }
+
         tableData[type.rawValue].value = displayValue
         tableView?.reloadData()
     }
@@ -60,13 +74,23 @@ class InfoManager {
     }
     
     func clearInfoData(type: InfoType) {
-        tableData[type.rawValue].value = "Normal profil"
+        // Prevent clearing the default value for .override
+        if type == .override {
+            tableData[type.rawValue].value = "Normal profil" // Reset to default instead of clearing
+        } else {
+            tableData[type.rawValue].value = "N/A"
+        }
         tableView?.reloadData()
     }
 
     func clearInfoData(types: [InfoType]) {
         for type in types {
-            tableData[type.rawValue].value = ""
+            // Prevent clearing the default value for .override
+            if type == .override {
+                tableData[type.rawValue].value = "Normal profil" // Reset to default instead of clearing
+            } else {
+                tableData[type.rawValue].value = "N/A"
+            }
         }
         tableView?.reloadData()
     }
