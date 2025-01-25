@@ -21,7 +21,7 @@ var sharedLatestMinMax: String = ""
 var sharedLatestEvBG: String = ""
 
 extension MainViewController {
-    func DeviceStatusOpenAPS(formatter: ISO8601DateFormatter, lastDeviceStatus: [String: AnyObject]?, lastLoopRecord: [String: AnyObject]) {
+    func DeviceStatusOpenAPS(formatter: ISO8601DateFormatter, lastDeviceStatus: [String: AnyObject]?, lastLoopRecord: [String: AnyObject], jsonDeviceStatus: [[String:AnyObject]]) {
         if let createdAtString = lastDeviceStatus?["created_at"] as? String,
            let lastLoopTime = formatter.date(from: createdAtString)?.timeIntervalSince1970 {
             ObservableUserDefaults.shared.device.value = lastDeviceStatus?["device"] as? String ?? ""
@@ -41,11 +41,12 @@ extension MainViewController {
                     let formattedLastLoopTime = dateFormatter.string(from: Date(timeIntervalSince1970: lastLoopTime))
                     
                     // Log the formatted time
-                    LogManager.shared.log(category: .alarm, message: "New LastLoopTime: \(formattedLastLoopTime)", isDebug: true)
+                    LogManager.shared.log(category: .deviceStatus, message: "New LastLoopTime: \(lastLoopTime)", isDebug: true)
                     
                     //evaluateNotLooping(lastLoopTime: UserDefaultsRepository.alertLastLoopTime.value)
                 } else {
-                    LogManager.shared.log(category: .alarm, message: "Last devicestatus was not enacted")
+                    LogManager.shared.log(category: .deviceStatus, message: "Last devicestatus was not enacted")
+                                         findFallbackEnactedAndSetLoopTime(in: jsonDeviceStatus, formatter: formatter)
                 }
 
                 if let timestamp = enactedOrSuggested["timestamp"] as? String,
@@ -347,4 +348,30 @@ extension MainViewController {
             //evaluateNotLooping(lastLoopTime: lastLoopTime)
         }
     }
+    
+    private func findFallbackEnactedAndSetLoopTime(
+             in allDeviceStatuses: [[String: AnyObject]],
+             formatter: ISO8601DateFormatter
+         ) {
+             for i in 1 ..< allDeviceStatuses.count {
+                 let ds = allDeviceStatuses[i]
+                 guard
+                     let openaps = ds["openaps"] as? [String: AnyObject],
+                     openaps["failureReason"] == nil,
+                     let enacted = openaps["enacted"] as? [String: AnyObject],
+                     let dateString = ds["created_at"] as? String,
+                     let dateTime = formatter.date(from: dateString)?.timeIntervalSince1970
+                 else {
+                     continue
+                 }
+
+                 UserDefaultsRepository.alertLastLoopTime.value = dateTime
+                 LogManager.shared.log(category: .deviceStatus, message: "Found older enacted. Setting lastLoopTime to \(dateTime)", isDebug: true)
+
+                 evaluateNotLooping(lastLoopTime: dateTime)
+                 return
+             }
+
+             LogManager.shared.log(category: .deviceStatus, message: "No older record was enacted!")
+         }
 }

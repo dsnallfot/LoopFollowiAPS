@@ -13,7 +13,10 @@ import Charts
 extension MainViewController {
     // NS Device Status Web Call
     func webLoadNSDeviceStatus() {
-        let parameters: [String: String] = ["count": "1"]
+        let count = ObservableUserDefaults.shared.device.value == "Trio" ? "5" : "1"
+                 LogManager.shared.log(category: .deviceStatus, message: "Fetching \(count) device status records", isDebug: true)
+
+                 let parameters: [String: String] = ["count": count]
         NightscoutUtils.executeDynamicRequest(eventType: .deviceStatus, parameters: parameters) { result in
             switch result {
             case .success(let json):
@@ -32,7 +35,7 @@ extension MainViewController {
     }
     
     private func handleDeviceStatusError() {
-        LogManager.shared.log(category: .alarm, message: "Device status fetch failed!")
+        LogManager.shared.log(category: .deviceStatus, message: "Device status fetch failed!")
         DispatchQueue.main.async {
             TaskScheduler.shared.rescheduleTask(id: .deviceStatus, to: Date().addingTimeInterval(10))
         }
@@ -54,6 +57,7 @@ extension MainViewController {
         infoManager.clearInfoData(types: [.iob, .cob, .override, .battery, .pump, .target, .isf, .carbRatio, .updated, .recBolus, .tdd])
 
         if jsonDeviceStatus.count == 0 {
+            LogManager.shared.log(category: .deviceStatus, message: "Device status is empty")
             return
         }
         
@@ -122,7 +126,7 @@ extension MainViewController {
 
         // OpenAPS - handle new data
         if let lastLoopRecord = lastDeviceStatus?["openaps"] as! [String : AnyObject]? {
-            DeviceStatusOpenAPS(formatter: formatter, lastDeviceStatus: lastDeviceStatus, lastLoopRecord: lastLoopRecord)
+            DeviceStatusOpenAPS(formatter: formatter, lastDeviceStatus: lastDeviceStatus, lastLoopRecord: lastLoopRecord, jsonDeviceStatus: jsonDeviceStatus)
         }
 
         // Start the timer based on the timestamp
@@ -161,6 +165,6 @@ extension MainViewController {
                 )
             }
         }
-        LogManager.shared.log(category: .alarm, message: "updateDeviceStatusDisplay done", isDebug: true)
+        LogManager.shared.log(category: .deviceStatus, message: "Update Device Status done", isDebug: true)
     }
 }
