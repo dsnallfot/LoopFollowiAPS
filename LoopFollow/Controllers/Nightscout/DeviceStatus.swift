@@ -78,7 +78,14 @@ extension MainViewController {
 
                 if let uploader = lastDeviceStatus?["uploader"] as? [String: AnyObject],
                    let upbat = uploader["battery"] as? Double {
-                    infoManager.updateInfoData(type: .battery, value: String(format: "%.0f", upbat) + " %")
+                    // Check if isCharging exists and is true
+                    let isCharging = uploader["isCharging"] as? Bool ?? false
+                    
+                    // Add ⚡ symbol if charging
+                    let batteryDisplay = (isCharging ? "⚡" : "") + String(format: "%.0f", upbat) + " %"
+                    
+                    // Update info manager
+                    infoManager.updateInfoData(type: .battery, value: batteryDisplay)
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
                 }
             }
