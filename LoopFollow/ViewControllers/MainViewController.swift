@@ -706,7 +706,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 self,
                 bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
                 directionVal: latestDirectionString,
-                deltaVal: Localizer.toDisplayUnits(String(latestDeltaString)),
+                deltaVal: latestDeltaString,
                 minAgoVal: latestMinAgoString,
                 alertLabelVal: "Latest BG",
                 latestIOB: iobString,

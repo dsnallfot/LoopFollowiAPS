@@ -13,10 +13,8 @@ import Charts
 extension MainViewController {
     // NS Device Status Web Call
     func webLoadNSDeviceStatus() {
-        let count = ObservableUserDefaults.shared.device.value == "Trio" ? "5" : "1"
-                 LogManager.shared.log(category: .deviceStatus, message: "Fetching \(count) device status records", isDebug: true)
-
-                 let parameters: [String: String] = ["count": count]
+        let parameters: [String: String] = ["count": "1"]
+        
         NightscoutUtils.executeDynamicRequest(eventType: .deviceStatus, parameters: parameters) { result in
             switch result {
             case .success(let json):
@@ -126,7 +124,7 @@ extension MainViewController {
 
         // OpenAPS - handle new data
         if let lastLoopRecord = lastDeviceStatus?["openaps"] as! [String : AnyObject]? {
-            DeviceStatusOpenAPS(formatter: formatter, lastDeviceStatus: lastDeviceStatus, lastLoopRecord: lastLoopRecord, jsonDeviceStatus: jsonDeviceStatus)
+            DeviceStatusOpenAPS(formatter: formatter, lastDeviceStatus: lastDeviceStatus, lastLoopRecord: lastLoopRecord)
         }
 
         // Start the timer based on the timestamp

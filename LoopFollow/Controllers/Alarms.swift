@@ -357,7 +357,7 @@ extension MainViewController {
                 message: "Checking NotLooping LastLoopTime was \(formattedAlertLastLoopTime) that gives a diff of: \(timeDiff) seconds",
                 isDebug: true
             )
-            /*
+            
             if UserDefaultsRepository.alertNotLoopingActive.value
                 && !UserDefaultsRepository.alertNotLoopingIsSnoozed.value
                 && (Double(dateTimeUtils.getNowTimeIntervalUTC() - UserDefaultsRepository.alertLastLoopTime.value) >= Double(UserDefaultsRepository.alertNotLooping.value * 60))
@@ -384,7 +384,8 @@ extension MainViewController {
                     triggerAlarm(sound: UserDefaultsRepository.alertNotLoopingSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertNotLoopingSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
                     return
                 }
-            }*/
+            }
+            /*
             if UserDefaultsRepository.alertNotLoopingActive.value
                 && !UserDefaultsRepository.alertNotLoopingIsSnoozed.value
                 && (Double(dateTimeUtils.getNowTimeIntervalUTC() - UserDefaultsRepository.latestEnactedTime.value) >= Double(UserDefaultsRepository.alertNotLooping.value * 60))
@@ -415,6 +416,7 @@ extension MainViewController {
                     return
                 }
             }
+             */
             
             // check for missed bolus - Only checks within 1 hour of carb entry
             // Only continue if alert is active, not snooozed, we have carb data, and bg is over the ignore limit
@@ -699,7 +701,7 @@ extension MainViewController {
         snoozer.updateDisplayWhenTriggered(
             bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
             directionVal: latestDirectionString,
-            deltaVal: Localizer.toDisplayUnits(latestDeltaString),
+            deltaVal: latestDeltaString,
             minAgoVal: latestMinAgoString,
             alertLabelVal: AlarmSound.whichAlarm,
             latestIOB: latestIOB,
@@ -721,7 +723,7 @@ extension MainViewController {
         snoozer.updateDisplayWhenTriggered(
             bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
             directionVal: latestDirectionString,
-            deltaVal: Localizer.toDisplayUnits(latestDeltaString),
+            deltaVal: latestDeltaString,
             minAgoVal: latestMinAgoString,
             alertLabelVal: AlarmSound.whichAlarm,
             latestIOB: latestIOB,
@@ -764,7 +766,7 @@ extension MainViewController {
         snoozer.updateDisplayWhenTriggered(
             bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
             directionVal: latestDirectionString,
-            deltaVal: Localizer.toDisplayUnits(latestDeltaString),
+            deltaVal: latestDeltaString,
             minAgoVal: latestMinAgoString,
             alertLabelVal: AlarmSound.whichAlarm,
             latestIOB: iobString,
@@ -779,7 +781,7 @@ extension MainViewController {
     
     func clearOldSnoozes(){
         let date = Date()
-        let now = date.timeIntervalSince1970
+        //let now = date.timeIntervalSince1970
         guard let alarms = ViewControllerManager.shared.alarmViewController else { return }
 
         if date > UserDefaultsRepository.alertSnoozeAllTime.value ?? date {

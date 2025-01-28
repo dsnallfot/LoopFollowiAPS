@@ -79,24 +79,16 @@ extension MainViewController {
                         nsData[i].date /= 1000
                         nsData[i].date.round(FloatingPointRoundingRule.toNearestOrEven)
                     }
-                    print(nsData.count)
+                    var nsData2: [ShareGlucoseData] = []
+                    var lastAddedTime = Double.infinity
+                    let minInterval: Double = 4 * 60
                     
-                    //Avoid duplicate entries messing up the graph, only use one reading per 5 minutes.
-                    let graphHours = 24 * UserDefaultsRepository.downloadDays.value
-                    let points = graphHours * 12 + 1
-                    var nsData2 = [ShareGlucoseData]()
-                    let timestamp = Date().timeIntervalSince1970
-                    for i in 0..<points {
-                        //Starting with "now" and then step 5 minutes back in time
-                        let target = timestamp - Double(i) * 60 * 5
-                        //Find the reading closest to the target, but not too far away
-                        let closest = nsData.filter{ abs($0.date - target) < 3 * 60 }.min { abs($0.date - target) < abs($1.date - target) }
-                        //If a reading is found, add it to the new array
-                        if let item = closest {
-                            nsData2.append(item)
+                    for reading in nsData {
+                        if lastAddedTime - reading.date >= minInterval {
+                            nsData2.append(reading)
+                            lastAddedTime = reading.date
                         }
                     }
-                    print(nsData2.count)
                     
                     // merge NS and Dex data if needed; use recent Dex data and older NS data
                     var sourceName = "Nightscout"
@@ -276,18 +268,16 @@ extension MainViewController {
             // Delta handling
             if let deltaBG = deltaBG {
                 if deltaBG < 0 {
-                    self.DeltaText.text = Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                    self.latestDeltaString = Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                     //Daniel: Added for visualization in remote meal info popup
                     sharedLatestDelta = Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                    snoozerDelta = Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                    self.latestDeltaString = String(deltaBG).replacingOccurrences(of: ",", with: ".")
                 } else {
-                    self.DeltaText.text = "+" + Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
+                    self.latestDeltaString = "+" + Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                     //Daniel: Added for visualization in remote meal info popup
                     sharedLatestDelta = "+" + Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                    snoozerDelta = "+" + Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                    self.latestDeltaString = "+" + String(deltaBG).replacingOccurrences(of: ",", with: ".")
                 }
+                self.DeltaText.text = self.latestDeltaString.replacingOccurrences(of: ",", with: ".")
+                snoozerDelta = self.latestDeltaString.replacingOccurrences(of: ",", with: ".")
             } else {
                 self.DeltaText.text = "N/A"
                 sharedLatestDelta = "N/A"
