@@ -68,12 +68,12 @@ extension MainViewController {
             LoopStatusLabel.text = " ᮰"
             LoopStatusLabel.textColor = UIColor(named: "LoopRed")
             latestLoopStatusString = "᮰"
-            LogManager.shared.log(category: .deviceStatus, message: "Loop status 🔴 (\(formattedLastLoopTime))", isDebug: true)
+            LogManager.shared.log(category: .deviceStatus, message: "Loop status 🔴 (\(formattedLastLoopTime))")
         } else if timeDifferenceMinutes > 11 {
             LoopStatusLabel.text = " ᮰"
             LoopStatusLabel.textColor = UIColor(named: "LoopYellow")
             latestLoopStatusString = "᮰"
-            LogManager.shared.log(category: .deviceStatus, message: "Loop status 🟡 (\(formattedLastLoopTime))", isDebug: true)
+            LogManager.shared.log(category: .deviceStatus, message: "Loop status 🟡 (\(formattedLastLoopTime))")
         } else {
             LoopStatusLabel.text = " ᮰"
             LoopStatusLabel.textColor = UIColor(named: "LoopGreen")
@@ -250,8 +250,8 @@ extension MainViewController {
 
                 // Update PredictionLabel with color based on eventualBG value
                 if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 16 {
-                    PredictionLabel.text = "  ⚠️  Loopar inte!"
-                    predictionColor = UIColor.systemOrange
+                    PredictionLabel.text = "  ❌  Loop ej aktiv!"
+                    predictionColor = UIColor.systemRed
                     
                 } else if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
                     if UserDefaultsRepository.colorBGText.value {

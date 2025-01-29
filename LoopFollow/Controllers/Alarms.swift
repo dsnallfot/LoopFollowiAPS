@@ -166,9 +166,9 @@ extension MainViewController {
                 if !UserDefaultsRepository.alertUrgentLowIsSnoozed.value {
                     
                     if predictiveTrigger {
-                        AlarmSound.whichAlarm = "Snart akut låg!"
+                        AlarmSound.whichAlarm = "⚠️ Snart akut låg!"
                     } else {
-                        AlarmSound.whichAlarm = "Akut lågt blodsocker!"
+                        AlarmSound.whichAlarm = "🆘 Akut lågt blodsocker!"
                     }
                     
                     //determine if it is day or night and what should happen
@@ -225,7 +225,7 @@ extension MainViewController {
                 Float(currentBG) >= UserDefaultsRepository.alertUrgentHighBG.value {
                 // Separating this makes it so the high or rise alerts won't trigger if they already snoozed the urgent high
                 if !UserDefaultsRepository.alertUrgentHighIsSnoozed.value {
-                    AlarmSound.whichAlarm = "Akut högt blodsocker!"
+                    AlarmSound.whichAlarm = "⚠️ Akut högt blodsocker!"
                     //determine if it is day or night and what should happen
                     if UserDefaultsRepository.nightTime.value {
                         if UserDefaultsRepository.alertUrgentHighNightTime.value { numLoops = -1 }
@@ -325,7 +325,7 @@ extension MainViewController {
         
         //check for missed reading alert
         if UserDefaultsRepository.alertMissedReadingActive.value && !UserDefaultsRepository.alertMissedReadingIsSnoozed.value && (Double(now - currentBGTime) >= Double(UserDefaultsRepository.alertMissedReading.value * 60)) {
-            AlarmSound.whichAlarm = "Inga blodsockervärden"
+            AlarmSound.whichAlarm = "⚠️ Inga blodsockervärden"
             //determine if it is day or night and what should happen
             if UserDefaultsRepository.nightTime.value {
                 if UserDefaultsRepository.alertMissedReadingNightTime.value { numLoops = -1 }
@@ -372,7 +372,7 @@ extension MainViewController {
                             (Double(now - currentBGTime) >= Double(UserDefaultsRepository.alertNotLooping.value * 60))
                     ) ||
                     !UserDefaultsRepository.alertNotLoopingUseLimits.value) {
-                    AlarmSound.whichAlarm = "Loop ej aktiv"
+                    AlarmSound.whichAlarm = "❌ Loop ej aktiv!"
                     //determine if it is day or night and what should happen
                     if UserDefaultsRepository.nightTime.value {
                         if UserDefaultsRepository.alertNotLoopingNightTime.value { numLoops = -1 }
@@ -492,7 +492,7 @@ extension MainViewController {
                 let delta = now - insertTime
                 let tenDays = 10 * 24 * 60 * 60
                 if Double(tenDays) - Double(delta) <= alertDistance {
-                    AlarmSound.whichAlarm = "Påminnelse sensorbyte"
+                    AlarmSound.whichAlarm = "⏰ Påminnelse sensorbyte"
                     //determine if it is day or night and what should happen
                     if UserDefaultsRepository.nightTime.value {
                         if UserDefaultsRepository.alertSAGENightTime.value { numLoops = -1 }
@@ -513,7 +513,7 @@ extension MainViewController {
                 let delta = now - insertTime
                 let threeDays = 3 * 24 * 60 * 60
                 if Double(threeDays) - Double(delta) <= alertDistance {
-                    AlarmSound.whichAlarm = "Påminnelse pumpbyte"
+                    AlarmSound.whichAlarm = "⏰ Påminnelse pumpbyte"
                     //determine if it is day or night and what should happen
                     if UserDefaultsRepository.nightTime.value {
                         if UserDefaultsRepository.alertCAGENightTime.value { numLoops = -1 }
@@ -551,7 +551,7 @@ extension MainViewController {
             let alertAtBatteryLevel = Double(UserDefaultsRepository.alertBatteryLevel.value)
             
             if currentBatteryLevel <= alertAtBatteryLevel {
-                AlarmSound.whichAlarm = "Låg batterinivå"
+                AlarmSound.whichAlarm = "🪫 Låg batterinivå"
 
                 if UserDefaultsRepository.alertBatteryRepeat.value { numLoops = -1 }
                 triggerAlarm(sound: UserDefaultsRepository.alertBatterySound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertBatterySnoozeHours.value, snoozeIncrement: 1, audio: true, latestIOB: iobString, latestCOB: cobString)
