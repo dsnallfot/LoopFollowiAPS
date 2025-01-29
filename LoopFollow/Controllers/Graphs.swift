@@ -1933,6 +1933,73 @@ extension MainViewController {
     }
 
     func wrapText(_ text: String, maxLineLength: Int) -> String {
+        var lines: [String] = []
+        var currentLine = ""
+
+        let words = text.components(separatedBy: .whitespacesAndNewlines)
+        for word in words {
+            if word.count > maxLineLength {
+                var wordToProcess = word
+                while !wordToProcess.isEmpty {
+                    let spaceCount = currentLine.isEmpty ? 0 : 1
+                    let availableSpace = maxLineLength - (currentLine.count + spaceCount)
+
+                    if availableSpace <= 0 {
+                        if !currentLine.isEmpty {
+                            lines.append(currentLine)
+                            currentLine = ""
+                        }
+                        continue
+                    }
+
+                    let takeCount = min(wordToProcess.count, availableSpace)
+                    if takeCount <= 0 {
+                        if !currentLine.isEmpty {
+                            lines.append(currentLine)
+                            currentLine = ""
+                        }
+                        continue
+                    }
+
+                    let index = wordToProcess.index(wordToProcess.startIndex, offsetBy: takeCount)
+                    let substring = wordToProcess[..<index]
+
+                    if currentLine.isEmpty {
+                        currentLine = String(substring)
+                    } else {
+                        currentLine += " " + substring
+                    }
+
+                    wordToProcess = String(wordToProcess[index...])
+
+                    if currentLine.count >= maxLineLength {
+                        lines.append(currentLine)
+                        currentLine = ""
+                    }
+                }
+            } else {
+                let spaceNeeded = currentLine.isEmpty ? 0 : 1
+                if currentLine.count + spaceNeeded + word.count > maxLineLength {
+                    lines.append(currentLine)
+                    currentLine = word
+                } else {
+                    if currentLine.isEmpty {
+                        currentLine = word
+                    } else {
+                        currentLine += " " + word
+                    }
+                }
+            }
+        }
+
+        if !currentLine.isEmpty {
+            lines.append(currentLine)
+        }
+
+        return lines.joined(separator: "\r\n")
+    }
+/*
+    func wrapText(_ text: String, maxLineLength: Int) -> String {
         return text
         var lines: [String] = []
         var currentLine = ""
@@ -1999,7 +2066,7 @@ extension MainViewController {
 
         return lines.joined(separator: "\r\n")
     }
-
+*/
         func formatPillText(line1: String, time: TimeInterval) -> String {
             let dateFormatter = DateFormatter()
             //let timezoneOffset = TimeZone.current.secondsFromGMT()

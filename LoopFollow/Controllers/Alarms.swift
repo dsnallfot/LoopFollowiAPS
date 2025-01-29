@@ -168,7 +168,7 @@ extension MainViewController {
                     if predictiveTrigger {
                         AlarmSound.whichAlarm = "⚠️ Snart akut låg!"
                     } else {
-                        AlarmSound.whichAlarm = "🆘 Akut lågt blodsocker!"
+                        AlarmSound.whichAlarm = "🆘 Akut lågt socker!"
                     }
                     
                     //determine if it is day or night and what should happen
@@ -225,7 +225,7 @@ extension MainViewController {
                 Float(currentBG) >= UserDefaultsRepository.alertUrgentHighBG.value {
                 // Separating this makes it so the high or rise alerts won't trigger if they already snoozed the urgent high
                 if !UserDefaultsRepository.alertUrgentHighIsSnoozed.value {
-                    AlarmSound.whichAlarm = "⚠️ Akut högt blodsocker!"
+                    AlarmSound.whichAlarm = "⚠️ Akut högt socker!"
                     //determine if it is day or night and what should happen
                     if UserDefaultsRepository.nightTime.value {
                         if UserDefaultsRepository.alertUrgentHighNightTime.value { numLoops = -1 }
@@ -325,7 +325,7 @@ extension MainViewController {
         
         //check for missed reading alert
         if UserDefaultsRepository.alertMissedReadingActive.value && !UserDefaultsRepository.alertMissedReadingIsSnoozed.value && (Double(now - currentBGTime) >= Double(UserDefaultsRepository.alertMissedReading.value * 60)) {
-            AlarmSound.whichAlarm = "⚠️ Inga blodsockervärden"
+            AlarmSound.whichAlarm = "⚠️ Inga värden"
             //determine if it is day or night and what should happen
             if UserDefaultsRepository.nightTime.value {
                 if UserDefaultsRepository.alertMissedReadingNightTime.value { numLoops = -1 }

@@ -140,7 +140,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             UserDefaultsRepository.alertTemporaryActive.value = false
             alarms.reloadIsSnoozed(key: "alertTemporaryActive", value: false)
 
-        case "🆘 Akut lågt blodsocker!":
+        case "🆘 Akut lågt socker!":
             UserDefaultsRepository.alertUrgentLowIsSnoozed.value = true
             UserDefaultsRepository.alertUrgentLowSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
             alarms.reloadIsSnoozed(key: "alertUrgentLowIsSnoozed", value: true)
@@ -164,7 +164,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             alarms.reloadIsSnoozed(key: "alertHighIsSnoozed", value: true)
             alarms.reloadSnoozeTime(key: "alertHighSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
-        case "⚠️ Akut högt blodsocker!":
+        case "⚠️ Akut högt socker!":
             UserDefaultsRepository.alertUrgentHighIsSnoozed.value = true
             UserDefaultsRepository.alertUrgentHighSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
             alarms.reloadIsSnoozed(key: "alertUrgentHighIsSnoozed", value: true)
@@ -182,7 +182,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             alarms.reloadIsSnoozed(key: "alertFastRiseIsSnoozed", value: true)
             alarms.reloadSnoozeTime(key: "alertFastRiseSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
-        case "⚠️ Inga blodsockervärden":
+        case "⚠️ Inga värden":
             UserDefaultsRepository.alertMissedReadingIsSnoozed.value = true
             UserDefaultsRepository.alertMissedReadingSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
             alarms.reloadIsSnoozed(key: "alertMissedReadingIsSnoozed", value: true)
