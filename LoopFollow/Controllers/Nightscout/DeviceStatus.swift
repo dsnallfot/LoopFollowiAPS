@@ -156,7 +156,7 @@ extension MainViewController {
                     to: Date().addingTimeInterval(10)
                 )
             } else {
-                let interval = (310 - secondsAgo)
+                let interval = (315 - secondsAgo) //Daniel: Test 315 instead of 310 sec to give Trio time to process determination after new glucose (17:25:48) -> (suggested 17:26:01) and upload suggested + old enacted to NS (17:26:07:100) -> Upload enacted (LastLoopTimestamp: 17:26:03) suggestion to NS  -> (17:26:08)
                 TaskScheduler.shared.rescheduleTask(
                     id: .deviceStatus,
                     to: Date().addingTimeInterval(interval)

@@ -36,13 +36,15 @@ extension MainViewController {
 
         //var wasEnacted: Bool
         var lastLoopTime: TimeInterval = UserDefaultsRepository.alertLastLoopTime.value // Default to the stored value
-
+/*
         if let enacted = lastLoopRecord["enacted"] as? [String: AnyObject] {
             //wasEnacted = true
             if let timestampString = enacted["timestamp"] as? String,
                let parsedLoopTime = formatter.date(from: timestampString)?.timeIntervalSince1970 {
                 lastLoopTime = parsedLoopTime
                 UserDefaultsRepository.alertLastLoopTime.value = lastLoopTime
+                
+                latestLoopTime = lastLoopTime
                 
                 // Format the `lastLoopTime` as HH.mm:ss
                 let dateFormatter = DateFormatter()
@@ -54,6 +56,16 @@ extension MainViewController {
         } else {
             //wasEnacted = false
             LogManager.shared.log(category: .deviceStatus, message: "Last devicestatus is missing enacted")
+            
+            // Format the `lastLoopTime` as HH.mm:ss
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "HH.mm:ss"
+            let formattedLastLoopTime = dateFormatter.string(from: Date(timeIntervalSince1970: lastLoopTime))
+            
+            LoopStatusLabel.text = " ᮰"
+            LoopStatusLabel.textColor = UIColor.gray
+            latestLoopStatusString = "᮰"
+            LogManager.shared.log(category: .deviceStatus, message: "Loop status 🔘 (\(formattedLastLoopTime))")
         }
 
         // Evaluate loop status based on `lastLoopTime`
@@ -64,6 +76,48 @@ extension MainViewController {
         dateFormatter.dateFormat = "HH.mm:ss"
         let formattedLastLoopTime = dateFormatter.string(from: Date(timeIntervalSince1970: lastLoopTime))
         
+        if timeDifferenceMinutes > 16 {
+            LoopStatusLabel.text = " ᮰"
+            LoopStatusLabel.textColor = UIColor(named: "LoopRed")
+            latestLoopStatusString = "᮰"
+            LogManager.shared.log(category: .deviceStatus, message: "Loop status 🔴 (\(formattedLastLoopTime))")
+        } else if timeDifferenceMinutes > 11 {
+            LoopStatusLabel.text = " ᮰"
+            LoopStatusLabel.textColor = UIColor(named: "LoopYellow")
+            latestLoopStatusString = "᮰"
+            LogManager.shared.log(category: .deviceStatus, message: "Loop status 🟡 (\(formattedLastLoopTime))")
+        } else {
+            LoopStatusLabel.text = " ᮰"
+            LoopStatusLabel.textColor = UIColor(named: "LoopGreen")
+            latestLoopStatusString = "᮰"
+            LogManager.shared.log(category: .deviceStatus, message: "Loop status 🟢 (\(formattedLastLoopTime))", isDebug: true)
+        }
+ */
+        if let enacted = lastLoopRecord["enacted"] as? [String: AnyObject] {
+            if let timestampString = enacted["timestamp"] as? String,
+               let parsedLoopTime = formatter.date(from: timestampString)?.timeIntervalSince1970 {
+                lastLoopTime = parsedLoopTime
+                UserDefaultsRepository.alertLastLoopTime.value = lastLoopTime
+                latestLoopTime = lastLoopTime
+                
+                let formattedLastLoopTime = formatTime(lastLoopTime)
+                LogManager.shared.log(category: .deviceStatus, message: "New LastLoopTime: \(formattedLastLoopTime)", isDebug: true)
+            }
+        } else {
+            LogManager.shared.log(category: .deviceStatus, message: "Last devicestatus is missing enacted")
+
+            let formattedLastLoopTime = formatTime(lastLoopTime)
+            LoopStatusLabel.text = " ᮰"
+            LoopStatusLabel.textColor = UIColor.gray
+            latestLoopStatusString = "᮰"
+            LogManager.shared.log(category: .deviceStatus, message: "Loop status ⚫️ (\(formattedLastLoopTime))")
+        }
+
+        // Evaluate loop status based on `lastLoopTime`
+        let timeDifferenceMinutes = (TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60
+
+        let formattedLastLoopTime = formatTime(lastLoopTime) // Reuse the function
+
         if timeDifferenceMinutes > 16 {
             LoopStatusLabel.text = " ᮰"
             LoopStatusLabel.textColor = UIColor(named: "LoopRed")
@@ -348,7 +402,7 @@ extension MainViewController {
                 }
 
                 if minPredBG != Double.infinity && maxPredBG != -Double.infinity {
-                    let value = "\(Localizer.toDisplayUnits(String(minPredBG)))/\(Localizer.toDisplayUnits(String(maxPredBG)))"
+                    let value = "\(Localizer.toDisplayUnits(String(minPredBG))) / \(Localizer.toDisplayUnits(String(maxPredBG)))"
                     infoManager.updateInfoData(type: .minMax, value: value, unit: "mmol/L")
                     sharedLatestMinMax = value
                 } else {
@@ -357,4 +411,13 @@ extension MainViewController {
                 }
             }
         }
+    
+    private func formatTime(_ timestamp: TimeInterval) -> String {
+        let dateFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH.mm:ss"
+            return formatter
+        }()
+        return dateFormatter.string(from: Date(timeIntervalSince1970: timestamp))
     }
+}
