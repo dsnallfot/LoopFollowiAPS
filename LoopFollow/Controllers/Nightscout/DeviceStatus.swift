@@ -92,6 +92,17 @@ extension MainViewController {
                 }
             }
         }
+
+        // Daniel: Extract `created_at` timestamp from `lastDeviceStatus`
+        if let createdAtString = lastDeviceStatus?["created_at"] as? String,
+               let createdAtTime = formatter.date(from: createdAtString)?.timeIntervalSince1970 {
+                
+                // Update infoManager with the created_at timestamp
+                let formattedTime = Localizer.formatTimestampToLocalString(createdAtTime)
+                infoManager.updateInfoData(type: .updated, value: formattedTime)
+            } else {
+                LogManager.shared.log(category: .deviceStatus, message: "Failed to parse created_at timestamp.")
+            }
         
         // Loop - handle new data
         if let lastLoopRecord = lastDeviceStatus?["loop"] as! [String : AnyObject]? {

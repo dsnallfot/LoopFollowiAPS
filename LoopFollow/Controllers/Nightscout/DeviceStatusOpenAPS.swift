@@ -102,6 +102,11 @@ extension MainViewController {
                 
                 let formattedLastLoopTime = formatTime(lastLoopTime)
                 LogManager.shared.log(category: .deviceStatus, message: "New LastLoopTime: \(formattedLastLoopTime)", isDebug: true)
+/*
+                // Daniel: Set the timestamp directly for infoManager.updateInfoData**
+                let formattedTime = Localizer.formatTimestampToLocalString(parsedLoopTime)
+                infoManager.updateInfoData(type: .updated, value: formattedTime)
+*/
             }
         } else {
             LogManager.shared.log(category: .deviceStatus, message: "Last devicestatus is missing enacted")
@@ -135,7 +140,7 @@ extension MainViewController {
             LogManager.shared.log(category: .deviceStatus, message: "Loop status 🟢 (\(formattedLastLoopTime))", isDebug: true)
         }
 
-
+/*
             var updatedTime: TimeInterval?
 
             if let timestamp = enactedOrSuggested["timestamp"] as? String,
@@ -144,6 +149,7 @@ extension MainViewController {
                 let formattedTime = Localizer.formatTimestampToLocalString(parsedTime)
                 infoManager.updateInfoData(type: .updated, value: formattedTime)
             }
+*/
 
             // ISF
             let profileISF = profileManager.currentISF()
