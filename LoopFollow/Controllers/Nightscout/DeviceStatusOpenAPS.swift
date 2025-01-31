@@ -288,7 +288,7 @@ extension MainViewController {
                 print("Missing or invalid sensitivityRatio in enactedOrSuggested.")
             }
 
-            
+/*
             var predictionColor = UIColor.systemGray
 
             // Eventual BG Handling
@@ -335,6 +335,55 @@ extension MainViewController {
                 //print("Setting PredictionLabel color to \(predictionColor)")
                 self.PredictionLabel.textColor = predictionColor
             }
+*/
+        var predictionColor = UIColor.systemGray
+
+        // Eventual BG Handling
+        if let eventualBGValue = enactedOrSuggested["eventualBG"] as? Double {
+
+            // Convert eventualBGValue to necessary formats
+            let eventualBGFloatValue = Float(eventualBGValue) // Convert Double to Float for compatibility
+            let eventualBGStringValue = String(describing: eventualBGValue) // Convert to String
+            let formattedBGString = Localizer.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".") // Format for display
+
+            // Update visualization for remote meal info popup
+            latestEvBG = formattedBGString + " mmol/L"
+            sharedRawEvBG = formattedBGString
+            sharedLatestEvBG = latestEvBG
+
+            // Check if loop is inactive
+            if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 16 {
+                PredictionLabel.text = "  ❌  Loop ej aktiv!"
+                predictionColor = UIColor.systemRed
+                
+            } else {
+                // Use setBGColor(_:) if UserDefaultsRepository.colorBGText.value is enabled
+                if UserDefaultsRepository.colorBGText.value {
+                    predictionColor = setBGColor(Int(eventualBGValue))
+                } else {
+                    // Fallback to predefined colors
+                    if let loopYellow = UIColor(named: "LoopYellow"),
+                       let loopRed = UIColor(named: "LoopRed"),
+                       let loopGreen = UIColor(named: "LoopGreen") {
+                        
+                        if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
+                            predictionColor = loopYellow
+                        } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
+                            predictionColor = loopRed
+                        } else {
+                            predictionColor = loopGreen
+                        }
+                    }
+                }
+                
+                PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
+            }
+        }
+
+        // Ensure the color is updated on the main thread
+        DispatchQueue.main.async {
+            self.PredictionLabel.textColor = predictionColor
+        }
 
             // Target
             let profileTargetHigh = profileManager.currentTargetHigh()
