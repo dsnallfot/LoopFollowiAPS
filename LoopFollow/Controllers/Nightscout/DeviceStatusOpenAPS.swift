@@ -199,7 +199,6 @@ extension MainViewController {
             }
 
             // Carb Ratio (CR)
-            // Carb Ratio (CR)
             let profileCR = profileManager.currentCarbRatio()
             var enactedCR: Double?
             if let reasonString = enactedOrSuggested["reason"] as? String {
@@ -233,7 +232,7 @@ extension MainViewController {
             if let cobMetric = CarbMetric(from: enactedOrSuggested, key: "COB") {
                 infoManager.updateInfoData(type: .cob, value: cobMetric, unit: "g")
                 latestCOB = cobMetric
-                sharedLatestCOB = String(format: "%.0f E", latestCOB?.value ?? 0)
+                sharedLatestCOB = String(format: "%.0f g", latestCOB?.value ?? 0)
             } else if let reasonString = enactedOrSuggested["reason"] as? String {
                 // Fallback: Extract COB from reason string
                 let cobPattern = "COB: (\\d+(?:\\.\\d+)?)"
@@ -410,7 +409,7 @@ extension MainViewController {
                 if minPredBG != Double.infinity && maxPredBG != -Double.infinity {
                     let value = "\(Localizer.toDisplayUnits(String(minPredBG))) / \(Localizer.toDisplayUnits(String(maxPredBG)))"
                     infoManager.updateInfoData(type: .minMax, value: value, unit: "mmol/L")
-                    sharedLatestMinMax = value
+                    sharedLatestMinMax = "\(value) mmol/L"
                 } else {
                     infoManager.updateInfoData(type: .minMax, value: "N/A", unit: "mmol/L")
                     sharedLatestMinMax = "N/A"

@@ -527,7 +527,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             UIApplication.shared.applicationIconBadgeNumber = 0
         }
     }
-
+/*
     func setBGTextColor() {
         if bgData.count > 0 {
             guard let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController else { return }
@@ -554,6 +554,21 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             BGText.textColor = color
             snoozer.BGLabel.textColor = color
         }
+    }
+*/
+    
+    func setBGTextColor() {
+        guard bgData.count > 0 else { return }
+        guard let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController else { return }
+        
+        let latestBG = bgData[bgData.count - 1].sgv
+
+        if UserDefaultsRepository.colorBGText.value {
+            let color = setBGColor(latestBG) // Use the reusable function
+            BGText.textColor = color
+            snoozer.BGLabel.textColor = color
+        }
+        // Otherwise, do nothing, keeping the default color set in the storyboard
     }
     
     func bgDirectionGraphic(_ value:String)->String
