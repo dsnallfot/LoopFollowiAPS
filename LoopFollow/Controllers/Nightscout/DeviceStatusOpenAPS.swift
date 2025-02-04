@@ -275,6 +275,28 @@ extension MainViewController {
             }
         }
         
+        // SMB Ratio
+        if let reasonString = enactedOrSuggested["reason"] as? String {
+            let smbRatioPattern = "SMB Ratio:\\s(\\d+\\.\\d{1,2})" // Matches "SMB Ratio: x.x" or "SMB Ratio: x.xx"
+            
+            if let smbRatioRegex = try? NSRegularExpression(pattern: smbRatioPattern),
+               let smbRatioMatch = smbRatioRegex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count)) {
+                
+                let smbRatioValueString = (reasonString as NSString).substring(with: smbRatioMatch.range(at: 1))
+                
+                if let smbRatioValue = Double(smbRatioValueString) {
+                    infoManager.updateInfoDataForSMBRatio(value: smbRatioValue)
+                    print("Extracted SMB Ratio: \(smbRatioValue)")
+                } else {
+                    print("Invalid SMB Ratio value extracted from reason string: \(smbRatioValueString)")
+                    infoManager.updateInfoDataForSMBRatio(value: 0.50) // Default to 0.50 if parsing fails
+                }
+            } else {
+                print("SMB Ratio pattern not found in reason string. Using default value: 0.50")
+                infoManager.updateInfoDataForSMBRatio(value: 0.50) // Default to 0.50 if pattern is not found
+            }
+        }
+        
         // Insulin Required
         if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
             infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: "E")
