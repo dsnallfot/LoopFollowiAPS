@@ -254,10 +254,30 @@ extension MainViewController {
                     print("COB pattern not found in reason string.")
                 }
             }
-
-            // Insulin Required
-            if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
-                infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: "E")
+        
+        // AF (Adjustment Factor)
+        if let reasonString = enactedOrSuggested["reason"] as? String {
+            let afPattern = "AF:\\s(\\d+\\.\\d{1,2})" // Matches "AF: x.x" or "AF: x.xx"
+            
+            if let afRegex = try? NSRegularExpression(pattern: afPattern),
+               let afMatch = afRegex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count)) {
+                
+                let afValueString = (reasonString as NSString).substring(with: afMatch.range(at: 1))
+                
+                if let afValue = Double(afValueString) {
+                    infoManager.updateInfoDataForAF(value: afValue)
+                    print("Extracted AF: \(afValue)")
+                } else {
+                    print("Invalid AF value extracted from reason string: \(afValueString)")
+                }
+            } else {
+                print("AF pattern not found in reason string.")
+            }
+        }
+        
+        // Insulin Required
+        if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
+            infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: "E")
                 UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
                 sharedLatestInsulinReq = String(format: "%.2f E", insulinReqMetric.value)
             } else {

@@ -77,6 +77,11 @@ class InfoManager {
         updateInfoData(type: type, value: displayValue)
     }
     
+    func updateInfoDataForAF(value: Double) {
+        let formattedValue = Localizer.formatToLocalizedString(value, maxFractionDigits: 2, minFractionDigits: 2)
+        updateInfoData(type: .af, value: formattedValue, unit: nil)
+    }
+    
     func clearInfoData(type: InfoType) {
         // Prevent clearing the default value for .override
         if type == .override {
