@@ -454,59 +454,83 @@ extension MainViewController {
             if let tddMetric = InsulinMetric(from: enactedOrSuggested, key: "TDD") {
                 infoManager.updateInfoData(type: .tdd, value: tddMetric, unit: "E")
             }
-
-            let predictioncolor = UIColor.systemGray
-            PredictionLabel.textColor = predictioncolor
-            topPredictionBG = UserDefaultsRepository.minBGScale.value
-            if let predbgdata = enactedOrSuggested["predBGs"] as? [String: AnyObject] {
-                let predictionTypes: [(type: String, colorName: String, dataIndex: Int)] = [
-                    ("ZT", "ZT", 12),
-                    ("IOB", "Insulin", 13),
-                    ("COB", "LoopYellow", 14),
-                    ("UAM", "UAM", 15)
-                ]
-
-                var minPredBG = Double.infinity
-                var maxPredBG = -Double.infinity
-
-                for (type, colorName, dataIndex) in predictionTypes {
-                    var predictionData = [ShareGlucoseData]()
-                    if let graphdata = predbgdata[type] as? [Double] {
-                        var predictionTime = UserDefaultsRepository.alertLastLoopTime.value
-                        let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
-
-                        for i in 0...toLoad {
-                            if i < graphdata.count {
-                                let predictionValue = graphdata[i]
-                                minPredBG = min(minPredBG, predictionValue)
-                                maxPredBG = max(maxPredBG, predictionValue)
-
-                                let prediction = ShareGlucoseData(sgv: Int(round(predictionValue)), date: predictionTime, direction: "flat")
-                                predictionData.append(prediction)
-                                predictionTime += 300
-                            }
+        
+        let predictioncolor = UIColor.systemGray
+        PredictionLabel.textColor = predictioncolor
+        topPredictionBG = UserDefaultsRepository.minBGScale.value
+        
+        if let predbgdata = enactedOrSuggested["predBGs"] as? [String: AnyObject] {
+            let predictionTypes: [(type: String, colorName: String, dataIndex: Int)] = [
+                ("ZT", "ZT", 12),
+                ("IOB", "Insulin", 13),
+                ("COB", "LoopYellow", 14),
+                ("UAM", "UAM", 15)
+            ]
+            
+            var minPredBG = Double.infinity
+            var maxPredBG = -Double.infinity
+            
+            // Extract deliverAt and convert to TimeInterval, fallback to alertLastLoopTime
+            var basePredictionTime = UserDefaultsRepository.alertLastLoopTime.value
+            if let deliverAtString = enactedOrSuggested["deliverAt"] as? String {
+                //print("📅 Raw deliverAt string: \(deliverAtString)")
+                
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds] // Ensure it handles milliseconds
+                
+                if let deliverAtDate = formatter.date(from: deliverAtString) {
+                    basePredictionTime = deliverAtDate.timeIntervalSince1970
+                    //print("✅ Successfully parsed deliverAt: \(deliverAtString), converted to \(basePredictionTime)")
+                } else {
+                    print("❌ Failed to parse deliverAt: \(deliverAtString), falling back to alertLastLoopTime: \(basePredictionTime)")
+                }
+            } else {
+                print("⚠️ No deliverAt found in enactedOrSuggested, using alertLastLoopTime: \(basePredictionTime)")
+            }
+            
+            for (type, colorName, dataIndex) in predictionTypes {
+                var predictionData = [ShareGlucoseData]()
+                
+                // Reset predictionTime for each dataset so they all start at the same time
+                var predictionTime = basePredictionTime
+                
+                if let graphdata = predbgdata[type] as? [Double] {
+                    let toLoad = Int(UserDefaultsRepository.predictionToLoad.value * 12)
+                    
+                    //print("📊 Processing prediction type: \(type), data count: \(graphdata.count), starting at \(predictionTime)")
+                    
+                    for i in 0...toLoad {
+                        if i < graphdata.count {
+                            let predictionValue = graphdata[i]
+                            minPredBG = min(minPredBG, predictionValue)
+                            maxPredBG = max(maxPredBG, predictionValue)
+                            
+                            let prediction = ShareGlucoseData(sgv: Int(round(predictionValue)), date: predictionTime, direction: "flat")
+                            predictionData.append(prediction)
+                            predictionTime += 300
                         }
                     }
-
-                    let color = UIColor(named: colorName) ?? UIColor.systemPurple
-                    updatePredictionGraphGeneric(
-                        dataIndex: dataIndex,
-                        predictionData: predictionData,
-                        chartLabel: type,
-                        color: color
-                    )
                 }
-
-                if minPredBG != Double.infinity && maxPredBG != -Double.infinity {
-                    let value = "\(Localizer.toDisplayUnits(String(minPredBG))) / \(Localizer.toDisplayUnits(String(maxPredBG)))"
-                    infoManager.updateInfoData(type: .minMax, value: value, unit: "mmol/L")
-                    sharedLatestMinMax = "\(value) mmol/L"
-                } else {
-                    infoManager.updateInfoData(type: .minMax, value: "N/A", unit: "mmol/L")
-                    sharedLatestMinMax = "N/A"
-                }
+                
+                let color = UIColor(named: colorName) ?? UIColor.systemPurple
+                updatePredictionGraphGeneric(
+                    dataIndex: dataIndex,
+                    predictionData: predictionData,
+                    chartLabel: type,
+                    color: color
+                )
+            }
+            
+            if minPredBG != Double.infinity && maxPredBG != -Double.infinity {
+                let value = "\(Localizer.toDisplayUnits(String(minPredBG))) / \(Localizer.toDisplayUnits(String(maxPredBG)))"
+                infoManager.updateInfoData(type: .minMax, value: value, unit: "mmol/L")
+                sharedLatestMinMax = "\(value) mmol/L"
+            } else {
+                infoManager.updateInfoData(type: .minMax, value: "N/A", unit: "mmol/L")
+                sharedLatestMinMax = "N/A"
             }
         }
+    }
     
     private func formatTime(_ timestamp: TimeInterval) -> String {
         let dateFormatter: DateFormatter = {
