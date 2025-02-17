@@ -63,19 +63,32 @@ final class ChartYOverrideValueFormatter: ValueFormatter {
         }
     }
 }
-
+/*
 final class ChartYMMOLValueFormatter: AxisValueFormatter {
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
         return Localizer.toDisplayUnits(String(value))
+    }
+}*/
+
+final class ChartYMMOLValueFormatter: AxisValueFormatter {
+    func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+        if UserDefaultsRepository.units.value == "mmol/L" {
+            // Convert mg/dL to mmol/L and show as an integer.
+            let mmolValue = value / 18.0
+            return "\(Int(round(mmolValue)))"
+        } else {
+            // In mg/dL mode, use your original formatting.
+            return Localizer.toDisplayUnits(String(value))
+        }
     }
 }
 
 
 class PillMarker: MarkerImage {
 
-    private (set) var color: UIColor
-    private (set) var font: UIFont
-    private (set) var textColor: UIColor
+    private(set) var color: UIColor
+    private(set) var font: UIFont
+    private(set) var textColor: UIColor
     private var labelText: String = ""
     private var attrs: [NSAttributedString.Key: AnyObject]!
 
