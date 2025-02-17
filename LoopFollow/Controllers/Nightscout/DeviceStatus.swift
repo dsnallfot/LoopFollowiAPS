@@ -61,7 +61,75 @@ extension MainViewController {
         
         //Process the current data first
         let lastDeviceStatus = jsonDeviceStatus[0] as [String : AnyObject]?
-        
+       
+        // pump and uploader
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate,
+                                   .withTime,
+                                   .withDashSeparatorInDate,
+                                   .withColonSeparatorInTime]
+
+        if let lastPumpRecord = lastDeviceStatus?["pump"] as? [String: AnyObject] {
+            // Parse the pump time from the "clock" field.
+            if let clockString = lastPumpRecord["clock"] as? String,
+               let lastPumpDate = formatter.date(from: clockString) {
+
+                // Update reservoir data (if available)
+                if let reservoirData = lastPumpRecord["reservoir"] as? Double {
+                    latestPumpVolume = reservoirData
+                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + " E")
+                } else {
+                    latestPumpVolume = 50.0
+                    infoManager.updateInfoData(type: .pump, value: "50+E")
+                }
+
+                // Fetch pump status booleans from the nested "status" dictionary.
+                var pumpSuspended = false
+                var pumpBolusing = false
+                if let pumpStatusRecord = lastPumpRecord["status"] as? [String: AnyObject] {
+                    pumpSuspended = pumpStatusRecord["suspended"] as? Bool ?? false
+                    pumpBolusing = pumpStatusRecord["bolusing"] as? Bool ?? false
+                }
+                
+                // Calculate minutes elapsed since the last pump time (rounding up so it starts at 1).
+                let currentTime = Date().timeIntervalSince1970
+                let pumpStatusMinAgo = Int(ceil((currentTime - lastPumpDate.timeIntervalSince1970) / 60.0))
+                
+                // Determine the pump status indicator.
+                // Default is green ("🟢"), but if suspended then red ("🔴"), if bolusing then blue ("🔷").
+                var pumpStatus = "🟢"
+                if pumpSuspended {
+                    pumpStatus = "🔴"
+                } else if pumpBolusing {
+                    pumpStatus = "🔷"
+                }
+                
+                // Update status for inactivity: if more than 30 minutes have passed.
+                if pumpStatusMinAgo > 30 {
+                    pumpStatus = "⏱️"
+                }
+                
+                // Create a time formatter for HH:mm display.
+                let timeFormatter = DateFormatter()
+                timeFormatter.dateFormat = "HH:mm:ss"
+                let formattedTime = timeFormatter.string(from: lastPumpDate)
+                
+                // Compose the final status string with the HH:mm:ss timestamp.
+                let pumpStatusString = "\(pumpStatus) \(formattedTime)"
+                infoManager.updateInfoData(type: .pumpStatus, value: pumpStatusString)
+                
+                // Update uploader battery status if available.
+                if let uploader = lastDeviceStatus?["uploader"] as? [String: AnyObject],
+                   let upbat = uploader["battery"] as? Double {
+                    let isCharging = uploader["isCharging"] as? Bool ?? false
+                    let batteryDisplay = (isCharging ? "⚡ " : "") + String(format: "%.0f", upbat) + " %"
+                    infoManager.updateInfoData(type: .battery, value: batteryDisplay)
+                    UserDefaultsRepository.deviceBatteryLevel.value = upbat
+                }
+            }
+        }
+
+        /*
         //pump and uploader
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withFullDate,
@@ -92,6 +160,7 @@ extension MainViewController {
                 }
             }
         }
+        */
 
         // Daniel: Extract `created_at` timestamp from `lastDeviceStatus`
         if let createdAtString = lastDeviceStatus?["created_at"] as? String,
