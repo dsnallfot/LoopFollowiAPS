@@ -297,6 +297,7 @@ extension MainViewController {
             }
         }
         
+        // SMB Status
         if let reasonString = enactedOrSuggested["reason"] as? String {
             let smbInactivePattern = "SMB INAKTIVERADE" // Matches exactly "SMB INAKTIVERADE"
             
@@ -316,41 +317,45 @@ extension MainViewController {
         // Insulin Required
         if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
             infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: "E")
-                UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
-                sharedLatestInsulinReq = String(format: "%.2f E", insulinReqMetric.value)
-            } else {
-                UserDefaultsRepository.deviceRecBolus.value = 0
-                sharedLatestInsulinReq = "0 E"
-            }
+            UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
+            sharedLatestInsulinReq = String(format: "%.2f E", insulinReqMetric.value)
+        } else {
+            UserDefaultsRepository.deviceRecBolus.value = 0
+            sharedLatestInsulinReq = "0 E"
+        }
+        
+        // Daniel: Carbs Required
+        if let carbsReq = enactedOrSuggested["carbsReq"] as? Double {
+            let latestCarbReq = String(format: "%.0f g", carbsReq)
+            sharedLatestCarbReq = latestCarbReq // Keep this unchanged
             
-            // Daniel: Carbs Required for later use
-            if let carbsReq = enactedOrSuggested["carbsReq"] as? Double {
-                let latestCarbReq = String(format: "%.0f g", carbsReq)
-                sharedLatestCarbReq = latestCarbReq
-                infoManager.updateInfoData(type: .carbReq, value: latestCarbReq)
-                print("Carbs Required updated: \(latestCarbReq)")
-            } else {
-                let defaultCarbReq = "0 g"
-                sharedLatestCarbReq = defaultCarbReq
-                infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq)
-                print("Carbs Required not available, using default: \(defaultCarbReq)")
-            }
-
-            // Autosens
-            if let sens = enactedOrSuggested["sensitivityRatio"] as? Double {
-                let formattedSens = String(format: "%.0f", sens * 100.0) + " %"
-                sharedLatestSens = formattedSens
-                infoManager.updateInfoData(type: .autosens, value: formattedSens)
-                print("Sensitivity Ratio updated: \(formattedSens)")
-            } else {
-                print("Missing or invalid sensitivityRatio in enactedOrSuggested.")
-            }
-
+            let displayCarbReq = carbsReq > 0 ? "\(latestCarbReq) 🟡" : latestCarbReq
+            infoManager.updateInfoData(type: .carbReq, value: displayCarbReq)
+            
+            print("Carbs Required updated: \(displayCarbReq)")
+        } else {
+            let defaultCarbReq = "0 g"
+            sharedLatestCarbReq = defaultCarbReq // Keep this unchanged
+            infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq)
+            
+            print("Carbs Required not available, using default: \(defaultCarbReq)")
+        }
+        
+        // Autosens
+        if let sens = enactedOrSuggested["sensitivityRatio"] as? Double {
+            let formattedSens = String(format: "%.0f", sens * 100.0) + " %"
+            sharedLatestSens = formattedSens
+            infoManager.updateInfoData(type: .autosens, value: formattedSens)
+            print("Sensitivity Ratio updated: \(formattedSens)")
+        } else {
+            print("Missing or invalid sensitivityRatio in enactedOrSuggested.")
+        }
+        
         var predictionColor = UIColor.systemGray
-
+        
         // Eventual BG Handling
         if let eventualBGValue = enactedOrSuggested["eventualBG"] as? Double {
-
+            
             // Convert eventualBGValue to necessary formats
             let eventualBGFloatValue = Float(eventualBGValue) // Convert Double to Float for compatibility
             let eventualBGStringValue = String(describing: eventualBGValue) // Convert to String

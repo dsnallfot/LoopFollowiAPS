@@ -77,10 +77,10 @@ extension MainViewController {
                 // Update reservoir data (if available)
                 if let reservoirData = lastPumpRecord["reservoir"] as? Double {
                     latestPumpVolume = reservoirData
-                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + " E")
+                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + " E 🟡")
                 } else {
                     latestPumpVolume = 50.0
-                    infoManager.updateInfoData(type: .pump, value: "50+E")
+                    infoManager.updateInfoData(type: .pump, value: "50+E 🟢")
                 }
 
                 // Fetch pump status booleans from the nested "status" dictionary.
@@ -96,12 +96,12 @@ extension MainViewController {
                 let pumpStatusMinAgo = Int(ceil((currentTime - lastPumpDate.timeIntervalSince1970) / 60.0))
                 
                 // Determine the pump status indicator.
-                // Default is green ("🟢"), but if suspended then red ("🔴"), if bolusing then blue ("🔷").
+                // Default is green ("🟢"), but if suspended then red ("🔴"), if bolusing then blue ("🔵").
                 var pumpStatus = "🟢"
                 if pumpSuspended {
                     pumpStatus = "🔴"
                 } else if pumpBolusing {
-                    pumpStatus = "🔷"
+                    pumpStatus = "🔵"
                 }
                 
                 // Update status for inactivity: if more than 30 minutes have passed.
