@@ -122,7 +122,20 @@ extension MainViewController {
                 if let uploader = lastDeviceStatus?["uploader"] as? [String: AnyObject],
                    let upbat = uploader["battery"] as? Double {
                     let isCharging = uploader["isCharging"] as? Bool ?? false
-                    let batteryDisplay = String(format: "%.0f", upbat) + " %" + (isCharging ? " ⚡" : "")
+                    
+                    // Determine battery status dot based on battery percentage
+                    let batteryStatus: String
+                    if isCharging {
+                        batteryStatus = " ⚡"
+                    } else if upbat >= 50 {
+                        batteryStatus = " 🟢"
+                    } else if upbat >= 20 {
+                        batteryStatus = " 🟡"
+                    } else {
+                        batteryStatus = " 🔴"
+                    }
+                    
+                    let batteryDisplay = String(format: "%.0f", upbat) + " %" + batteryStatus
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
                 }
