@@ -70,12 +70,19 @@ extension MainViewController {
             }
 
             if let formattedDuration = formatter.string(from: abs(remainingSeconds)) {
-                //let spacedDuration = formattedDuration
-                  //  .replacingOccurrences(of: "h", with: " h") // Add space before "h"
-                    //.replacingOccurrences(of: "d", with: " d") // Add space before "d"
 
-                // Add a negative sign for overdue time
-                let countdown = remainingSeconds < 0 ? "-\(formattedDuration)" : formattedDuration
+                // Add a negative sign for overdue time and set the status dot
+                let statusDot: String
+
+                if remainingSeconds < 0 {
+                    statusDot = "🔴"
+                } else if remainingSeconds <= 86400 {
+                    statusDot = "🟡"
+                } else {
+                    statusDot = "🟢"
+                }
+
+                let countdown = remainingSeconds < 0 ? "-\(formattedDuration) \(statusDot)" : "\(formattedDuration) \(statusDot)"
 
                 infoManager.updateInfoData(type: .sage, value: countdown)
             }

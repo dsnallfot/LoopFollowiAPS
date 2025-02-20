@@ -115,52 +115,19 @@ extension MainViewController {
                 let formattedTime = timeFormatter.string(from: lastPumpDate)
                 
                 // Compose the final status string with the HH:mm:ss timestamp.
-                let pumpStatusString = "\(pumpStatus) \(formattedTime)"
+                let pumpStatusString = "\(formattedTime) \(pumpStatus)"
                 infoManager.updateInfoData(type: .pumpStatus, value: pumpStatusString)
                 
                 // Update uploader battery status if available.
                 if let uploader = lastDeviceStatus?["uploader"] as? [String: AnyObject],
                    let upbat = uploader["battery"] as? Double {
                     let isCharging = uploader["isCharging"] as? Bool ?? false
-                    let batteryDisplay = (isCharging ? "⚡ " : "") + String(format: "%.0f", upbat) + " %"
+                    let batteryDisplay = String(format: "%.0f", upbat) + " %" + (isCharging ? " ⚡" : "")
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
                 }
             }
         }
-
-        /*
-        //pump and uploader
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate,
-                                   .withTime,
-                                   .withDashSeparatorInDate,
-                                   .withColonSeparatorInTime]
-        if let lastPumpRecord = lastDeviceStatus?["pump"] as! [String : AnyObject]? {
-            if let lastPumpTime = formatter.date(from: (lastPumpRecord["clock"] as! String))?.timeIntervalSince1970  {
-                if let reservoirData = lastPumpRecord["reservoir"] as? Double {
-                    latestPumpVolume = reservoirData
-                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + " E")
-                } else {
-                    latestPumpVolume = 50.0
-                    infoManager.updateInfoData(type: .pump, value: "50+E")
-                }
-
-                if let uploader = lastDeviceStatus?["uploader"] as? [String: AnyObject],
-                   let upbat = uploader["battery"] as? Double {
-                    // Check if isCharging exists and is true
-                    let isCharging = uploader["isCharging"] as? Bool ?? false
-                    
-                    // Add ⚡ symbol if charging
-                    let batteryDisplay = (isCharging ? "⚡ " : "") + String(format: "%.0f", upbat) + " %"
-                    
-                    // Update info manager
-                    infoManager.updateInfoData(type: .battery, value: batteryDisplay)
-                    UserDefaultsRepository.deviceBatteryLevel.value = upbat
-                }
-            }
-        }
-        */
 
         // Daniel: Extract `created_at` timestamp from `lastDeviceStatus`
         if let createdAtString = lastDeviceStatus?["created_at"] as? String,

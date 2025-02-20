@@ -36,9 +36,10 @@ extension MainViewController {
     func updateIage(data: [iageData]) {
         infoManager.clearInfoData(type: .iage)
 
-        if data.count == 0 {
+        if data.isEmpty {
             return
         }
+        
         currentIage = data[0]
         let lastIageString = data[0].created_at
 
@@ -48,9 +49,10 @@ extension MainViewController {
                                    .withDashSeparatorInDate,
                                    .withColonSeparatorInTime]
 
-        if let iageTime = formatter.date(from: (lastIageString as! String))?.timeIntervalSince1970 {
+        if let iageTime = formatter.date(from: lastIageString )?.timeIntervalSince1970 {
             let now = dateTimeUtils.getNowTimeIntervalUTC()
             let secondsAgo = now - iageTime
+            let daysAgo = secondsAgo / 86400 // Convert seconds to days
 
             let formatter = DateComponentsFormatter()
             formatter.unitsStyle = .positional
@@ -58,7 +60,18 @@ extension MainViewController {
             formatter.zeroFormattingBehavior = [ .pad ]
 
             if let formattedDuration = formatter.string(from: secondsAgo) {
-                infoManager.updateInfoData(type: .iage, value: formattedDuration)
+                let statusDot: String
+
+                if daysAgo >= 14 {
+                    statusDot = "🔴"
+                } else if daysAgo >= 7 {
+                    statusDot = "🟡"
+                } else {
+                    statusDot = "🟢"
+                }
+
+                let displayValue = formattedDuration + " " + statusDot
+                infoManager.updateInfoData(type: .iage, value: displayValue.trimmingCharacters(in: .whitespaces))
             }
         }
     }

@@ -297,6 +297,22 @@ extension MainViewController {
             }
         }
         
+        if let reasonString = enactedOrSuggested["reason"] as? String {
+            let smbInactivePattern = "SMB INAKTIVERADE" // Matches exactly "SMB INAKTIVERADE"
+            
+            if let smbInactiveRegex = try? NSRegularExpression(pattern: smbInactivePattern) {
+                let smbInactiveMatch = smbInactiveRegex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count))
+                
+                let smbInactive = (smbInactiveMatch != nil) // True if match is found, false otherwise
+                
+                let smbStatusString = smbInactive ? "Inaktiv 🚫" : "Aktiv 🟢"
+                
+                infoManager.updateInfoData(type: .smbStatus, value: smbStatusString)
+                
+                print("SMB Status Updated: \(smbStatusString)")
+            }
+        }
+        
         // Insulin Required
         if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
             infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: "E")
@@ -330,54 +346,6 @@ extension MainViewController {
                 print("Missing or invalid sensitivityRatio in enactedOrSuggested.")
             }
 
-/*
-            var predictionColor = UIColor.systemGray
-
-            // Eventual BG Handling
-            if let eventualBGValue = enactedOrSuggested["eventualBG"] as? Double,
-               let loopYellow = UIColor(named: "LoopYellow"),
-               let loopRed = UIColor(named: "LoopRed"),
-               let loopGreen = UIColor(named: "LoopGreen") {
-
-                // Convert eventualBGValue to necessary formats
-                let eventualBGFloatValue = Float(eventualBGValue) // Convert Double to Float for compatibility
-                let eventualBGStringValue = String(describing: eventualBGValue) // Convert to String
-                let formattedBGString = Localizer.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".") // Format for display
-
-                // Update visualization for remote meal info popup
-                latestEvBG = formattedBGString + " mmol/L"
-                sharedRawEvBG = formattedBGString
-                sharedLatestEvBG = latestEvBG
-
-                // Update PredictionLabel with color based on eventualBG value
-                if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 16 {
-                    PredictionLabel.text = "  ❌  Loop ej aktiv!"
-                    predictionColor = UIColor.systemRed
-                    
-                } else if eventualBGFloatValue >= UserDefaultsRepository.highLine.value {
-                    if UserDefaultsRepository.colorBGText.value {
-                        PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
-                        predictionColor = UIColor.systemPurple
-                    } else {
-                        PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
-                        predictionColor = loopYellow
-                    }
-                } else if eventualBGFloatValue <= UserDefaultsRepository.lowLine.value {
-                    PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
-                    predictionColor = loopRed
-                    
-                } else if eventualBGFloatValue > UserDefaultsRepository.lowLine.value && eventualBGFloatValue < UserDefaultsRepository.highLine.value {
-                    PredictionLabel.text = "    Prognos ⇢ \(formattedBGString)"
-                    predictionColor = loopGreen
-                }
-            }
-
-            // Ensure the color is updated on the main thread
-            DispatchQueue.main.async {
-                //print("Setting PredictionLabel color to \(predictionColor)")
-                self.PredictionLabel.textColor = predictionColor
-            }
-*/
         var predictionColor = UIColor.systemGray
 
         // Eventual BG Handling
