@@ -15,6 +15,8 @@ class Observable {
     var tempTarget = ObservableValue<HKQuantity?>(default: nil)
     var override = ObservableValue<String?>(default: nil)
     //var isLastDeviceStatusSuggested = ObservableValue<Bool>(default: false)
+    var overrideSmbMinutes = ObservableValue<Double?>(default: nil)
+    var overrideUamMinutes = ObservableValue<Double?>(default: nil)
 
     private init() {}
 }

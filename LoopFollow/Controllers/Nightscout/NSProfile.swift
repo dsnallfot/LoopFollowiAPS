@@ -54,13 +54,24 @@ struct NSProfile: Decodable {
     let isAPNSProduction: Bool?
     let deviceToken: String?
     let teamID: String?
-
+/*
     struct TrioOverrideEntry: Decodable {
         let name: String
         let duration: Double?
         let percentage: Double?
         let target: Double?
     }
+    */
+    // Updated TrioOverrideEntry to include the extra properties
+        struct TrioOverrideEntry: Decodable {
+            let name: String
+            let duration: Double?
+            let percentage: Double?
+            let target: Double?
+            let smbMinutes: Double?
+            let uamMinutes: Double?
+            let smbIsOff: Bool?
+        }
     
     let trioOverrides: [TrioOverrideEntry]?
 

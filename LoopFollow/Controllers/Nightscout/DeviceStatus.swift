@@ -49,6 +49,35 @@ extension MainViewController {
         }
         latestLoopTime = lastLoopTime
     }
+    
+    private func updateOverrideObservables() {
+        let profileManager = ProfileManager.shared
+
+        // Log the current active override value.
+        if let activeNote = Observable.shared.override.value {
+            LogManager.shared.log(category: .deviceStatus, message: "Active override from observable: \(activeNote)")
+        } else {
+            LogManager.shared.log(category: .deviceStatus, message: "No active override found in observable.")
+        }
+
+        // Check if an active override exists in the shared observable.
+        if let activeNote = Observable.shared.override.value,
+           let matchingOverride = profileManager.trioOverrides.first(where: { $0.name == activeNote }) {
+            // Log the matching override details.
+            LogManager.shared.log(category: .deviceStatus, message: "Matching override found: \(matchingOverride.name) with SMB minutes: \(String(describing: matchingOverride.smbMinutes)) and UAM minutes: \(String(describing: matchingOverride.uamMinutes))")
+
+            // If a match is found, update the override minutes.
+            Observable.shared.overrideSmbMinutes.value = matchingOverride.smbMinutes
+            Observable.shared.overrideUamMinutes.value = matchingOverride.uamMinutes
+        } else {
+            // Log that no matching override was found.
+            LogManager.shared.log(category: .deviceStatus, message: "No matching override found for active note. Resetting override minutes.")
+            
+            // If no active override exists or no match is found, reset the values.
+            Observable.shared.overrideSmbMinutes.value = nil
+            Observable.shared.overrideUamMinutes.value = nil
+        }
+    }
         
     // NS Device Status Response Processor
     func updateDeviceStatusDisplay(jsonDeviceStatus: [[String:AnyObject]]) {
@@ -139,24 +168,31 @@ extension MainViewController {
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
                 }
-                // TODO: Daniel: Add current SMB/UAM minutes (Fetch from overrides or add extra field to additional device status)
-                if let additional = lastDeviceStatus?["additional"] as? [String: AnyObject],
-                   let maxSMBValue = additional["maxSMBBasalMinutes"] as? NSNumber,
-                   let maxUAMSMBValue = additional["maxUAMSMBBasalMinutes"] as? NSNumber {
+                // Call this before processing the additional info.
+                updateOverrideObservables()
+
+                // Now, update the SMB/UAM minutes info.
+                if let overrideSmb = Observable.shared.overrideSmbMinutes.value,
+                   let overrideUam = Observable.shared.overrideUamMinutes.value,
+                   let overrideValue = Observable.shared.override.value,
+                   let firstCharacter = overrideValue.first {
+                    // Use the override values and append the first character as a suffix.
+                    let suffix = String(firstCharacter)
+                    let overrideString = "\(Int(overrideSmb))/\(Int(overrideUam)) \(suffix)"
+                    infoManager.updateInfoData(type: .SMBUAMmin, value: overrideString)
+                    LogManager.shared.log(category: .deviceStatus, message: "SMB/UAM minutes updated from override: \(overrideString)")
+                } else if let additional = lastDeviceStatus?["additional"] as? [String: AnyObject],
+                          let maxSMBValue = additional["maxSMBBasalMinutes"] as? NSNumber,
+                          let maxUAMSMBValue = additional["maxUAMSMBBasalMinutes"] as? NSNumber {
                     
-                    // Convert the numbers to integer values (or format as needed)
+                    // Fallback: use the default additional info.
                     let maxSMBBasalMinutes = maxSMBValue.intValue
                     let maxUAMSMBBasalMinutes = maxUAMSMBValue.intValue
-                    
-                    // Construct the string in the desired format.
                     let UAMSMBminString = "\(maxSMBBasalMinutes)/\(maxUAMSMBBasalMinutes)"
-                    
-                    // Update the infotable with the new string.
                     infoManager.updateInfoData(type: .SMBUAMmin, value: UAMSMBminString)
-                    
-                    print("UAMSMBmin info updated: \(UAMSMBminString)")
+                    LogManager.shared.log(category: .deviceStatus, message: "SMB/UAM minutes updated from additional info: \(UAMSMBminString)")
                 } else {
-                    print("Additional info not available or in unexpected format.")
+                    LogManager.shared.log(category: .deviceStatus, message: "Additional info not available or in unexpected format.")
                 }
             }
         }

@@ -41,6 +41,9 @@ final class ProfileManager {
         let duration: Double?
         let percentage: Double?
         let target: HKQuantity?
+        let smbMinutes: Double?
+        let uamMinutes: Double?
+        let smbIsOff: Bool?
     }
 
     // MARK: - Initializer
@@ -89,15 +92,21 @@ final class ProfileManager {
         if let trioOverrides = profileData.trioOverrides {
             self.trioOverrides = trioOverrides.map { entry in
                 let targetQuantity = entry.target != nil ? HKQuantity(unit: .milligramsPerDeciliter, doubleValue: entry.target!) : nil
+                let smbIsOffString = entry.smbIsOff?.description ?? "nil"
+                print("TrioOverride name: \(entry.name), duration: \(entry.duration ?? 0), percentage: \(entry.percentage ?? 0), target: \(entry.target ?? 0), smbMinutes: \(entry.smbMinutes ?? 0), uamMinutes: \(entry.uamMinutes ?? 0), smbIsOff: \(smbIsOffString)")
                 return TrioOverride(
                     name: entry.name,
                     duration: entry.duration,
                     percentage: entry.percentage,
-                    target: targetQuantity
+                    target: targetQuantity,
+                    smbMinutes: entry.smbMinutes,
+                    uamMinutes: entry.uamMinutes,
+                    smbIsOff: entry.smbIsOff
                 )
             }
         } else {
             self.trioOverrides = []
+            print("No trioOverrides found.")
         }
 
         Storage.shared.deviceToken.value = profileData.deviceToken ?? ""
