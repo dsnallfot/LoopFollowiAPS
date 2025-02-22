@@ -139,6 +139,25 @@ extension MainViewController {
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
                 }
+                // TODO: Daniel: Add current SMB/UAM minutes (Fetch from overrides or add extra field to additional device status)
+                if let additional = lastDeviceStatus?["additional"] as? [String: AnyObject],
+                   let maxSMBValue = additional["maxSMBBasalMinutes"] as? NSNumber,
+                   let maxUAMSMBValue = additional["maxUAMSMBBasalMinutes"] as? NSNumber {
+                    
+                    // Convert the numbers to integer values (or format as needed)
+                    let maxSMBBasalMinutes = maxSMBValue.intValue
+                    let maxUAMSMBBasalMinutes = maxUAMSMBValue.intValue
+                    
+                    // Construct the string in the desired format.
+                    let UAMSMBminString = "\(maxSMBBasalMinutes)/\(maxUAMSMBBasalMinutes)"
+                    
+                    // Update the infotable with the new string.
+                    infoManager.updateInfoData(type: .SMBUAMmin, value: UAMSMBminString)
+                    
+                    print("UAMSMBmin info updated: \(UAMSMBminString)")
+                } else {
+                    print("Additional info not available or in unexpected format.")
+                }
             }
         }
 
