@@ -173,7 +173,10 @@ extension MainViewController {
                 // Call updateOverrideObservables() before processing SMB/UAM info.
                 updateOverrideObservables()
 
-                // Now, update the SMB/UAM minutes info.
+                // Extract the "additional" dictionary for SMB/UAM minutes and Autosens Min/Max.
+                let additionalInfo = lastDeviceStatus?["additional"] as? [String: AnyObject]
+                
+                // SMB/UAM minutes.
                 if let overrideSmb = Observable.shared.overrideSmbMinutes.value,
                    let overrideUam = Observable.shared.overrideUamMinutes.value,
                    let overrideValue = Observable.shared.override.value,
@@ -191,7 +194,7 @@ extension MainViewController {
                     
                     infoManager.updateInfoData(type: .SMBUAMmin, value: overrideString)
                     LogManager.shared.log(category: .deviceStatus, message: "SMB/UAM minutes updated from override: \(overrideString)", isDebug: true)
-                } else if let additional = lastDeviceStatus?["additional"] as? [String: AnyObject],
+                } else if let additional = additionalInfo,
                           let maxSMBValue = additional["maxSMBBasalMinutes"] as? NSNumber,
                           let maxUAMSMBValue = additional["maxUAMSMBBasalMinutes"] as? NSNumber {
                     
@@ -201,6 +204,16 @@ extension MainViewController {
                     let UAMSMBminString = "\(maxSMBBasalMinutes)/\(maxUAMSMBBasalMinutes)"
                     infoManager.updateInfoData(type: .SMBUAMmin, value: UAMSMBminString)
                     LogManager.shared.log(category: .deviceStatus, message: "SMB/UAM minutes updated from additional info: \(UAMSMBminString)", isDebug: true)
+                }
+                
+                // Autosens Min / Max
+                if let additional = additionalInfo,
+                          let autosensMin = additional["autosensMin"] as? NSNumber,
+                          let autosensMax = additional["autosensMax"] as? NSNumber {
+                    
+                    let autosensMinMaxString = "\(autosensMin)/\(autosensMax)"
+                    infoManager.updateInfoData(type: .autosensMinMax, value: autosensMinMaxString)
+                    LogManager.shared.log(category: .deviceStatus, message: "Autosens Min/Max updated from additional info: \(autosensMinMaxString)", isDebug: true)
                 } else {
                     LogManager.shared.log(category: .deviceStatus, message: "Additional info not available or in unexpected format.")
                 }

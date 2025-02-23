@@ -9,7 +9,7 @@
 import Foundation
 
 enum InfoType: Int, CaseIterable {
-    case iob, cob, basal, override, battery, pump, sage, cage, recBolus, minMax, carbsToday, autosens, profile, target, isf, carbRatio, updated, tdd, iage, carbReq, af, smbRatio, pumpStatus, smbStatus, SMBUAMmin
+    case iob, cob, basal, override, battery, pump, sage, cage, recBolus, minMax, carbsToday, autosens, profile, target, isf, carbRatio, updated, tdd, iage, carbReq, af, smbRatio, pumpStatus, smbStatus, SMBUAMmin, autosensMinMax
 
     var name: String {
         switch self {
@@ -22,7 +22,7 @@ enum InfoType: Int, CaseIterable {
         case .sage: return "Sensorbyte om"
         case .cage: return "Poddbyte om"
         case .recBolus: return "Behov insulin"
-        case .minMax: return "Min/Max"
+        case .minMax: return "BG Min/Max"
         case .carbsToday: return "Kh idag"
         case .autosens: return "Autosens"
         case .profile: return "Profil"
@@ -38,6 +38,7 @@ enum InfoType: Int, CaseIterable {
         case .pumpStatus: return "Pump"
         case .smbStatus: return "SMB Status"
         case .SMBUAMmin: return "SMB/UAM min"
+        case .autosensMinMax: return "Autosens Min/Max"
         }
     }
 
