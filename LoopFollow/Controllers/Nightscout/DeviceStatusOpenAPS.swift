@@ -495,7 +495,7 @@ extension MainViewController {
             }
             
             if minPredBG != Double.infinity && maxPredBG != -Double.infinity {
-                let value = "\(Localizer.toDisplayUnits(String(minPredBG))) / \(Localizer.toDisplayUnits(String(maxPredBG)))"
+                let value = "\(Localizer.toDisplayUnits(String(minPredBG)))/\(Localizer.toDisplayUnits(String(maxPredBG)))"
                 infoManager.updateInfoData(type: .minMax, value: value, unit: "mmol/L")
                 sharedLatestMinMax = "\(value) mmol/L"
             } else {

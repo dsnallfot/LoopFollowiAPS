@@ -215,7 +215,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             ])
             
             // Add metrics to the popup
-            let metrics = ["BG", "Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater", "Min / Max BG", "Prognos BG"]
+            let metrics = ["BG", "Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater", "Min/Max BG", "Prognos BG"]
             let latestBGString = (sharedLatestBG + "  " + sharedLatestDirection + "  (" + sharedLatestDelta + ")")
             let values = [
                 latestBGString,

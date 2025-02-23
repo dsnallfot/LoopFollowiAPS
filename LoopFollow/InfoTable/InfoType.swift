@@ -22,7 +22,7 @@ enum InfoType: Int, CaseIterable {
         case .sage: return "Sensorbyte om"
         case .cage: return "Poddbyte om"
         case .recBolus: return "Behov insulin"
-        case .minMax: return "Min / Max"
+        case .minMax: return "Min/Max"
         case .carbsToday: return "Kh idag"
         case .autosens: return "Autosens"
         case .profile: return "Profil"
