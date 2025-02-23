@@ -45,6 +45,49 @@ struct NSProfile: Decodable {
 
         let units: String
     }
+    
+    // New nested struct to decode preferences
+        struct NSProfilePreferences: Decodable {
+            let report: String
+            let preferences: [String: String]
+            
+            private enum CodingKeys: String, CodingKey {
+                case report
+                case preferences
+            }
+            
+            // Custom decoding to convert any value (number, boolean, etc.) to a String
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                report = try container.decode(String.self, forKey: .report)
+                let prefsContainer = try container.nestedContainer(keyedBy: DynamicCodingKeys.self, forKey: .preferences)
+                var tempPrefs: [String: String] = [:]
+                for key in prefsContainer.allKeys {
+                    if let value = try? prefsContainer.decode(String.self, forKey: key) {
+                        tempPrefs[key.stringValue] = value
+                    } else if let value = try? prefsContainer.decode(Double.self, forKey: key) {
+                        tempPrefs[key.stringValue] = String(value)
+                    } else if let value = try? prefsContainer.decode(Bool.self, forKey: key) {
+                        tempPrefs[key.stringValue] = String(value)
+                    } else {
+                        tempPrefs[key.stringValue] = "unknown"
+                    }
+                }
+                preferences = tempPrefs
+            }
+            
+            // DynamicCodingKeys to iterate through the keys of the preferences dictionary
+            struct DynamicCodingKeys: CodingKey {
+                var stringValue: String
+                init?(stringValue: String) {
+                    self.stringValue = stringValue
+                }
+                var intValue: Int? { nil }
+                init?(intValue: Int) {
+                    return nil
+                }
+            }
+        }
 
     let store: [String: Store]
     let defaultProfile: String
@@ -54,14 +97,7 @@ struct NSProfile: Decodable {
     let isAPNSProduction: Bool?
     let deviceToken: String?
     let teamID: String?
-/*
-    struct TrioOverrideEntry: Decodable {
-        let name: String
-        let duration: Double?
-        let percentage: Double?
-        let target: Double?
-    }
-    */
+
     // Updated TrioOverrideEntry to include the extra properties
         struct TrioOverrideEntry: Decodable {
             let name: String
@@ -74,6 +110,9 @@ struct NSProfile: Decodable {
         }
     
     let trioOverrides: [TrioOverrideEntry]?
+    
+    // New property for the preferences object
+    let nsPreferences: NSProfilePreferences?
 
     enum CodingKeys: String, CodingKey {
         case store
@@ -84,5 +123,6 @@ struct NSProfile: Decodable {
         case deviceToken
         case trioOverrides = "overridePresets"
         case teamID
+        case nsPreferences = "preferences"
     }
 }

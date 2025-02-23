@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */; };
+		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
+		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
 		65B3E5CD2D3FFB3000622194 /* TempTargetviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5CA2D3FFB3000622194 /* TempTargetviewController.swift */; };
 		65B3E5CE2D3FFB3000622194 /* BolusViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C82D3FFB3000622194 /* BolusViewController.swift */; };
@@ -286,6 +288,8 @@
 
 /* Begin PBXFileReference section */
 		059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.release.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.release.xcconfig"; sourceTree = "<group>"; };
+		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
+		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
 		65B3E5C62D3FFB3000622194 /* SMSRemoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSRemoteViewController.swift; sourceTree = "<group>"; };
 		65B3E5C72D3FFB3000622194 /* MealViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealViewController.swift; sourceTree = "<group>"; };
@@ -599,6 +603,8 @@
 		65BB9A402D43CA9C00FCFCA8 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */,
+				654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */,
 				65BB9A432D43CB0100FCFCA8 /* AdvancedSettingsView.swift */,
 				65BB9A412D43CAC300FCFCA8 /* AdvancedSettingsViewModel.swift */,
 			);
@@ -1424,6 +1430,7 @@
 				DDCF979824C1489C002C9752 /* GraphSettingsViewController.swift in Sources */,
 				65B3E5CD2D3FFB3000622194 /* TempTargetviewController.swift in Sources */,
 				65B3E5CE2D3FFB3000622194 /* BolusViewController.swift in Sources */,
+				654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */,
 				65B3E5CF2D3FFB3000622194 /* CustomActionViewController.swift in Sources */,
 				65B3E5D02D3FFB3000622194 /* RemoteSettingsViewController.swift in Sources */,
 				65B3E5D12D3FFB3000622194 /* SMSRemoteViewController.swift in Sources */,
@@ -1540,6 +1547,7 @@
 				DD493AE52ACF2383009A6922 /* Treatments.swift in Sources */,
 				DD50C7552D0862770057AE6F /* ContactImageUpdater.swift in Sources */,
 				DDD10F012C510C6B00D76A8E /* ObservableUserDefaults.swift in Sources */,
+				654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */,
 				DD16AF0D2C98485400FB655A /* SecureStorageValue.swift in Sources */,
 				DD2C2E4F2D3B8AF1006413A5 /* NightscoutSettingsView.swift in Sources */,
 				FCA2DDE62501095000254A8C /* Timers.swift in Sources */,

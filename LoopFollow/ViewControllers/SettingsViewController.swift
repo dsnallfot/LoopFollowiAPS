@@ -178,6 +178,23 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             
         }
         
+        +++ Section("Trio Preferences")
+        <<< ButtonRow() {
+            $0.title = "Trio Preferences"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let trioView = TrioPreferencesView()
+                    let hostingController = UIHostingController(rootView: trioView)
+                    hostingController.modalPresentationStyle = .formSheet
+                    if UserDefaultsRepository.forceDarkMode.value {
+                        hostingController.overrideUserInterfaceStyle = .dark
+                    }
+                    return hostingController
+                }),
+                onDismiss: nil
+            )
+        }
+        
         +++ Section("Logging")
         <<< ButtonRow("viewlog") {
             $0.title = "View Log"
