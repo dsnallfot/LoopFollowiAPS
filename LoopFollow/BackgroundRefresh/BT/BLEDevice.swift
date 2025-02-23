@@ -16,6 +16,7 @@ struct BLEDevice: Identifiable, Codable, Equatable {
     var advertisedServices: [String]?
     var lastSeen: Date
     var lastConnected: Date?
+    var batteryLevel: Int?
 
     init(id: UUID,
          name: String? = nil,
@@ -23,7 +24,8 @@ struct BLEDevice: Identifiable, Codable, Equatable {
          isConnected: Bool = false,
          advertisedServices: [String]? = nil,
          lastSeen: Date = Date(),
-         lastConnected: Date? = nil) {
+         lastConnected: Date? = nil,
+         batteryLevel: Int? = nil) {
         self.id = id
         self.name = name
         self.rssi = rssi
@@ -31,5 +33,6 @@ struct BLEDevice: Identifiable, Codable, Equatable {
         self.advertisedServices = advertisedServices
         self.lastSeen = lastSeen
         self.lastConnected = lastConnected
+        self.batteryLevel = batteryLevel
     }
 }

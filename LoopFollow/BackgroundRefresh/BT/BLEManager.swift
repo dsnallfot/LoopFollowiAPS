@@ -13,21 +13,26 @@ class BLEManager: NSObject, ObservableObject {
     @Published private(set) var devices: [BLEDevice] = []
 
     private var centralManager: CBCentralManager!
-    private var activeDevice: BluetoothDevice?
+    internal var activeDevice: BluetoothDevice?
 
     private override init() {
         super.init()
 
-        centralManager = CBCentralManager(
-            delegate: self,
-            queue: .main
-        )
+        centralManager = CBCentralManager(delegate: self, queue: .main)
+
         if let device = Storage.shared.selectedBLEDevice.value {
             devices.append(device)
             findAndUpdateDevice(with: device.id.uuidString) { device in
                 device.rssi = 0
             }
             connect(device: device)
+        }
+    }
+    
+    func updateDeviceBattery(deviceID: String, batteryLevel: Int?) {
+        findAndUpdateDevice(with: deviceID) { device in
+            LogManager.shared.log(category: .bluetooth, message: "📡 Updating battery level for \(device.name ?? "Unknown Device") to \(batteryLevel ?? 0)%", isDebug: true)
+            device.batteryLevel = batteryLevel
         }
     }
 
@@ -41,7 +46,6 @@ class BLEManager: NSObject, ObservableObject {
             return
         }
         centralManager.scanForPeripherals(withServices: nil, options: nil)
-
         cleanupOldDevices()
     }
 
@@ -68,10 +72,18 @@ class BLEManager: NSObject, ObservableObject {
 
             switch matchedType {
             case .dexcom:
-                activeDevice = DexcomHeartbeatBluetoothDevice(address: device.id.uuidString, name: device.name, bluetoothDeviceDelegate: self)
+                activeDevice = DexcomHeartbeatBluetoothDevice(
+                    address: device.id.uuidString,
+                    name: device.name,
+                    bluetoothDeviceDelegate: self
+                )
                 activeDevice?.connect()
             case .rileyLink:
-                activeDevice = RileyLinkHeartbeatBluetoothDevice(address: device.id.uuidString, name: device.name, bluetoothDeviceDelegate: self)
+                activeDevice = RileyLinkHeartbeatBluetoothDevice(
+                    address: device.id.uuidString,
+                    name: device.name,
+                    bluetoothDeviceDelegate: self
+                )
                 activeDevice?.connect()
             case .silentTune, .none:
                 return
@@ -86,25 +98,22 @@ class BLEManager: NSObject, ObservableObject {
     }
 
     func expectedHeartbeatInterval() -> TimeInterval? {
-        guard let device = activeDevice else {
-            return nil
-        }
-
-        return device.expectedHeartbeatInterval()
+        return activeDevice?.expectedHeartbeatInterval()
     }
 
+    /// Updates or adds a BLEDevice in the list
     private func addOrUpdateDevice(_ device: BLEDevice) {
         if let idx = devices.firstIndex(where: { $0.id == device.id }) {
             var updatedDevice = devices[idx]
             updatedDevice.rssi = device.rssi
             updatedDevice.lastSeen = Date()
+            updatedDevice.batteryLevel = device.batteryLevel
             devices[idx] = updatedDevice
         } else {
             var newDevice = device
             newDevice.lastSeen = Date()
             devices.append(newDevice)
         }
-
         devices = devices
     }
 
@@ -130,10 +139,12 @@ extension BLEManager: CBCentralManagerDelegate {
         }
     }
 
-    func centralManager(_ central: CBCentralManager,
-                        didDiscover peripheral: CBPeripheral,
-                        advertisementData: [String: Any],
-                        rssi RSSI: NSNumber) {
+    func centralManager(
+        _ central: CBCentralManager,
+        didDiscover peripheral: CBPeripheral,
+        advertisementData: [String: Any],
+        rssi RSSI: NSNumber
+    ) {
         let uuid = peripheral.identifier
         let services = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?
             .map { $0.uuidString }
@@ -154,7 +165,6 @@ extension BLEManager: CBCentralManagerDelegate {
             var device = devices[idx]
             update(&device)
             devices[idx] = device
-
             devices = devices
         } else {
             LogManager.shared.log(category: .bluetooth, message: "Device not found in devices array for update")
@@ -170,10 +180,17 @@ extension BLEManager: BluetoothDeviceDelegate {
             device.isConnected = true
             device.lastConnected = Date()
         }
+        
+        if let rlDevice = bluetoothDevice as? RileyLinkHeartbeatBluetoothDevice {
+            LogManager.shared.log(category: .bluetooth, message: "🔋 Battery Level: \(rlDevice.batteryPercentage ?? 0)%", isDebug: true)
+            findAndUpdateDevice(with: rlDevice.deviceAddress) { device in
+                device.batteryLevel = rlDevice.batteryPercentage
+            }
+        }
     }
 
     func didDisconnectFrom(bluetoothDevice: BluetoothDevice) {
-        LogManager.shared.log(category: .bluetooth, message: "Disconnect from: \(bluetoothDevice.deviceName ?? "Unknown")", isDebug: true)
+        LogManager.shared.log(category: .bluetooth, message: "Disconnected from: \(bluetoothDevice.deviceName ?? "Unknown")", isDebug: true)
 
         findAndUpdateDevice(with: bluetoothDevice.deviceAddress) { device in
             device.isConnected = false
@@ -183,8 +200,14 @@ extension BLEManager: BluetoothDeviceDelegate {
 
     func heartBeat() {
         LogManager.shared.log(category: .bluetooth, message: "Bluetooth ping received", isDebug: true)
-        guard let device = activeDevice else {
-            return
+        
+        guard let device = activeDevice else { return }
+        
+        if let rlDevice = device as? RileyLinkHeartbeatBluetoothDevice {
+            LogManager.shared.log(category: .bluetooth, message: "🔋 Latest Battery Level: \(rlDevice.batteryPercentage ?? 0)%", isDebug: true)
+            findAndUpdateDevice(with: rlDevice.deviceAddress) { device in
+                device.batteryLevel = rlDevice.batteryPercentage
+            }
         }
 
         let now = Date()

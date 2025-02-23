@@ -12,6 +12,9 @@ struct BackgroundRefreshSettingsView: View {
     @State private var timer: Timer?
 
     @ObservedObject var bleManager = BLEManager.shared
+    
+    @State private var isBatteryAlertVisible = false
+    @State private var batteryPercentage: Int = 0
 
     var body: some View {
         NavigationView {
@@ -80,24 +83,56 @@ struct BackgroundRefreshSettingsView: View {
             }
         }
     }
-
+    
     @ViewBuilder
     private var selectedDeviceSection: some View {
         if let storedDevice = bleManager.getSelectedDevice() {
             Section(header: Text("Selected Device")) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(storedDevice.name ?? "Unknown Device")
-                        .font(.headline)
+                    HStack {
+                        Text(storedDevice.name ?? "Unknown Device")
+                            .font(.headline)
+                        
+                        Spacer()
+                        
+                        // ✅ Battery Indicator (if battery level is available)
+                        if let batteryLevel = storedDevice.batteryLevel {
+                            let batterySymbol = getBatterySymbol(batteryLevel: batteryLevel)
+                            let batteryColor = getBatteryColor(batteryLevel: batteryLevel)
 
+                            Button(action: {
+                                batteryPercentage = batteryLevel
+                                isBatteryAlertVisible = true
+                            }) {
+                                ZStack {
+                                    Image(systemName: batterySymbol) // Fills inside dynamically
+                                        .foregroundColor(batteryColor) // Conditional color
+                                        .font(.headline)
+                                    
+                                    Image(systemName: "battery.0percent") // Always shows a battery outline
+                                        .foregroundColor(.primary) // Keeps the outline in label color
+                                        .font(.headline)
+                                }
+                            }
+                            .buttonStyle(BorderlessButtonStyle()) // Prevents default button styling
+                            .alert(isPresented: $isBatteryAlertVisible) {
+                                Alert(
+                                    title: Text("Battery Status"),
+                                    message: Text("\(batteryPercentage) %"),
+                                    dismissButton: .default(Text("OK"))
+                                )
+                            }
+                        }
+                    }
+                    
                     deviceConnectionStatus(for: storedDevice)
-
-                    if(storedDevice.rssi != 0)
-                    {
+                    
+                    if storedDevice.rssi != 0 {
                         Text("RSSI: \(storedDevice.rssi) dBm")
                             .foregroundColor(.secondary)
                             .font(.footnote)
                     }
-
+                    
                     HStack {
                         Spacer()
                         Button(action: {
@@ -185,5 +220,33 @@ struct BackgroundRefreshSettingsView: View {
     private func stopTimer() {
         timer?.invalidate()
         timer = nil
+    }
+
+    /// ✅ Get SF Symbol based on battery level
+    private func getBatterySymbol(batteryLevel: Int) -> String {
+        switch batteryLevel {
+        case 90...100:
+            return "battery.100percent"
+        case 70...89:
+            return "battery.75percent"
+        case 50...69:
+            return "battery.50percent"
+        case 20...49:
+            return "battery.25percent"
+        default:
+            return "battery.0percent"
+        }
+    }
+
+    /// ✅ Get battery color based on level
+    private func getBatteryColor(batteryLevel: Int) -> Color {
+        switch batteryLevel {
+        case 50...100:
+            return .green
+        case 20...49:
+            return .orange
+        default:
+            return .red
+        }
     }
 }
