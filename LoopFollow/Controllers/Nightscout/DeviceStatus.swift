@@ -55,27 +55,29 @@ extension MainViewController {
 
         // Log the current active override value.
         if let activeNote = Observable.shared.override.value {
-            LogManager.shared.log(category: .deviceStatus, message: "Active override from observable: \(activeNote)")
+            LogManager.shared.log(category: .deviceStatus, message: "Active override from observable: \(activeNote)", isDebug: true)
         } else {
-            LogManager.shared.log(category: .deviceStatus, message: "No active override found in observable.")
+            LogManager.shared.log(category: .deviceStatus, message: "No active override found in observable.", isDebug: true)
         }
 
         // Check if an active override exists in the shared observable.
         if let activeNote = Observable.shared.override.value,
            let matchingOverride = profileManager.trioOverrides.first(where: { $0.name == activeNote }) {
             // Log the matching override details.
-            LogManager.shared.log(category: .deviceStatus, message: "Matching override found: \(matchingOverride.name) with SMB minutes: \(String(describing: matchingOverride.smbMinutes)) and UAM minutes: \(String(describing: matchingOverride.uamMinutes))")
-
-            // If a match is found, update the override minutes.
+            LogManager.shared.log(category: .deviceStatus, message: "Matching override found: \(matchingOverride.name) with SMB minutes: \(String(describing: matchingOverride.smbMinutes)), UAM minutes: \(String(describing: matchingOverride.uamMinutes)), and smbIsOff: \(String(describing: matchingOverride.smbIsOff))", isDebug: true)
+            
+            // Update the observables.
             Observable.shared.overrideSmbMinutes.value = matchingOverride.smbMinutes
             Observable.shared.overrideUamMinutes.value = matchingOverride.uamMinutes
+            Observable.shared.overrideSmbIsOff.value = matchingOverride.smbIsOff
         } else {
             // Log that no matching override was found.
-            LogManager.shared.log(category: .deviceStatus, message: "No matching override found for active note. Resetting override minutes.")
+            LogManager.shared.log(category: .deviceStatus, message: "No matching override found for active note. Resetting override values.")
             
-            // If no active override exists or no match is found, reset the values.
+            // Reset the override observables.
             Observable.shared.overrideSmbMinutes.value = nil
             Observable.shared.overrideUamMinutes.value = nil
+            Observable.shared.overrideSmbIsOff.value = nil
         }
     }
         
@@ -168,7 +170,7 @@ extension MainViewController {
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
                 }
-                // Call this before processing the additional info.
+                // Call updateOverrideObservables() before processing SMB/UAM info.
                 updateOverrideObservables()
 
                 // Now, update the SMB/UAM minutes info.
@@ -176,11 +178,19 @@ extension MainViewController {
                    let overrideUam = Observable.shared.overrideUamMinutes.value,
                    let overrideValue = Observable.shared.override.value,
                    let firstCharacter = overrideValue.first {
-                    // Use the override values and append the first character as a suffix.
+                    // Use the first character (usually an emoji) as the suffix.
                     let suffix = String(firstCharacter)
-                    let overrideString = "\(Int(overrideSmb))/\(Int(overrideUam)) \(suffix)"
+                    
+                    // Check if smbIsOff is true. If so, override the values.
+                    let overrideString: String
+                    if let smbIsOff = Observable.shared.overrideSmbIsOff.value, smbIsOff == true {
+                        overrideString = "Inaktiv \(suffix)"
+                    } else {
+                        overrideString = "\(Int(overrideSmb))/\(Int(overrideUam)) \(suffix)"
+                    }
+                    
                     infoManager.updateInfoData(type: .SMBUAMmin, value: overrideString)
-                    LogManager.shared.log(category: .deviceStatus, message: "SMB/UAM minutes updated from override: \(overrideString)")
+                    LogManager.shared.log(category: .deviceStatus, message: "SMB/UAM minutes updated from override: \(overrideString)", isDebug: true)
                 } else if let additional = lastDeviceStatus?["additional"] as? [String: AnyObject],
                           let maxSMBValue = additional["maxSMBBasalMinutes"] as? NSNumber,
                           let maxUAMSMBValue = additional["maxUAMSMBBasalMinutes"] as? NSNumber {
@@ -190,7 +200,7 @@ extension MainViewController {
                     let maxUAMSMBBasalMinutes = maxUAMSMBValue.intValue
                     let UAMSMBminString = "\(maxSMBBasalMinutes)/\(maxUAMSMBBasalMinutes)"
                     infoManager.updateInfoData(type: .SMBUAMmin, value: UAMSMBminString)
-                    LogManager.shared.log(category: .deviceStatus, message: "SMB/UAM minutes updated from additional info: \(UAMSMBminString)")
+                    LogManager.shared.log(category: .deviceStatus, message: "SMB/UAM minutes updated from additional info: \(UAMSMBminString)", isDebug: true)
                 } else {
                     LogManager.shared.log(category: .deviceStatus, message: "Additional info not available or in unexpected format.")
                 }
