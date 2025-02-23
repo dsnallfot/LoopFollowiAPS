@@ -12,8 +12,7 @@ struct BackgroundRefreshSettingsView: View {
     @State private var timer: Timer?
 
     @ObservedObject var bleManager = BLEManager.shared
-    
-    @State private var isBatteryAlertVisible = false
+
     @State private var batteryPercentage: Int = 0
 
     var body: some View {
@@ -93,34 +92,27 @@ struct BackgroundRefreshSettingsView: View {
                         Text(storedDevice.name ?? "Unknown Device")
                             .font(.headline)
                         
-                        Spacer()
-                        
                         // ✅ Battery Indicator (if battery level is available)
                         if let batteryLevel = storedDevice.batteryLevel {
                             let batterySymbol = getBatterySymbol(batteryLevel: batteryLevel)
                             let batteryColor = getBatteryColor(batteryLevel: batteryLevel)
-
-                            Button(action: {
-                                batteryPercentage = batteryLevel
-                                isBatteryAlertVisible = true
-                            }) {
-                                ZStack {
-                                    Image(systemName: batterySymbol) // Fills inside dynamically
-                                        .foregroundColor(batteryColor) // Conditional color
-                                        .font(.headline)
-                                    
-                                    Image(systemName: "battery.0percent") // Always shows a battery outline
-                                        .foregroundColor(.primary) // Keeps the outline in label color
-                                        .font(.headline)
-                                }
-                            }
-                            .buttonStyle(BorderlessButtonStyle()) // Prevents default button styling
-                            .alert(isPresented: $isBatteryAlertVisible) {
-                                Alert(
-                                    title: Text("Battery Status"),
-                                    message: Text("\(batteryPercentage) %"),
-                                    dismissButton: .default(Text("OK"))
-                                )
+                            
+                            Spacer()
+                            
+                            ZStack {
+                                Image(systemName: batterySymbol) // Fills inside dynamically
+                                    .foregroundColor(batteryColor) // Conditional color
+                                    .font(.title2)
+                                
+                                Image(systemName: "battery.0percent") // Always shows a battery outline
+                                    .foregroundColor(.primary) // Keeps the outline in label color
+                                    .font(.title2)
+                                
+                                Text("\(batteryLevel) ")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                    .scaleEffect(0.85)
                             }
                         }
                     }
