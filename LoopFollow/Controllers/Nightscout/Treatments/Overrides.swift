@@ -42,7 +42,7 @@ extension MainViewController {
                 duration = (currentEntry["duration"] as? Double ?? 5.0) * 60
             }
             
-            if duration < 300 { return }
+            if duration < 60 { return }
 
             let reason = currentEntry["reason"] as? String ?? ""
             let notes = currentEntry["notes"] as? String ?? ""
