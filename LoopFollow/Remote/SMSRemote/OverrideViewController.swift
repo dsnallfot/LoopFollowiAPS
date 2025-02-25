@@ -243,9 +243,26 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     
     // Data for the UIPickerView
     lazy var overrideOptions: [String] = {
-        let overrideString = UserDefaultsRepository.overrideString.value
-        // Split the overrideString by ", " to get individual options
-        return overrideString.components(separatedBy: ", ")
+        let trioOverrideNames = ProfileManager.shared.trioOverrides.map { trio in
+            let percentageText = trio.percentage.flatMap { $0 != 100 ? "\(Int($0))%" : nil } ?? "" // Hide if 100%
+            let smbText = trio.smbIsOff == true ? "SMB ✖︎" : "" // Show only if true
+
+            let formattedText: String
+            if !percentageText.isEmpty || !smbText.isEmpty {
+                formattedText = "\(trio.name) (\( [percentageText, smbText].filter { !$0.isEmpty }.joined(separator: " ") ))"
+            } else {
+                formattedText = trio.name // Show only name if nothing else applies
+            }
+
+            return formattedText
+        }
+
+        if !trioOverrideNames.isEmpty {
+            return ["🚫 Avbryt Override"] + trioOverrideNames
+        } else {
+            let overrideString = UserDefaultsRepository.overrideString.value
+            return overrideString.components(separatedBy: ", ")
+        }
     }()
 }
 
