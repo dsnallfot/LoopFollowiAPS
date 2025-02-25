@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */; };
+		654454D12D6E8AC00015BC5E /* ProfileSchedulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654454D02D6E8ABE0015BC5E /* ProfileSchedulesView.swift */; };
+		654454D32D6E8ADB0015BC5E /* ProfileSchedulesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654454D22D6E8AD90015BC5E /* ProfileSchedulesViewModel.swift */; };
 		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
@@ -288,6 +290,8 @@
 
 /* Begin PBXFileReference section */
 		059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.release.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.release.xcconfig"; sourceTree = "<group>"; };
+		654454D02D6E8ABE0015BC5E /* ProfileSchedulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSchedulesView.swift; sourceTree = "<group>"; };
+		654454D22D6E8AD90015BC5E /* ProfileSchedulesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSchedulesViewModel.swift; sourceTree = "<group>"; };
 		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
@@ -603,6 +607,8 @@
 		65BB9A402D43CA9C00FCFCA8 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				654454D02D6E8ABE0015BC5E /* ProfileSchedulesView.swift */,
+				654454D22D6E8AD90015BC5E /* ProfileSchedulesViewModel.swift */,
 				654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */,
 				654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */,
 				65BB9A432D43CB0100FCFCA8 /* AdvancedSettingsView.swift */,
@@ -1448,6 +1454,7 @@
 				DD7E19862ACDA59700DBD158 /* BGCheck.swift in Sources */,
 				DD16AF0F2C99592F00FB655A /* HKQuantityInputView.swift in Sources */,
 				DDFF3D7F2D1414A200BF9D9E /* BLEDevice.swift in Sources */,
+				654454D12D6E8AC00015BC5E /* ProfileSchedulesView.swift in Sources */,
 				DD9ACA042D32821400415D8A /* DeviceStatusTask.swift in Sources */,
 				FC16A97D24996747003D6245 /* Alarms.swift in Sources */,
 				DDFD5C532CB167DA00D3FD68 /* TRCCommandType.swift in Sources */,
@@ -1538,6 +1545,7 @@
 				DDD10F052C529DA200D76A8E /* ObservableValue.swift in Sources */,
 				FC1BDD2D24A23204001B652C /* StatsView.swift in Sources */,
 				DD4878102C7B74BF0048F05C /* TrioRemoteControlView.swift in Sources */,
+				654454D32D6E8ADB0015BC5E /* ProfileSchedulesViewModel.swift in Sources */,
 				DD2C2E542D3C37DC006413A5 /* DexcomSettingsViewModel.swift in Sources */,
 				FCE537BC249A4D7D00F80BF8 /* carbBolusArrays.swift in Sources */,
 				DD5334232C60ED3600062F9D /* IAge.swift in Sources */,

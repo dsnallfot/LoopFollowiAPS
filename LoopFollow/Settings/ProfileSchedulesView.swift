@@ -1,0 +1,76 @@
+//
+//  ProfileSchedulesView.swift
+//  LoopFollow
+//
+//  Created by Daniel Snällfot on 2025-02-26.
+//  Copyright © 2025 Jon Fawcett. All rights reserved.
+//
+
+import SwiftUI
+
+struct ProfileSchedulesView: View {
+    @ObservedObject var viewModel = ProfileSchedulesViewModel()
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        NavigationView {
+            List {
+                Section(header: Text("Basal")) {
+                    ForEach(viewModel.basalEntries) { entry in
+                        HStack {
+                            Text(entry.time)
+                                .font(.headline)
+                            Spacer()
+                            Text(entry.value)
+                                .font(.headline)
+                        }
+                    }
+                }
+                
+                Section(header: Text("Carb Ratios")) {
+                    ForEach(viewModel.carbRatioEntries) { entry in
+                        HStack {
+                            Text(entry.time)
+                                .font(.headline)
+                            Spacer()
+                            Text(entry.value)
+                                .font(.headline)
+                        }
+                    }
+                }
+                
+                Section(header: Text("ISF")) {
+                    ForEach(viewModel.isfEntries) { entry in
+                        HStack {
+                            Text(entry.time)
+                                .font(.headline)
+                            Spacer()
+                            Text(entry.value)
+                                .font(.headline)
+                        }
+                    }
+                }
+                
+                Section(header: Text("Targets")) {
+                    ForEach(viewModel.targetEntries) { entry in
+                        HStack {
+                            Text(entry.time)
+                                .font(.headline)
+                            Spacer()
+                            Text(entry.value)
+                                .font(.headline)
+                        }
+                    }
+                }
+            }
+            .navigationBarTitle("Profile Schedules", displayMode: .inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
