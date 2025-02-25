@@ -180,7 +180,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
         
         +++ Section("Trio Profile & Preferences")
         <<< ButtonRow() {
-            $0.title = "Trio Preferences"
+            $0.title = "Preferences"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let trioView = TrioPreferencesView()
@@ -195,7 +195,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
-            $0.title = "Trio Profile Schedules"
+            $0.title = "Profile Schedules"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let profileSchedulesView = ProfileSchedulesView()
