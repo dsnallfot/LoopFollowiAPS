@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import Charts
 
 struct ProfileSchedulesView: View {
     @ObservedObject var viewModel = ProfileSchedulesViewModel()
@@ -34,6 +35,58 @@ struct ProfileSchedulesView: View {
         }
     }
 
+    // Compute chart data based on selected section.
+    var chartData: [ChartDataEntry] {
+        switch selectedSection {
+        case .targets:
+            return extractChartData(from: viewModel.targetEntries, fillForAllHours: true)
+        case .basal:
+            return extractChartData(from: viewModel.basalEntries, skipLast: true)
+        case .cr:
+            return extractChartData(from: viewModel.carbRatioEntries)
+        case .isf:
+            return extractChartData(from: viewModel.isfEntries)
+        case .csf:
+            return extractChartData(from: viewModel.csfEntries)
+        case .cHr:
+            return extractChartData(from: viewModel.minCarbsEntries, skipLast: true)
+        }
+    }
+    
+    /// New unified function to convert ScheduleEntry array to ChartDataEntry array.
+    /// - Parameters:
+    ///   - entries: The schedule entries.
+    ///   - skipLast: If true, drops the final entry (e.g. summary rows).
+    ///   - fillForAllHours: If true and only one entry exists (at 00:00), that value is applied to all hours.
+    ///   - fillTo24: If true and the last data point’s x-value is less than 24, an extra entry at x=24 is added.
+    private func extractChartData(from entries: [ScheduleEntry], skipLast: Bool = false, fillForAllHours: Bool = false, fillTo24: Bool = true) -> [ChartDataEntry] {
+        let filteredEntries = skipLast ? Array(entries.dropLast()) : entries
+        var outputData: [ChartDataEntry] = []
+        
+        // If there's only one entry at 00:00 and we want to fill all hours...
+        if fillForAllHours, let firstEntry = filteredEntries.first, filteredEntries.count == 1 {
+            if let singleValue = Double(firstEntry.value) {
+                outputData = (0..<24).map { hour in
+                    ChartDataEntry(x: Double(hour), y: singleValue)
+                }
+            }
+        } else {
+            for entry in filteredEntries {
+                guard let hour = Double(entry.time.prefix(2)),
+                      let value = Double(entry.value)
+                else { continue }
+                outputData.append(ChartDataEntry(x: hour, y: value))
+            }
+        }
+        
+        // Extend data to x = 24 if necessary.
+        if fillTo24, let last = outputData.last, last.x < 24 {
+            outputData.append(ChartDataEntry(x: 24, y: last.y))
+        }
+        
+        return outputData
+    }
+
     var body: some View {
         NavigationView {
             VStack {
@@ -45,6 +98,10 @@ struct ProfileSchedulesView: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .padding()
 
+                LineChartWrapper(chartData: chartData, title: selectedSection.displayName)
+                    .frame(height: 150)
+                    .padding(.horizontal)
+
                 List {
                     if selectedSection == .targets {
                         Section(header: Text("Targets")) {
@@ -53,7 +110,7 @@ struct ProfileSchedulesView: View {
                             }
                         }
                     }
-
+                    
                     if selectedSection == .basal {
                         Section(header: Text("Basal")) {
                             ForEach(viewModel.basalEntries) { entry in
@@ -61,7 +118,7 @@ struct ProfileSchedulesView: View {
                             }
                         }
                     }
-
+                    
                     if selectedSection == .cr {
                         Section(header: Text("Carb Ratios")) {
                             ForEach(viewModel.carbRatioEntries) { entry in
@@ -69,7 +126,7 @@ struct ProfileSchedulesView: View {
                             }
                         }
                     }
-
+                    
                     if selectedSection == .isf {
                         Section(header: Text("Insulin Sensitivity Factor")) {
                             ForEach(viewModel.isfEntries) { entry in
@@ -77,7 +134,7 @@ struct ProfileSchedulesView: View {
                             }
                         }
                     }
-
+                    
                     if selectedSection == .csf {
                         Section(header: Text("Carb Sensitivity Factor")) {
                             ForEach(viewModel.csfEntries) { entry in
@@ -85,7 +142,7 @@ struct ProfileSchedulesView: View {
                             }
                         }
                     }
-
+                    
                     if selectedSection == .cHr {
                         Section(header: Text("Minimum Carbs grams/hour")) {
                             ForEach(viewModel.minCarbsEntries) { entry in
