@@ -15,6 +15,18 @@ struct ProfileSchedulesView: View {
     var body: some View {
         NavigationView {
             List {
+                Section(header: Text("Targets")) {
+                    ForEach(viewModel.targetEntries) { entry in
+                        HStack {
+                            Text(entry.time)
+                                .font(.headline)
+                            Spacer()
+                            Text(entry.value)
+                                .font(.headline)
+                        }
+                    }
+                }
+                
                 Section(header: Text("Basal")) {
                     ForEach(viewModel.basalEntries) { entry in
                         HStack {
@@ -26,7 +38,7 @@ struct ProfileSchedulesView: View {
                         }
                     }
                 }
-                
+
                 Section(header: Text("Carb Ratios")) {
                     ForEach(viewModel.carbRatioEntries) { entry in
                         HStack {
@@ -38,8 +50,8 @@ struct ProfileSchedulesView: View {
                         }
                     }
                 }
-                
-                Section(header: Text("ISF")) {
+
+                Section(header: Text("Insulin Sensitivity Factor")) {
                     ForEach(viewModel.isfEntries) { entry in
                         HStack {
                             Text(entry.time)
@@ -50,15 +62,27 @@ struct ProfileSchedulesView: View {
                         }
                     }
                 }
-                
-                Section(header: Text("Targets")) {
-                    ForEach(viewModel.targetEntries) { entry in
+
+                Section(header: Text("Carb Sensitivity Factor")) {
+                    ForEach(viewModel.csfEntries) { entry in
                         HStack {
                             Text(entry.time)
                                 .font(.headline)
                             Spacer()
                             Text(entry.value)
                                 .font(.headline)
+                        }
+                    }
+                }
+                
+                Section(header: Text("Minimum Carbs g/Hr")) {
+                    ForEach(viewModel.minCarbsEntries) { entry in
+                        HStack {
+                            Text(entry.time)
+                                .font(entry.time == "Average" ? .headline.bold() : .headline)
+                            Spacer()
+                            Text(entry.value)
+                                .font(entry.time == "Average" ? .headline.bold() : .headline)
                         }
                     }
                 }
