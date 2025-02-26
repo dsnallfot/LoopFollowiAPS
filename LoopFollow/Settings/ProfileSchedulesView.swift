@@ -19,10 +19,10 @@ struct ProfileSchedulesView: View {
                     ForEach(viewModel.targetEntries) { entry in
                         HStack {
                             Text(entry.time)
-                                .font(.headline)
+                                .font(.subheadline)
                             Spacer()
                             Text(entry.value)
-                                .font(.headline)
+                                .font(.subheadline)
                         }
                     }
                 }
@@ -31,10 +31,10 @@ struct ProfileSchedulesView: View {
                     ForEach(viewModel.basalEntries) { entry in
                         HStack {
                             Text(entry.time)
-                                .font(entry.time == "Total Daily Basal" ? .headline.bold() : .headline)
+                                .font(entry.time == "Total Daily Basal" ? .headline.bold() : .subheadline)
                             Spacer()
                             Text(entry.value)
-                                .font(entry.time == "Total Daily Basal" ? .headline.bold() : .headline)
+                                .font(entry.time == "Total Daily Basal" ? .headline.bold() : .subheadline)
                         }
                     }
                 }
@@ -43,10 +43,10 @@ struct ProfileSchedulesView: View {
                     ForEach(viewModel.carbRatioEntries) { entry in
                         HStack {
                             Text(entry.time)
-                                .font(.headline)
+                                .font(.subheadline)
                             Spacer()
                             Text(entry.value)
-                                .font(.headline)
+                                .font(.subheadline)
                         }
                     }
                 }
@@ -55,10 +55,10 @@ struct ProfileSchedulesView: View {
                     ForEach(viewModel.isfEntries) { entry in
                         HStack {
                             Text(entry.time)
-                                .font(.headline)
+                                .font(.subheadline)
                             Spacer()
                             Text(entry.value)
-                                .font(.headline)
+                                .font(.subheadline)
                         }
                     }
                 }
@@ -67,10 +67,10 @@ struct ProfileSchedulesView: View {
                     ForEach(viewModel.csfEntries) { entry in
                         HStack {
                             Text(entry.time)
-                                .font(.headline)
+                                .font(.subheadline)
                             Spacer()
                             Text(entry.value)
-                                .font(.headline)
+                                .font(.subheadline)
                         }
                     }
                 }
@@ -79,10 +79,10 @@ struct ProfileSchedulesView: View {
                     ForEach(viewModel.minCarbsEntries) { entry in
                         HStack {
                             Text(entry.time)
-                                .font(entry.time == "Average" ? .headline.bold() : .headline)
+                                .font(entry.time == "Average" ? .headline.bold() : .subheadline)
                             Spacer()
                             Text(entry.value)
-                                .font(entry.time == "Average" ? .headline.bold() : .headline)
+                                .font(entry.time == "Average" ? .headline.bold() : .subheadline)
                         }
                     }
                 }
