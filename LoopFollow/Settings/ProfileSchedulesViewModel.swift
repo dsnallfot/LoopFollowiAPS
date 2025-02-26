@@ -37,9 +37,7 @@ class ProfileSchedulesViewModel: ObservableObject {
                     let profile = ProfileManager.shared
                     
                     // Fetch and format basal schedule
-                    self.basalEntries = profile.basalSchedule.map { entry in
-                        ScheduleEntry(time: self.formatTime(entry.timeAsSeconds), value: String(format: "%.2f", entry.value))
-                    }
+                    self.basalEntries = self.calculateBasalSchedule(basalSchedule: profile.basalSchedule)
 
                     // Fetch and format carb ratio schedule
                     self.carbRatioEntries = profile.carbRatioSchedule.map { entry in
@@ -81,6 +79,36 @@ class ProfileSchedulesViewModel: ObservableObject {
                     completion()
                 }
             }
+        }
+    
+    private func calculateBasalSchedule(basalSchedule: [ProfileManager.TimeValue<Double>]) -> [ScheduleEntry] {
+            var basalEntries: [ScheduleEntry] = []
+            var lastBasal: Double?
+            var basalDict: [Int: Double] = [:]
+            var totalDailyBasal: Double = 0
+
+            // Store basal values in a lookup dictionary
+            for entry in basalSchedule {
+                basalDict[entry.timeAsSeconds / 3600] = entry.value
+            }
+
+            // Generate a complete 24-hour schedule
+            for hour in 0..<24 {
+                if let newBasal = basalDict[hour] {
+                    lastBasal = newBasal
+                }
+
+                if let basal = lastBasal {
+                    totalDailyBasal += basal
+                    let time = String(format: "%02d:00", hour)
+                    basalEntries.append(ScheduleEntry(time: time, value: String(format: "%.2f", basal)))
+                }
+            }
+
+            // Append total daily basal row
+            basalEntries.append(ScheduleEntry(time: "Total Daily Basal", value: String(format: "%.2f", totalDailyBasal)))
+
+            return basalEntries
         }
     
     private func calculateCSFSchedule(isfSchedule: [ProfileManager.TimeValue<HKQuantity>],

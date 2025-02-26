@@ -31,10 +31,10 @@ struct ProfileSchedulesView: View {
                     ForEach(viewModel.basalEntries) { entry in
                         HStack {
                             Text(entry.time)
-                                .font(.headline)
+                                .font(entry.time == "Total Daily Basal" ? .headline.bold() : .headline)
                             Spacer()
                             Text(entry.value)
-                                .font(.headline)
+                                .font(entry.time == "Total Daily Basal" ? .headline.bold() : .headline)
                         }
                     }
                 }
@@ -75,7 +75,7 @@ struct ProfileSchedulesView: View {
                     }
                 }
                 
-                Section(header: Text("Minimum Carbs g/Hr")) {
+                Section(header: Text("Minimum Carbs grams/hour")) {
                     ForEach(viewModel.minCarbsEntries) { entry in
                         HStack {
                             Text(entry.time)
