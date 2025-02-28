@@ -691,7 +691,7 @@ extension MainViewController {
             lastTempTargetAlarm = now
         }
     }
-/*
+
     func triggerOneTimeAlarm(sound: String, overrideVolume: Bool, numLoops: Int, audio: Bool = true, latestIOB: String, latestCOB: String) {
         
         var audioDuringCall = true
@@ -756,8 +756,8 @@ extension MainViewController {
         if timerLength < 10 { timerLength = 290}
         startAlarmPlayingTimer(time: timerLength)
     }
-    */
     
+    /*
     func triggerOneTimeAlarm(sound: String, overrideVolume: Bool, numLoops: Int, audio: Bool = true, latestIOB: String, latestCOB: String) {
         
         var audioDuringCall = true
@@ -831,7 +831,7 @@ extension MainViewController {
         if timerLength < 10 { timerLength = 290 }
         startAlarmPlayingTimer(time: timerLength)
     }
-    
+    */
     func stopAlarmAtNextReading(){
         
         AlarmSound.whichAlarm = "none"
