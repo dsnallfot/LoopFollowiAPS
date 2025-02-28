@@ -124,6 +124,13 @@ struct BackgroundRefreshSettingsView: View {
                             .foregroundColor(.secondary)
                             .font(.footnote)
                     }
+                    if let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: storedDevice) {
+                        
+                        
+                        Text("Expected bg delay: \(offset)")
+                            .foregroundColor(.secondary)
+                            .font(.footnote)
+                    }
                     
                     HStack {
                         Spacer()

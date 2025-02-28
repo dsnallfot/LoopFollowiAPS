@@ -51,20 +51,20 @@ extension MainViewController {
             }
         }
     }
-
+    
     // NS BG Data Web call
     func webLoadNSBGData(dexData: [ShareGlucoseData] = []) {
         // This kicks it out in the instance where dexcom fails but they aren't using NS &&
         if !IsNightscoutEnabled() {
             return
         }
-
+        
         var parameters: [String: String] = [:]
         let utcISODateFormatter = ISO8601DateFormatter()
         let date = Calendar.current.date(byAdding: .day, value: -1 * UserDefaultsRepository.downloadDays.value, to: Date())!
         parameters["count"] = "\(UserDefaultsRepository.downloadDays.value * 2 * 24 * 60 / 5)"
         parameters["find[dateString][$gte]"] = utcISODateFormatter.string(from: date)
-
+        
         // Exclude 'cal' entries
         parameters["find[type][$ne]"] = "cal"
         
@@ -122,73 +122,119 @@ extension MainViewController {
         }
     }
     
-    // Dexcom BG Data Response processor
-    func ProcessDexBGData(data: [ShareGlucoseData], sourceName: String){
+    /// Processes incoming BG data.
+    func ProcessDexBGData(data: [ShareGlucoseData], sourceName: String) {
         let graphHours = 24 * UserDefaultsRepository.downloadDays.value
         
-        if data.count == 0 {
+        guard !data.isEmpty else {
+            LogManager.shared.log(category: .nightscout, message: "No bg data received. Skipping processing.")
             return
         }
-        let latestDate = data[0].date
+        let latestReading = data[0]
+        let sensorTimestamp = latestReading.date
         let now = dateTimeUtils.getNowTimeIntervalUTC()
+        // secondsAgo is how old the newest reading is
+        let secondsAgo = now - sensorTimestamp
         
-        // Start the BG timer based on the reading
-        let secondsAgo = now - latestDate
+        // Compute the current sensor schedule offset.
+        let currentOffset = sensorScheduleOffset(for: sensorTimestamp)
+        
+        if Storage.shared.sensorScheduleOffset.value != currentOffset {
+            Storage.shared.sensorScheduleOffset.value = currentOffset
+            LogManager.shared.log(category: .nightscout,
+                                  message: "Sensor schedule offset: \(currentOffset) seconds.",
+                                  isDebug: true)
+        }
+        
+        // Determine the next polling delay.
+        var delayToSchedule: Double = 0
         
         DispatchQueue.main.async {
+            // Fallback scheduling for older readings.
             if secondsAgo >= (20 * 60) {
-                TaskScheduler.shared.rescheduleTask(
-                    id: .fetchBG,
-                    to: Date().addingTimeInterval(5 * 60)
-                )
+                delayToSchedule = 5 * 60
+                
+                
+                LogManager.shared.log(category: .nightscout,
+                                      message: "Reading is very old (\(secondsAgo) sec). Scheduling next fetch in 5 minutes.",
+                                      isDebug: true)
             } else if secondsAgo >= (10 * 60) {
-                TaskScheduler.shared.rescheduleTask(
-                    id: .fetchBG,
-                    to: Date().addingTimeInterval(60)
-                )
+                delayToSchedule = 60
+                
+                
+                LogManager.shared.log(category: .nightscout,
+                                      message: "Reading is moderately old (\(secondsAgo) sec). Scheduling next fetch in 60 seconds.",
+                                      isDebug: true)
             } else if secondsAgo >= (7 * 60) {
-                TaskScheduler.shared.rescheduleTask(
-                    id: .fetchBG,
-                    to: Date().addingTimeInterval(30)
-                )
+                delayToSchedule = 30
+                
+                
+                LogManager.shared.log(category: .nightscout,
+                                      message: "Reading is a bit old (\(secondsAgo) sec). Scheduling next fetch in 30 seconds.",
+                                      isDebug: true)
             } else if secondsAgo >= (5 * 60) {
-                TaskScheduler.shared.rescheduleTask(
-                    id: .fetchBG,
-                    to: Date().addingTimeInterval(10)
-                )
+                delayToSchedule = 5
+                
+                
+                LogManager.shared.log(category: .nightscout,
+                                      message: "Reading is close to 5 minutes old (\(secondsAgo) sec). Scheduling next fetch in 5 seconds.",
+                                      isDebug: true)
             } else {
-                let delay = (300 - secondsAgo + Double(UserDefaultsRepository.bgUpdateDelay.value))
-                TaskScheduler.shared.rescheduleTask(
-                    id: .fetchBG,
-                    to: Date().addingTimeInterval(delay)
-                )
-
-                if data.count > 1 {
-                    self.evaluateSpeakConditions(currentValue: data[0].sgv, previousValue: data[1].sgv)
-                }
+                delayToSchedule = 300 - secondsAgo + Double(UserDefaultsRepository.bgUpdateDelay.value)
+                LogManager.shared.log(category: .nightscout,
+                                      message: "Fresh reading. Scheduling next fetch in \(delayToSchedule) seconds.",
+                                      isDebug: true)
+            }
+            
+            TaskScheduler.shared.rescheduleTask(id: .fetchBG, to: Date().addingTimeInterval(delayToSchedule))
+            
+            // Evaluate speak conditions if there is a previous value.
+            if data.count > 1 {
+                self.evaluateSpeakConditions(currentValue: data[0].sgv, previousValue: data[1].sgv)
             }
         }
         
+        // Process data for graph display.
         bgData.removeAll()
         
-        // loop through the data so we can reverse the order to oldest first for the graph
         for i in 0..<data.count {
             let dateString = data[data.count - 1 - i].date
-            if dateString >= dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) {
+            let readingTimestamp = data[data.count - 1 - i].date
+            if readingTimestamp >= dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) {
                 let sgvValue = data[data.count - 1 - i].sgv
                 
-                // Skip the current iteration if the sgv value is over 600
-                // First time a user starts a G7, they get a value of 4000
+                // Skip outlier values (e.g. first reading of a new sensor might be abnormally high).
                 if sgvValue > 600 {
+                    LogManager.shared.log(category: .nightscout,
+                                          message: "Skipping reading with sgv \(sgvValue) as it exceeds threshold.",
+                                          isDebug: true)
                     continue
                 }
                 
-                let reading = ShareGlucoseData(sgv: sgvValue, date: dateString, direction: data[data.count - 1 - i].direction)
+                let reading = ShareGlucoseData(sgv: sgvValue, date: readingTimestamp, direction: data[data.count - 1 - i].direction)
                 bgData.append(reading)
             }
         }
         
+        LogManager.shared.log(category: .nightscout,
+                              message: "Graph data updated with \(bgData.count) entries.",
+                              isDebug: true)
+        
         viewUpdateNSBG(sourceName: sourceName)
+    }
+    
+    /// Computes the sensor schedule offset (in seconds) for a given time interval.
+    /// The offset is the remainder (in seconds) of the time elapsed since midnight (UTC) divided by 300 seconds.
+    /// For example, if the sensor reports a time that corresponds to 13:06:30, the offset is 90 seconds.
+    func sensorScheduleOffset(for timeInterval: TimeInterval) -> TimeInterval {
+        var calendar = Calendar(identifier: .gregorian)
+        // Use UTC to be consistent with our sensor timestamps.
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        
+        let date = Date(timeIntervalSince1970: timeInterval)
+        let startOfDay = calendar.startOfDay(for: date)
+        let secondsSinceStartOfDay = date.timeIntervalSince(startOfDay)
+        return secondsSinceStartOfDay.truncatingRemainder(dividingBy: 300)
     }
     
     func updateServerText(with serverText: String? = nil) {
@@ -285,17 +331,17 @@ extension MainViewController {
                 self.latestDeltaString = "N/A"
             }
             /*
-            // Delta handling
-            if deltaBG < 0 {
-                self.DeltaText.text = Localizer.toDisplayUnits(String(deltaBG))
-                snoozerDelta = Localizer.toDisplayUnits(String(deltaBG))
-                self.latestDeltaString = String(deltaBG)
-            } else {
-                self.DeltaText.text = "+" + Localizer.toDisplayUnits(String(deltaBG))
-                snoozerDelta = "+" + Localizer.toDisplayUnits(String(deltaBG))
-                self.latestDeltaString = "+" + String(deltaBG)
-            }
-            */
+             // Delta handling
+             if deltaBG < 0 {
+             self.DeltaText.text = Localizer.toDisplayUnits(String(deltaBG))
+             snoozerDelta = Localizer.toDisplayUnits(String(deltaBG))
+             self.latestDeltaString = String(deltaBG)
+             } else {
+             self.DeltaText.text = "+" + Localizer.toDisplayUnits(String(deltaBG))
+             snoozerDelta = "+" + Localizer.toDisplayUnits(String(deltaBG))
+             self.latestDeltaString = "+" + String(deltaBG)
+             }
+             */
             // Apply strikethrough to BGText based on the staleness of the data
             let bgTextStr = (self.BGText.text ?? "").replacingOccurrences(of: ",", with: ".")
             let attributeString = NSMutableAttributedString(string: bgTextStr)
@@ -304,8 +350,8 @@ extension MainViewController {
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.systemRed, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: 0)
             } else if deltaTime >= 6 { // Data is stale for 6-11 min
-                    attributeString.addAttribute(.strikethroughColor, value: UIColor.label, range: NSRange(location: 0, length: attributeString.length))
-                    self.updateBadge(val: 0)
+                attributeString.addAttribute(.strikethroughColor, value: UIColor.label, range: NSRange(location: 0, length: attributeString.length))
+                self.updateBadge(val: 0)
             } else { // Data is fresh
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.clear, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: latestBG)
@@ -350,11 +396,11 @@ extension MainViewController {
                 fifteenMinColorString = " ✅ "
             }
             /*
-            var cob = "N/A g"
-            if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
-                cob = latestCOB
-            }
-            print("cob: \(cob)")*/
+             var cob = "N/A g"
+             if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
+             cob = latestCOB
+             }
+             print("cob: \(cob)")*/
             
             var cob = "N/A g"
             if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
