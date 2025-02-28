@@ -53,7 +53,7 @@ class RileyLinkHeartbeatBluetoothDevice: BluetoothDevice {
         super.centralManager(central, didConnect: peripheral)
 
         self.peripheralDevice = peripheral // Store reference
-        LogManager.shared.log(category: .bluetooth, message: "✅ Connected to RileyLink, discovering services...")
+        LogManager.shared.log(category: .bluetooth, message: "✅ Connected to RileyLink, discovering services...", isDebug: true)
 
         peripheral.discoverServices([CBUUID_Service_RileyLink, CBUUID_Service_Battery])
         
@@ -77,7 +77,7 @@ class RileyLinkHeartbeatBluetoothDevice: BluetoothDevice {
 
         for characteristic in characteristics {
             if characteristic.uuid == BatteryServiceCharacteristicUUID.batteryLevel.cbUUID {
-                LogManager.shared.log(category: .bluetooth, message: "🔋 Found Battery Level Characteristic, reading value...")
+                LogManager.shared.log(category: .bluetooth, message: "🔋 Found Battery Level Characteristic, reading value...", isDebug: true)
                 peripheral.readValue(for: characteristic)
 
             } else if characteristic.uuid == CBUUID_ReceiveCharacteristic_TimerTick {
@@ -95,7 +95,7 @@ class RileyLinkHeartbeatBluetoothDevice: BluetoothDevice {
             let batteryPercentage = Int(data[0]) // 0-100% battery level
             self.batteryPercentage = batteryPercentage
 
-            LogManager.shared.log(category: .bluetooth, message: "🔋 Battery Level Updated: \(batteryPercentage)%")
+            LogManager.shared.log(category: .bluetooth, message: "🔋 Battery Level Updated: \(batteryPercentage)%", isDebug: true)
             
             // Ensure BLEManager gets this update
             BLEManager.shared.updateDeviceBattery(deviceID: self.deviceAddress, batteryLevel: batteryPercentage)

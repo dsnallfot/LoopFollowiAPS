@@ -72,7 +72,7 @@ extension MainViewController {
             Observable.shared.overrideSmbIsOff.value = matchingOverride.smbIsOff
         } else {
             // Log that no matching override was found.
-            LogManager.shared.log(category: .deviceStatus, message: "No matching override found for active note. Resetting override values.")
+            LogManager.shared.log(category: .deviceStatus, message: "No matching override found for active note. Resetting override values.", isDebug: true)
             
             // Reset the override observables.
             Observable.shared.overrideSmbMinutes.value = nil
