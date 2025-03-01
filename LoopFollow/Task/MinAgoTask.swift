@@ -82,7 +82,7 @@ extension MainViewController {
                                                  value: NSUnderlineStyle.single.rawValue,
                                                  range: NSRange(location: 0, length: attributeString.length))
                     attributeString.addAttribute(.strikethroughColor,
-                                                 value: secondsAgo >= 360 ? UIColor.systemGray : UIColor.clear,
+                                                 value: secondsAgo >= 660 ? UIColor.systemRed : (secondsAgo >= 360 ? UIColor.label : UIColor.clear),
                                                  range: NSRange(location: 0, length: attributeString.length))
                     snoozer.BGLabel.attributedText = attributeString
                 }
