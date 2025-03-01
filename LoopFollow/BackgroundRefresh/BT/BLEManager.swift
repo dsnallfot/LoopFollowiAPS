@@ -14,6 +14,9 @@ class BLEManager: NSObject, ObservableObject {
 
     private var centralManager: CBCentralManager!
     internal var activeDevice: BluetoothDevice?
+    
+    var firstHeartbeat: Bool = false
+    var firstHeartbeatTime: Date?
 
     private override init() {
         super.init()
@@ -217,23 +220,32 @@ extension BLEManager: BluetoothDeviceDelegate {
             TaskScheduler.shared.checkTasksNow()
             return
         }
-
+        
         let marginPercentage: Double = 0.15 // 15% margin
         let margin = expectedInterval * marginPercentage
         let threshold = expectedInterval + margin
-
-        if let last = device.lastHeartbeatTime {
-            let elapsedTime = now.timeIntervalSince(last)
+        
+        // If this is the first heartbeat, or if device.lastHeartbeatTime is nil
+        if device.lastHeartbeatTime == nil {
+            LogManager.shared.log(category: .bluetooth, message: "Heartbeat triggered (First heartbeat)")
+            firstHeartbeat = true
+            firstHeartbeatTime = now
+        } else {
+            // If we are still within one minute of the first heartbeat, keep firstHeartbeat true
+            if firstHeartbeat, let firstTime = firstHeartbeatTime, now.timeIntervalSince(firstTime) <= 60 {
+                // firstHeartbeat remains true
+            } else {
+                firstHeartbeat = false
+            }
+            
+            let elapsedTime = now.timeIntervalSince(device.lastHeartbeatTime!)
             if elapsedTime > threshold {
                 let delay = elapsedTime - expectedInterval
                 LogManager.shared.log(category: .bluetooth, message: "Heartbeat triggered (Delayed by \(String(format: "%.1f", delay)) seconds)")
             }
-        } else {
-            LogManager.shared.log(category: .bluetooth, message: "Heartbeat triggered (First heartbeat)")
         }
-
+        
         device.lastHeartbeatTime = now
-
         TaskScheduler.shared.checkTasksNow()
     }
 }
@@ -266,10 +278,25 @@ extension BLEManager {
             // Determine the cycle duration based on the device type.
             let cycleDuration: TimeInterval = (matchedType == .rileyLink) ? 60 : 300
 
+            // For RileyLink, if lastHeartbeatTime is nil, return "waiting for heartbeat".
+            if matchedType == .rileyLink, self.activeDevice?.lastHeartbeatTime == nil || firstHeartbeat {
+                return "waiting for heartbeat"
+            }
+
+            // Use activeDevice.lastHeartbeatTime for RileyLink; otherwise use device.lastSeen.
+            let heartbeatReferenceDate: Date
+            if matchedType == .rileyLink,
+               let activeDevice = self.activeDevice,
+               let lastHeartbeat = activeDevice.lastHeartbeatTime {
+                heartbeatReferenceDate = lastHeartbeat
+            } else {
+                heartbeatReferenceDate = device.lastSeen
+            }
+
             // Compute the device’s heartbeat offset within the appropriate cycle.
             let calendar = Calendar(identifier: .gregorian)
-            let startOfDay = calendar.startOfDay(for: device.lastSeen)
-            let heartbeatOffset = device.lastSeen.timeIntervalSince(startOfDay).truncatingRemainder(dividingBy: cycleDuration)
+            let startOfDay = calendar.startOfDay(for: heartbeatReferenceDate)
+            let heartbeatOffset = heartbeatReferenceDate.timeIntervalSince(startOfDay).truncatingRemainder(dividingBy: cycleDuration)
 
             // Calculate effective delay:
             // If the heartbeat happens after the sensor value is available, delay = heartbeatOffset - expectedOffset.

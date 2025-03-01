@@ -28,7 +28,8 @@ struct BLEDeviceSelectionView: View {
                                 Text("RSSI: \(device.rssi) dBm")
                                     .foregroundColor(.secondary)
                                     .font(.footnote)
-                                if let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: device) {
+                                if Storage.shared.backgroundRefreshType.value == .dexcom,
+                                   let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: device) {
                                     Text("Expected bg delay: \(offset)")
                                         .foregroundColor(.secondary)
                                         .font(.footnote)
