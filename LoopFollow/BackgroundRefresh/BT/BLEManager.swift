@@ -302,9 +302,10 @@ extension BLEManager {
             // If the heartbeat happens after the sensor value is available, delay = heartbeatOffset - expectedOffset.
             // Otherwise, the fetch will occur on the next cycle:
             // delay = (heartbeatOffset + cycleDuration) - expectedOffset.
+            // Daniel: Add back + pollingdelay to the effective delay to get the net delay (ie on which minago time after 00:00 is the reading expected to be seen in LF?)
             let effectiveDelay: TimeInterval = (heartbeatOffset >= expectedOffset)
-                ? (heartbeatOffset - expectedOffset)
-                : (heartbeatOffset + cycleDuration - expectedOffset)
+                ? (heartbeatOffset - expectedOffset + pollingDelay)
+                : (heartbeatOffset + cycleDuration - expectedOffset + pollingDelay)
 
             return "\(Int(effectiveDelay)) sec"
         }
