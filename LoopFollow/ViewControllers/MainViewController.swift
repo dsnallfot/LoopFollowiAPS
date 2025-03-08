@@ -42,6 +42,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     @IBOutlet weak var statsView: UIView!
     @IBOutlet weak var smallGraphHeightConstraint: NSLayoutConstraint!
     @IBOutlet weak var highStack: UIStackView!
+    @IBOutlet weak var historyStack: UIStackView!
     var refreshScrollView: UIScrollView!
     var refreshControl: UIRefreshControl!
 
@@ -245,6 +246,33 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                     }
                 }
             }
+        
+        // 1. Enable interaction on the stack if you haven't already
+        historyStack.isUserInteractionEnabled = true
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showHistoryFromStack))
+        historyStack.addGestureRecognizer(tapGesture)
+
+        // 2. Create the circle view
+        let circleView = UIView()
+        circleView.translatesAutoresizingMaskIntoConstraints = false
+        circleView.backgroundColor = .systemGray6
+        circleView.layer.cornerRadius = 32.5 // half of 65 -> a perfect circle
+        circleView.layer.masksToBounds = true
+
+        // Add a thin, 1-point border around the circle
+        circleView.layer.borderWidth = 0.5
+        circleView.layer.borderColor = UIColor.systemGray.cgColor
+
+        // 3. Insert it behind existing subviews at index 0
+        historyStack.insertSubview(circleView, at: 0)
+
+        // 4. Constrain it to be 65×65 and center it in the stack
+        NSLayoutConstraint.activate([
+            circleView.widthAnchor.constraint(equalToConstant: 65),
+            circleView.heightAnchor.constraint(equalToConstant: 65),
+            circleView.centerXAnchor.constraint(equalTo: historyStack.centerXAnchor),
+            circleView.centerYAnchor.constraint(equalTo: historyStack.centerYAnchor)
+        ])
     }
     
     deinit {
@@ -766,5 +794,20 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 
     func calculateMaxBgGraphValue() -> Float {
         return max(topBG, topPredictionBG)
+    }
+    
+    @objc func showHistoryFromStack() {
+        // Instantiate your TreatmentsTableView.
+        let treatmentsVC = TreatmentsTableView()
+        
+        // Wrap it in a UINavigationController for the navigation bar and Done button.
+        let navController = UINavigationController(rootViewController: treatmentsVC)
+        navController.modalPresentationStyle = .formSheet
+        
+        if UserDefaultsRepository.forceDarkMode.value {
+            navController.overrideUserInterfaceStyle = .dark
+        }
+        
+        present(navController, animated: true, completion: nil)
     }
 }
