@@ -11,7 +11,7 @@ import UserNotifications
 
 /// Enum representing different background alert durations.
 enum BackgroundAlertDuration: TimeInterval, CaseIterable {
-    case sixMinutes = 360    // 6 minutes in seconds
+    case sixMinutes = 360 // 6 minutes in seconds
     case twelveMinutes = 720 // 12 minutes in seconds
     case eighteenMinutes = 1080 // 18 minutes in seconds
 }
@@ -25,37 +25,52 @@ enum BackgroundAlertIdentifier: String, CaseIterable {
 
 class BackgroundAlertManager {
     static let shared = BackgroundAlertManager()
-
+    
     private init() {}
-
+    
     /// Flag indicating whether background alerts are currently scheduled.
     private var isAlertScheduled: Bool = false
-
+    
     /// Title prefix for all background refresh notifications.
     private let notificationTitlePrefix = "LoopFollow Background Refresh"
-
+    
+    /// Timestamp of the last scheduled background alert.
+    private var lastScheduleDate: Date?
+    
     /// Start scheduling background alerts.
     func startBackgroundAlert() {
         isAlertScheduled = true
-        scheduleBackgroundAlert()
+        // Force execution to bypass throttle when starting
+        scheduleBackgroundAlert(force: true)
     }
-
+    
     /// Stop all scheduled background alerts.
     func stopBackgroundAlert() {
         isAlertScheduled = false
         removeDeliveredNotifications()
         cancelBackgroundAlerts()
     }
-
+    
     /// (Re)schedule all background alerts based on predefined durations.
-    func scheduleBackgroundAlert() {
-        removeDeliveredNotifications()
-
+    /// - Parameter force: When true, the scheduling is executed regardless of throttle constraints.
+    func scheduleBackgroundAlert(force: Bool = false) {
+        
         guard isAlertScheduled, Storage.shared.backgroundRefreshType.value != .none else { return }
-
+        
+        // Throttle execution if not forced: only run once every 10 seconds.
+        if !force {
+            let now = Date()
+            if let lastDate = lastScheduleDate, now.timeIntervalSince(lastDate) < 10 {
+                return
+            }
+            lastScheduleDate = now
+        }
+        
+        removeDeliveredNotifications()
+        
         let isBluetoothActive = Storage.shared.backgroundRefreshType.value.isBluetooth
         let expectedHeartbeat = BLEManager.shared.expectedHeartbeatInterval()
-
+        
         // Define alerts
         let alerts: [BackgroundAlert] = [
             BackgroundAlert(

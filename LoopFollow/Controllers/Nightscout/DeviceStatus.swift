@@ -87,6 +87,7 @@ extension MainViewController {
 
         if jsonDeviceStatus.count == 0 {
             LogManager.shared.log(category: .deviceStatus, message: "Device status is empty")
+            TaskScheduler.shared.rescheduleTask(id: .deviceStatus, to: Date().addingTimeInterval(5 * 60))
             return
         }
         
