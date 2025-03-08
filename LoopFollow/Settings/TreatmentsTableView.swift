@@ -24,7 +24,6 @@ struct Treatment {
     
     /// Failable initializer that creates a Treatment from a dictionary.
     init?(dictionary: [String: AnyObject]) {
-        // Get event type.
         guard let eventType = dictionary["eventType"] as? String else { return nil }
         self.eventType = eventType
         
@@ -42,11 +41,11 @@ struct Treatment {
         
         // Determine amount for non-override cases.
         if let insulin = dictionary["insulin"] as? Double {
-            self.amount = "\(insulin)E"
+            self.amount = "\(insulin) E"
         } else if let carbs = dictionary["carbs"] as? Double {
-            self.amount = "\(carbs)g"
+            self.amount = "\(carbs) g"
         } else if eventType == "Temp Basal", let absolute = dictionary["absolute"] as? Double {
-            self.amount = "\(absolute)E/h"
+            self.amount = "\(absolute) E/h"
         } else {
             self.amount = nil
         }
@@ -234,21 +233,24 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         
         let treatment = filteredTreatments[indexPath.row]
         
-        // Special handling for BG Check: display the glucose reading.
+        // For display purposes, replace "Carb Correction" with "Meal"
+        let displayEventType = treatment.eventType == "Carb Correction" ? "Carbs" : treatment.eventType
+        
+        // For BG Check entries, show the converted glucose.
         if treatment.eventType == "BG Check" {
             if let glucose = treatment.rawData["glucose"] as? Double,
                let units = treatment.rawData["units"] as? String {
-                // Convert to mmol/L if needed. Assume if not "mmol" then it's mg/dL.
                 let mmol: Double
                 if units.lowercased().contains("mmol") {
                     mmol = glucose
                 } else {
                     mmol = glucose / 18.0
                 }
-                cell.textLabel?.text = "BG Check • \(String(format: "%.1f", mmol)) mmol/L"
+                cell.textLabel?.text = "BG kontroll • \(String(format: "%.1f", mmol)) mmol/L"
             } else {
-                cell.textLabel?.text = treatment.eventType
+                cell.textLabel?.text = displayEventType
             }
+            cell.accessoryType = .none
         }
         // For override treatments, show notes and duration.
         else if treatment.eventType == "Temporary Override" || treatment.eventType == "Exercise" || treatment.eventType == "Override" {
@@ -259,16 +261,28 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     cell.textLabel?.text = notes
                 }
             } else {
-                cell.textLabel?.text = treatment.eventType
+                cell.textLabel?.text = displayEventType
             }
+            cell.accessoryType = .none
+        }
+        // For Note entries, display the note text and make them tappable.
+        else if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
+            if let note = treatment.rawData["notes"] as? String {
+                let previewText = note.count > 25 ? String(note.prefix(25)) + "…" : note
+                cell.textLabel?.text = "Not: " + previewText
+            } else {
+                cell.textLabel?.text = displayEventType
+            }
+            //cell.accessoryType = .disclosureIndicator
         }
         // All other treatments.
         else {
             if let amount = treatment.amount {
-                cell.textLabel?.text = "\(treatment.eventType) • \(amount)"
+                cell.textLabel?.text = "\(displayEventType) • \(amount)"
             } else {
-                cell.textLabel?.text = treatment.eventType
+                cell.textLabel?.text = displayEventType
             }
+            cell.accessoryType = .none
         }
         
         // Format timestamp as HH:mm.
@@ -288,5 +302,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     // MARK: - UITableViewDelegate Methods
-    // (Implement delegate methods if needed)
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let treatment = filteredTreatments[indexPath.row]
+        // If the treatment is a Note entry, show an alert with the full note.
+        if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
+            if let fullNote = treatment.rawData["notes"] as? String {
+                let alert = UIAlertController(title: "Notering", message: fullNote, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                present(alert, animated: true, completion: nil)
+            }
+        }
+    }
 }

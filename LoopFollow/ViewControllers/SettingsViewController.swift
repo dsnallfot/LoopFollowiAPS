@@ -178,7 +178,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             
         }
         
-        +++ Section("Trio Treatment Log, Profile & Preferences")
+        +++ Section("Trio Data")
         <<< ButtonRow() {
             $0.title = "Treatment Log"
             $0.presentationMode = .show(
