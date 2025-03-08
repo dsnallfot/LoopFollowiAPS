@@ -39,17 +39,26 @@ struct Treatment {
         
         self.rawData = dictionary
         
+        // Create a number formatter that trims trailing zeros.
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        formatter.numberStyle = .decimal
+        
         // Determine amount for non-override cases.
         if let insulin = dictionary["insulin"] as? Double {
-            self.amount = "\(insulin) E"
+            let insulinString = formatter.string(from: NSNumber(value: insulin)) ?? "\(insulin)"
+            self.amount = "\(insulinString) E"
         } else if let carbs = dictionary["carbs"] as? Double {
-            self.amount = "\(carbs) g"
+            let carbsString = formatter.string(from: NSNumber(value: carbs)) ?? "\(carbs)"
+            self.amount = "\(carbsString) g"
         } else if eventType == "Temp Basal", let absolute = dictionary["absolute"] as? Double {
-            self.amount = "\(absolute) E/h"
+            let absoluteString = formatter.string(from: NSNumber(value: absolute)) ?? "\(absolute)"
+            self.amount = "\(absoluteString) E/h"
         } else {
             self.amount = nil
         }
-        
         // For override treatments, capture the notes and duration.
         if eventType == "Temporary Override" || eventType == "Exercise" || eventType == "Override" {
             self.overrideNotes = dictionary["notes"] as? String
@@ -92,7 +101,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.title = "Treatments"
+        self.title = "Behandlingslogg"
         view.backgroundColor = .systemBackground
         setupNavigationBar()
         setupSegmentedControl()
@@ -119,7 +128,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Setup Segmented Control
     
     private func setupSegmentedControl() {
-        let segments = ["All", "Insulin", "Meals", "Other"]
+        let segments = ["Allt", "Insulin", "Måltider", "Övrigt"]
         segmentedControl = UISegmentedControl(items: segments)
         segmentedControl.selectedSegmentIndex = 0
         segmentedControl.addTarget(self, action: #selector(filterChanged), for: .valueChanged)
@@ -234,25 +243,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let treatment = filteredTreatments[indexPath.row]
         
         // For display purposes, replace "Carb Correction" with "Meal"
-        let displayEventType = treatment.eventType == "Carb Correction" ? "Carbs" : treatment.eventType
+        let displayEventType = treatment.eventType == "Carb Correction" ? "Kolhydrater" : treatment.eventType
         
-        // For BG Check entries, show the converted glucose.
+        // Special handling for BG Check entries.
         if treatment.eventType == "BG Check" {
             if let glucose = treatment.rawData["glucose"] as? Double,
                let units = treatment.rawData["units"] as? String {
-                let mmol: Double
-                if units.lowercased().contains("mmol") {
-                    mmol = glucose
-                } else {
-                    mmol = glucose / 18.0
-                }
-                cell.textLabel?.text = "BG kontroll • \(String(format: "%.1f", mmol)) mmol/L"
+                let mmol: Double = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
+                cell.textLabel?.text = "Fingerstick • \(String(format: "%.1f", mmol)) mmol/L"
             } else {
                 cell.textLabel?.text = displayEventType
             }
             cell.accessoryType = .none
         }
-        // For override treatments, show notes and duration.
+        // Handling for override treatments.
         else if treatment.eventType == "Temporary Override" || treatment.eventType == "Exercise" || treatment.eventType == "Override" {
             if let notes = treatment.overrideNotes {
                 if let duration = treatment.overrideDuration {
@@ -265,10 +269,10 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             }
             cell.accessoryType = .none
         }
-        // For Note entries, display the note text and make them tappable.
+        // Handling for Note entries.
         else if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let note = treatment.rawData["notes"] as? String {
-                let previewText = note.count > 25 ? String(note.prefix(25)) + "…" : note
+                let previewText = note.count > 20 ? String(note.prefix(20)) + "…" : note
                 cell.textLabel?.text = "Not: " + previewText
             } else {
                 cell.textLabel?.text = displayEventType
@@ -277,10 +281,29 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         // All other treatments.
         else {
-            if let amount = treatment.amount {
-                cell.textLabel?.text = "\(displayEventType) • \(amount)"
+            // If the treatment is a Carb Correction (which we display as "Meal")
+            // and has a foodType value, show an attributed text with a second line.
+            if treatment.eventType == "Carb Correction" {
+                let mainText = treatment.amount != nil ? "\(displayEventType) • \(treatment.amount!)" : displayEventType
+                if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
+                    // Remove variation selectors if desired.
+                    let cleanedFoodType = foodType.replacingOccurrences(of: "\u{FE0F}", with: "")
+                    
+                    // Just do a single plain string with a newline
+                    let combinedText = mainText + " • " + cleanedFoodType
+                    cell.textLabel?.text = combinedText
+                    cell.textLabel?.font = .systemFont(ofSize: 17)
+                    cell.textLabel?.numberOfLines = 0
+                } else {
+                    cell.textLabel?.text = mainText
+                }
             } else {
-                cell.textLabel?.text = displayEventType
+                // For non-carb-correction entries, use the standard text.
+                if let amount = treatment.amount {
+                    cell.textLabel?.text = "\(displayEventType) • \(amount)"
+                } else {
+                    cell.textLabel?.text = displayEventType
+                }
             }
             cell.accessoryType = .none
         }
