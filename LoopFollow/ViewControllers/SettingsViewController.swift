@@ -178,7 +178,19 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             
         }
         
-        +++ Section("Trio Profile & Preferences")
+        +++ Section("Trio Treatment Log, Profile & Preferences")
+        <<< ButtonRow() {
+            $0.title = "Treatment Log"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    // Instantiate the TreatmentsTableView.
+                    let treatmentsVC = TreatmentsTableView()
+                    // For a table view controller, you might choose to embed it in a UINavigationController.
+                    return UINavigationController(rootViewController: treatmentsVC)
+                }),
+                onDismiss: nil
+            )
+        }
         <<< ButtonRow() {
             $0.title = "Preferences"
             $0.presentationMode = .show(

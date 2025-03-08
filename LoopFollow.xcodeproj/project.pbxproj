@@ -13,6 +13,7 @@
 		6545DD2B2D6F03A0007B0D70 /* LineChartWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */; };
 		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
+		659AC6832D7C594D0069FC7C /* TreatmentsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
 		65B3E5CD2D3FFB3000622194 /* TempTargetviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5CA2D3FFB3000622194 /* TempTargetviewController.swift */; };
 		65B3E5CE2D3FFB3000622194 /* BolusViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C82D3FFB3000622194 /* BolusViewController.swift */; };
@@ -296,6 +297,7 @@
 		6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineChartWrapper.swift; sourceTree = "<group>"; };
 		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
+		659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreatmentsTableView.swift; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
 		65B3E5C62D3FFB3000622194 /* SMSRemoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSRemoteViewController.swift; sourceTree = "<group>"; };
 		65B3E5C72D3FFB3000622194 /* MealViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealViewController.swift; sourceTree = "<group>"; };
@@ -609,6 +611,7 @@
 		65BB9A402D43CA9C00FCFCA8 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */,
 				654454D02D6E8ABE0015BC5E /* ProfileSchedulesView.swift */,
 				654454D22D6E8AD90015BC5E /* ProfileSchedulesViewModel.swift */,
 				6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */,
@@ -1505,6 +1508,7 @@
 				DD9ED0CC2D35526E000D2A63 /* SearchBar.swift in Sources */,
 				DDD10EFF2C510C3C00D76A8E /* ObservableUserDefaultsValue.swift in Sources */,
 				DD58171A2D299EF80041FB98 /* DexcomHeartbeatBluetoothDevice.swift in Sources */,
+				659AC6832D7C594D0069FC7C /* TreatmentsTableView.swift in Sources */,
 				DDFF3D872D14280500BF9D9E /* BackgroundRefreshSettingsViewModel.swift in Sources */,
 				DD50C7502D0828800057AE6F /* ContactSettingsViewModel.swift in Sources */,
 				DDAD162F2D2EF9830084BE10 /* RileyLinkHeartbeatBluetoothDevice.swift in Sources */,
