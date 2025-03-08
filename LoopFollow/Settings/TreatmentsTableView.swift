@@ -308,9 +308,9 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             cell.accessoryType = .none
         }
         
-        // Format timestamp as HH:mm.
+        // Format timestamp as HH:mm:ss.
         let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm"
+        timeFormatter.dateFormat = "HH:mm:ss                                                                                                                                                                                                                                                                                                                "
         cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
         
         // Determine symbol and color.
