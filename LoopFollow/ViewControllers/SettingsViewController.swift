@@ -55,6 +55,50 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
         let version = versionManager.version()
 
         form
+        +++ Section("Trio Data")
+        <<< ButtonRow() {
+            $0.title = "Treatment Log"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    // Instantiate the TreatmentsTableView.
+                    let treatmentsVC = TreatmentsTableView()
+                    // For a table view controller, you might choose to embed it in a UINavigationController.
+                    return UINavigationController(rootViewController: treatmentsVC)
+                }),
+                onDismiss: nil
+            )
+        }
+        <<< ButtonRow() {
+            $0.title = "Preferences"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let trioView = TrioPreferencesView()
+                    let hostingController = UIHostingController(rootView: trioView)
+                    hostingController.modalPresentationStyle = .formSheet
+                    if UserDefaultsRepository.forceDarkMode.value {
+                        hostingController.overrideUserInterfaceStyle = .dark
+                    }
+                    return hostingController
+                }),
+                onDismiss: nil
+            )
+        }
+        <<< ButtonRow() {
+            $0.title = "Profile Schedules"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let profileSchedulesView = ProfileSchedulesView()
+                    let hostingController = UIHostingController(rootView: profileSchedulesView)
+                    hostingController.modalPresentationStyle = .formSheet
+                    if UserDefaultsRepository.forceDarkMode.value {
+                        hostingController.overrideUserInterfaceStyle = .dark
+                    }
+                    return hostingController
+                }),
+                onDismiss: nil
+            )
+        }
+        
         +++ Section(header: "Data Settings", footer: "")
         <<< SegmentedRow<String>("units") { row in
             row.title = "Units"
@@ -176,50 +220,6 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                     return UIViewController()
                 }), onDismiss: nil)
             
-        }
-        
-        +++ Section("Trio Data")
-        <<< ButtonRow() {
-            $0.title = "Treatment Log"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    // Instantiate the TreatmentsTableView.
-                    let treatmentsVC = TreatmentsTableView()
-                    // For a table view controller, you might choose to embed it in a UINavigationController.
-                    return UINavigationController(rootViewController: treatmentsVC)
-                }),
-                onDismiss: nil
-            )
-        }
-        <<< ButtonRow() {
-            $0.title = "Preferences"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let trioView = TrioPreferencesView()
-                    let hostingController = UIHostingController(rootView: trioView)
-                    hostingController.modalPresentationStyle = .formSheet
-                    if UserDefaultsRepository.forceDarkMode.value {
-                        hostingController.overrideUserInterfaceStyle = .dark
-                    }
-                    return hostingController
-                }),
-                onDismiss: nil
-            )
-        }
-        <<< ButtonRow() {
-            $0.title = "Profile Schedules"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let profileSchedulesView = ProfileSchedulesView()
-                    let hostingController = UIHostingController(rootView: profileSchedulesView)
-                    hostingController.modalPresentationStyle = .formSheet
-                    if UserDefaultsRepository.forceDarkMode.value {
-                        hostingController.overrideUserInterfaceStyle = .dark
-                    }
-                    return hostingController
-                }),
-                onDismiss: nil
-            )
         }
         
         +++ Section("Logging")
