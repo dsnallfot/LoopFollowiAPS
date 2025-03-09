@@ -208,6 +208,39 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     // MARK: - UITableViewDataSource Methods
     
+    private func previewOverrideText(for text: String) -> String {
+        if text.count > 16 {
+            return String(text.prefix(16)) + "…"
+        } else {
+            return text
+        }
+    }
+    
+    private func previewCarbsText(for text: String) -> String {
+        if text.count > 4 {
+            return String(text.prefix(4)) + "…"
+        } else {
+            return text
+        }
+    }
+    
+    private func previewNoteText(for text: String) -> String {
+        if text.count > 25 {
+            return String(text.prefix(25)) + "…"
+        } else {
+            return text
+        }
+    }
+    
+    private func formatValue(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 1
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
+    }
+    
     // Helper to determine symbol name and color for a given event type.
     private func symbolForEventType(_ eventType: String) -> (name: String, color: UIColor) {
         switch eventType {
@@ -259,21 +292,39 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         // Handling for override treatments.
         else if treatment.eventType == "Temporary Override" || treatment.eventType == "Exercise" || treatment.eventType == "Override" {
             if let notes = treatment.overrideNotes {
+                let preview = previewOverrideText(for: notes)
                 if let duration = treatment.overrideDuration {
-                    cell.textLabel?.text = "\(notes) • \(Int(duration)) min"
+                    cell.textLabel?.text = "\(preview) • \(Int(duration)) min"
                 } else {
-                    cell.textLabel?.text = notes
+                    cell.textLabel?.text = preview
                 }
+                // Store full text in cell's tag or an associated object if needed.
+                // For simplicity, you can store it in the cell's detailTextLabel text (or add a property to your custom cell).
             } else {
                 cell.textLabel?.text = displayEventType
+            }
+            cell.accessoryType = .none
+        }
+        // For Carb Correction: we display foodType similarly.
+        else if treatment.eventType == "Carb Correction" {
+            let mainText = treatment.amount != nil ? "\(displayEventType) • \(treatment.amount!)" : displayEventType
+            if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
+                let cleanedFoodType = foodType.replacingOccurrences(of: "\u{FE0F}", with: "")
+                let preview = previewCarbsText(for: cleanedFoodType)
+                let combinedText = mainText + " • " + preview
+                cell.textLabel?.text = combinedText
+                cell.textLabel?.font = .systemFont(ofSize: 17)
+                cell.textLabel?.numberOfLines = 0
+            } else {
+                cell.textLabel?.text = mainText
             }
             cell.accessoryType = .none
         }
         // Handling for Note entries.
         else if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let note = treatment.rawData["notes"] as? String {
-                let previewText = note.count > 20 ? String(note.prefix(20)) + "…" : note
-                cell.textLabel?.text = "Not: " + previewText
+                let preview = previewNoteText(for: note)
+                cell.textLabel?.text = "Not: " + preview
             } else {
                 cell.textLabel?.text = displayEventType
             }
@@ -328,10 +379,57 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let treatment = filteredTreatments[indexPath.row]
-        // If the treatment is a Note entry, show an alert with the full note.
+        
+        // Create a time formatter to display the timestamp as "HH:mm"
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm"
+        let timeString = timeFormatter.string(from: treatment.timestamp)
+        
+        // For Note entries:
         if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let fullNote = treatment.rawData["notes"] as? String {
-                let alert = UIAlertController(title: "Notering", message: fullNote, preferredStyle: .alert)
+                let title = "Notering \(timeString)"
+                let message = "\(fullNote)"
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                present(alert, animated: true, completion: nil)
+            }
+        }
+        // For override treatments:
+        else if treatment.eventType == "Temporary Override" ||
+                treatment.eventType == "Exercise" ||
+                treatment.eventType == "Override" {
+            if let fullOverride = treatment.overrideNotes {
+                let title = "Override \(timeString)"
+                var message = "\(fullOverride)"
+                if let duration = treatment.overrideDuration {
+                    message += "\nVaraktighet: \(Int(duration)) min"
+                }
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                present(alert, animated: true, completion: nil)
+            }
+        }
+        // For Carb Correction entries:
+        else if treatment.eventType == "Carb Correction" {
+            if let foodType = treatment.rawData["foodType"] as? String {
+                let title = "Måltid \(timeString)"
+                var message = "\(foodType)"
+                // Carbohydrates:
+                let carbsValue: Double = (treatment.rawData["carbs"] as? Double) ?? 0.0
+                message += "\nKolhydrater: \(formatValue(carbsValue)) g"
+                // Fat:
+                let fatValue: Double = (treatment.rawData["fat"] as? Double) ?? 0.0
+                if fatValue != 0 {
+                    message += "\nFett: \(formatValue(fatValue)) g"
+                }
+                // Protein:
+                let proteinValue: Double = (treatment.rawData["protein"] as? Double) ?? 0.0
+                if proteinValue != 0 {
+                    message += "\nProtein: \(formatValue(proteinValue)) g"
+                }
+                
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                 present(alert, animated: true, completion: nil)
             }
