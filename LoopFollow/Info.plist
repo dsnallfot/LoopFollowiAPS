@@ -124,5 +124,7 @@
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
+    <key>NSDocumentsDirectoryUsageDescription</key>
+    <string>This app requires access to files to export and import sensor history.</string>
 </dict>
 </plist>

@@ -22,12 +22,28 @@ class SensorHistoryViewController: UITableViewController {
     // MARK: - Navigation Bar Setup
     
     private func setupNavigationBar() {
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
+        let addButton = UIBarButtonItem(
             image: UIImage(systemName: "plus.circle"),
             style: .plain,
             target: self,
             action: #selector(addManualSensorNote)
         )
+
+        let shareButton = UIBarButtonItem(
+            image: UIImage(systemName: "square.and.arrow.up"), // Export/Share
+            style: .plain,
+            target: self,
+            action: #selector(exportSensorHistory)
+        )
+
+        let importButton = UIBarButtonItem(
+            image: UIImage(systemName: "square.and.arrow.down"), // Import
+            style: .plain,
+            target: self,
+            action: #selector(importSensorHistory)
+        )
+
+        navigationItem.leftBarButtonItems = [addButton, shareButton, importButton]
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Done",
@@ -72,6 +88,49 @@ class SensorHistoryViewController: UITableViewController {
         let navController = UINavigationController(rootViewController: addNoteVC)
         present(navController, animated: true)
     }
+    
+    // MARK: - Export Sensor History
+    
+    @objc private func exportSensorHistory() {
+        DispatchQueue.global(qos: .background).async {
+            do {
+                let jsonData = try JSONEncoder().encode(self.sensorHistory)
+                
+                if let jsonString = String(data: jsonData, encoding: .utf8) {
+                    print("📤 Exporting JSON: \(jsonString)")
+                }
+
+                // ✅ Save in the Documents Directory instead of tmp
+                let fileManager = FileManager.default
+                let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+                let exportURL = documentsURL.appendingPathComponent("SensorHistory.json")
+
+                try jsonData.write(to: exportURL, options: .atomic)
+
+                DispatchQueue.main.async {
+                    if fileManager.fileExists(atPath: exportURL.path) {
+                        let activityVC = UIActivityViewController(activityItems: [exportURL], applicationActivities: nil)
+                        self.present(activityVC, animated: true)
+                    } else {
+                        print("❌ JSON file does not exist at \(exportURL.path)")
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    print("❌ Failed to export sensor history: \(error)")
+                }
+            }
+        }
+    }
+
+    // MARK: - Import Sensor History
+    
+    @objc private func importSensorHistory() {
+        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.json])
+        documentPicker.delegate = self
+        documentPicker.allowsMultipleSelection = false
+        present(documentPicker, animated: true)
+    }
 }
 
 // MARK: - Handle New Manual Notes
@@ -82,5 +141,50 @@ extension SensorHistoryViewController: AddManualSensorNoteDelegate {
         Storage.shared.sensorStartNotes = storedHistory
         
         loadSensorHistory() // Reload table with updated data
+    }
+}
+
+extension SensorHistoryViewController: UIDocumentPickerDelegate {
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let fileURL = urls.first else { return }
+
+        // ✅ Request access for iCloud Drive / Downloads
+        if fileURL.startAccessingSecurityScopedResource() {
+            defer { fileURL.stopAccessingSecurityScopedResource() } // Always clean up access
+
+            let fileManager = FileManager.default
+            let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let destinationURL = documentsURL.appendingPathComponent("ImportedSensorHistory.json")
+
+            do {
+                // ✅ Copy file into the app's Documents folder (bypassing permission issue)
+                if fileManager.fileExists(atPath: destinationURL.path) {
+                    try fileManager.removeItem(at: destinationURL) // Ensure it's fresh
+                }
+                try fileManager.copyItem(at: fileURL, to: destinationURL)
+
+                // ✅ Read from the local copy
+                let jsonData = try Data(contentsOf: destinationURL)
+                let importedHistory = try JSONDecoder().decode([SensorStartHistoryEntry].self, from: jsonData)
+
+                DispatchQueue.main.async {
+                    var storedHistory = Storage.shared.sensorStartNotes
+                    for entry in importedHistory {
+                        if !storedHistory.contains(where: { $0.date == entry.date && $0.note == entry.note }) {
+                            storedHistory.append(entry)
+                        }
+                    }
+                    
+                    Storage.shared.sensorStartNotes = storedHistory
+                    self.loadSensorHistory() // Reload UI
+                    
+                    print("✅ Successfully imported sensor history from local copy")
+                }
+            } catch {
+                print("❌ Failed to copy or import sensor history: \(error)")
+            }
+        } else {
+            print("❌ Failed to access security-scoped resource for file: \(fileURL)")
+        }
     }
 }
