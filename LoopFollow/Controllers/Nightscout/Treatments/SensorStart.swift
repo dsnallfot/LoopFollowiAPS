@@ -20,26 +20,31 @@ extension MainViewController {
     
     // NS Sensor Start Response Processor
     func processSensorStart(entries: [sageData]) {
-        sensorStartGraphData.removeAll()
-        var lastFoundIndex = 0
-        for entry in entries {
-            let date = entry.created_at
-            
-            if let parsedDate = NightscoutUtils.parseDate(date) {
-                let dateTimeStamp = parsedDate.timeIntervalSince1970
-                let sgv = findNearestBGbyTime(needle: dateTimeStamp, haystack: bgData, startingIndex: lastFoundIndex)
-                lastFoundIndex = sgv.foundIndex
-                
-                if dateTimeStamp < (dateTimeUtils.getNowTimeIntervalUTC() + (60 * 60)) {
-                    let dot = DataStructs.timestampOnlyStruct(date: Double(dateTimeStamp), sgv: Int(18))
-                    sensorStartGraphData.append(dot)
+            sensorStartGraphData.removeAll()
+            var lastFoundIndex = 0
+
+            for entry in entries {
+                let date = entry.created_at
+
+                if let parsedDate = NightscoutUtils.parseDate(date) {
+                    let dateTimeStamp = parsedDate.timeIntervalSince1970
+                    let sgv = findNearestBGbyTime(needle: dateTimeStamp, haystack: bgData, startingIndex: lastFoundIndex)
+                    lastFoundIndex = sgv.foundIndex
+
+                    // Extract note if available
+                    let thisNote = entry.notes ?? ""
+
+                    if dateTimeStamp < (dateTimeUtils.getNowTimeIntervalUTC() + (60 * 60)) {
+                        let dot = DataStructs.sensorStartStruct(date: Double(dateTimeStamp), sgv: Int(18), note: thisNote)
+                        sensorStartGraphData.append(dot)
+                    }
+                } else {
+                    print("Failed to parse date")
                 }
-            } else {
-                print("Failed to parse date")
+            }
+
+            if UserDefaultsRepository.graphOtherTreatments.value {
+                updateSensorStart()
             }
         }
-        if UserDefaultsRepository.graphOtherTreatments.value {
-            updateSensorStart()
-        }
-    }
 }

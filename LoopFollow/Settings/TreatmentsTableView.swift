@@ -22,6 +22,9 @@ struct Treatment {
     let overrideNotes: String?
     let overrideDuration: Double? // in minutes
     
+    // For Sensor Start entries, store notes
+    let sensorStartNotes: String?
+    
     /// Failable initializer that creates a Treatment from a dictionary.
     init?(dictionary: [String: AnyObject]) {
         guard let eventType = dictionary["eventType"] as? String else { return nil }
@@ -38,6 +41,13 @@ struct Treatment {
         self.timestamp = date
         
         self.rawData = dictionary
+        
+        // Fetch the note if the event type is Sensor Start
+        if eventType == "Sensor Start" || eventType == "Sensor Change" || eventType == "Sensorbyte" || eventType == "Sensorstart" {
+            self.sensorStartNotes = dictionary["notes"] as? String
+        } else {
+            self.sensorStartNotes = nil
+        }
         
         // Create a number formatter that trims trailing zeros.
         let formatter = NumberFormatter()
@@ -406,10 +416,21 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 present(alert, animated: true, completion: nil)
             }
         }
+        
+        // Handle Sensor Start Notes
+        if treatment.eventType == "Sensor Start" || treatment.eventType == "Sensor Change" || treatment.eventType == "Sensorbyte" || treatment.eventType == "Sensorstart" {
+            let title = "Sensorbyte \(timeString)"
+            let message = treatment.sensorStartNotes ?? "Inga anteckningar"
+            
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            present(alert, animated: true, completion: nil)
+        }
+        
         // For override treatments:
         else if treatment.eventType == "Temporary Override" ||
-                treatment.eventType == "Exercise" ||
-                treatment.eventType == "Override" {
+                    treatment.eventType == "Exercise" ||
+                    treatment.eventType == "Override" {
             if let fullOverride = treatment.overrideNotes {
                 let title = "Override \(timeString)"
                 var message = "\(fullOverride)"

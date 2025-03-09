@@ -35,6 +35,13 @@ class DataStructs {
         var sgv: Int
         var note: String
     }
+    
+    // Updated Sensor Start Struct
+    struct sensorStartStruct: Codable {
+        var date: TimeInterval
+        var sgv: Int
+        var note: String?
+    }
 
     //NS Override Data  Struct
     struct overrideStruct: Codable {

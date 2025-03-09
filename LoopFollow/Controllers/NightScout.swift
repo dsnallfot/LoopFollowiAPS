@@ -17,6 +17,7 @@ extension MainViewController {
 
     struct sageData: Codable {
         var created_at: String
+        var notes: String?
     }
 
     struct iageData: Codable {

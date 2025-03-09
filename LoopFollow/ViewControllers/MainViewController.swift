@@ -101,7 +101,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var bgCheckData: [ShareGlucoseData] = []
     var suspendGraphData: [DataStructs.timestampOnlyStruct] = []
     var resumeGraphData: [DataStructs.timestampOnlyStruct] = []
-    var sensorStartGraphData: [DataStructs.timestampOnlyStruct] = []
+    //var sensorStartGraphData: [DataStructs.timestampOnlyStruct] = []
+    var sensorStartGraphData: [DataStructs.sensorStartStruct] = []
     var pumpChangeGraphData: [DataStructs.timestampOnlyStruct] = []
     var noteGraphData: [DataStructs.noteStruct] = []
     var chartData = LineChartData()

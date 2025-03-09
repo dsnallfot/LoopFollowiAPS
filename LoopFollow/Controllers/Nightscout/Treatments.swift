@@ -92,7 +92,7 @@ extension MainViewController {
                 }
             case "Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart":
                 if let createdAt = entry["created_at"] as? String {
-                    let newEntry = sageData(created_at: createdAt)
+                    let newEntry = sageData(created_at: createdAt, notes: entry["notes"] as? String)
                     cgmSensorStart.append(newEntry)
                 }
             case "Insulin Change":
