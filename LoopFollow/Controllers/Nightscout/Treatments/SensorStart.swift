@@ -20,31 +20,45 @@ extension MainViewController {
     
     // NS Sensor Start Response Processor
     func processSensorStart(entries: [sageData]) {
-            sensorStartGraphData.removeAll()
-            var lastFoundIndex = 0
+        sensorStartGraphData.removeAll()
+        var lastFoundIndex = 0
 
-            for entry in entries {
-                let date = entry.created_at
+        // Load existing sensor start history
+        var sensorStartHistory = Storage.shared.sensorStartNotes
 
-                if let parsedDate = NightscoutUtils.parseDate(date) {
-                    let dateTimeStamp = parsedDate.timeIntervalSince1970
-                    let sgv = findNearestBGbyTime(needle: dateTimeStamp, haystack: bgData, startingIndex: lastFoundIndex)
-                    lastFoundIndex = sgv.foundIndex
+        for entry in entries {
+            let date = entry.created_at
 
-                    // Extract note if available
-                    let thisNote = entry.notes ?? ""
+            if let parsedDate = NightscoutUtils.parseDate(date) {
+                let dateTimeStamp = parsedDate.timeIntervalSince1970
+                let sgv = findNearestBGbyTime(needle: dateTimeStamp, haystack: bgData, startingIndex: lastFoundIndex)
+                lastFoundIndex = sgv.foundIndex
 
-                    if dateTimeStamp < (dateTimeUtils.getNowTimeIntervalUTC() + (60 * 60)) {
-                        let dot = DataStructs.sensorStartStruct(date: Double(dateTimeStamp), sgv: Int(18), note: thisNote)
-                        sensorStartGraphData.append(dot)
+                let thisNote = entry.notes ?? ""
+
+                if dateTimeStamp < (dateTimeUtils.getNowTimeIntervalUTC() + (60 * 60)) {
+                    let dot = DataStructs.sensorStartStruct(date: Double(dateTimeStamp), sgv: Int(18), note: thisNote)
+                    sensorStartGraphData.append(dot)
+
+                    let newEntry = SensorStartHistoryEntry(date: dateTimeStamp, note: thisNote)
+
+                    // Prevent duplicates before saving
+                    if !sensorStartHistory.contains(where: { $0.date == newEntry.date }) {
+                        sensorStartHistory.append(newEntry)
                     }
-                } else {
-                    print("Failed to parse date")
                 }
-            }
-
-            if UserDefaultsRepository.graphOtherTreatments.value {
-                updateSensorStart()
+            } else {
+                print("Failed to parse date")
             }
         }
+
+        // 🔹 Save back to persistent storage only if it's an array
+        if !sensorStartHistory.isEmpty {
+            Storage.shared.sensorStartNotes = sensorStartHistory
+        }
+        
+        if UserDefaultsRepository.graphOtherTreatments.value {
+            updateSensorStart()
+        }
+    }
 }

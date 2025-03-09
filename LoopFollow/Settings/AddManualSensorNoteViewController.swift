@@ -1,0 +1,91 @@
+//
+//  AddManualSensorNoteViewController.swift
+//  LoopFollow
+//
+//  Created by Daniel Snällfot on 2025-03-09.
+//  Copyright © 2025 Jon Fawcett. All rights reserved.
+//
+
+import UIKit
+
+protocol AddManualSensorNoteDelegate: AnyObject {
+    func didAddManualSensorNote(note: SensorStartHistoryEntry)
+}
+
+class AddManualSensorNoteViewController: UIViewController {
+    
+    weak var delegate: AddManualSensorNoteDelegate?
+    
+    private let datePicker: UIDatePicker = {
+        let picker = UIDatePicker()
+        picker.datePickerMode = .dateAndTime
+        picker.preferredDatePickerStyle = .wheels
+        picker.maximumDate = Date() 
+        return picker
+    }()
+    
+    private let notesTextField: UITextField = {
+        let textField = UITextField()
+        textField.borderStyle = .roundedRect
+        textField.placeholder = "Enter sensor note"
+        return textField
+    }()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.title = "Add Sensor Note"
+        view.backgroundColor = .systemBackground
+        setupUI()
+        setupNavigationBar()
+    }
+    
+    private func setupNavigationBar() {
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            title: "Cancel",
+            style: .plain,
+            target: self,
+            action: #selector(cancelTapped)
+        )
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Save",
+            style: .done,
+            target: self,
+            action: #selector(saveTapped)
+        )
+    }
+    
+    @objc private func cancelTapped() {
+        dismiss(animated: true)
+    }
+    
+    @objc private func saveTapped() {
+        guard let noteText = notesTextField.text, !noteText.isEmpty else { return }
+
+        let newEntry = SensorStartHistoryEntry(
+            date: datePicker.date.timeIntervalSince1970,
+            note: noteText
+        )
+
+        delegate?.didAddManualSensorNote(note: newEntry)
+        dismiss(animated: true)
+    }
+    
+    private func setupUI() {
+        view.addSubview(datePicker)
+        view.addSubview(notesTextField)
+        
+        datePicker.translatesAutoresizingMaskIntoConstraints = false
+        notesTextField.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            datePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            datePicker.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            
+            notesTextField.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 20),
+            notesTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            notesTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            notesTextField.heightAnchor.constraint(equalToConstant: 40)
+        ])
+    }
+}

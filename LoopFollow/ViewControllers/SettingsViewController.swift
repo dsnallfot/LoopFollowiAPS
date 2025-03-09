@@ -69,6 +69,16 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
+                $0.title = "Sensor History"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let sensorHistoryVC = SensorHistoryViewController()
+                        return UINavigationController(rootViewController: sensorHistoryVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        <<< ButtonRow() {
             $0.title = "Preferences"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {

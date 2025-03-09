@@ -44,3 +44,39 @@ class Storage {
 
     private init() { }
 }
+
+struct SensorStartHistoryEntry: Codable, Equatable {
+    var date: TimeInterval
+    var note: String
+
+    // Custom Equatable implementation to compare entries by date & note
+    static func == (lhs: SensorStartHistoryEntry, rhs: SensorStartHistoryEntry) -> Bool {
+        return lhs.date == rhs.date && lhs.note == rhs.note
+    }
+}
+
+extension Storage {
+    var sensorStartNotes: [SensorStartHistoryEntry] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "sensorStartNotes") else {
+                return []
+            }
+            do {
+                let decodedNotes = try JSONDecoder().decode([SensorStartHistoryEntry].self, from: storedData)
+                return decodedNotes
+            } catch {
+                print("Failed to decode sensorStartNotes, resetting to empty array: \(error)")
+                UserDefaults.standard.removeObject(forKey: "sensorStartNotes")
+                return []
+            }
+        }
+        set {
+            do {
+                let encodedData = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encodedData, forKey: "sensorStartNotes")
+            } catch {
+                print("Failed to encode sensorStartNotes: \(error)")
+            }
+        }
+    }
+}
