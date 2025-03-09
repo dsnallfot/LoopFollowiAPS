@@ -238,8 +238,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     private func previewCarbsText(for text: String) -> String {
-        if text.count > 4 {
-            return String(text.prefix(4)) + "…"
+        if text.count > 5 {
+            return String(text.prefix(5)) + "…"
         } else {
             return text
         }
@@ -297,7 +297,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let treatment = filteredTreatments[indexPath.row]
         
         // For display purposes, replace "Carb Correction" with "Meal"
-        let displayEventType = treatment.eventType == "Carb Correction" ? "Kolhydrater" : treatment.eventType
+        let displayEventType = treatment.eventType == "Carb Correction" ? "Kh" : treatment.eventType
         
         // Special handling for BG Check entries.
         if treatment.eventType == "BG Check" {
