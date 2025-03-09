@@ -149,6 +149,11 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         tableView.register(Value1TableViewCell.self, forCellReuseIdentifier: "TreatmentCell")
         tableView.dataSource = self
         tableView.delegate = self
+        
+        // Add refresh control to the table view
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(refreshTreatments(_:)), for: .valueChanged)
+        tableView.refreshControl = refreshControl
     }
     
     // MARK: - Setup Constraints
@@ -204,6 +209,12 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 LogManager.shared.log(category: .nightscout, message: "TreatmentsTableView, error \(error.localizedDescription)")
             }
         }
+    }
+    
+    @objc private func refreshTreatments(_ sender: UIRefreshControl) {
+        loadTreatments()
+        // End refreshing after data is loaded; you might also call this in the completion of loadTreatments()
+        sender.endRefreshing()
     }
     
     // MARK: - UITableViewDataSource Methods
