@@ -225,8 +225,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     private func previewNoteText(for text: String) -> String {
-        if text.count > 25 {
-            return String(text.prefix(25)) + "…"
+        if text.count > 22 {
+            return String(text.prefix(22)) + "…"
         } else {
             return text
         }
