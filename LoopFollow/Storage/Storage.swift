@@ -49,9 +49,35 @@ struct SensorStartHistoryEntry: Codable, Equatable {
     var date: TimeInterval
     var note: String
 
-    // Custom Equatable implementation to compare entries by date & note
     static func == (lhs: SensorStartHistoryEntry, rhs: SensorStartHistoryEntry) -> Bool {
         return lhs.date == rhs.date && lhs.note == rhs.note
+    }
+
+    /// Extracts sensor ID and formatted activation date from note string.
+    var extractedSensorInfo: (id: String, activationDate: String)? {
+        // Clean string (trim whitespace, normalize spaces)
+        let cleanedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+                              .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+
+        // Updated regex (case-insensitive, flexible format)
+        let regexPattern = #"([A-Za-z0-9]{6})\s+activated\s+on\s+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s*(?:\+\d{4})?"#
+
+        guard let regex = try? NSRegularExpression(pattern: regexPattern, options: [.caseInsensitive]),
+              let match = regex.firstMatch(in: cleanedNote, options: [], range: NSRange(location: 0, length: cleanedNote.utf16.count)) else {
+            LogManager.shared.log(category: .bluetooth, message: "❌ Regex failed to match sensor start note -> '\(cleanedNote)'")
+            return nil
+        }
+
+        if let sensorIDRange = Range(match.range(at: 1), in: cleanedNote),
+           let dateRange = Range(match.range(at: 2), in: cleanedNote) {
+            let sensorID = String(cleanedNote[sensorIDRange])
+            let activationDate = String(cleanedNote[dateRange])
+
+            return (sensorID, activationDate)
+        }
+
+        LogManager.shared.log(category: .bluetooth, message: "❌ Failed to extract ID or Date from sensor start note -> '\(cleanedNote)'")
+        return nil
     }
 }
 
@@ -65,7 +91,7 @@ extension Storage {
                 let decodedNotes = try JSONDecoder().decode([SensorStartHistoryEntry].self, from: storedData)
                 return decodedNotes
             } catch {
-                print("Failed to decode sensorStartNotes, resetting to empty array: \(error)")
+                LogManager.shared.log(category: .bluetooth, message: "Failed to decode sensorStartNotes, resetting to empty array: \(error)")
                 UserDefaults.standard.removeObject(forKey: "sensorStartNotes")
                 return []
             }
@@ -75,8 +101,23 @@ extension Storage {
                 let encodedData = try JSONEncoder().encode(newValue)
                 UserDefaults.standard.set(encodedData, forKey: "sensorStartNotes")
             } catch {
-                print("Failed to encode sensorStartNotes: \(error)")
+                LogManager.shared.log(category: .bluetooth, message: "Failed to encode sensorStartNotes: \(error)")
             }
         }
+    }
+}
+
+extension Storage {
+    /// Finds the most recent activation date for a given sensor ID.
+    func latestActivationDate(for sensorID: String) -> String? {
+        let sensorNotes = sensorStartNotes
+        let matchingNotes = sensorNotes.compactMap { entry -> String? in
+            if let extracted = entry.extractedSensorInfo, extracted.id == sensorID {
+                return extracted.activationDate
+            }
+            return nil
+        }
+
+        return matchingNotes.sorted().last // Return the latest activation date if found.
     }
 }

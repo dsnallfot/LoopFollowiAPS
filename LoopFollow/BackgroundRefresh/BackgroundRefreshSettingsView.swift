@@ -124,6 +124,15 @@ struct BackgroundRefreshSettingsView: View {
                             .foregroundColor(.secondary)
                             .font(.footnote)
                     }
+                    
+                    // ✅ Show Sensor Activation Date (if found)
+                    if let sensorID = storedDevice.name,
+                       let activationDate = Storage.shared.latestActivationDate(for: sensorID) {
+                        Text("Activated: \(activationDate)")
+                            .foregroundColor(.secondary)
+                            .font(.footnote)
+                    }
+                    
                     if let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: storedDevice) {
                         
                         

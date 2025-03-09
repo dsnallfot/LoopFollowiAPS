@@ -28,6 +28,15 @@ struct BLEDeviceSelectionView: View {
                                 Text("RSSI: \(device.rssi) dBm")
                                     .foregroundColor(.secondary)
                                     .font(.footnote)
+                                
+                                // ✅ Show Sensor Activation Date (if found)
+                                if let sensorID = device.name,
+                                   let activationDate = Storage.shared.latestActivationDate(for: sensorID) {
+                                    Text("Activated: \(activationDate)")
+                                        .foregroundColor(.secondary)
+                                        .font(.footnote)
+                                }
+                                
                                 if Storage.shared.backgroundRefreshType.value == .dexcom,
                                    let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: device) {
                                     Text("Expected bg delay: \(offset)")
