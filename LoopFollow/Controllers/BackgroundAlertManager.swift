@@ -34,14 +34,10 @@ class BackgroundAlertManager {
     /// Title prefix for all background refresh notifications.
     private let notificationTitlePrefix = "LoopFollow Background Refresh"
     
-    /// Timestamp of the last scheduled background alert.
-    private var lastScheduleDate: Date?
-    
     /// Start scheduling background alerts.
     func startBackgroundAlert() {
         isAlertScheduled = true
-        // Force execution to bypass throttle when starting
-        scheduleBackgroundAlert(force: true)
+        scheduleBackgroundAlert()
     }
     
     /// Stop all scheduled background alerts.
@@ -52,19 +48,10 @@ class BackgroundAlertManager {
     }
     
     /// (Re)schedule all background alerts based on predefined durations.
-    /// - Parameter force: When true, the scheduling is executed regardless of throttle constraints.
-    func scheduleBackgroundAlert(force: Bool = false) {
+    func scheduleBackgroundAlert() {
+        removeDeliveredNotifications()
         
         guard isAlertScheduled, Storage.shared.backgroundRefreshType.value != .none else { return }
-        
-        // Throttle execution if not forced: only run once every 10 seconds.
-        if !force {
-            let now = Date()
-            if let lastDate = lastScheduleDate, now.timeIntervalSince(lastDate) < 10 {
-                return
-            }
-            lastScheduleDate = now
-        }
         
         removeDeliveredNotifications()
         
