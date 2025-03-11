@@ -332,4 +332,82 @@ class NightscoutUtils {
         let decoder = JSONDecoder()
         return try decoder.decode(T.self, from: data)
     }
+    
+    // New DELETE function to remove a treatment by its _id.
+    struct DeleteResponse: Decodable {
+        let n: Int
+        let ok: Int
+        let optime: DeleteOptime?
+        let electionId: String?
+        let operationTime: String?
+    }
+
+    struct DeleteOptime: Decodable {
+        let ts: String
+        let t: Int
+    }
+
+    static func executeDeleteRequest(treatmentId: String, completion: @escaping (Result<Any, Error>) -> Void) {
+        let baseURL = ObservableUserDefaults.shared.url.value
+        let token = UserDefaultsRepository.token.value
+
+        // Updated URL to include the API path
+        guard let url = URL(string: "\(baseURL)/api/v1/treatments/\(treatmentId)") else {
+            completion(.failure(NSError(domain: "NightscoutUtils", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to construct URL for deletion"])))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        
+        // Add token if needed
+        if !token.isEmpty {
+            let tokenQuery = "token=\(token.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? token)"
+            if var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+                urlComponents.query = tokenQuery
+                if let newURL = urlComponents.url {
+                    request.url = newURL
+                }
+            }
+        }
+        
+        print("DELETE Request URL: \(request.url?.absoluteString ?? "nil")")
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data, error == nil else {
+                DispatchQueue.main.async {
+                    completion(.failure(error!))
+                }
+                return
+            }
+            
+            // Print raw response for debugging.
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("DELETE Response: \(responseString)")
+            } else {
+                print("DELETE Response: (Unable to convert data to string)")
+            }
+            
+            // Attempt to decode the response JSON.
+            do {
+                let decoder = JSONDecoder()
+                let deleteResponse = try decoder.decode(DeleteResponse.self, from: data)
+                DispatchQueue.main.async {
+                    completion(.success(deleteResponse))
+                }
+            } catch {
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                    DispatchQueue.main.async {
+                        completion(.success("Success"))
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                }
+            }
+        }
+        task.resume()
+    }
 }

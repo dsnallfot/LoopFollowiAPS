@@ -11,8 +11,9 @@ class Value1TableViewCell: UITableViewCell {
     }
 }
 
-/// A simple model representing a treatment entry.
+/// Updated Treatment model includes the documentId (_id from the database)
 struct Treatment {
+    let documentId: String?
     let eventType: String
     let amount: String?
     let timestamp: Date
@@ -27,6 +28,9 @@ struct Treatment {
     
     /// Failable initializer that creates a Treatment from a dictionary.
     init?(dictionary: [String: AnyObject]) {
+        // Capture the _id (if available)
+        self.documentId = dictionary["_id"] as? String
+        
         guard let eventType = dictionary["eventType"] as? String else { return nil }
         self.eventType = eventType
         
@@ -109,6 +113,9 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
     }
     
+    // Activity indicator property for refresh progress
+    private var activityIndicator: UIActivityIndicatorView?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Behandlingslogg"
@@ -123,16 +130,47 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Navigation Bar Setup
     
     private func setupNavigationBar() {
+        // Right bar button remains as the Done button.
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Done",
             style: .done,
             target: self,
             action: #selector(doneButtonTapped)
         )
+        // Add new left bar button item with arrow.clockwise symbol for refresh.
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "arrow.clockwise"),
+            style: .plain,
+            target: self,
+            action: #selector(refreshButtonTapped)
+        )
     }
     
     @objc private func doneButtonTapped() {
         dismiss(animated: true, completion: nil)
+    }
+    
+    // MARK: - Refresh Button Action
+    
+    @objc private func refreshButtonTapped() {
+        showRefreshIndicator()
+        loadTreatments()
+    }
+    
+    private func showRefreshIndicator() {
+        let indicator = UIActivityIndicatorView(style: .medium)
+        indicator.startAnimating()
+        self.activityIndicator = indicator
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: indicator)
+    }
+    
+    private func hideRefreshIndicator() {
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "arrow.clockwise"),
+            style: .plain,
+            target: self,
+            action: #selector(refreshButtonTapped)
+        )
     }
     
     // MARK: - Setup Segmented Control
@@ -159,11 +197,6 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         tableView.register(Value1TableViewCell.self, forCellReuseIdentifier: "TreatmentCell")
         tableView.dataSource = self
         tableView.delegate = self
-        
-        // Add refresh control to the table view
-        let refreshControl = UIRefreshControl()
-        refreshControl.addTarget(self, action: #selector(refreshTreatments(_:)), for: .valueChanged)
-        tableView.refreshControl = refreshControl
     }
     
     // MARK: - Setup Constraints
@@ -171,12 +204,10 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private func setupConstraints() {
         let safeArea = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            // Place the segmented control at the top.
             segmentedControl.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 8),
             segmentedControl.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor, constant: 16),
             segmentedControl.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor, constant: -16),
             
-            // Place the table view below the segmented control.
             tableView.topAnchor.constraint(equalTo: segmentedControl.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
@@ -187,7 +218,10 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Data Loading
     
     private func loadTreatments() {
-        if !UserDefaultsRepository.downloadTreatments.value { return }
+        if !UserDefaultsRepository.downloadTreatments.value {
+            hideRefreshIndicator()
+            return
+        }
         
         let startTimeString = dateTimeUtils.getDateTimeString(addingDays: -1 * UserDefaultsRepository.downloadDays.value)
         let currentTimeString = dateTimeUtils.getDateTimeString(addingHours: 6)
@@ -211,12 +245,19 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     DispatchQueue.main.async {
                         self.treatments = downloadedTreatments
                         self.tableView.reloadData()
+                        self.hideRefreshIndicator()
                     }
                 } else {
                     LogManager.shared.log(category: .nightscout, message: "TreatmentsTableView, Unexpected data structure")
+                    DispatchQueue.main.async {
+                        self.hideRefreshIndicator()
+                    }
                 }
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "TreatmentsTableView, error \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.hideRefreshIndicator()
+                }
             }
         }
     }
@@ -295,8 +336,6 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         let treatment = filteredTreatments[indexPath.row]
-        
-        // For display purposes, replace "Carb Correction" with "Meal"
         let displayEventType = treatment.eventType == "Carb Correction" ? "Kh" : treatment.eventType
         
         // Special handling for BG Check entries.
@@ -381,19 +420,69 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         // Format timestamp as HH:mm:ss.
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm:ss                                                                                                                                                                                                                                                                                                                "
-        cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
-        
-        // Determine symbol and color.
-        let symbolInfo = symbolForEventType(treatment.eventType)
-        if let image = UIImage(systemName: symbolInfo.name) {
-            cell.imageView?.image = image
-            cell.imageView?.tintColor = symbolInfo.color
+                let timeFormatter = DateFormatter()
+                timeFormatter.dateFormat = "HH:mm:ss"
+                cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
+                
+                // Determine symbol and color.
+                let symbolInfo = symbolForEventType(treatment.eventType)
+                if let image = UIImage(systemName: symbolInfo.name) {
+                    cell.imageView?.image = image
+                    cell.imageView?.tintColor = symbolInfo.color
+                }
+                
+                cell.selectionStyle = .none
+                
+                // Check for duplicates: only count duplicates that have the same timestamp AND the same event type.
+                let duplicateCount = filteredTreatments.filter {
+                    $0.timestamp == treatment.timestamp && $0.eventType == treatment.eventType
+                }.count
+                if duplicateCount > 1 {
+                    cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.3)
+                } else {
+                    cell.backgroundColor = UIColor.systemBackground
+                }
+                
+                return cell
+            }
+    
+    // MARK: - Swipe to Delete (Editing Style)
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            let treatment = filteredTreatments[indexPath.row]
+            
+            // Prepare a formatted timestamp string.
+            let timeFormatter = DateFormatter()
+            timeFormatter.dateFormat = "HH:mm:ss"
+            let timeString = timeFormatter.string(from: treatment.timestamp)
+            
+            let message = "Vill du verkligen radera \(treatment.eventType) - \(timeString)?"
+            let alert = UIAlertController(title: "Radera behandling", message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+            alert.addAction(UIAlertAction(title: "OK", style: .destructive, handler: { _ in
+                // Check if we have a valid _id to delete.
+                guard let treatmentId = treatment.documentId else { return }
+                NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
+                    switch result {
+                    case .success(_):
+                        DispatchQueue.main.async {
+                            // Remove the deleted treatment from the data source.
+                            if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                self.treatments.remove(at: index)
+                                //self.tableView.deleteRows(at: [indexPath], with: .automatic)
+                            }
+                            // Reload the table view to reflect the change.
+                            self.tableView.reloadData()
+                        }
+                    case .failure(let error):
+                        print("Failed to delete treatment: \(error.localizedDescription)")
+                        // Optionally, show an error alert.
+                    }
+                }
+            }))
+            self.present(alert, animated: true, completion: nil)
         }
-        
-        cell.selectionStyle = .none
-        return cell
     }
     
     // MARK: - UITableViewDelegate Methods
