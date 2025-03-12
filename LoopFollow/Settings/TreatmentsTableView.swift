@@ -354,12 +354,15 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if let notes = treatment.overrideNotes {
                 let preview = previewOverrideText(for: notes)
                 if let duration = treatment.overrideDuration {
-                    cell.textLabel?.text = "\(preview) • \(Int(duration)) min"
+                    // Check if duration is more than 1440 minutes.
+                    if duration > 1440 {
+                        cell.textLabel?.text = "\(preview) • Tillsvidare"
+                    } else {
+                        cell.textLabel?.text = "\(preview) • \(Int(duration)) min"
+                    }
                 } else {
                     cell.textLabel?.text = preview
                 }
-                // Store full text in cell's tag or an associated object if needed.
-                // For simplicity, you can store it in the cell's detailTextLabel text (or add a property to your custom cell).
             } else {
                 cell.textLabel?.text = displayEventType
             }
