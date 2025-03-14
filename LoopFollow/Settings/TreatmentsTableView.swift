@@ -508,7 +508,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             timeFormatter.dateFormat = "HH:mm:ss"
             let timeString = timeFormatter.string(from: treatment.timestamp)
             
-            let message = "Vill du verkligen radera \(treatment.eventType) - \(timeString)?"
+            let message = "Vill du verkligen radera:\n \(treatment.eventType) • \(timeString)?"
             let alert = UIAlertController(title: "Radera behandling", message: message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
             alert.addAction(UIAlertAction(title: "OK", style: .destructive, handler: { _ in
@@ -521,7 +521,6 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                             // Remove the deleted treatment from the data source.
                             if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
                                 self.treatments.remove(at: index)
-                                //self.tableView.deleteRows(at: [indexPath], with: .automatic)
                             }
                             // Reload the table view to reflect the change.
                             self.tableView.reloadData()
@@ -530,7 +529,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                         }
                     case .failure(let error):
                         print("Failed to delete treatment: \(error.localizedDescription)")
-                        // Optionally, show an error alert.
+                        DispatchQueue.main.async {
+                            // Present an alert with the specified title and message.
+                            let failureAlert = UIAlertController(
+                                title: "Kunde inte radera!",
+                                message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
+                                preferredStyle: .alert
+                            )
+                            failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                            self.present(failureAlert, animated: true, completion: nil)
+                        }
                     }
                 }
             }))
