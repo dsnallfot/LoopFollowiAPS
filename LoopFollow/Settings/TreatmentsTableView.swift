@@ -96,19 +96,23 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private var segmentedControl: UISegmentedControl!
     
     // Define event type arrays for filtering.
-    private let insulinTypes = ["Temp Basal", "Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "SMB"]
+    private let basalType = "Temp Basal"
+    private let bolusTypes = ["Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "SMB"]
     private let mealTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid"]
     
     // Computed property that returns the treatments filtered by the segmented control.
     private var filteredTreatments: [Treatment] {
         switch segmentedControl.selectedSegmentIndex {
-        case 1: // Insulin
-            return treatments.filter { insulinTypes.contains($0.eventType) }
-        case 2: // Meals
+        case 1: // Basal – only Temp Basal entries
+            return treatments.filter { $0.eventType == basalType }
+        case 2: // Bolus – filter for all bolus-related entries
+            return treatments.filter { bolusTypes.contains($0.eventType) }
+        case 3: // Måltider
             return treatments.filter { mealTypes.contains($0.eventType) }
-        case 3: // Other: not insulin and not meals.
+        case 4: // Övrigt – not any insulin or meal entries
+            let insulinTypes = bolusTypes + [basalType]
             return treatments.filter { !insulinTypes.contains($0.eventType) && !mealTypes.contains($0.eventType) }
-        default: // All
+        default: // Allt
             return treatments
         }
     }
@@ -150,6 +154,53 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         dismiss(animated: true, completion: nil)
     }
     
+    private func updateDuplicateIndicator() {
+        // Check if any duplicate exists in the filtered treatments.
+        let duplicatesExist = filteredTreatments.contains { treatment in
+            let count = filteredTreatments.filter {
+                $0.timestamp == treatment.timestamp && $0.eventType == treatment.eventType
+            }.count
+            return count > 1
+        }
+        
+        // Determine which refresh button to show: if a refresh is in progress, use the activity indicator.
+        let refreshButton: UIBarButtonItem
+        if let indicator = activityIndicator {
+            refreshButton = UIBarButtonItem(customView: indicator)
+        } else {
+            refreshButton = UIBarButtonItem(image: UIImage(systemName: "arrow.clockwise"), style: .plain, target: self, action: #selector(refreshButtonTapped))
+        }
+        
+        if duplicatesExist {
+            // Create the duplicate indicator button with the desired SF Symbol, tint color, and tap action.
+            let duplicateIndicator = UIBarButtonItem(
+                image: UIImage(systemName: "document.on.document"),
+                style: .plain,
+                target: self,
+                action: #selector(duplicateIndicatorTapped)
+            )
+            duplicateIndicator.tintColor = .systemRed
+            // Set both items on the left side.
+            navigationItem.leftBarButtonItems = [refreshButton, duplicateIndicator]
+        } else {
+            // No duplicates: show only the refresh button.
+            navigationItem.leftBarButtonItems = [refreshButton]
+        }
+    }
+    
+    @objc private func duplicateIndicatorTapped() {
+        // Find the first treatment that has a duplicate (same timestamp and event type).
+        if let duplicateIndex = filteredTreatments.firstIndex(where: { treatment in
+            let duplicateCount = filteredTreatments.filter {
+                $0.timestamp == treatment.timestamp && $0.eventType == treatment.eventType
+            }.count
+            return duplicateCount > 1
+        }) {
+            let indexPath = IndexPath(row: duplicateIndex, section: 0)
+            tableView.scrollToRow(at: indexPath, at: .middle, animated: true)
+        }
+    }
+    
     // MARK: - Refresh Button Action
     
     @objc private func refreshButtonTapped() {
@@ -165,18 +216,14 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     private func hideRefreshIndicator() {
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "arrow.clockwise"),
-            style: .plain,
-            target: self,
-            action: #selector(refreshButtonTapped)
-        )
+        activityIndicator = nil
+        updateDuplicateIndicator()
     }
     
     // MARK: - Setup Segmented Control
     
     private func setupSegmentedControl() {
-        let segments = ["Allt", "Insulin", "Måltider", "Övrigt"]
+        let segments = ["Allt", "Basal", "Bolus", "Måltider", "Övrigt"]
         segmentedControl = UISegmentedControl(items: segments)
         segmentedControl.selectedSegmentIndex = 0
         segmentedControl.addTarget(self, action: #selector(filterChanged), for: .valueChanged)
@@ -186,6 +233,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     @objc private func filterChanged() {
         tableView.reloadData()
+        updateDuplicateIndicator()
     }
     
     // MARK: - Setup TableView
@@ -307,11 +355,11 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private func symbolForEventType(_ eventType: String) -> (name: String, color: UIColor) {
         switch eventType {
         case "Temp Basal":
-            return ("circle.fill", .systemBlue.withAlphaComponent(0.3))
+            return ("circle.fill", .systemBlue.withAlphaComponent(0.2))
         case "Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna":
-            return ("circle.fill", .systemBlue.withAlphaComponent(0.75))
+            return ("circle.fill", .systemBlue.withAlphaComponent(0.8))
         case "SMB":
-            return ("bolt.circle.fill", .systemBlue.withAlphaComponent(0.75))
+            return ("bolt.circle.fill", .systemBlue.withAlphaComponent(0.8))
         case "Carb Correction", "Kolhydrater", "Dextro", "Måltid":
             return ("circle.fill", .systemOrange.withAlphaComponent(0.75))
         case "BG Check":
@@ -477,6 +525,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                             }
                             // Reload the table view to reflect the change.
                             self.tableView.reloadData()
+                            // Run the duplicate check again to update the duplicate indicator.
+                            self.updateDuplicateIndicator()
                         }
                     case .failure(let error):
                         print("Failed to delete treatment: \(error.localizedDescription)")
