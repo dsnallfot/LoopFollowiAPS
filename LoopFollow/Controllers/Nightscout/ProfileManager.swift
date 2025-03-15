@@ -21,6 +21,9 @@ final class ProfileManager {
     var units: HKUnit
     var timezone: TimeZone
     var defaultProfile: String
+    var trioExpirationDateString: String?
+    var trioExpirationDate: Date?
+    var trioExpirationFormatted: String?
 
     // MARK: - Nested Structures
     struct TimeValue<T> {
@@ -108,7 +111,34 @@ final class ProfileManager {
             self.trioOverrides = []
             print("No trioOverrides found.")
         }
+        
+        // Store Trio Expiration Date (Raw String)
+            self.trioExpirationDateString = profileData.trioExpirationDateString
 
+            // Parse and format expiration date
+            if let expirationString = profileData.trioExpirationDateString {
+                let isoFormatter = ISO8601DateFormatter()
+                isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+                if let parsedDate = isoFormatter.date(from: expirationString) {
+                    self.trioExpirationDate = parsedDate
+                    
+                    // Format date to "YYYY-MM-DD, HH:mm"
+                    let displayFormatter = DateFormatter()
+                    displayFormatter.dateFormat = "yyyy-MM-dd, HH:mm"
+                    displayFormatter.locale = Locale(identifier: "en_US_POSIX")
+                    displayFormatter.timeZone = TimeZone.current  // Local timezone
+                    
+                    self.trioExpirationFormatted = displayFormatter.string(from: parsedDate)
+                } else {
+                    self.trioExpirationDate = nil
+                    self.trioExpirationFormatted = "Unknown"
+                }
+            } else {
+                self.trioExpirationDate = nil
+                self.trioExpirationFormatted = "Unknown"
+            }
+        
         Storage.shared.deviceToken.value = profileData.deviceToken ?? ""
         Storage.shared.bundleId.value = profileData.bundleIdentifier ?? ""
         Storage.shared.productionEnvironment.value = profileData.isAPNSProduction ?? false

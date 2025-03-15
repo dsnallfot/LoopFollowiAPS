@@ -42,7 +42,6 @@ struct NSProfile: Decodable {
         let target_high: [TargetEntry]?
         let target_low: [TargetEntry]?
         let timezone: String
-
         let units: String
     }
     
@@ -113,6 +112,11 @@ struct NSProfile: Decodable {
     
     // New property for the preferences object
     let nsPreferences: NSProfilePreferences?
+        
+    // New properties for expiration date
+    let trioExpirationDateString: String?
+    let trioExpirationDate: Date?
+    let trioExpirationFormatted: String?
 
     enum CodingKeys: String, CodingKey {
         case store
@@ -124,5 +128,47 @@ struct NSProfile: Decodable {
         case trioOverrides = "overridePresets"
         case teamID
         case nsPreferences = "preferences"
+        case trioExpirationDateString = "expirationDate" // Maps JSON key "expirationDate"
     }
+    
+    // Custom initializer to parse expiration date
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+
+            store = try container.decode([String: Store].self, forKey: .store)
+            defaultProfile = try container.decode(String.self, forKey: .defaultProfile)
+            units = try container.decode(String.self, forKey: .units)
+            bundleIdentifier = try container.decodeIfPresent(String.self, forKey: .bundleIdentifier)
+            isAPNSProduction = try container.decodeIfPresent(Bool.self, forKey: .isAPNSProduction)
+            deviceToken = try container.decodeIfPresent(String.self, forKey: .deviceToken)
+            teamID = try container.decodeIfPresent(String.self, forKey: .teamID)
+            trioOverrides = try container.decodeIfPresent([TrioOverrideEntry].self, forKey: .trioOverrides)
+            nsPreferences = try container.decodeIfPresent(NSProfilePreferences.self, forKey: .nsPreferences)
+
+            // Decode Trio expiration date
+            trioExpirationDateString = try container.decodeIfPresent(String.self, forKey: .trioExpirationDateString)
+
+            if let expirationString = trioExpirationDateString {
+                let isoFormatter = ISO8601DateFormatter()
+                isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                
+                if let parsedDate = isoFormatter.date(from: expirationString) {
+                    trioExpirationDate = parsedDate
+                    
+                    // Format it into "YYYY-MM-DD, HH:mm"
+                    let displayFormatter = DateFormatter()
+                    displayFormatter.dateFormat = "yyyy-MM-dd, HH:mm"
+                    displayFormatter.locale = Locale(identifier: "en_US_POSIX")
+                    displayFormatter.timeZone = TimeZone.current  // Adjust to the user's local time zone
+                    
+                    trioExpirationFormatted = displayFormatter.string(from: parsedDate)
+                } else {
+                    trioExpirationDate = nil
+                    trioExpirationFormatted = "Unknown"
+                }
+            } else {
+                trioExpirationDate = nil
+                trioExpirationFormatted = "Unknown"
+            }
+        }
 }

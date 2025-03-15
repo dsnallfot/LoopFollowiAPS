@@ -53,6 +53,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
         let expirationHeaderString = buildDetails.expirationHeaderString
         let versionManager = AppVersionManager()
         let version = versionManager.version()
+        let trioExpiration = ProfileManager.shared.trioExpirationFormatted ?? "Unknown"
 
         form
         +++ Section("Trio Data")
@@ -251,30 +252,36 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             }
         }
 
-        +++ Section("Build Information")
-        <<< LabelRow() {
-            $0.title = "Version"
-            $0.value = version
-            $0.tag = "currentVersionRow"
-        }
-        <<< LabelRow() {
-            $0.title = "Latest version"
-            $0.value = "Fetching..."
-            $0.tag = "latestVersionRow"
-        }
-        <<< LabelRow() {
-            $0.title = expirationHeaderString
-            $0.value = expiration
-            $0.hidden = Condition(booleanLiteral: isMacApp())
-        }
-        <<< LabelRow() {
-            $0.title = "Built"
-            $0.value = formattedBuildDate
-        }
-        <<< LabelRow() {
-            $0.title = "Branch"
-            $0.value = branchAndSha
-        }
+            +++ Section("Build Information")
+            <<< LabelRow() {
+                $0.title = "Version"
+                $0.value = version
+                $0.tag = "currentVersionRow"
+            }
+            <<< LabelRow() {
+                $0.title = "Latest version"
+                $0.value = "Fetching..."
+                $0.tag = "latestVersionRow"
+            }
+            <<< LabelRow() {
+                $0.title = expirationHeaderString
+                $0.value = expiration
+                $0.hidden = Condition(booleanLiteral: isMacApp())
+            }
+            <<< LabelRow() {
+                $0.title = "Built"
+                $0.value = formattedBuildDate
+            }
+            <<< LabelRow() {
+                $0.title = "Branch"
+                $0.value = branchAndSha
+            }
+            <<< LabelRow() {
+                $0.title = "Trio Expiration"
+                $0.value = trioExpiration
+                $0.tag = "trioExpirationRow"
+                $0.hidden = Condition(booleanLiteral: isMacApp())
+            }
 
         showHideNSDetails()
     }
