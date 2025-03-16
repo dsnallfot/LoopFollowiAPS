@@ -566,6 +566,23 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         timeFormatter.dateFormat = "HH:mm"
         let timeString = timeFormatter.string(from: treatment.timestamp)
         
+        // Fetch reason-string from device status for the particular event timestamp
+        if treatment.eventType == "Bolus" || treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
+                NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: treatment.timestamp) { result in
+                    switch result {
+                    case .success(let reason):
+                        let alert = UIAlertController(title: "Reason kl. \(timeString)", message: reason, preferredStyle: .alert)
+                        alert.addAction(UIAlertAction(title: "OK", style: .default))
+                        self.present(alert, animated: true)
+
+                    case .failure(let error):
+                        let alert = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
+                        alert.addAction(UIAlertAction(title: "OK", style: .default))
+                        self.present(alert, animated: true)
+                    }
+                }
+            }
+        
         // For Note entries:
         if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let fullNote = treatment.rawData["notes"] as? String {

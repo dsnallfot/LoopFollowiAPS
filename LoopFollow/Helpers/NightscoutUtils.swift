@@ -314,6 +314,7 @@ class NightscoutUtils {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("Bearer \(jwtToken)", forHTTPHeaderField: "Authorization")
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
@@ -410,4 +411,93 @@ class NightscoutUtils {
         }
         task.resume()
     }
+    
+    static func constructURLManual(baseURL: String, token: String?, endpoint: String, parameters: [String: String]) -> URL? {
+        var urlString = "\(baseURL)\(endpoint)?"
+        if let token = token, !token.isEmpty {
+            urlString += "token=\(token)&"
+        }
+        for (key, value) in parameters {
+            urlString += "\(key)=\(value)&"
+        }
+        if urlString.hasSuffix("&") {
+            urlString.removeLast()
+        }
+        return URL(string: urlString)
+    }
+    
+    static func fetchDeviceStatusReasonBeforeTimestamp(timestamp: Date, completion: @escaping (Result<String, Error>) -> Void) {
+        let baseURL = ObservableUserDefaults.shared.url.value  // e.g., "https://ivarsnightscout.herokuapp.com"
+        let token = UserDefaultsRepository.token.value         // e.g., "loopfollow-bf1773e37f692289"
+        
+        // Use ISO8601DateFormatter to produce a string like "2025-03-14T12:32:19Z"
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        let fullTimestamp = isoFormatter.string(from: timestamp) // e.g., "2025-03-14T12:32:19Z"
+        
+        // Build the find filter using the "created_at" field
+        // This produces a parameter: find[created_at][$lte]=2025-03-14T12:32:19Z
+        let parameters: [String: String] = [
+            "find[created_at][$lte]": fullTimestamp,
+            "count": "1"
+        ]
+        
+        // Use the endpoint with a trailing slash (as your working URL shows)
+        let endpoint = "/api/v1/devicestatus/"
+        
+        guard let url = constructURLManual(baseURL: baseURL, token: token, endpoint: endpoint, parameters: parameters) else {
+            completion(.failure(NightscoutError.invalidURL))
+            return
+        }
+        
+        print("🔹 Final URL: \(url.absoluteString)")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        
+        // Set headers to mimic a browser request.
+        request.setValue("application/json, text/javascript, */*; q=0.01", forHTTPHeaderField: "Accept")
+        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
+        request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
+        request.setValue("gzip, deflate, br", forHTTPHeaderField: "Accept-Encoding")
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code:", httpResponse.statusCode)
+            }
+            
+            guard let data = data, error == nil else {
+                DispatchQueue.main.async {
+                    completion(.failure(error ?? NightscoutError.networkError))
+                }
+                return
+            }
+            
+            if let jsonString = String(data: data, encoding: .utf8) {
+                //print("📦 Raw response: \(jsonString)")
+            }
+            
+            do {
+                guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+                      let firstStatus = jsonArray.first,
+                      let openaps = firstStatus["openaps"] as? [String: Any],
+                      let suggested = openaps["suggested"] as? [String: Any],
+                      let reason = suggested["reason"] as? String else {
+                    throw NightscoutError.unknown
+                }
+                
+                DispatchQueue.main.async {
+                    completion(.success(reason))
+                }
+            } catch {
+                print("⚠️ JSON Parsing Error:", error)
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+            }
+        }
+        task.resume()
+    }
+
 }
