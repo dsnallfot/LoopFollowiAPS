@@ -155,11 +155,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     private func updateDuplicateIndicator() {
-        // Check if any duplicate exists in the filtered treatments.
+        // Check if any duplicate exists in the filtered treatments, excluding "Note" eventType
         let duplicatesExist = filteredTreatments.contains { treatment in
+            guard treatment.eventType != "Note" else { return false }
+            
             let count = filteredTreatments.filter {
-                $0.timestamp == treatment.timestamp && $0.eventType == treatment.eventType
+                $0.timestamp == treatment.timestamp &&
+                $0.eventType == treatment.eventType &&
+                $0.eventType != "Note"
             }.count
+            
             return count > 1
         }
         
@@ -172,7 +177,6 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         if duplicatesExist {
-            // Create the duplicate indicator button with the desired SF Symbol, tint color, and tap action.
             let duplicateIndicator = UIBarButtonItem(
                 image: UIImage(systemName: "document.on.document"),
                 style: .plain,
@@ -180,19 +184,21 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 action: #selector(duplicateIndicatorTapped)
             )
             duplicateIndicator.tintColor = .systemRed
-            // Set both items on the left side.
             navigationItem.leftBarButtonItems = [refreshButton, duplicateIndicator]
         } else {
-            // No duplicates: show only the refresh button.
             navigationItem.leftBarButtonItems = [refreshButton]
         }
     }
     
     @objc private func duplicateIndicatorTapped() {
-        // Find the first treatment that has a duplicate (same timestamp and event type).
+        // Find the first non-Note treatment that has a duplicate (same timestamp and event type)
         if let duplicateIndex = filteredTreatments.firstIndex(where: { treatment in
+            guard treatment.eventType != "Note" else { return false }
+
             let duplicateCount = filteredTreatments.filter {
-                $0.timestamp == treatment.timestamp && $0.eventType == treatment.eventType
+                $0.timestamp == treatment.timestamp &&
+                $0.eventType == treatment.eventType &&
+                $0.eventType != "Note"
             }.count
             return duplicateCount > 1
         }) {
@@ -484,15 +490,19 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 
                 cell.selectionStyle = .none
                 
-                // Check for duplicates: only count duplicates that have the same timestamp AND the same event type.
-                let duplicateCount = filteredTreatments.filter {
-                    $0.timestamp == treatment.timestamp && $0.eventType == treatment.eventType
-                }.count
-                if duplicateCount > 1 {
-                    cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.3)
-                } else {
-                    cell.backgroundColor = UIColor.systemBackground
-                }
+        // Check for duplicates: only count duplicates that have the same timestamp AND the same event type (excluding "Note").
+        let duplicateCount = filteredTreatments.filter {
+            $0.timestamp == treatment.timestamp &&
+            $0.eventType == treatment.eventType &&
+            $0.eventType != "Note"
+        }.count
+
+        // Apply red background only if duplicates exist and the eventType isn't "Note".
+        if duplicateCount > 1 && treatment.eventType != "Note" {
+            cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.3)
+        } else {
+            cell.backgroundColor = UIColor.systemBackground
+        }
                 
                 return cell
             }
