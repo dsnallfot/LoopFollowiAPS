@@ -575,7 +575,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     switch result {
                     case .success(let reason):
                         let formattedReason = self.formatReason(reason)
-                        let alert = UIAlertController(title: "Trio beräkningar \(timeString)", message: formattedReason, preferredStyle: .alert)
+                        let alert = UIAlertController(title: "Trio behandlingsbeslut", message: formattedReason, preferredStyle: .alert)
                         alert.addAction(UIAlertAction(title: "OK", style: .default))
                         self.present(alert, animated: true)
 
@@ -666,26 +666,26 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 if match.numberOfRanges > 2, match.range(at: 2).location != NSNotFound {
                     let smbValue = (formatted as NSString).substring(with: match.range(at: 2))
                     if !smbValue.isEmpty {
-                        replacement += "• SMB Ratio: \(smbValue) \n"
+                        replacement += "• SMB Ratio: \(smbValue)\n"
                     }
                 }
-                replacement += "------------------------------ \nOREF SLUTSATS:\n • "
+                replacement += "\n\n👉  OREF SLUTSATS:\n•"
                 formatted = (formatted as NSString).replacingCharacters(in: fullRange, with: replacement)
             }
         }
 
         // Step 2: Replace all commas with a line break bullet.
-        formatted = formatted.replacingOccurrences(of: ",", with: " \n• ")
+        formatted = formatted.replacingOccurrences(of: ",", with: "\n•")
 
         // Step 3: Specific replacements.
         formatted = formatted.replacingOccurrences(of: "SMB INAKTIVERADE!", with: "SMB Inaktiverade 🚫")
         formatted = formatted.replacingOccurrences(of: "Mikrobolus:", with: "\n🔹 Mikrobolus:")
         formatted = formatted.replacingOccurrences(of: "Microbolusing", with: "\n🔹 Mikrobolus:")
-        formatted = formatted.replacingOccurrences(of: "E. ", with: "E\n  ")
-        formatted = formatted.replacingOccurrences(of: "U. ", with: "E\n  ")
+        formatted = formatted.replacingOccurrences(of: "E. ", with: "E\n")
+        formatted = formatted.replacingOccurrences(of: "U. ", with: "E\n")
 
         // Step 4: Replace "; " with a line break bullet.
-        formatted = formatted.replacingOccurrences(of: "; ", with: " \n• ")
+        formatted = formatted.replacingOccurrences(of: "; ", with: "\n•")
 
         // Step 5: Other formatting rules.
         formatted = formatted.replacingOccurrences(of: "add'l carbs req w/in", with: "g kh behövs inom")

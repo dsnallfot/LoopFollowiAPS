@@ -474,21 +474,71 @@ class NightscoutUtils {
                 return
             }
             
-            if let jsonString = String(data: data, encoding: .utf8) {
-                //print("📦 Raw response: \(jsonString)")
-            }
+            // Uncomment the following for full raw-response logging if needed:
+            // if let jsonString = String(data: data, encoding: .utf8) {
+            //     print("📦 Raw response: \(jsonString)")
+            // }
             
             do {
                 guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]],
                       let firstStatus = jsonArray.first,
                       let openaps = firstStatus["openaps"] as? [String: Any],
                       let suggested = openaps["suggested"] as? [String: Any],
-                      let reason = suggested["reason"] as? String else {
+                      let reason = suggested["reason"] as? String,
+                      let iobValue = suggested["IOB"] as? Double,
+                      let bgValueRaw = suggested["bg"] else {
                     throw NightscoutError.unknown
                 }
                 
+                // Convert bgValue to Double if needed
+                let bgValue: Double
+                if let bgDouble = bgValueRaw as? Double {
+                    bgValue = bgDouble
+                } else if let bgInt = bgValueRaw as? Int {
+                    bgValue = Double(bgInt)
+                } else {
+                    bgValue = 0.0
+                }
+                
+                // Convert bg to mmol by multiplying with 0.0555
+                let bgMmol = bgValue * 0.0555
+                let bgString = String(format: "%.1f", bgMmol)
+                let iobString = String(format: "%.2f", iobValue)
+                
+                // Extract and format deliverAt. Expected JSON format: "2025-03-17T02:12:10.963Z"
+                var deliverAtString = ""
+                if let deliverAtRaw = suggested["deliverAt"] as? String {
+                    print("deliverAtRaw:", deliverAtRaw)
+                    // Create a local ISO8601DateFormatter to parse the deliverAt string.
+                    let localISOFormatter = ISO8601DateFormatter()
+                    localISOFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    if let deliverAtDate = localISOFormatter.date(from: deliverAtRaw) {
+                        print("Parsed deliverAtDate:", deliverAtDate)
+                        // Format deliverAt as HH:mm:ss
+                        let timeFormatter = DateFormatter()
+                        timeFormatter.dateFormat = "HH:mm:ss"
+                        timeFormatter.timeZone = TimeZone.current  // Use local time zone
+                        deliverAtString = timeFormatter.string(from: deliverAtDate)
+                        print("Formatted deliverAtString:", deliverAtString)
+                    } else {
+                        print("⚠️ Could not parse deliverAtRaw")
+                    }
+                } else {
+                    print("⚠️ deliverAt not found in JSON")
+                }
+                
+                // Prepend status time, BG and IOB to the reason string.
+                // For example: "Status kl: 02:12:10, BG: 4.5, IOB: 1.23, <original reason>"
+                var finalPrefix = ""
+                if !deliverAtString.isEmpty {
+                    finalPrefix = "💡 FÖRSLAG KL: \(deliverAtString), "
+                }
+                finalPrefix += "BG: \(bgString), IOB: \(iobString), "
+                
+                let finalReason = finalPrefix + reason
+                
                 DispatchQueue.main.async {
-                    completion(.success(reason))
+                    completion(.success(finalReason))
                 }
             } catch {
                 print("⚠️ JSON Parsing Error:", error)
