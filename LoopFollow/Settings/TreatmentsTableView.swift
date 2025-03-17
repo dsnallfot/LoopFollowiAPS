@@ -567,11 +567,15 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let timeString = timeFormatter.string(from: treatment.timestamp)
         
         // Fetch reason-string from device status for the particular event timestamp
-        if treatment.eventType == "Bolus" || treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
-                NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: treatment.timestamp) { result in
+            if treatment.eventType == "Bolus" || treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
+                // Adjust timestamp by adding 60 seconds
+                let adjustedTimestamp = treatment.timestamp.addingTimeInterval(60)
+                
+                NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: adjustedTimestamp) { result in
                     switch result {
                     case .success(let reason):
-                        let alert = UIAlertController(title: "Reason kl. \(timeString)", message: reason, preferredStyle: .alert)
+                        let formattedReason = self.formatReason(reason)
+                        let alert = UIAlertController(title: "Oref beräkningar \(timeString)", message: formattedReason, preferredStyle: .alert)
                         alert.addAction(UIAlertAction(title: "OK", style: .default))
                         self.present(alert, animated: true)
 
@@ -643,5 +647,68 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 present(alert, animated: true, completion: nil)
             }
         }
+    }
+    
+    func formatReason(_ reason: String) -> String {
+        var formatted = reason
+
+        // Step 1: Handle AF and SMB Ratio before other replacements.
+        // Regex pattern to match: "AF: <number> (optionally, , SMB Ratio: <number>) ;"
+        let patternAFSMB = "AF:\\s([0-9]\\.[0-9]{1,2})(?:,\\sSMB Ratio:\\s([0-9]\\.[0-9]{1,2}))?;"
+        if let regexAFSMB = try? NSRegularExpression(pattern: patternAFSMB, options: []) {
+            let range = NSRange(location: 0, length: formatted.utf16.count)
+            // Enumerate matches in reverse order to avoid index shifts.
+            let matches = regexAFSMB.matches(in: formatted, options: [], range: range)
+            for match in matches.reversed() {
+                let fullRange = match.range(at: 0)
+                let afValue = (formatted as NSString).substring(with: match.range(at: 1))
+                var replacement = "AF: \(afValue)\n"
+                if match.numberOfRanges > 2, match.range(at: 2).location != NSNotFound {
+                    let smbValue = (formatted as NSString).substring(with: match.range(at: 2))
+                    if !smbValue.isEmpty {
+                        replacement += "• SMB Ratio: \(smbValue) \n"
+                    }
+                }
+                replacement += "------------------------------ \nOREF SLUTSATS:\n • "
+                formatted = (formatted as NSString).replacingCharacters(in: fullRange, with: replacement)
+            }
+        }
+
+        // Step 2: Replace all commas with a line break bullet.
+        formatted = formatted.replacingOccurrences(of: ",", with: " \n• ")
+
+        // Step 3: Specific replacements.
+        formatted = formatted.replacingOccurrences(of: "SMB INAKTIVERADE!", with: "SMB Inaktiverade 🚫")
+        formatted = formatted.replacingOccurrences(of: "Mikrobolus:", with: "\n🔹 Mikrobolus:")
+        formatted = formatted.replacingOccurrences(of: "Microbolusing", with: "\n🔹 Mikrobolus:")
+        formatted = formatted.replacingOccurrences(of: "E. ", with: "E\n  ")
+        formatted = formatted.replacingOccurrences(of: "U. ", with: "E\n  ")
+
+        // Step 4: Replace "; " with a line break bullet.
+        formatted = formatted.replacingOccurrences(of: "; ", with: " \n• ")
+
+        // Step 5: Other formatting rules.
+        formatted = formatted.replacingOccurrences(of: "add'l carbs req w/in", with: "g kh behövs inom")
+        
+        // Replace TDD: <number> U with bold TDD (using regex)
+        if let regexTDD = try? NSRegularExpression(pattern: "TDD:\\s(\\d+(?:\\.\\d{1,2})?)\\sU", options: []) {
+            let range = NSRange(location: 0, length: formatted.utf16.count)
+            formatted = regexTDD.stringByReplacingMatches(in: formatted, options: [], range: range, withTemplate: "TDD: $1E")
+        }
+        
+        // Replace temp <number>&lt;<number>U/hr. with "Temp <number>&lt;<number>E/h"
+        if let regexTemp = try? NSRegularExpression(pattern: "temp\\s(\\d+\\.\\d{1,2})&lt;(\\d+\\.\\d{1,2})U/hr\\.", options: []) {
+            let range = NSRange(location: 0, length: formatted.utf16.count)
+            formatted = regexTemp.stringByReplacingMatches(in: formatted, options: [], range: range, withTemplate: "Temp $1&lt;$2E/h")
+        }
+        
+        // Replace "insulinReq" with "Insulinbehov:"
+        formatted = formatted.replacingOccurrences(of: "insulinReq", with: "Insulinbehov:")
+        
+        // New step: Replace HTML encoded less-than and greater-than signs
+        formatted = formatted.replacingOccurrences(of: "&lt;", with: "<")
+        formatted = formatted.replacingOccurrences(of: "&gt;", with: ">")
+        
+        return formatted
     }
 }
