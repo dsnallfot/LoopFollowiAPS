@@ -568,14 +568,14 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         
         // Fetch reason-string from device status for the particular event timestamp
             if treatment.eventType == "Bolus" || treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
-                // Adjust timestamp by adding 60 seconds
-                let adjustedTimestamp = treatment.timestamp.addingTimeInterval(60)
+                // Adjust timestamp by adding 30 seconds
+                let adjustedTimestamp = treatment.timestamp.addingTimeInterval(30)
                 
                 NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: adjustedTimestamp) { result in
                     switch result {
                     case .success(let reason):
                         let formattedReason = self.formatReason(reason)
-                        let alert = UIAlertController(title: "Oref beräkningar \(timeString)", message: formattedReason, preferredStyle: .alert)
+                        let alert = UIAlertController(title: "Trio beräkningar \(timeString)", message: formattedReason, preferredStyle: .alert)
                         alert.addAction(UIAlertAction(title: "OK", style: .default))
                         self.present(alert, animated: true)
 
