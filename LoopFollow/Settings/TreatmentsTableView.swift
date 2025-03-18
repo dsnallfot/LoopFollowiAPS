@@ -26,6 +26,9 @@ struct Treatment {
     // For Sensor Start entries, store notes
     let sensorStartNotes: String?
     
+    // For Temp Basal entries
+    let tempBasalDuration: Double?
+    
     /// Failable initializer that creates a Treatment from a dictionary.
     init?(dictionary: [String: AnyObject]) {
         // Capture the _id (if available)
@@ -60,19 +63,24 @@ struct Treatment {
         formatter.maximumFractionDigits = 2
         formatter.numberStyle = .decimal
         
-        // Determine amount for non-override cases.
+        var computedAmount: String? = nil
+        var computedTempBasalDuration: Double? = nil
+        
         if let insulin = dictionary["insulin"] as? Double {
             let insulinString = formatter.string(from: NSNumber(value: insulin)) ?? "\(insulin)"
-            self.amount = "\(insulinString) E"
+            computedAmount = "\(insulinString) E"
         } else if let carbs = dictionary["carbs"] as? Double {
             let carbsString = formatter.string(from: NSNumber(value: carbs)) ?? "\(carbs)"
-            self.amount = "\(carbsString) g"
+            computedAmount = "\(carbsString) g"
         } else if eventType == "Temp Basal", let absolute = dictionary["absolute"] as? Double {
             let absoluteString = formatter.string(from: NSNumber(value: absolute)) ?? "\(absolute)"
-            self.amount = "\(absoluteString) E/h"
-        } else {
-            self.amount = nil
+            computedAmount = "\(absoluteString) E/h"
+            // Capture the duration (in minutes) for temp basal events
+            computedTempBasalDuration = dictionary["duration"] as? Double
         }
+        
+        self.amount = computedAmount
+        self.tempBasalDuration = computedTempBasalDuration
         // For override treatments, capture the notes and duration.
         if eventType == "Temporary Override" || eventType == "Exercise" || eventType == "Override" {
             self.overrideNotes = dictionary["notes"] as? String
@@ -194,7 +202,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         // Find the first non-Note treatment that has a duplicate (same timestamp and event type)
         if let duplicateIndex = filteredTreatments.firstIndex(where: { treatment in
             guard treatment.eventType != "Note" else { return false }
-
+            
             let duplicateCount = filteredTreatments.filter {
                 $0.timestamp == treatment.timestamp &&
                 $0.eventType == treatment.eventType &&
@@ -384,7 +392,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
+        
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "TreatmentCell", for: indexPath) as? Value1TableViewCell else {
             return UITableViewCell(style: .value1, reuseIdentifier: "TreatmentCell")
         }
@@ -412,7 +420,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     if duration > 1440 {
                         cell.textLabel?.text = "\(preview) • Tillsvidare"
                     } else {
-                        cell.textLabel?.text = "\(preview) • \(Int(duration)) min"
+                        cell.textLabel?.text = "\(preview) • \(Int(duration)) m"
                     }
                 } else {
                     cell.textLabel?.text = preview
@@ -447,6 +455,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             }
             //cell.accessoryType = .disclosureIndicator
         }
+        // Handling for Temp Basal entries.
+        else if treatment.eventType == "Temp Basal" {
+            if let duration = treatment.tempBasalDuration, let amount = treatment.amount {
+                // Display the duration as an integer (you can also format with decimals if needed)
+                cell.textLabel?.text = "\(treatment.eventType) • \(amount) • \(Int(duration)) m"
+            } else {
+                cell.textLabel?.text = treatment.eventType
+            }
+            cell.accessoryType = .none
+        }
         // All other treatments.
         else {
             // If the treatment is a Carb Correction (which we display as "Meal")
@@ -477,35 +495,35 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         // Format timestamp as HH:mm:ss.
-                let timeFormatter = DateFormatter()
-                timeFormatter.dateFormat = "HH:mm:ss"
-                cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
-                
-                // Determine symbol and color.
-                let symbolInfo = symbolForEventType(treatment.eventType)
-                if let image = UIImage(systemName: symbolInfo.name) {
-                    cell.imageView?.image = image
-                    cell.imageView?.tintColor = symbolInfo.color
-                }
-                
-                cell.selectionStyle = .none
-                
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm:ss"
+        cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
+        
+        // Determine symbol and color.
+        let symbolInfo = symbolForEventType(treatment.eventType)
+        if let image = UIImage(systemName: symbolInfo.name) {
+            cell.imageView?.image = image
+            cell.imageView?.tintColor = symbolInfo.color
+        }
+        
+        cell.selectionStyle = .none
+        
         // Check for duplicates: only count duplicates that have the same timestamp AND the same event type (excluding "Note").
         let duplicateCount = filteredTreatments.filter {
             $0.timestamp == treatment.timestamp &&
             $0.eventType == treatment.eventType &&
             $0.eventType != "Note"
         }.count
-
+        
         // Apply red background only if duplicates exist and the eventType isn't "Note".
         if duplicateCount > 1 && treatment.eventType != "Note" {
             cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.3)
         } else {
             cell.backgroundColor = UIColor.systemBackground
         }
-                
-                return cell
-            }
+        
+        return cell
+    }
     
     // MARK: - Swipe to Delete (Editing Style)
     
@@ -567,25 +585,25 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let timeString = timeFormatter.string(from: treatment.timestamp)
         
         // Fetch reason-string from device status for the particular event timestamp
-            if treatment.eventType == "Bolus" || treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
-                // Adjust timestamp by adding 30 seconds
-                let adjustedTimestamp = treatment.timestamp.addingTimeInterval(30)
-                
-                NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: adjustedTimestamp) { result in
-                    switch result {
-                    case .success(let reason):
-                        let formattedReason = self.formatReason(reason)
-                        let alert = UIAlertController(title: "Trio behandlingsbeslut", message: formattedReason, preferredStyle: .alert)
-                        alert.addAction(UIAlertAction(title: "OK", style: .default))
-                        self.present(alert, animated: true)
-
-                    case .failure(let error):
-                        let alert = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
-                        alert.addAction(UIAlertAction(title: "OK", style: .default))
-                        self.present(alert, animated: true)
-                    }
+        if treatment.eventType == "Bolus" || treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
+            // Adjust timestamp by adding 30 seconds
+            let adjustedTimestamp = treatment.timestamp.addingTimeInterval(30)
+            
+            NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: adjustedTimestamp) { result in
+                switch result {
+                case .success(let reason):
+                    let formattedReason = self.formatReason(reason)
+                    let alert = UIAlertController(title: "Trio behandlingsbeslut", message: formattedReason, preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(alert, animated: true)
+                    
+                case .failure(let error):
+                    let alert = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(alert, animated: true)
                 }
             }
+        }
         
         // For Note entries:
         if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
@@ -651,7 +669,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     func formatReason(_ reason: String) -> String {
         var formatted = reason
-
+        
         // Step 1: Handle AF and SMB Ratio before other replacements.
         // Regex pattern to match: "AF: <number> (optionally, , SMB Ratio: <number>) ;"
         let patternAFSMB = "AF:\\s([0-9]\\.[0-9]{1,2})(?:,\\sSMB Ratio:\\s([0-9]\\.[0-9]{1,2}))?;"
@@ -673,20 +691,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 formatted = (formatted as NSString).replacingCharacters(in: fullRange, with: replacement)
             }
         }
-
+        
         // Step 2: Replace all commas with a line break bullet.
         formatted = formatted.replacingOccurrences(of: ",", with: "\n•")
-
+        
         // Step 3: Specific replacements.
         formatted = formatted.replacingOccurrences(of: "SMB INAKTIVERADE!", with: "SMB Inaktiverade 🚫")
         formatted = formatted.replacingOccurrences(of: "Mikrobolus:", with: "\n🔹 Mikrobolus:")
         formatted = formatted.replacingOccurrences(of: "Microbolusing", with: "\n🔹 Mikrobolus:")
         formatted = formatted.replacingOccurrences(of: "E. ", with: "E\n")
         formatted = formatted.replacingOccurrences(of: "U. ", with: "E\n")
-
+        
         // Step 4: Replace "; " with a line break bullet.
         formatted = formatted.replacingOccurrences(of: "; ", with: "\n•")
-
+        
         // Step 5: Other formatting rules.
         formatted = formatted.replacingOccurrences(of: "add'l carbs req w/in", with: "g kh behövs inom")
         
