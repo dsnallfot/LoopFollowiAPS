@@ -643,28 +643,34 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         // For Carb Correction entries:
         else if treatment.eventType == "Carb Correction" {
-            if let foodType = treatment.rawData["foodType"] as? String {
-                let title = "Måltid \(timeString)"
-                var message = "\(foodType)"
-                // Carbohydrates:
-                let carbsValue: Double = (treatment.rawData["carbs"] as? Double) ?? 0.0
-                message += "\nKolhydrater: \(formatValue(carbsValue)) g"
-                // Fat:
-                let fatValue: Double = (treatment.rawData["fat"] as? Double) ?? 0.0
-                if fatValue != 0 {
-                    message += "\nFett: \(formatValue(fatValue)) g"
-                }
-                // Protein:
-                let proteinValue: Double = (treatment.rawData["protein"] as? Double) ?? 0.0
-                if proteinValue != 0 {
-                    message += "\nProtein: \(formatValue(proteinValue)) g"
-                }
-                
-                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                present(alert, animated: true, completion: nil)
+            // Retrieve the foodType as an optional String:
+            let foodType = treatment.rawData["foodType"] as? String
+            let title = "Måltid \(timeString)"
+            // Build the message string. If foodType is nil, "nil" will appear in the string.
+            // You could replace "nil" with any placeholder text if desired.
+            var message = "\(foodType ?? "Omräknat från fett & protein")"
+            
+            // Carbohydrates:
+            let carbsValue: Double = (treatment.rawData["carbs"] as? Double) ?? 0.0
+            message += "\nKolhydrater: \(formatValue(carbsValue)) g"
+            
+            // Fat:
+            let fatValue: Double = (treatment.rawData["fat"] as? Double) ?? 0.0
+            if fatValue != 0 {
+                message += "\nFett: \(formatValue(fatValue)) g"
             }
+            
+            // Protein:
+            let proteinValue: Double = (treatment.rawData["protein"] as? Double) ?? 0.0
+            if proteinValue != 0 {
+                message += "\nProtein: \(formatValue(proteinValue)) g"
+            }
+            
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            present(alert, animated: true, completion: nil)
         }
+
     }
     
     func formatReason(_ reason: String) -> String {
