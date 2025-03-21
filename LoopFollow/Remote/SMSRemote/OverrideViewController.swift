@@ -258,7 +258,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         }
 
         if !trioOverrideNames.isEmpty {
-            return ["🚫 Avbryt Override"] + trioOverrideNames
+            return ["❌ Avbryt Override"] + trioOverrideNames
         } else {
             let overrideString = UserDefaultsRepository.overrideString.value
             return overrideString.components(separatedBy: ", ")
