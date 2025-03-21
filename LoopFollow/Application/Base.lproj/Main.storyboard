@@ -278,11 +278,11 @@
                                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Fy8-hh-qny" userLabel="HistoryView">
                                                         <rect key="frame" x="334" y="0.0" width="100" height="100"/>
                                                         <subviews>
-                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="-7" translatesAutoresizingMaskIntoConstraints="NO" id="1G4-DS-4GC">
-                                                                <rect key="frame" x="21.666666666666689" y="26.000000000000004" width="53.333333333333343" height="48.333333333333343"/>
+                                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="-12" translatesAutoresizingMaskIntoConstraints="NO" id="1G4-DS-4GC">
+                                                                <rect key="frame" x="17.666666666666689" y="24" width="57.333333333333343" height="52"/>
                                                                 <subviews>
                                                                     <button opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" pointerInteraction="YES" translatesAutoresizingMaskIntoConstraints="NO" id="liW-Gv-f3P" userLabel="HistoryButton">
-                                                                        <rect key="frame" x="0.0" y="0.0" width="53.333333333333336" height="43.333333333333336"/>
+                                                                        <rect key="frame" x="0.0" y="0.0" width="57.333333333333336" height="52"/>
                                                                         <state key="normal" title="Button"/>
                                                                         <buttonConfiguration key="configuration" style="plain">
                                                                             <imageReference key="image" image="trio" symbolScale="large" variableValue="1"/>
@@ -293,7 +293,7 @@
                                                                         </buttonConfiguration>
                                                                     </button>
                                                                     <label opaque="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Logg" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="uYu-6K-Z6P">
-                                                                        <rect key="frame" x="0.0" y="36.333333333333371" width="53.333333333333336" height="12"/>
+                                                                        <rect key="frame" x="0.0" y="40" width="57.333333333333336" height="12"/>
                                                                         <fontDescription key="fontDescription" type="system" weight="medium" pointSize="10"/>
                                                                         <color key="textColor" red="0.48638539399366304" green="0.48809501133893418" blue="0.49322386337474755" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                                                         <nil key="highlightedColor"/>
@@ -1982,7 +1982,7 @@
         <image name="plus.app" catalog="system" width="128" height="114"/>
         <image name="safari" catalog="system" width="128" height="123"/>
         <image name="target" catalog="system" width="128" height="123"/>
-        <image name="trio" width="29.333333969116211" height="29.333333969116211"/>
+        <image name="trio" width="33.333332061767578" height="38"/>
         <image name="wand.and.stars" catalog="system" width="128" height="112"/>
         <image name="zzz" catalog="system" width="119" height="128"/>
         <namedColor name="Basal">
