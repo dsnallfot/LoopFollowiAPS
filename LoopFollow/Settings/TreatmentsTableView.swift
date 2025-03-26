@@ -1,4 +1,6 @@
 import UIKit
+import LocalAuthentication
+import AudioToolbox
 
 class Value1TableViewCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -95,8 +97,8 @@ struct Treatment {
 
 /// A view controller that downloads and displays all treatments in a table view,
 /// with a segmented control above the table to filter the results.
-class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewDelegate {
-    
+class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewDelegate, TwilioRequestable {
+
     private let tableView = UITableView()
     // The complete set of downloaded treatments.
     private var treatments: [Treatment] = []
@@ -137,6 +139,17 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         setupTableView()
         setupConstraints()
         loadTreatments()
+        
+        // Register observers for shortcut callback notifications
+            NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutSuccess), name: NSNotification.Name("ShortcutSuccess"), object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutError), name: NSNotification.Name("ShortcutError"), object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutCancel), name: NSNotification.Name("ShortcutCancel"), object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
+
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Navigation Bar Setup
@@ -528,51 +541,210 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Swipe to Delete (Editing Style)
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            let treatment = filteredTreatments[indexPath.row]
-            
-            // Prepare a formatted timestamp string.
-            let timeFormatter = DateFormatter()
-            timeFormatter.dateFormat = "HH:mm:ss"
-            let timeString = timeFormatter.string(from: treatment.timestamp)
-            
-            let message = "Vill du verkligen radera:\n \(treatment.eventType) • \(timeString)?"
-            let alert = UIAlertController(title: "Radera behandling", message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
-            alert.addAction(UIAlertAction(title: "OK", style: .destructive, handler: { _ in
-                // Check if we have a valid _id to delete.
-                guard let treatmentId = treatment.documentId else { return }
-                NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
-                    switch result {
-                    case .success(_):
-                        DispatchQueue.main.async {
-                            // Remove the deleted treatment from the data source.
-                            if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
-                                self.treatments.remove(at: index)
+            if editingStyle == .delete {
+                let treatment = filteredTreatments[indexPath.row]
+                let timeFormatter = DateFormatter()
+                timeFormatter.dateFormat = "HH:mm:ss"
+                let timeString = timeFormatter.string(from: treatment.timestamp)
+                
+                // Retrieve remote type from Storage.
+                let remoteType = Storage.shared.remoteType.value
+                
+                // If the treatment is a Carb Correction and remote type is SMS, present the three-option alert.
+                if treatment.eventType == "Carb Correction" && remoteType == .sms {
+                    // Present an alert with three options.
+                    let alert = UIAlertController(
+                        title: "Radera måltid?",
+                        message: "\nVälj om du vill: \n\n1. Radera måltiden i Trio (vilket också raderar den i Nightscout) \n\n 2. Endast radera måltiden i Nightscout (vilket INTE raderar den i Trio!)",
+                        preferredStyle: .alert)
+                    
+                    alert.addAction(UIAlertAction(title: "Trio & Nightscout", style: .default, handler: { _ in
+                        self.deleteEntryInTrio(for: treatment)
+                    }))
+                    
+                    alert.addAction(UIAlertAction(title: "Endast Nightscout", style: .destructive, handler: { _ in
+                        guard let treatmentId = treatment.documentId else { return }
+                        NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
+                            switch result {
+                            case .success(_):
+                                DispatchQueue.main.async {
+                                    if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                        self.treatments.remove(at: index)
+                                    }
+                                    self.tableView.reloadData()
+                                    self.updateDuplicateIndicator()
+                                }
+                            case .failure(let error):
+                                DispatchQueue.main.async {
+                                    let failureAlert = UIAlertController(
+                                        title: "Kunde inte radera!",
+                                        message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
+                                        preferredStyle: .alert)
+                                    failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                                    self.present(failureAlert, animated: true, completion: nil)
+                                }
+                                print("Failed to delete treatment: \(error.localizedDescription)")
                             }
-                            // Reload the table view to reflect the change.
-                            self.tableView.reloadData()
-                            // Run the duplicate check again to update the duplicate indicator.
-                            self.updateDuplicateIndicator()
                         }
-                    case .failure(let error):
-                        print("Failed to delete treatment: \(error.localizedDescription)")
-                        DispatchQueue.main.async {
-                            // Present an alert with the specified title and message.
-                            let failureAlert = UIAlertController(
-                                title: "Kunde inte radera!",
-                                message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
-                                preferredStyle: .alert
-                            )
-                            failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                            self.present(failureAlert, animated: true, completion: nil)
+                    }))
+                    
+                    alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+                    self.present(alert, animated: true, completion: nil)
+                } else {
+                    // Original delete action for other event types.
+                    let message = "Vill du verkligen radera:\n \(treatment.eventType) • \(timeString)?"
+                    let alert = UIAlertController(title: "Radera behandling?", message: message, preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+                    alert.addAction(UIAlertAction(title: "OK", style: .destructive, handler: { _ in
+                        guard let treatmentId = treatment.documentId else { return }
+                        NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
+                            switch result {
+                            case .success(_):
+                                DispatchQueue.main.async {
+                                    if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                        self.treatments.remove(at: index)
+                                    }
+                                    self.tableView.reloadData()
+                                    self.updateDuplicateIndicator()
+                                }
+                            case .failure(let error):
+                                DispatchQueue.main.async {
+                                    let failureAlert = UIAlertController(
+                                        title: "Kunde inte radera!",
+                                        message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
+                                        preferredStyle: .alert)
+                                    failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                                    self.present(failureAlert, animated: true, completion: nil)
+                                }
+                            }
                         }
+                    }))
+                    self.present(alert, animated: true, completion: nil)
+                }
+            }
+        }
+
+    // MARK: - Remote Delete for Carb Correction (Trio)
+        private func deleteEntryInTrio(for treatment: Treatment) {
+            // Extract carbohydrates from treatment's rawData.
+            let carbsValue: Double
+            if let carbsStr = treatment.rawData["carbs"] as? String, let value = Double(carbsStr) {
+                carbsValue = value
+            } else if let carbsNum = treatment.rawData["carbs"] as? Double {
+                carbsValue = carbsNum
+            } else {
+                carbsValue = 0
+            }
+            
+            // Format the treatment's timestamp.
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            let formattedDate = dateFormatter.string(from: treatment.timestamp)
+            
+            // Retrieve additional details from user defaults.
+            let name = UserDefaultsRepository.caregiverName.value
+            let secret = UserDefaultsRepository.remoteSecretCode.value
+            
+            // Get current timestamp.
+            let currentTimestamp = Date()
+            let formattedTimestamp = dateFormatter.string(from: currentTimestamp)
+            
+            // Build the combined command string.
+            let combinedString = "Remote Delete\nKolhydrater: \(carbsValue)g\nDatum: \(formattedDate)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
+            
+            // Send the remote command.
+            sendRemoteDeleteCommand(combinedString: combinedString)
+        }
+
+    private func sendRemoteDeleteCommand(combinedString: String) {
+        // Retrieve the method from user defaults.
+        let method = UserDefaultsRepository.method.value
+        
+        if method != "SMS API" {
+            guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                print("Failed to encode URL string")
+                return
+            }
+            // Define callback URLs.
+            let successCallback = "loop://completed"
+            let errorCallback = "loop://error"
+            let cancelCallback = "loop://cancel"
+            
+            guard let successEncoded = successCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let errorEncoded = errorCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let cancelEncoded = cancelCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                print("Failed to encode callback URLs")
+                return
+            }
+            
+            let urlString = "shortcuts://x-callback-url/run-shortcut?name=Remote%20Delete&input=text&text=\(encodedString)&x-success=\(successEncoded)&x-error=\(errorEncoded)&x-cancel=\(cancelEncoded)"
+            if let url = URL(string: urlString) {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
+            print("Waiting for shortcut completion...")
+
+        } else {
+            // Use TwilioRequestable to send SMS.
+            twilioRequest(combinedString: combinedString) { result in
+                switch result {
+                case .success:
+                    AudioServicesPlaySystemSound(SystemSoundID(1322))
+                    DispatchQueue.main.async {
+                        self.showAlert(title: "Lyckades!", message: "Meddelandet levererades") { }
+                    }
+                case .failure(let error):
+                    AudioServicesPlaySystemSound(SystemSoundID(1053))
+                    DispatchQueue.main.async {
+                        self.showAlert(title: "Fel", message: error.localizedDescription) { }
                     }
                 }
-            }))
-            self.present(alert, animated: true, completion: nil)
+            }
         }
     }
+
+    // MARK: - Shortcut Callback Handlers (without dismissing the view)
+
+    @objc private func handleShortcutSuccess() {
+        print("Shortcut succeeded")
+        AudioServicesPlaySystemSound(SystemSoundID(1322))
+        showAlert(title: NSLocalizedString("Lyckades", comment: "Lyckades"),
+                  message: NSLocalizedString("Meddelandet levererades", comment: "Meddelandet levererades"),
+                  completion: { /* No dismissal here */ })
+    }
+
+    @objc private func handleShortcutError() {
+        print("Shortcut failed, showing error alert...")
+        AudioServicesPlaySystemSound(SystemSoundID(1053))
+        showAlert(title: NSLocalizedString("Misslyckades", comment: "Misslyckades"),
+                  message: NSLocalizedString("Ett fel uppstod när genvägen skulle köras. Du kan försöka igen.", comment: "Ett fel uppstod när genvägen skulle köras. Du kan försöka igen."),
+                  completion: { /* Re-enable send button if needed */ })
+    }
+
+    @objc private func handleShortcutCancel() {
+        print("Shortcut was cancelled, showing cancellation alert...")
+        AudioServicesPlaySystemSound(SystemSoundID(1053))
+        showAlert(title: NSLocalizedString("Avbröts", comment: "Avbröts"),
+                  message: NSLocalizedString("Genvägen avbröts innan den körts färdigt. Du kan försöka igen.", comment: "Genvägen avbröts innan den körts färdigt. Du kan försöka igen."),
+                  completion: { /* Re-enable send button if needed */ })
+    }
+
+    @objc private func handleShortcutPasscode() {
+        print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
+        AudioServicesPlaySystemSound(SystemSoundID(1053))
+        showAlert(title: NSLocalizedString("Fel lösenkod", comment: "Fel lösenkod"),
+                  message: NSLocalizedString("Genvägen avbröts pga fel lösenkod. Du kan försöka igen.", comment: "Genvägen avbröts pga fel lösenkod. Du kan försöka igen."),
+                  completion: { /* Re-enable send button if needed */ })
+    }
+
+    // A helper function to display alerts without dismissing the view.
+    private func showAlert(title: String, message: String, completion: @escaping () -> Void) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+            completion()
+        }))
+        self.present(alert, animated: true, completion: nil)
+    }
+
     
     // MARK: - UITableViewDelegate Methods
     
