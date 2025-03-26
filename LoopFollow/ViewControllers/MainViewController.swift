@@ -801,7 +801,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         // Instantiate your TreatmentsTableView.
         let treatmentsVC = TreatmentsTableView()
         
-        // Wrap it in a UINavigationController for the navigation bar and Done button.
+        // Wrap it in a UINavigationController for the navigation bar and Klar button.
         let navController = UINavigationController(rootViewController: treatmentsVC)
         navController.modalPresentationStyle = .formSheet
         

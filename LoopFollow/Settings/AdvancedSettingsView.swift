@@ -35,7 +35,7 @@ struct AdvancedSettingsView: View {
             .navigationBarTitle("Advanced Settings", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

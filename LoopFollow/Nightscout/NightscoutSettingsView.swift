@@ -22,7 +22,7 @@ struct NightscoutSettingsView: View {
             .navigationBarTitle("Nightscout Settings", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

@@ -207,7 +207,7 @@ struct RemoteSettingsView: View {
             .navigationBarTitle("Remote Settings", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

@@ -28,7 +28,7 @@ struct BackgroundRefreshSettingsView: View {
             .navigationBarTitle("Background Refresh Settings", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

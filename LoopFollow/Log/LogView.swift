@@ -41,7 +41,7 @@ struct LogView: View {
             .navigationBarTitle("Today's Logs", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

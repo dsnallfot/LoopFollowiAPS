@@ -249,7 +249,7 @@ class AlarmViewController: FormViewController {
 
         form
         +++ ButtonRow() {
-            $0.title = "DONE"
+            $0.title = "Klar"
         }.onCellSelection { (row, arg)  in
             self.dismiss(animated: true, completion: nil)
         }

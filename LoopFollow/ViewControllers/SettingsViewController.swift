@@ -58,7 +58,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
         form
         +++ Section("Trio Data")
         <<< ButtonRow() {
-            $0.title = "Treatment Log"
+            $0.title = "Behandlingslogg"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     // Instantiate the TreatmentsTableView.
@@ -70,7 +70,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
-                $0.title = "Sensor History"
+                $0.title = "Sensorhistorik"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
                         let sensorHistoryVC = SensorHistoryViewController()
@@ -80,7 +80,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 )
             }
         <<< ButtonRow() {
-            $0.title = "Preferences"
+            $0.title = "Användarinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let trioView = TrioPreferencesView()
@@ -95,7 +95,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
-            $0.title = "Profile Schedules"
+            $0.title = "Profilinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let profileSchedulesView = ProfileSchedulesView()
@@ -110,9 +110,9 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         
-        +++ Section(header: "Data Settings", footer: "")
+        +++ Section(header: "Datainställningar", footer: "")
         <<< SegmentedRow<String>("units") { row in
-            row.title = "Units"
+            row.title = "Enhet"
             row.options = ["mg/dL", "mmol/L"]
             row.value = UserDefaultsRepository.units.value
         }.onChange { row in
@@ -120,7 +120,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             UserDefaultsRepository.units.value = value
         }
         <<< ButtonRow("nightscout") {
-            $0.title = "Nightscout Settings"
+            $0.title = "Nightscoutinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentNightscoutSettingsView()
@@ -129,7 +129,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow("dexcom") {
-            $0.title = "Dexcom Settings"
+            $0.title = "Dexcominställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentDexcomSettingsView()
@@ -138,10 +138,10 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
 
-        +++ Section("App Settings")
+        +++ Section("Appinställningar")
 
         <<< ButtonRow("backgroundRefreshSettings") {
-            $0.title = "Background Refresh Settings"
+            $0.title = "Bakgrundsaktivitet"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentBackgroundRefreshSettings()
@@ -152,7 +152,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
         }
 
         <<< ButtonRow() {
-            $0.title = "General Settings"
+            $0.title = "Allmänna inställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let controller = GeneralSettingsViewController()
@@ -162,7 +162,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                                              ), onDismiss: nil)
         }
         <<< ButtonRow("graphSettings") {
-            $0.title = "Graph Settings"
+            $0.title = "Grafinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let controller = GraphSettingsViewController()
@@ -172,7 +172,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                                              ), onDismiss: nil)
         }
         <<< ButtonRow("informationDisplaySettings") {
-            $0.title = "Information Display Settings"
+            $0.title = "Informationinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentInfoDisplaySettings()
@@ -181,7 +181,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                                              ), onDismiss: nil)
         }
         <<< ButtonRow("alarmsSettings") {
-            $0.title = "Alarms"
+            $0.title = "Alarm"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     guard let alarmVC = ViewControllerManager.shared.alarmViewController else {
@@ -191,7 +191,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 }), onDismiss: nil)
         }
         <<< ButtonRow("remoteSettings") {
-            $0.title = "Remote Settings"
+            $0.title = "Fjärrkontrollinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentRemoteSettings()
@@ -201,9 +201,9 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
 
-        +++ Section("Integrations")
+        +++ Section("Integrationer")
         <<< ButtonRow() {
-            $0.title = "Calendar"
+            $0.title = "Kalendertrick"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let controller = WatchSettingsViewController()
@@ -214,7 +214,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
 
         }
         <<< ButtonRow("contact") {
-            $0.title = "Contact"
+            $0.title = "Kontakttrick"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentContactSettings()
@@ -222,9 +222,9 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 }
                                              ), onDismiss: nil)
         }
-        +++ Section("Advanced Settings")
+        +++ Section("Avancerade inställningar")
         <<< ButtonRow() {
-            $0.title = "Advanced Settings"
+            $0.title = "Avancerade inställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentAdvancedSettingsView()
@@ -233,9 +233,9 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             
         }
         
-        +++ Section("Logging")
+        +++ Section("Loggning")
         <<< ButtonRow("viewlog") {
-            $0.title = "View Log"
+            $0.title = "Se logg"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentLogView()
@@ -243,7 +243,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 }), onDismiss: nil)
         }
         <<< ButtonRow("shareLogs") {
-            $0.title = "Share Logs"
+            $0.title = "Dela logg"
             $0.cellSetup { cell, row in
                 cell.accessibilityIdentifier = "ShareLogsButton"
             }
@@ -252,14 +252,14 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             }
         }
 
-            +++ Section("Build Information")
+            +++ Section("Appinformation")
             <<< LabelRow() {
                 $0.title = "Version"
                 $0.value = version
                 $0.tag = "currentVersionRow"
             }
             <<< LabelRow() {
-                $0.title = "Latest version"
+                $0.title = "Senaste version"
                 $0.value = "Fetching..."
                 $0.tag = "latestVersionRow"
             }
@@ -269,7 +269,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 $0.hidden = Condition(booleanLiteral: isMacApp())
             }
             <<< LabelRow() {
-                $0.title = "Built"
+                $0.title = "Bygge"
                 $0.value = formattedBuildDate
             }
             <<< LabelRow() {
@@ -277,7 +277,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 $0.value = branchAndSha
             }
             <<< LabelRow() {
-                $0.title = "Trio Expiration"
+                $0.title = "Trio löper ut"
                 $0.value = trioExpiration
                 $0.tag = "trioExpirationRow"
                 $0.hidden = Condition(booleanLiteral: isMacApp())

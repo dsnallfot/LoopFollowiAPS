@@ -26,7 +26,7 @@ struct TrioPreferencesView: View {
             VStack {
                 // 🔹 Search Bar with Clear Button
                 HStack {
-                    TextField("Search Preferences...", text: $searchText)
+                    TextField("Sök inställningar...", text: $searchText)
                         .padding(10)
                         .background(Color(.secondarySystemBackground))
                         .cornerRadius(10)
@@ -53,10 +53,10 @@ struct TrioPreferencesView: View {
                     .padding(.vertical, 4)
                 }
             }
-            .navigationBarTitle("Trio Preferences", displayMode: .inline)
+            .navigationBarTitle("Trio Användarinställningar", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

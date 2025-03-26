@@ -155,7 +155,7 @@ class WatchSettingsViewController: FormViewController {
             
             
             +++ ButtonRow() {
-                $0.title = "DONE"
+                $0.title = "Klar"
             }.onCellSelection { (row, arg)  in
                 self.dismiss(animated:true, completion: nil)
         }

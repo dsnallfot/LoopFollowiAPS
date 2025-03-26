@@ -46,7 +46,7 @@ class SensorHistoryViewController: UITableViewController {
         navigationItem.leftBarButtonItems = [addButton, shareButton, importButton]
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Done",
+            title: "Klar",
             style: .done,
             target: self,
             action: #selector(doneButtonTapped)

@@ -60,7 +60,7 @@ struct ContactSettingsView: View {
             .navigationBarTitle("Contact Settings", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

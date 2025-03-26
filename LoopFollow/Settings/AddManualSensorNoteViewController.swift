@@ -27,13 +27,13 @@ class AddManualSensorNoteViewController: UIViewController {
     private let notesTextField: UITextField = {
         let textField = UITextField()
         textField.borderStyle = .roundedRect
-        textField.placeholder = "Enter sensor note"
+        textField.placeholder = "Sensorregistrering"
         return textField
     }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.title = "Add Sensor Note"
+        self.title = "Registrera sensor"
         view.backgroundColor = .systemBackground
         setupUI()
         setupNavigationBar()
@@ -41,14 +41,14 @@ class AddManualSensorNoteViewController: UIViewController {
     
     private func setupNavigationBar() {
         navigationItem.leftBarButtonItem = UIBarButtonItem(
-            title: "Cancel",
+            title: "Avbryt",
             style: .plain,
             target: self,
             action: #selector(cancelTapped)
         )
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Save",
+            title: "Spara",
             style: .done,
             target: self,
             action: #selector(saveTapped)

@@ -16,12 +16,12 @@ struct ProfileSchedulesView: View {
     @State private var selectedSection: SectionType = .targets // Default section
 
     enum SectionType: String, CaseIterable {
-        case targets = "Targets"
+        case targets = "Mål"
         case basal = "Basal"
         case cr = "CR"
         case isf = "ISF"
         case csf = "CSF"
-        case cHr = "C/Hr"
+        case cHr = "Min Kh/h"
 
         var displayName: String {
             switch self {
@@ -104,7 +104,7 @@ struct ProfileSchedulesView: View {
 
                 List {
                     if selectedSection == .targets {
-                        Section(header: Text("Targets")) {
+                        Section(header: Text("Mål")) {
                             ForEach(viewModel.targetEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -120,7 +120,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .cr {
-                        Section(header: Text("Carb Ratios")) {
+                        Section(header: Text("Insulinkvoter (CR)")) {
                             ForEach(viewModel.carbRatioEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -128,7 +128,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .isf {
-                        Section(header: Text("Insulin Sensitivity Factor")) {
+                        Section(header: Text("Insulinkänslighet (ISF)")) {
                             ForEach(viewModel.isfEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -136,7 +136,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .csf {
-                        Section(header: Text("Carb Sensitivity Factor")) {
+                        Section(header: Text("Kolhydratskänslighet (CSF))")) {
                             ForEach(viewModel.csfEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -144,7 +144,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .cHr {
-                        Section(header: Text("Minimum Carbs grams/hour")) {
+                        Section(header: Text("Minimi kolhydrater gram/timme")) {
                             ForEach(viewModel.minCarbsEntries) { entry in
                                 scheduleRow(entry, isBold: entry.time == "Average")
                             }
@@ -152,10 +152,10 @@ struct ProfileSchedulesView: View {
                     }
                 }
             }
-            .navigationBarTitle("Profile Schedules", displayMode: .inline)
+            .navigationBarTitle("Profilinställningar", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }

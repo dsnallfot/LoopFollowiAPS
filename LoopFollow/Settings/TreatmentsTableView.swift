@@ -155,9 +155,9 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Navigation Bar Setup
     
     private func setupNavigationBar() {
-        // Right bar button remains as the Done button.
+        // Right bar button remains as the Klar button.
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Done",
+            title: "Klar",
             style: .done,
             target: self,
             action: #selector(doneButtonTapped)
@@ -540,89 +540,109 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     // MARK: - Swipe to Delete (Editing Style)
     
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-            if editingStyle == .delete {
-                let treatment = filteredTreatments[indexPath.row]
-                let timeFormatter = DateFormatter()
-                timeFormatter.dateFormat = "HH:mm:ss"
-                let timeString = timeFormatter.string(from: treatment.timestamp)
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let treatment = filteredTreatments[indexPath.row]
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm:ss"
+        let timeString = timeFormatter.string(from: treatment.timestamp)
+        
+        let deleteAction = UIContextualAction(style: .destructive, title: nil) { (action, view, completionHandler) in
+            // Retrieve remote type from Storage.
+            let remoteType = Storage.shared.remoteType.value
+            
+            // If the treatment is a Carb Correction and remote type is SMS, present the three-option alert.
+            if treatment.eventType == "Carb Correction" && remoteType == .sms {
+                let alert = UIAlertController(
+                    title: "Radera måltid?",
+                    message: "\nVälj om du vill: \n\n• Radera måltiden i Trio (vilket också raderar den i Nightscout) \n\n• Radera endast måltiden i Nightscout (vilket INTE raderar den i Trio!)",
+                    preferredStyle: .alert)
                 
-                // Retrieve remote type from Storage.
-                let remoteType = Storage.shared.remoteType.value
+                alert.addAction(UIAlertAction(title: "Trio & Nightscout", style: .default, handler: { _ in
+                    self.deleteEntryInTrio(for: treatment)
+                    completionHandler(true)
+                }))
                 
-                // If the treatment is a Carb Correction and remote type is SMS, present the three-option alert.
-                if treatment.eventType == "Carb Correction" && remoteType == .sms {
-                    // Present an alert with three options.
-                    let alert = UIAlertController(
-                        title: "Radera måltid?",
-                        message: "\nVälj om du vill: \n\n1. Radera måltiden i Trio (vilket också raderar den i Nightscout) \n\n 2. Endast radera måltiden i Nightscout (vilket INTE raderar den i Trio!)",
-                        preferredStyle: .alert)
-                    
-                    alert.addAction(UIAlertAction(title: "Trio & Nightscout", style: .default, handler: { _ in
-                        self.deleteEntryInTrio(for: treatment)
-                    }))
-                    
-                    alert.addAction(UIAlertAction(title: "Endast Nightscout", style: .destructive, handler: { _ in
-                        guard let treatmentId = treatment.documentId else { return }
-                        NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
-                            switch result {
-                            case .success(_):
-                                DispatchQueue.main.async {
-                                    if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
-                                        self.treatments.remove(at: index)
-                                    }
-                                    self.tableView.reloadData()
-                                    self.updateDuplicateIndicator()
+                alert.addAction(UIAlertAction(title: "Endast Nightscout", style: .destructive, handler: { _ in
+                    guard let treatmentId = treatment.documentId else {
+                        completionHandler(false)
+                        return
+                    }
+                    NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
+                        switch result {
+                        case .success(_):
+                            DispatchQueue.main.async {
+                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                    self.treatments.remove(at: index)
                                 }
-                            case .failure(let error):
-                                DispatchQueue.main.async {
-                                    let failureAlert = UIAlertController(
-                                        title: "Kunde inte radera!",
-                                        message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
-                                        preferredStyle: .alert)
-                                    failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                                    self.present(failureAlert, animated: true, completion: nil)
+                                self.tableView.reloadData()
+                                self.updateDuplicateIndicator()
+                            }
+                        case .failure(let error):
+                            DispatchQueue.main.async {
+                                let failureAlert = UIAlertController(
+                                    title: "Kunde inte radera!",
+                                    message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
+                                    preferredStyle: .alert)
+                                failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                                self.present(failureAlert, animated: true, completion: nil)
+                            }
+                            print("Failed to delete treatment: \(error.localizedDescription)")
+                        }
+                        completionHandler(true)
+                    }
+                }))
+                
+                alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
+                    completionHandler(false)
+                }))
+                self.present(alert, animated: true, completion: nil)
+            } else {
+                // Original delete action for other event types.
+                let message = "Vill du verkligen radera:\n \(treatment.eventType) • \(timeString)?"
+                let alert = UIAlertController(title: "Radera behandling?", message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
+                    completionHandler(false)
+                }))
+                alert.addAction(UIAlertAction(title: "OK", style: .destructive, handler: { _ in
+                    guard let treatmentId = treatment.documentId else {
+                        completionHandler(false)
+                        return
+                    }
+                    NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
+                        switch result {
+                        case .success(_):
+                            DispatchQueue.main.async {
+                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                    self.treatments.remove(at: index)
                                 }
-                                print("Failed to delete treatment: \(error.localizedDescription)")
+                                self.tableView.reloadData()
+                                self.updateDuplicateIndicator()
+                            }
+                        case .failure(let error):
+                            DispatchQueue.main.async {
+                                let failureAlert = UIAlertController(
+                                    title: "Kunde inte radera!",
+                                    message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
+                                    preferredStyle: .alert)
+                                failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                                self.present(failureAlert, animated: true, completion: nil)
                             }
                         }
-                    }))
-                    
-                    alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
-                    self.present(alert, animated: true, completion: nil)
-                } else {
-                    // Original delete action for other event types.
-                    let message = "Vill du verkligen radera:\n \(treatment.eventType) • \(timeString)?"
-                    let alert = UIAlertController(title: "Radera behandling?", message: message, preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
-                    alert.addAction(UIAlertAction(title: "OK", style: .destructive, handler: { _ in
-                        guard let treatmentId = treatment.documentId else { return }
-                        NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
-                            switch result {
-                            case .success(_):
-                                DispatchQueue.main.async {
-                                    if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
-                                        self.treatments.remove(at: index)
-                                    }
-                                    self.tableView.reloadData()
-                                    self.updateDuplicateIndicator()
-                                }
-                            case .failure(let error):
-                                DispatchQueue.main.async {
-                                    let failureAlert = UIAlertController(
-                                        title: "Kunde inte radera!",
-                                        message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
-                                        preferredStyle: .alert)
-                                    failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                                    self.present(failureAlert, animated: true, completion: nil)
-                                }
-                            }
-                        }
-                    }))
-                    self.present(alert, animated: true, completion: nil)
-                }
+                        completionHandler(true)
+                    }
+                }))
+                self.present(alert, animated: true, completion: nil)
             }
         }
+        
+        // Set the trashcan SF Symbol and customize appearance.
+        deleteAction.image = UIImage(systemName: "trash")
+        deleteAction.backgroundColor = .red
+        
+        let configuration = UISwipeActionsConfiguration(actions: [deleteAction])
+        configuration.performsFirstActionWithFullSwipe = false
+        return configuration
+    }
 
     // MARK: - Remote Delete for Carb Correction (Trio)
         private func deleteEntryInTrio(for treatment: Treatment) {

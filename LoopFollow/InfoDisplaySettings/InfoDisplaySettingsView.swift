@@ -44,7 +44,7 @@ struct InfoDisplaySettingsView: View {
                     .environment(\.editMode, .constant(.active))
                 }
             }
-            .navigationBarItems(trailing: Button("Done") {
+            .navigationBarItems(trailing: Button("Klar") {
                 presentationMode.wrappedValue.dismiss()
             })
             .onDisappear {
