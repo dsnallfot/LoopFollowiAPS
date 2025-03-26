@@ -379,7 +379,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     // Helper to determine symbol name and color for a given event type.
-    private func symbolForEventType(_ eventType: String) -> (name: String, color: UIColor) {
+    private func symbolForEventType(_ eventType: String, foodType: String? = nil) -> (name: String, color: UIColor) {
+        if eventType == "Carb Correction" {
+            // If foodType is empty or nil, use brown; otherwise use systemOrange.
+            if let food = foodType, !food.isEmpty {
+                return ("circle.fill", .systemOrange.withAlphaComponent(0.8))
+            } else {
+                return ("circle.fill", .brown.withAlphaComponent(0.4))
+            }
+        }
+        
         switch eventType {
         case "Temp Basal":
             return ("circle.fill", .systemBlue.withAlphaComponent(0.2))
@@ -387,8 +396,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             return ("circle.fill", .systemBlue.withAlphaComponent(0.8))
         case "SMB":
             return ("bolt.circle.fill", .systemBlue.withAlphaComponent(0.8))
-        case "Carb Correction", "Kolhydrater", "Dextro", "Måltid":
-            return ("circle.fill", .systemOrange.withAlphaComponent(0.75))
+        case "Kolhydrater", "Dextro", "Måltid":
+            return ("circle.fill", .systemOrange.withAlphaComponent(0.8))
         case "BG Check":
             return ("circle.fill", .systemRed.withAlphaComponent(1.0))
         case "Exercise":
@@ -411,7 +420,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         let treatment = filteredTreatments[indexPath.row]
-        let displayEventType = treatment.eventType == "Carb Correction" ? "Kh" : treatment.eventType
+        let displayEventType: String
+        if treatment.eventType == "Carb Correction" {
+            if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
+                displayEventType = "Kh"
+            } else {
+                displayEventType = "Fett / Protein"
+            }
+        } else {
+            displayEventType = treatment.eventType
+        }
         
         // Special handling for BG Check entries.
         if treatment.eventType == "BG Check" {
@@ -513,7 +531,13 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
         
         // Determine symbol and color.
-        let symbolInfo = symbolForEventType(treatment.eventType)
+        let symbolInfo: (name: String, color: UIColor)
+            if treatment.eventType == "Carb Correction" {
+                let foodType = treatment.rawData["foodType"] as? String
+                symbolInfo = symbolForEventType(treatment.eventType, foodType: foodType)
+            } else {
+                symbolInfo = symbolForEventType(treatment.eventType)
+            }
         if let image = UIImage(systemName: symbolInfo.name) {
             cell.imageView?.image = image
             cell.imageView?.tintColor = symbolInfo.color
@@ -551,7 +575,9 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             let remoteType = Storage.shared.remoteType.value
             
             // If the treatment is a Carb Correction and remote type is SMS, present the three-option alert.
-            if treatment.eventType == "Carb Correction" && remoteType == .sms {
+            if treatment.eventType == "Carb Correction",
+               let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty,
+               remoteType == .sms {
                 let alert = UIAlertController(
                     title: "Radera måltid?",
                     message: "\nVälj om du vill: \n\n• Radera måltiden i Trio (vilket också raderar den i Nightscout) \n\n• Radera endast måltiden i Nightscout (vilket INTE raderar den i Trio!)",
@@ -597,8 +623,23 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 }))
                 self.present(alert, animated: true, completion: nil)
             } else {
-                // Original delete action for other event types.
-                let message = "Vill du verkligen radera:\n \(treatment.eventType) • \(timeString)?"
+                // Use a custom display name for deletion alerts.
+                let displayEventName: String
+                if treatment.eventType == "Carb Correction" {
+                    if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
+                        displayEventName = "Kolhydrater"
+                    } else {
+                        displayEventName = "Fett / Protein"
+                    }
+                } else if treatment.eventType == "Note" {
+                    displayEventName = "Notering"
+                } else if treatment.eventType == "Exercise" {
+                    displayEventName = "Override"
+                } else {
+                    displayEventName = treatment.eventType
+                }
+                
+                let message = "Vill du verkligen radera:\n \(displayEventName) • \(timeString)?"
                 let alert = UIAlertController(title: "Radera behandling?", message: message, preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
                     completionHandler(false)
@@ -917,7 +958,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             let title = "Måltid \(timeString)"
             // Build the message string. If foodType is nil, "nil" will appear in the string.
             // You could replace "nil" with any placeholder text if desired.
-            var message = "\(foodType ?? "Omräknat från fett & protein")"
+            var message = "\(foodType ?? "Kolhydratsekvivalenter")"
             
             // Carbohydrates:
             let carbsValue: Double = (treatment.rawData["carbs"] as? Double) ?? 0.0
