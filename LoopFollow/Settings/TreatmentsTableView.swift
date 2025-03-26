@@ -661,6 +661,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let method = UserDefaultsRepository.method.value
         
         if method != "SMS API" {
+            // Use the Shortcuts URL scheme.
             guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
                 print("Failed to encode URL string")
                 return
@@ -682,25 +683,95 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
             print("Waiting for shortcut completion...")
-
         } else {
-            // Use TwilioRequestable to send SMS.
-            twilioRequest(combinedString: combinedString) { result in
-                switch result {
-                case .success:
-                    AudioServicesPlaySystemSound(SystemSoundID(1322))
-                    DispatchQueue.main.async {
-                        self.showAlert(title: "Lyckades!", message: "Meddelandet levererades") { }
-                    }
-                case .failure(let error):
-                    AudioServicesPlaySystemSound(SystemSoundID(1053))
-                    DispatchQueue.main.async {
-                        self.showAlert(title: "Fel", message: error.localizedDescription) { }
-                    }
+            // For SMS API, first show a confirmation alert with authentication.
+            showRemoteDeleteConfirmationAlert(combinedString: combinedString)
+        }
+    }
+
+    /// Presents a confirmation alert for SMS deletion. If the user selects "Ja", we authenticate first.
+    private func showRemoteDeleteConfirmationAlert(combinedString: String) {
+        let confirmationAlert = UIAlertController(
+            title: "Bekräfta radering",
+            message: "Är du säker på att du vill radera måltiden i Trio?",
+            preferredStyle: .alert)
+        
+        confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { _ in
+            // Authenticate with biometrics; on success, send the command.
+            self.authenticateWithBiometrics {
+                self.sendRemoteDeleteCommandInternal(combinedString: combinedString)
+            }
+        }))
+        
+        confirmationAlert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
+            self.handleAlertDismissal()
+        }))
+        
+        self.present(confirmationAlert, animated: true, completion: nil)
+    }
+
+    /// Actually sends the remote delete command via Twilio (SMS API).
+    private func sendRemoteDeleteCommandInternal(combinedString: String) {
+        twilioRequest(combinedString: combinedString) { result in
+            switch result {
+            case .success:
+                AudioServicesPlaySystemSound(SystemSoundID(1322))
+                DispatchQueue.main.async {
+                    self.showAlert(title: "Lyckades!", message: "Meddelandet levererades") { }
+                }
+            case .failure(let error):
+                AudioServicesPlaySystemSound(SystemSoundID(1053))
+                DispatchQueue.main.async {
+                    self.showAlert(title: "Fel", message: error.localizedDescription) { }
                 }
             }
         }
     }
+
+    /// MARK: - Authentication & Alert Helpers
+
+    func authenticateWithBiometrics(completion: @escaping () -> Void) {
+        let context = LAContext()
+        var error: NSError?
+        
+        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            let reason = "Authenticate with biometrics to proceed"
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
+                DispatchQueue.main.async {
+                    if success {
+                        completion()
+                    } else {
+                        if let error = authenticationError as NSError?,
+                           error.code == LAError.biometryNotAvailable.rawValue ||
+                           error.code == LAError.biometryNotEnrolled.rawValue {
+                            self.authenticateWithPasscode(completion: completion)
+                        } else {
+                            print("Authentication failed: \(authenticationError?.localizedDescription ?? "unknown error")")
+                            self.handleAlertDismissal()
+                        }
+                    }
+                }
+            }
+        } else {
+            self.authenticateWithPasscode(completion: completion)
+        }
+    }
+
+    func authenticateWithPasscode(completion: @escaping () -> Void) {
+        let context = LAContext()
+        
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Authenticate with passcode to proceed") { success, error in
+            DispatchQueue.main.async {
+                if success {
+                    completion()
+                } else {
+                    print("Authentication failed: \(error?.localizedDescription ?? "unknown error")")
+                    self.handleAlertDismissal()
+                }
+            }
+        }
+    }
+
 
     // MARK: - Shortcut Callback Handlers (without dismissing the view)
 
@@ -735,14 +806,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                   message: NSLocalizedString("Genvägen avbröts pga fel lösenkod. Du kan försöka igen.", comment: "Genvägen avbröts pga fel lösenkod. Du kan försöka igen."),
                   completion: { /* Re-enable send button if needed */ })
     }
-
-    // A helper function to display alerts without dismissing the view.
+    
+    /// Presents an alert with a title, message, and calls completion after dismissal.
     private func showAlert(title: String, message: String, completion: @escaping () -> Void) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
             completion()
         }))
         self.present(alert, animated: true, completion: nil)
+    }
+
+    /// Called when an alert is dismissed (e.g. after cancellation or authentication failure).
+    private func handleAlertDismissal() {
+        // For example, re-enable any disabled buttons; here we simply print.
+        print("Alert dismissed, re-enabling controls if needed.")
     }
 
     
