@@ -144,7 +144,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .cHr {
-                        Section(header: Text("Minimi kolhydrater gram/timme")) {
+                        Section(header: Text("Minimum kolhydrater gram/timme")) {
                             ForEach(viewModel.minCarbsEntries) { entry in
                                 scheduleRow(entry, isBold: entry.time == "Average")
                             }
