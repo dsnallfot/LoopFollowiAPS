@@ -136,7 +136,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .csf {
-                        Section(header: Text("Kolhydratskänslighet (CSF))")) {
+                        Section(header: Text("Kolhydratskänslighet (CSF)")) {
                             ForEach(viewModel.csfEntries) { entry in
                                 scheduleRow(entry)
                             }
