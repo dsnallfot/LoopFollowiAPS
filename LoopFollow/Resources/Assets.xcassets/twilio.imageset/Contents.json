@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "twilio.png",
+      "filename" : "twilio1.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "twilio 1.png",
+      "filename" : "twilio1 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "twilio 2.png",
+      "filename" : "twilio1 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

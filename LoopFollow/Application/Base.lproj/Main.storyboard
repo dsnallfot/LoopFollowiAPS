@@ -626,13 +626,13 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="fMB-lw-1gf" userLabel="Method">
-                                <rect key="frame" x="12" y="43" width="48" height="35"/>
+                                <rect key="frame" x="12.000000000000007" y="43" width="105.66666666666669" height="35"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="35" id="Bnv-k2-QXn"/>
                                 </constraints>
                                 <color key="tintColor" red="0.50980395079999996" green="0.50980395079999996" blue="0.51372551919999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="plain" image="shortcuts">
+                                <buttonConfiguration key="configuration" style="plain" image="twilio">
                                     <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage"/>
                                 </buttonConfiguration>
                                 <connections>
@@ -734,7 +734,7 @@
                                 </constraints>
                             </stackView>
                             <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="b3T-o4-ESN">
-                                <rect key="frame" x="307.66666666666669" y="43" width="98.333333333333314" height="34.333333333333343"/>
+                                <rect key="frame" x="303.66666666666669" y="43.666666666666657" width="98.333333333333314" height="34.333333333333343"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Cs-mt-7ke" userLabel="NoteNS">
                                         <rect key="frame" x="0.0" y="0.0" width="47.333333333333336" height="34.333333333333336"/>
@@ -775,10 +775,10 @@
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="top" secondItem="fMB-lw-1gf" secondAttribute="bottom" constant="66" id="1k0-KP-MaN"/>
-                            <constraint firstAttribute="trailing" secondItem="b3T-o4-ESN" secondAttribute="trailing" constant="8" id="42U-e4-3n4"/>
+                            <constraint firstAttribute="trailing" secondItem="b3T-o4-ESN" secondAttribute="trailing" constant="12" id="42U-e4-3n4"/>
                             <constraint firstItem="fMB-lw-1gf" firstAttribute="leading" secondItem="qde-S1-0zf" secondAttribute="leading" constant="12" id="Dne-1G-1qT"/>
                             <constraint firstItem="qde-S1-0zf" firstAttribute="trailing" secondItem="ns4-YC-Awz" secondAttribute="trailing" constant="20" id="Hby-Md-VcH"/>
-                            <constraint firstItem="ns4-YC-Awz" firstAttribute="top" secondItem="b3T-o4-ESN" secondAttribute="bottom" constant="66.666666666666657" id="KWH-Ae-126"/>
+                            <constraint firstItem="ns4-YC-Awz" firstAttribute="top" secondItem="b3T-o4-ESN" secondAttribute="bottom" constant="66" id="KWH-Ae-126"/>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="leading" secondItem="qde-S1-0zf" secondAttribute="leading" constant="20" id="Lxf-Mg-SV4"/>
                             <constraint firstItem="ns4-YC-Awz" firstAttribute="top" secondItem="qde-S1-0zf" secondAttribute="top" constant="100" id="MKZ-4o-aUj"/>
                             <constraint firstItem="qde-S1-0zf" firstAttribute="bottom" secondItem="ns4-YC-Awz" secondAttribute="bottom" constant="100" id="SgO-Lo-oHR"/>
@@ -1992,9 +1992,9 @@
         <image name="person.fill" catalog="system" width="128" height="120"/>
         <image name="plus.app" catalog="system" width="128" height="114"/>
         <image name="safari" catalog="system" width="128" height="123"/>
-        <image name="shortcuts" width="24" height="24"/>
         <image name="target" catalog="system" width="128" height="123"/>
         <image name="trio" width="33.333332061767578" height="33.333332061767578"/>
+        <image name="twilio" width="81.666664123535156" height="24"/>
         <image name="wand.and.stars" catalog="system" width="128" height="112"/>
         <image name="zzz" catalog="system" width="119" height="128"/>
         <namedColor name="Basal">
