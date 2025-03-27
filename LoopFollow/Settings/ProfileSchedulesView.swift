@@ -21,7 +21,7 @@ struct ProfileSchedulesView: View {
         case cr = "CR"
         case isf = "ISF"
         case csf = "CSF"
-        case cHr = "Min Kh/h"
+        case cHr = "Kh g/h"
 
         var displayName: String {
             switch self {
