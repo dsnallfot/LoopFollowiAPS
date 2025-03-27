@@ -12,6 +12,7 @@ import EventKit
 import EventKitUI
 
 class RemoteSettingsViewController: FormViewController {
+    weak var delegate: RemoteSettingsDelegate?
     var appStateController: AppStateController?
     
     var mealViewController: MealViewController?
@@ -30,6 +31,14 @@ class RemoteSettingsViewController: FormViewController {
         // Reload the form initially
         reloadForm()
     }
+    
+    // This will catch both the "Klar" button dismissal and swipe-down dismissals.
+        override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            if self.isBeingDismissed || self.isMovingFromParent {
+                delegate?.remoteSettingsDidUpdateMethod()
+            }
+        }
     
     func reloadForm() {
         // Check if the switch for hiding Remote Bolus is enabled
@@ -373,4 +382,8 @@ class RemoteSettingsViewController: FormViewController {
             }
         }
     }
+}
+
+protocol RemoteSettingsDelegate: AnyObject {
+    func remoteSettingsDidUpdateMethod()
 }

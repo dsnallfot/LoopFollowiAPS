@@ -8,7 +8,7 @@
 
 import UIKit
 
-class SMSRemoteViewController: UIViewController {
+class SMSRemoteViewController: UIViewController, RemoteSettingsDelegate {
     var appStateController: AppStateController?
     
     @IBOutlet weak var customActionButton: UIButton!
@@ -16,6 +16,7 @@ class SMSRemoteViewController: UIViewController {
     @IBOutlet weak var remoteMealButton: UIButton!
     @IBOutlet weak var remoteOverrideButton: UIButton!
     @IBOutlet weak var remoteTempButton: UIButton!
+    @IBOutlet weak var methodButton: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,6 +27,20 @@ class SMSRemoteViewController: UIViewController {
             // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustom value
             updateUI()
         }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        updateMethodButtonImage()
+    }
+
+    private func updateMethodButtonImage() {
+        let currentMethod = UserDefaultsRepository.method.value
+        if currentMethod == "SMS API" {
+            methodButton.setImage(UIImage(named: "twilio"), for: .normal)
+        } else {
+            methodButton.setImage(UIImage(named: "shortcuts"), for: .normal)
+        }
+    }
         
         // Function to update UI based on hideRemoteBolus value
         func updateUI() {
@@ -35,6 +50,11 @@ class SMSRemoteViewController: UIViewController {
             let isCustomActionsHidden = UserDefaultsRepository.hideRemoteCustomActions.value
                     customActionButton.isHidden = isCustomActionsHidden
     }
+    
+    // MARK: - RemoteSettingsDelegate
+        func remoteSettingsDidUpdateMethod() {
+            updateMethodButtonImage()
+        }
     
     @IBAction func customActionButtonPressed(_ sender: Any) {
             let customActionViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomAction") as! CustomActionViewController
@@ -62,7 +82,16 @@ class SMSRemoteViewController: UIViewController {
     }
     
     @IBAction func remoteSettingsButtonTapped(_ sender: Any) {
+            let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
+            // Set self as the delegate
+            remoteSettingsViewController.delegate = self
+            self.present(remoteSettingsViewController, animated: true, completion: nil)
+        }
+    
+    @IBAction func methodButtonTapped(_ sender: Any) {
         let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
+        // Set self as the delegate
+        remoteSettingsViewController.delegate = self
         self.present(remoteSettingsViewController, animated: true, completion: nil)
     }
     
