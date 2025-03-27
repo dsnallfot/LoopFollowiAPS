@@ -639,12 +639,12 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     displayEventName = treatment.eventType
                 }
                 
-                let message = "Vill du verkligen radera:\n \(displayEventName) • \(timeString)?"
-                let alert = UIAlertController(title: "Radera behandling?", message: message, preferredStyle: .alert)
+                let message = "\nVill du verkligen radera:\n \(displayEventName) • \(timeString)?\n\n(OBS! Detta raderar INTE något i Trio)"
+                let alert = UIAlertController(title: "Radera i Nightscout?", message: message, preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
                     completionHandler(false)
                 }))
-                alert.addAction(UIAlertAction(title: "OK", style: .destructive, handler: { _ in
+                alert.addAction(UIAlertAction(title: "Radera", style: .destructive, handler: { _ in
                     guard let treatmentId = treatment.documentId else {
                         completionHandler(false)
                         return
@@ -663,7 +663,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                             DispatchQueue.main.async {
                                 let failureAlert = UIAlertController(
                                     title: "Kunde inte radera!",
-                                    message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
+                                    message: "\nKontrollera att du har skrivåtkomst i din Nightscout token",
                                     preferredStyle: .alert)
                                 failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                                 self.present(failureAlert, animated: true, completion: nil)
@@ -754,10 +754,10 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private func showRemoteDeleteConfirmationAlert(combinedString: String) {
         let confirmationAlert = UIAlertController(
             title: "Bekräfta radering",
-            message: "Är du säker på att du vill radera måltiden i Trio?",
+            message: "\nÄr du säker på att du vill radera måltiden i Trio?",
             preferredStyle: .alert)
         
-        confirmationAlert.addAction(UIAlertAction(title: "Ja", style: .default, handler: { _ in
+        confirmationAlert.addAction(UIAlertAction(title: "Radera", style: .destructive, handler: { _ in
             // Authenticate with biometrics; on success, send the command.
             self.authenticateWithBiometrics {
                 self.sendRemoteDeleteCommandInternal(combinedString: combinedString)
@@ -778,7 +778,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             case .success:
                 AudioServicesPlaySystemSound(SystemSoundID(1322))
                 DispatchQueue.main.async {
-                    self.showAlert(title: "Lyckades!", message: "Meddelandet levererades") { }
+                    self.showAlert(title: "Lyckades!", message: "\nMeddelandet levererades") { }
                 }
             case .failure(let error):
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -840,7 +840,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         print("Shortcut succeeded")
         AudioServicesPlaySystemSound(SystemSoundID(1322))
         showAlert(title: NSLocalizedString("Lyckades", comment: "Lyckades"),
-                  message: NSLocalizedString("Meddelandet levererades", comment: "Meddelandet levererades"),
+                  message: NSLocalizedString("\nMeddelandet levererades", comment: "Meddelandet levererades"),
                   completion: { /* No dismissal here */ })
     }
 
@@ -848,7 +848,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         print("Shortcut failed, showing error alert...")
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Misslyckades", comment: "Misslyckades"),
-                  message: NSLocalizedString("Ett fel uppstod när genvägen skulle köras. Du kan försöka igen.", comment: "Ett fel uppstod när genvägen skulle köras. Du kan försöka igen."),
+                  message: NSLocalizedString("\nEtt fel uppstod när genvägen skulle köras. Du kan försöka igen.", comment: "Ett fel uppstod när genvägen skulle köras. Du kan försöka igen."),
                   completion: { /* Re-enable send button if needed */ })
     }
 
@@ -856,7 +856,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         print("Shortcut was cancelled, showing cancellation alert...")
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Avbröts", comment: "Avbröts"),
-                  message: NSLocalizedString("Genvägen avbröts innan den körts färdigt. Du kan försöka igen.", comment: "Genvägen avbröts innan den körts färdigt. Du kan försöka igen."),
+                  message: NSLocalizedString("\nGenvägen avbröts innan den körts färdigt. Du kan försöka igen.", comment: "Genvägen avbröts innan den körts färdigt. Du kan försöka igen."),
                   completion: { /* Re-enable send button if needed */ })
     }
 
@@ -864,7 +864,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Fel lösenkod", comment: "Fel lösenkod"),
-                  message: NSLocalizedString("Genvägen avbröts pga fel lösenkod. Du kan försöka igen.", comment: "Genvägen avbröts pga fel lösenkod. Du kan försöka igen."),
+                  message: NSLocalizedString("\nGenvägen avbröts pga fel lösenkod. Du kan försöka igen.", comment: "Genvägen avbröts pga fel lösenkod. Du kan försöka igen."),
                   completion: { /* Re-enable send button if needed */ })
     }
     
