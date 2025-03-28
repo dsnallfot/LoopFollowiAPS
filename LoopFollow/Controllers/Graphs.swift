@@ -1337,7 +1337,12 @@ extension MainViewController {
             let carbShift = findNextCarbTime(timeWithin: 250, needle: carbData[i].date, haystack: carbData, startingIndex: i)
             var dateTimeStamp = carbData[i].date
             
-            colors.append(NSUIColor.systemOrange.withAlphaComponent(1.0))
+            // Check condition: if foodType is empty we are most likely dealing with FPUs
+            if (carbData[i].foodType ?? "").isEmpty {
+                colors.append(NSUIColor.systemBrown.withAlphaComponent(0.35))
+            } else {
+                colors.append(NSUIColor.systemOrange.withAlphaComponent(1.0))
+            }
             
             // skip if outside of visible area
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
@@ -1351,8 +1356,8 @@ extension MainViewController {
             BGChart.data?.dataSets[dataIndex].addEntry(dot)*/
             
             let line2 = "Kolhydrater " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g / Fett " + fatString + " g / Protein " + proteinString + " g"
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: (foodType.isEmpty ? "Måltid" : "\(foodType)"), line2: line2, time: dateTimeStamp))
-
+            let line2FPU = "Kolhydratersekvivalenter " + formatter.string(from: NSNumber(value: carbData[i].value))! + " g"
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(carbData[i].sgv), data: formatPillTextExtraLine(line1: (foodType.isEmpty ? "Fett/Protein" : "\(foodType)"), line2: (foodType.isEmpty ? line2FPU : line2), time: dateTimeStamp))
              BGChart.data?.dataSets[dataIndex].addEntry(dot)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 BGChartFull.data?.dataSets[dataIndex].addEntry(dot)
