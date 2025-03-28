@@ -25,7 +25,7 @@ struct BackgroundRefreshSettingsView: View {
                     availableDevicesSection
                 }
             }
-            .navigationBarTitle("Background Refresh Settings", displayMode: .inline)
+            .navigationBarTitle("Bakgrundsaktivitet", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {
@@ -46,7 +46,7 @@ struct BackgroundRefreshSettingsView: View {
 
     private var refreshTypeSection: some View {
         Section {
-            Picker("Background Refresh Type", selection: $viewModel.backgroundRefreshType) {
+            Picker("Bakgrundsaktivitet Typ", selection: $viewModel.backgroundRefreshType) {
                 ForEach(BackgroundRefreshType.allCases, id: \.self) { type in
                     Text(type.rawValue).tag(type)
                 }
@@ -54,7 +54,7 @@ struct BackgroundRefreshSettingsView: View {
             .pickerStyle(MenuPickerStyle())
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Adjust the background refresh type.")
+                Text("Välj typ av bakgrundsaktivitet.")
                     .font(.footnote)
                     .foregroundColor(.secondary)
 
@@ -65,17 +65,17 @@ struct BackgroundRefreshSettingsView: View {
                         .foregroundColor(.secondary)
 
                 case .silentTune:
-                    Text("A silent tune will play in the background, keeping the app active. May be interrupted by other apps. Allows continuous updates but consumes more battery.")
+                    Text("En tyst melodi spelas i bakgrunden, vilket håller appen aktiv. Den kan avbrytas av andra appar. Möjliggör kontinuerliga uppdateringar men förbrukar mer batteri.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
 
                 case .rileyLink:
-                    Text("Requires a RileyLink-compatible device within Bluetooth range. Provides updates once per minute and uses less battery than the silent tune method.")
+                    Text("Kräver en RileyLink-kompatibel enhet inom Bluetooth-räckvidd. Ger uppdateringar en gång per minut och använder mindre batteri än metoden med tyst melodi.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
 
                 case .dexcom:
-                    Text("Requires a Dexcom G6/ONE/G7/ONE+ transmitter within Bluetooth range. Provides updates every 5 minutes and uses less battery than the silent tune method.")
+                    Text("Kräver en Dexcom G6/ONE/G7/ONE+ sändare inom Bluetooth-räckvidd. Ger uppdateringar var 5:e minut och använder mindre batteri än metoden med tyst melodi.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -86,10 +86,10 @@ struct BackgroundRefreshSettingsView: View {
     @ViewBuilder
     private var selectedDeviceSection: some View {
         if let storedDevice = bleManager.getSelectedDevice() {
-            Section(header: Text("Selected Device")) {
+            Section(header: Text("Vald enhet")) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text(storedDevice.name ?? "Unknown Device")
+                        Text(storedDevice.name ?? "Okänd enhet")
                             .font(.headline)
                         
                         // ✅ Battery Indicator (if battery level is available)
@@ -128,7 +128,7 @@ struct BackgroundRefreshSettingsView: View {
                     // ✅ Show Sensor Activation Date (if found)
                     if let sensorID = storedDevice.name,
                        let activationDate = Storage.shared.latestActivationDate(for: sensorID) {
-                        Text("Activated: \(activationDate)")
+                        Text("Aktiverades: \(activationDate)")
                             .foregroundColor(.secondary)
                             .font(.footnote)
                     }
@@ -136,7 +136,7 @@ struct BackgroundRefreshSettingsView: View {
                     if let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: storedDevice) {
                         
                         
-                        Text("Expected bg delay: \(offset)")
+                        Text("Förväntad fördröjning: \(offset)")
                             .foregroundColor(.secondary)
                             .font(.footnote)
                     }
@@ -146,7 +146,7 @@ struct BackgroundRefreshSettingsView: View {
                         Button(action: {
                             bleManager.disconnect()
                         }) {
-                            Text("Disconnect")
+                            Text("Koppla från")
                                 .foregroundColor(.blue)
                         }
                         .buttonStyle(BorderlessButtonStyle())
@@ -161,11 +161,11 @@ struct BackgroundRefreshSettingsView: View {
 
     private func formattedTimeString(from seconds: TimeInterval) -> String {
         if seconds < 60 {
-            return "\(Int(seconds)) seconds"
+            return "\(Int(seconds)) sekunder"
         } else {
             let minutes = Int(seconds / 60)
             let seconds = Int(seconds.truncatingRemainder(dividingBy: 60))
-            return "\(minutes):\(String(format: "%02d", seconds)) minutes"
+            return "\(minutes):\(String(format: "%02d", seconds)) minuter"
         }
     }
 
@@ -182,7 +182,7 @@ struct BackgroundRefreshSettingsView: View {
     }
 
     private var scanningStatusHeader: some View {
-        Text("Scanning for \(viewModel.backgroundRefreshType.rawValue)...")
+        Text("Söker efter \(viewModel.backgroundRefreshType.rawValue)...")
             .font(.subheadline)
             .foregroundColor(.secondary)
     }
@@ -193,28 +193,28 @@ struct BackgroundRefreshSettingsView: View {
         let timeSinceLastConnection = device.isConnected ? 0 : now.timeIntervalSince(device.lastConnected ?? now)
 
         if device.isConnected {
-            return Text("Connected")
+            return Text("Ansluten")
                 .foregroundColor(.green)
         } else if let lastConnected = device.lastConnected {
             let timeRatio = timeSinceLastConnection / expectedConnectionTime
             let timeString = formattedTimeString(from: timeSinceLastConnection)
 
             if timeRatio < 1.0 {
-                return Text("Disconnected for \(timeString)")
+                return Text("Frånkopplad i \(timeString)")
                     .foregroundColor(.green)
             } else if timeRatio <= 1.15 {
-                return Text("Disconnected for \(timeString)")
+                return Text("Frånkopplad i \(timeString)")
                     .foregroundColor(.orange)
             } else if timeRatio <= 3.0 {
-                return Text("Disconnected for \(timeString)")
+                return Text("Frånkopplad i \(timeString)")
                     .foregroundColor(.red)
             } else {
                 let date = dateTimeUtils.formattedDate(from: lastConnected)
-                return Text("Last connection: \(date)")
+                return Text("Senaste anslutning: \(date)")
                     .foregroundColor(.red)
             }
         } else {
-            return Text("Reconnecting...")
+            return Text("Återansluter...")
                 .foregroundColor(.orange)
         }
     }

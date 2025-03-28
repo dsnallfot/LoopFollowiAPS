@@ -8,8 +8,8 @@
 import Foundation
 
 enum BackgroundRefreshType: String, Codable, CaseIterable {
-    case none = "None"
-    case silentTune = "Silent Tune"
+    case none = "Ingen"
+    case silentTune = "Tyst melodi"
     case rileyLink = "RileyLink"
     case dexcom = "Dexcom"
 

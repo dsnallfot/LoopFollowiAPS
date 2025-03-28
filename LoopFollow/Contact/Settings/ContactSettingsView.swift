@@ -20,13 +20,13 @@ struct ContactSettingsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Contact Integration")) {
-                    Text("Add the contact named '\(viewModel.contactName)' to your watch face to show the current BG value in real time. Make sure to give the app full access to Contacts when prompted.")
+                Section(header: Text("Kontaktintegration")) {
+                    Text("Lägg till kontakter som heter '\(viewModel.contactName)' till din APple Watch för att visa aktuellt BG och andra värden i realtid. Se till att ge appen full access till dina kontakter på telefonen när du tillfrågas.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 4)
 
-                    Toggle("Enable Contact BG Updates", isOn: $viewModel.contactEnabled)
+                    Toggle("Aktivera kontakter", isOn: $viewModel.contactEnabled)
                         .toggleStyle(SwitchToggleStyle())
                         .onChange(of: viewModel.contactEnabled) { isEnabled in
                             if isEnabled {
@@ -36,8 +36,8 @@ struct ContactSettingsView: View {
                 }
 
                 if viewModel.contactEnabled {
-                    Section(header: Text("Additional Information")) {
-                        Toggle("Show Trend", isOn: $viewModel.contactTrend)
+                    Section(header: Text("Extra information")) {
+                        Toggle("Visa trend", isOn: $viewModel.contactTrend)
                             .toggleStyle(SwitchToggleStyle())
                             .onChange(of: viewModel.contactTrend) { isTrendEnabled in
                                 if isTrendEnabled {
@@ -45,19 +45,19 @@ struct ContactSettingsView: View {
                                 }
                             }
 
-                        Toggle("Show Delta", isOn: $viewModel.contactDelta)
+                        Toggle("Visa delta", isOn: $viewModel.contactDelta)
                             .toggleStyle(SwitchToggleStyle())
                             .onChange(of: viewModel.contactDelta) { isDeltaEnabled in
                                 if isDeltaEnabled {
                                     viewModel.contactTrend = false
                                 }
                             }
-                        Toggle("Also create 15m delta contact", isOn: $viewModel.contactFifteenMinutes)
+                        Toggle("Visa också 15m delta", isOn: $viewModel.contactFifteenMinutes)
                             .toggleStyle(SwitchToggleStyle())
                     }
                 }
             }
-            .navigationBarTitle("Contact Settings", displayMode: .inline)
+            .navigationBarTitle("Kontakttrick", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {

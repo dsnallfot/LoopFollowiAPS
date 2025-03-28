@@ -29,9 +29,9 @@ class GeneralSettingsViewController: FormViewController {
    
    private func buildGeneralSettings() {
       form
-        +++ Section("App Settings")
+        +++ Section("Appinställningar")
         <<< SwitchRow("appBadge"){ row in
-            row.title = "Display App Badge"
+            row.title = "Visa app-brickor för BG"
             row.tag = "appBadge"
             row.value = UserDefaultsRepository.appBadge.value
         }.onChange { [weak self] row in
@@ -49,16 +49,16 @@ class GeneralSettingsViewController: FormViewController {
            
         }
         <<< SwitchRow("persistentNotification") { row in
-        row.title = "Persistent Notification"
+        row.title = "Beständiga notiser"
         row.value = UserDefaultsRepository.persistentNotification.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
                 UserDefaultsRepository.persistentNotification.value = value
         }
         
-        +++ Section("Display Settings")
+        +++ Section("Visningsinställningar")
         <<< SwitchRow("forceDarkMode") { row in
-        row.title = "Force Dark Mode (Restart App)"
+        row.title = "Forcera mörkt läge (omstart krävs)"
         row.value = UserDefaultsRepository.forceDarkMode.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
@@ -66,7 +66,7 @@ class GeneralSettingsViewController: FormViewController {
              
         }
         <<< SwitchRow("showStats") { row in
-        row.title = "Display Stats"
+        row.title = "Visa statistik"
         row.value = UserDefaultsRepository.showStats.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
@@ -79,7 +79,7 @@ class GeneralSettingsViewController: FormViewController {
              }
         }
         <<< SwitchRow("useIFCC") { row in
-        row.title = "Use IFCC A1C"
+        row.title = "Använd IFCC A1C"
         row.value = UserDefaultsRepository.useIFCC.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
@@ -92,7 +92,7 @@ class GeneralSettingsViewController: FormViewController {
              }
         }
         <<< SwitchRow("showSmallGraph") { row in
-        row.title = "Display Small Graph"
+        row.title = "Visa liten graf"
         row.value = UserDefaultsRepository.showSmallGraph.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
@@ -105,7 +105,7 @@ class GeneralSettingsViewController: FormViewController {
             }
         }
         <<< SwitchRow("colorBGText") { row in
-        row.title = "Color Main BG Text"
+        row.title = "Färglägg BG-text"
         row.value = UserDefaultsRepository.colorBGText.value
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
@@ -122,7 +122,7 @@ class GeneralSettingsViewController: FormViewController {
         }
         
         <<< SwitchRow("screenlockSwitchState") { row in
-            row.title = "Keep Screen Active"
+            row.title = "Håll skärmen aktiv"
             row.value = UserDefaultsRepository.screenlockSwitchState.value
             }.onChange { [weak self] row in
                 guard let value = row.value else { return }
@@ -130,7 +130,7 @@ class GeneralSettingsViewController: FormViewController {
             }
        
        <<< SwitchRow("showDisplayName") { row in
-           row.title = "Show Display Name"
+           row.title = "Visa namn"
            row.value = UserDefaultsRepository.showDisplayName.value
        }.onChange { [weak self] row in
            guard let value = row.value else { return }
@@ -142,9 +142,9 @@ class GeneralSettingsViewController: FormViewController {
            }
        }
         
-       +++ Section("Speak BG Settings")
+       +++ Section("Läs upp BG inställningar")
        <<< SwitchRow("speakBG") { row in
-           row.title = "Speak BG"
+           row.title = "Läs upp BG"
            row.value = UserDefaultsRepository.speakBG.value
        }.onChange { [weak self] row in
            guard let value = row.value else { return }

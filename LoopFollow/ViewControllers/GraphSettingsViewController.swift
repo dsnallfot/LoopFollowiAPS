@@ -70,10 +70,10 @@ class GraphSettingsViewController: FormViewController {
     
     private func buildGraphSettings() {
         form
-            +++ Section("Graph Settings")
+            +++ Section("Grafinställningar")
             
         <<< SwitchRow("switchRowDots"){ row in
-            row.title = "Display Dots"
+            row.title = "Visa punkter"
             row.value = UserDefaultsRepository.showDots.value
         }.onChange { [weak self] row in
                     guard let value = row.value else { return }
@@ -89,7 +89,7 @@ class GraphSettingsViewController: FormViewController {
                 }
             }
         <<< SwitchRow("switchRowLines"){ row in
-            row.title = "Display Lines"
+            row.title = "Visa linjer"
             row.value = UserDefaultsRepository.showLines.value
         }.onChange { [weak self] row in
                     guard let value = row.value else { return }
@@ -105,7 +105,7 @@ class GraphSettingsViewController: FormViewController {
                
         }
             <<< SwitchRow("showValues"){ row in
-                row.title = "Show Carb/Bolus Values"
+                row.title = "Visa kh/bolus-värden"
                 row.value = UserDefaultsRepository.showValues.value
             }.onChange { [weak self] row in
                         guard let value = row.value else { return }
@@ -113,7 +113,7 @@ class GraphSettingsViewController: FormViewController {
                         
             }
                 <<< SwitchRow("showAbsorption"){ row in
-                    row.title = "Show Carb Absorption"
+                    row.title = "Visa kh absorption"
                     row.value = UserDefaultsRepository.showAbsorption.value
                 }.onChange { [weak self] row in
                             guard let value = row.value else { return }
@@ -121,7 +121,7 @@ class GraphSettingsViewController: FormViewController {
                             
                 }
             <<< SwitchRow("showDIAMarkers"){ row in
-                row.title = "Show DIA Lines"
+                row.title = "Visa DIA linjer"
                 row.value = UserDefaultsRepository.showDIALines.value
             }.onChange { [weak self] row in
                         guard let value = row.value else { return }
@@ -134,7 +134,7 @@ class GraphSettingsViewController: FormViewController {
                 }
             }
             <<< SwitchRow("show30MinLine") { row in
-                row.title = "Show -30 min line"
+                row.title = "Visa -30 min linje"
                 row.value = UserDefaultsRepository.show30MinLine.value
             }.onChange { [weak self] row in
                 guard let value = row.value else { return }
@@ -147,7 +147,7 @@ class GraphSettingsViewController: FormViewController {
                 }
             }
             <<< SwitchRow("show90MinLine") { row in
-                row.title = "Show -24 h line"
+                row.title = "Visa -24 h linje"
                 row.value = UserDefaultsRepository.show90MinLine.value
             }.onChange { [weak self] row in
                 guard let value = row.value else { return }
@@ -160,7 +160,7 @@ class GraphSettingsViewController: FormViewController {
                 }
             }
             <<< SwitchRow("smallGraphTreatments"){ row in
-                row.title = "Treatments on Small Graph"
+                row.title = "Behandlingar på liten graf"
                 row.value = UserDefaultsRepository.smallGraphTreatments.value
             }.onChange { [weak self] row in
                         guard let value = row.value else { return }
@@ -168,7 +168,7 @@ class GraphSettingsViewController: FormViewController {
                         
             }
             <<< StepperRow("smallGraphHeight") { row in
-                row.title = "Small Graph Height"
+                row.title = "Höjd på liten graf"
                 row.cell.stepper.stepValue = 5
                 row.cell.stepper.minimumValue = 40
                 row.cell.stepper.maximumValue = 80
@@ -187,7 +187,7 @@ class GraphSettingsViewController: FormViewController {
                  }
             }
             <<< StepperRow("predictionToLoad") { row in
-                row.title = "Hours of Prediction"
+                row.title = "Timmar prognos"
                 row.cell.stepper.stepValue = 0.25
                 row.cell.stepper.minimumValue = 0.0
                 row.cell.stepper.maximumValue = 6.0
@@ -197,7 +197,7 @@ class GraphSettingsViewController: FormViewController {
                     UserDefaultsRepository.predictionToLoad.value = value
             }
         <<< StepperRow("minBGScale") { row in
-            row.title = "Min BG Scale"
+            row.title = "Min BG skala"
             row.cell.stepper.stepValue = 1
             row.cell.stepper.minimumValue = Double(UserDefaultsRepository.highLine.value)
             row.cell.stepper.maximumValue = 400
@@ -214,7 +214,7 @@ class GraphSettingsViewController: FormViewController {
             }
            
         <<< StepperRow("minBasalScale") { row in
-            row.title = "Min Basal Scale"
+            row.title = "Min basal skala"
             row.cell.stepper.stepValue = 0.5
             row.cell.stepper.minimumValue = 0.5
             row.cell.stepper.maximumValue = 20
@@ -224,7 +224,7 @@ class GraphSettingsViewController: FormViewController {
                 UserDefaultsRepository.minBasalScale.value = value
         }
         <<< StepperRow("lowLine") { row in
-            row.title = "Low BG Display Value"
+            row.title = "Lågt BG linje"
             row.cell.stepper.stepValue = 1
             row.cell.stepper.minimumValue = 40
             row.cell.stepper.maximumValue = 120
@@ -247,7 +247,7 @@ class GraphSettingsViewController: FormViewController {
              }
         }
         <<< StepperRow("highLine") { row in
-            row.title = "High BG Display Value"
+            row.title = "Högt BG linje"
             row.cell.stepper.stepValue = 1
             row.cell.stepper.minimumValue = 120
             row.cell.stepper.maximumValue = 400
@@ -271,7 +271,7 @@ class GraphSettingsViewController: FormViewController {
         }
         <<< StepperRow("downloadDays") { row in
             // NS supports up to 4 days
-            row.title = "Show Days Back"
+            row.title = "Visa dagar tillbaka"
             row.cell.stepper.stepValue = 1
             row.cell.stepper.minimumValue = 1
             row.cell.stepper.maximumValue = 4
@@ -285,7 +285,7 @@ class GraphSettingsViewController: FormViewController {
                 UserDefaultsRepository.downloadDays.value = Int(value)
         }
         <<< SwitchRow("showMidnightMarkers"){ row in
-            row.title = "Show Midnight Lines"
+            row.title = "Visa midnattslinjer"
             row.value = UserDefaultsRepository.showMidnightLines.value
         }.onChange { [weak self] row in
                     guard let value = row.value else { return }

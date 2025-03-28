@@ -15,12 +15,12 @@ struct DexcomSettingsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Dexcom Settings")) {
-                    TextField("User Name", text: $viewModel.userName)
+                Section(header: Text("Dexcominställningar")) {
+                    TextField("Användarnamn", text: $viewModel.userName)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
 
-                    TextField("Password", text: $viewModel.password)
+                    TextField("Lösenord", text: $viewModel.password)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
 
@@ -31,7 +31,7 @@ struct DexcomSettingsView: View {
                     .pickerStyle(SegmentedPickerStyle())
                 }
             }
-            .navigationBarTitle("Dexcom Settings", displayMode: .inline)
+            .navigationBarTitle("Dexcominställningar", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {

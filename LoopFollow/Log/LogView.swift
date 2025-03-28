@@ -16,7 +16,7 @@ struct LogView: View {
         NavigationView {
             VStack {
                 Picker("Category", selection: $viewModel.selectedCategory) {
-                    Text("All").tag(LogManager.Category?.none)
+                    Text("Allt").tag(LogManager.Category?.none)
                     ForEach(LogManager.Category.allCases, id: \.self) { category in
                         Text(category.rawValue).tag(LogManager.Category?.some(category))
                     }
@@ -38,7 +38,7 @@ struct LogView: View {
                     .padding(.horizontal)
                 }
             }
-            .navigationBarTitle("Today's Logs", displayMode: .inline)
+            .navigationBarTitle("Dagens logg", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {

@@ -71,22 +71,22 @@ class WatchSettingsViewController: FormViewController {
         }
         
         form
-            +++ Section(header: "Save BG to Calendar", footer: "Add the Apple calendar complication to your Apple Watch face or Carplay to see BG readings. Create a new calendar called 'Follow' and modify the calendar settings in the iPhone Watch/Carplay App to only display the Follow calendar on your watch or car. It is important to use a new calendar because this will delete other events on the same calendar. Edit Line 1 and Line 2 to be displayed using variables below that will be replaced by the values. Other text entered will not be replaced")
+            +++ Section(header: "Spara BG till kalender", footer: "Add the Apple calendar complication to your Apple Watch face or Carplay to see BG readings. Create a new calendar called 'Follow' and modify the calendar settings in the iPhone Watch/Carplay App to only display the Follow calendar on your watch or car. It is important to use a new calendar because this will delete other events on the same calendar. Edit Line 1 and Line 2 to be displayed using variables below that will be replaced by the values. Other text entered will not be replaced")
             <<< LabelRow() {
-                $0.title = "Calendar Access Denied"
+                $0.title = "Kalenderaccess nekades"
                 $0.hidden = Condition.function(["hide"], { _ in hasCalendarAccess })
             }.cellUpdate { cell, _ in
                 cell.textLabel?.textColor = .red
             }
             <<< SwitchRow("writeCalendarEvent"){ row in
-                row.title = "Save BG to Calendar"
+                row.title = "Spara BG till kalender"
                 row.value = UserDefaultsRepository.writeCalendarEvent.value
             }.onChange { [weak self] row in
                 guard let value = row.value else { return }
                 UserDefaultsRepository.writeCalendarEvent.value = value
             }
             <<< PickerInputRow<String>("calendarIdentifier") { row in
-                row.title = "Calendar"
+                row.title = "Kalender"
                 row.options = calendars.map { $0.identifier }
                 row.value = UserDefaultsRepository.calendarIdentifier.value
                 row.displayValueFor = { value in
@@ -106,14 +106,14 @@ class WatchSettingsViewController: FormViewController {
                 UserDefaultsRepository.calendarIdentifier.value = value
             }
             <<< TextRow("watchLine1"){ row in
-                row.title = "Line 1"
+                row.title = "Linje 1"
                 row.value = UserDefaultsRepository.watchLine1.value
             }.onChange { row in
                 guard let value = row.value else { return }
                 UserDefaultsRepository.watchLine1.value = value
             }
             <<< TextRow("watchLine2"){ row in
-                row.title = "Line 2"
+                row.title = "Linje 2"
                 row.value = UserDefaultsRepository.watchLine2.value
             }.onChange { row in
                 guard let value = row.value else { return }
@@ -121,7 +121,7 @@ class WatchSettingsViewController: FormViewController {
             }
         
         
-            +++ Section(header: "Available Variables", footer: "")
+            +++ Section(header: "Tillgängliga variabler", footer: "")
             <<< LabelRow("BG"){ row in
                 row.title = "%BG% : Blood Glucose Reading"
             }

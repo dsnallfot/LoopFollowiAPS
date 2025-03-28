@@ -15,16 +15,16 @@ struct InfoDisplaySettingsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("General")) {
+                Section(header: Text("Allmänt")) {
                     Toggle(isOn: Binding(
                         get: { UserDefaultsRepository.hideInfoTable.value },
                         set: { UserDefaultsRepository.hideInfoTable.value = $0 }
                     )) {
-                        Text("Hide Information Table")
+                        Text("Dölj informationspanelen")
                     }
                 }
 
-                Section(header: Text("Information Display Settings")) {
+                Section(header: Text("Inställningar för informationspanel")) {
                     List {
                         ForEach(viewModel.infoSort, id: \.self) { sortedIndex in
                             HStack {

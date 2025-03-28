@@ -19,7 +19,7 @@ struct NightscoutSettingsView: View {
                 tokenSection
                 statusSection
             }
-            .navigationBarTitle("Nightscout Settings", displayMode: .inline)
+            .navigationBarTitle("Nightscoutinställningar", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {

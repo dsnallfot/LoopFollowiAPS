@@ -40,8 +40,8 @@ struct RemoteSettingsView: View {
                 // Remote Type Section
                 // Instructions for Remote Type options
                 Section {
-                    Picker("Remote Type", selection: $viewModel.remoteType) {
-                        Text("None").tag(RemoteType.none)
+                    Picker("Fjärrkontroll typ", selection: $viewModel.remoteType) {
+                        Text("Ingen").tag(RemoteType.none)
                         Text("Nightscout").tag(RemoteType.nightscout)
                         if BuildDetails.default.branch?.lowercased() != "main" {
                             Text("Trio Remote Control").tag(RemoteType.trc)
@@ -50,20 +50,23 @@ struct RemoteSettingsView: View {
                     }
                     .pickerStyle(MenuPickerStyle())
 
-                    Text("Nightscout is the only option available for the released version of Trio.")
+                    Text("Nightscout använder Care portal-registreringar för fjärrstyning av Trio")
                         .font(.footnote)
                         .foregroundColor(.secondary)
-                    Text("Trio Remote Control requires a special version of Trio, which is under development in a private repository until sufficient testing is completed.")
+                    Text("Trio Remote Control använder APNS för att skicka säkra kommandon från Loop Follow till Trio")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                    Text("SMS Remote Control använder SMS/iMessage över iOS genvägar eller Twilio SMS API för att skicka kommandon från Loop Follow till Trio")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
 
                 // User Information Section
                 if viewModel.remoteType != .none {
-                    Section(header: Text("User Information")) {
+                    Section(header: Text("Användarinformation")) {
                         HStack {
-                            Text("User")
-                            TextField("Enter User", text: $viewModel.user)
+                            Text("Användare")
+                            TextField("Ange användare", text: $viewModel.user)
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
                                 .focused($focusedField, equals: .user)
@@ -74,7 +77,7 @@ struct RemoteSettingsView: View {
 
                 // Trio Remote Control Settings Section
                 if viewModel.remoteType == .trc {
-                    Section(header: Text("Trio Remote Control Settings")) {
+                    Section(header: Text("Trio remote inställningar")) {
                         HStack {
                             Text("Shared Secret")
                             TextField("Enter Shared Secret", text: $viewModel.sharedSecret)
@@ -109,9 +112,9 @@ struct RemoteSettingsView: View {
                     }
 
                     // Guardrails Section
-                    Section(header: Text("Guardrails")) {
+                    Section(header: Text("Maxgränser")) {
                         HStack {
-                            Text("Max Bolus")
+                            Text("Max bolus")
                             Spacer()
                             TextFieldWithToolBar(
                                 quantity: $viewModel.maxBolus,
@@ -125,12 +128,12 @@ struct RemoteSettingsView: View {
                                 }
                             )
                             .frame(width: 100)
-                            Text("U")
+                            Text("E")
                                 .foregroundColor(.secondary)
                         }
 
                         HStack {
-                            Text("Max Carbs")
+                            Text("Max kh")
                             Spacer()
                             TextFieldWithToolBar(
                                 quantity: $viewModel.maxCarbs,
@@ -149,7 +152,7 @@ struct RemoteSettingsView: View {
                         }
 
                         HStack {
-                            Text("Max Protein")
+                            Text("Max protein")
                             Spacer()
                             TextFieldWithToolBar(
                                 quantity: $viewModel.maxProtein,
@@ -168,7 +171,7 @@ struct RemoteSettingsView: View {
                         }
 
                         HStack {
-                            Text("Max Fat")
+                            Text("Max fett")
                             Spacer()
                             TextFieldWithToolBar(
                                 quantity: $viewModel.maxFat,
@@ -188,23 +191,23 @@ struct RemoteSettingsView: View {
                     }
 
                     // Meal Section
-                    Section(header: Text("Meal Settings")) {
-                        Toggle("Meal with Bolus", isOn: $viewModel.mealWithBolus)
+                    Section(header: Text("Måltidsinställningar")) {
+                        Toggle("Måltid med bolus", isOn: $viewModel.mealWithBolus)
                             .toggleStyle(SwitchToggleStyle())
 
-                        Toggle("Meal with Fat/Protein", isOn: $viewModel.mealWithFatProtein)
+                        Toggle("Måltid med Fett/Protein", isOn: $viewModel.mealWithFatProtein)
                             .toggleStyle(SwitchToggleStyle())
                     }
 
                     Section(header: Text("Debug / Info")) {
                         Text("Device Token: \(Storage.shared.deviceToken.value)")
-                        Text("Production Env.: \(Storage.shared.productionEnvironment.value ? "True" : "False")")
+                        Text("Produktionsmiljö: \(Storage.shared.productionEnvironment.value ? "True" : "False")")
                         Text("Team ID: \(Storage.shared.teamId.value ?? "")")
                         Text("Bundle ID: \(Storage.shared.bundleId.value)")
                     }
                 }
             }
-            .navigationBarTitle("Remote Settings", displayMode: .inline)
+            .navigationBarTitle("Fjärrkontrollinställningar", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {
@@ -219,12 +222,12 @@ struct RemoteSettingsView: View {
                 switch alertType {
                 case .validation:
                     return Alert(
-                        title: Text("Validation Error"),
-                        message: Text(alertMessage ?? "Invalid input."),
+                        title: Text("Valideringsfel"),
+                        message: Text(alertMessage ?? "Felaktig input."),
                         dismissButton: .default(Text("OK"))
                     )
                 case .none:
-                    return Alert(title: Text("Unknown Alert"))
+                    return Alert(title: Text("Okänt fel"))
                 }
             }
         }

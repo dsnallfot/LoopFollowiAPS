@@ -280,7 +280,7 @@ extension BLEManager {
 
             // For RileyLink, if lastHeartbeatTime is nil, return "waiting for heartbeat".
             if matchedType == .rileyLink, self.activeDevice?.lastHeartbeatTime == nil || firstHeartbeat {
-                return "waiting for heartbeat"
+                return "väntar på heartbeat"
             }
 
             // Use activeDevice.lastHeartbeatTime for RileyLink; otherwise use device.lastSeen.
@@ -307,7 +307,7 @@ extension BLEManager {
                 ? (heartbeatOffset - expectedOffset + pollingDelay)
                 : (heartbeatOffset + cycleDuration - expectedOffset + pollingDelay)
 
-            return "\(Int(effectiveDelay)) sec"
+            return "\(Int(effectiveDelay)) sek"
         }
         return nil
     }

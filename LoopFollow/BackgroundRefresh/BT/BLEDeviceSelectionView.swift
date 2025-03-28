@@ -15,7 +15,7 @@ struct BLEDeviceSelectionView: View {
             List {
                 let filteredDevices = bleManager.devices.filter { selectedFilter.matches($0) && !isSelected($0) }
                 if filteredDevices.isEmpty {
-                    Text("No devices found yet. They'll appear here when discovered.")
+                    Text("Inga enheter funna ännu. De dyker upp här när de har identifierats.")
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding()
@@ -23,7 +23,7 @@ struct BLEDeviceSelectionView: View {
                     ForEach(filteredDevices, id: \.id) { device in
                         HStack {
                             VStack(alignment: .leading) {
-                                Text(device.name ?? "Unknown")
+                                Text(device.name ?? "Okänd")
                                 
                                 Text("RSSI: \(device.rssi) dBm")
                                     .foregroundColor(.secondary)
@@ -32,14 +32,14 @@ struct BLEDeviceSelectionView: View {
                                 // ✅ Show Sensor Activation Date (if found)
                                 if let sensorID = device.name,
                                    let activationDate = Storage.shared.latestActivationDate(for: sensorID) {
-                                    Text("Activated: \(activationDate)")
+                                    Text("Aktiverades: \(activationDate)")
                                         .foregroundColor(.secondary)
                                         .font(.footnote)
                                 }
                                 
                                 if Storage.shared.backgroundRefreshType.value == .dexcom,
                                    let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: device) {
-                                    Text("Expected bg delay: \(offset)")
+                                    Text("Förväntad fördröjning BG: \(offset)")
                                         .foregroundColor(.secondary)
                                         .font(.footnote)
                                 }
