@@ -953,16 +953,27 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         // For Carb Correction entries:
         else if treatment.eventType == "Carb Correction" {
-            // Retrieve the foodType as an optional String:
-            let foodType = treatment.rawData["foodType"] as? String
-            let title = "Måltid \(timeString)"
-            // Build the message string. If foodType is nil, "nil" will appear in the string.
-            // You could replace "nil" with any placeholder text if desired.
-            var message = "\(foodType ?? "Kolhydratsekvivalenter")"
+            // Retrieve the foodType value
+            let foodTypeValue = treatment.rawData["foodType"] as? String ?? ""
             
-            // Carbohydrates:
+            // Determine title and initial message based on foodType content
+            let title: String
+            var message: String
+            if foodTypeValue.isEmpty {
+                title = "Fett / Protein \(timeString)"
+                message = "Kolhydratsekvivalenter: "
+            } else {
+                title = "Måltid \(timeString)"
+                message = foodTypeValue
+            }
+            
+            // Carbohydrates (use different label if foodType is empty)
             let carbsValue: Double = (treatment.rawData["carbs"] as? Double) ?? 0.0
-            message += "\nKolhydrater: \(formatValue(carbsValue)) g"
+            if foodTypeValue.isEmpty {
+                message += "\(formatValue(carbsValue)) g"
+            } else {
+                message += "\nKolhydrater: \(formatValue(carbsValue)) g"
+            }
             
             // Fat:
             let fatValue: Double = (treatment.rawData["fat"] as? Double) ?? 0.0
@@ -974,6 +985,11 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             let proteinValue: Double = (treatment.rawData["protein"] as? Double) ?? 0.0
             if proteinValue != 0 {
                 message += "\nProtein: \(formatValue(proteinValue)) g"
+            }
+            
+            // Append the enteredBy value if available:
+            if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                message += "\nInlagt av: \(enteredBy)"
             }
             
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
