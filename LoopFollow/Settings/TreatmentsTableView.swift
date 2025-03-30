@@ -420,39 +420,38 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         let treatment = filteredTreatments[indexPath.row]
-        let displayEventType: String
-        if treatment.eventType == "Carb Correction" {
-            if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
-                displayEventType = "Kh"
-            } else {
-                displayEventType = "Fett / Protein"
-            }
-        } else {
-            displayEventType = treatment.eventType
-        }
         
-        // Special handling for BG Check entries.
+        // Determine display event type with special handling for Carb Correction.
+        let displayEventType: String = {
+            if treatment.eventType == "Carb Correction" {
+                if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
+                    return "Kh"
+                } else {
+                    return "Fett / Protein"
+                }
+            } else {
+                return treatment.eventType
+            }
+        }()
+        
+        // Handle different treatment types.
         if treatment.eventType == "BG Check" {
             if let glucose = treatment.rawData["glucose"] as? Double,
                let units = treatment.rawData["units"] as? String {
-                let mmol: Double = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
+                let mmol = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
                 cell.textLabel?.text = "Fingerstick • \(String(format: "%.1f", mmol)) mmol/L"
             } else {
                 cell.textLabel?.text = displayEventType
             }
             cell.accessoryType = .none
-        }
-        // Handling for override treatments.
-        else if treatment.eventType == "Temporary Override" || treatment.eventType == "Exercise" || treatment.eventType == "Override" {
+            
+        } else if treatment.eventType == "Temporary Override" ||
+                    treatment.eventType == "Exercise" ||
+                    treatment.eventType == "Override" {
             if let notes = treatment.overrideNotes {
                 let preview = previewOverrideText(for: notes)
                 if let duration = treatment.overrideDuration {
-                    // Check if duration is more than 1440 minutes.
-                    if duration > 1440 {
-                        cell.textLabel?.text = "\(preview) • Tillsvidare"
-                    } else {
-                        cell.textLabel?.text = "\(preview) • \(Int(duration)) m"
-                    }
+                    cell.textLabel?.text = duration > 1440 ? "\(preview) • Tillsvidare" : "\(preview) • \(Int(duration)) m"
                 } else {
                     cell.textLabel?.text = preview
                 }
@@ -460,84 +459,93 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 cell.textLabel?.text = displayEventType
             }
             cell.accessoryType = .none
-        }
-        // For Carb Correction: we display foodType similarly.
-        else if treatment.eventType == "Carb Correction" {
+            
+        } else if treatment.eventType == "Carb Correction" {
+            // For Carb Correction, we display the amount and a processed foodType (if available).
             let mainText = treatment.amount != nil ? "\(displayEventType) • \(treatment.amount!)" : displayEventType
             if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
                 let cleanedFoodType = foodType.replacingOccurrences(of: "\u{FE0F}", with: "")
                 let preview = previewCarbsText(for: cleanedFoodType)
-                let combinedText = mainText + " • " + preview
-                cell.textLabel?.text = combinedText
+                cell.textLabel?.text = mainText + " • " + preview
                 cell.textLabel?.font = .systemFont(ofSize: 17)
                 cell.textLabel?.numberOfLines = 0
             } else {
                 cell.textLabel?.text = mainText
             }
             cell.accessoryType = .none
-        }
-        // Handling for Note entries.
-        else if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
+            
+        } else if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let note = treatment.rawData["notes"] as? String {
                 let preview = previewNoteText(for: note)
                 cell.textLabel?.text = "Not: " + preview
             } else {
                 cell.textLabel?.text = displayEventType
             }
-            //cell.accessoryType = .disclosureIndicator
-        }
-        // Handling for Temp Basal entries.
-        else if treatment.eventType == "Temp Basal" {
+            // Optionally, you might add an accessory type here.
+            
+        } else if treatment.eventType == "Temp Basal" {
             if let duration = treatment.tempBasalDuration, let amount = treatment.amount {
-                // Display the duration as an integer (you can also format with decimals if needed)
                 cell.textLabel?.text = "\(treatment.eventType) • \(amount) • \(Int(duration)) m"
             } else {
                 cell.textLabel?.text = treatment.eventType
             }
             cell.accessoryType = .none
-        }
-        // All other treatments.
-        else {
-            // If the treatment is a Carb Correction (which we display as "Meal")
-            // and has a foodType value, show an attributed text with a second line.
-            if treatment.eventType == "Carb Correction" {
+            
+        } else {
+            // For all other treatments.
+            if treatment.eventType == "Bolus" {
                 let mainText = treatment.amount != nil ? "\(displayEventType) • \(treatment.amount!)" : displayEventType
-                if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
-                    // Remove variation selectors if desired.
-                    let cleanedFoodType = foodType.replacingOccurrences(of: "\u{FE0F}", with: "")
-                    
-                    // Just do a single plain string with a newline
-                    let combinedText = mainText + " • " + cleanedFoodType
-                    cell.textLabel?.text = combinedText
-                    cell.textLabel?.font = .systemFont(ofSize: 17)
-                    cell.textLabel?.numberOfLines = 0
+                if let enteredBy = treatment.rawData["enteredBy"] as? String, !enteredBy.isEmpty {
+                    // Use a regex pattern to capture content within parentheses after "Trio"
+                    let pattern = "^Trio(?:\\((.*?)\\))?$"
+                    if let regex = try? NSRegularExpression(pattern: pattern),
+                       let match = regex.firstMatch(in: enteredBy, range: NSRange(location: 0, length: enteredBy.utf16.count)) {
+                        // Capture group 1 will contain the text inside parentheses, if present.
+                        if match.numberOfRanges >= 2, let range = Range(match.range(at: 1), in: enteredBy) {
+                            let extracted = String(enteredBy[range])
+                            // Only append if the extracted string is not empty.
+                            if !extracted.isEmpty {
+                                cell.textLabel?.text = "\(mainText) • \(extracted)"
+                            } else {
+                                cell.textLabel?.text = mainText
+                            }
+                        } else {
+                            // No capture group, so show mainText only.
+                            cell.textLabel?.text = mainText
+                        }
+                    } else {
+                        // If regex fails, fallback to mainText.
+                        cell.textLabel?.text = mainText
+                    }
                 } else {
                     cell.textLabel?.text = mainText
                 }
+                cell.accessoryType = .none
             } else {
-                // For non-carb-correction entries, use the standard text.
+                // Default display for any other event.
                 if let amount = treatment.amount {
                     cell.textLabel?.text = "\(displayEventType) • \(amount)"
                 } else {
                     cell.textLabel?.text = displayEventType
                 }
+                cell.accessoryType = .none
             }
-            cell.accessoryType = .none
         }
         
-        // Format timestamp as HH:mm:ss.
+        // Format the timestamp as HH:mm:ss.
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH:mm:ss"
         cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
         
         // Determine symbol and color.
-        let symbolInfo: (name: String, color: UIColor)
+        let symbolInfo: (name: String, color: UIColor) = {
             if treatment.eventType == "Carb Correction" {
                 let foodType = treatment.rawData["foodType"] as? String
-                symbolInfo = symbolForEventType(treatment.eventType, foodType: foodType)
+                return symbolForEventType(treatment.eventType, foodType: foodType)
             } else {
-                symbolInfo = symbolForEventType(treatment.eventType)
+                return symbolForEventType(treatment.eventType)
             }
+        }()
         if let image = UIImage(systemName: symbolInfo.name) {
             cell.imageView?.image = image
             cell.imageView?.tintColor = symbolInfo.color
@@ -545,19 +553,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         
         cell.selectionStyle = .none
         
-        // Check for duplicates: only count duplicates that have the same timestamp AND the same event type (excluding "Note").
+        // Check for duplicates: only count duplicates that have the same timestamp and event type (excluding "Note").
         let duplicateCount = filteredTreatments.filter {
             $0.timestamp == treatment.timestamp &&
             $0.eventType == treatment.eventType &&
             $0.eventType != "Note"
         }.count
         
-        // Apply red background only if duplicates exist and the eventType isn't "Note".
-        if duplicateCount > 1 && treatment.eventType != "Note" {
-            cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.3)
-        } else {
-            cell.backgroundColor = UIColor.systemBackground
-        }
+        cell.backgroundColor = (duplicateCount > 1 && treatment.eventType != "Note")
+            ? UIColor.systemRed.withAlphaComponent(0.3)
+            : UIColor.systemBackground
         
         return cell
     }
