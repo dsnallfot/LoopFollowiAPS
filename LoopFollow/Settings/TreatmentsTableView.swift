@@ -109,17 +109,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private let basalType = "Temp Basal"
     private let bolusTypes = ["Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "SMB"]
     private let mealTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid"]
+    private let manualTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid", "Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "Exercise"]
     
     // Computed property that returns the treatments filtered by the segmented control.
     private var filteredTreatments: [Treatment] {
         switch segmentedControl.selectedSegmentIndex {
-        case 1: // Basal – only Temp Basal entries
+        case 1: // Manual – only Manual entries
+            return treatments.filter { manualTypes.contains($0.eventType) }
+        case 2: // Basal – only Temp Basal entries
             return treatments.filter { $0.eventType == basalType }
-        case 2: // Bolus – filter for all bolus-related entries
+        case 3: // Bolus – filter for all bolus-related entries
             return treatments.filter { bolusTypes.contains($0.eventType) }
-        case 3: // Måltider
+        case 4: // Måltider
             return treatments.filter { mealTypes.contains($0.eventType) }
-        case 4: // Övrigt – not any insulin or meal entries
+        case 5: // Övrigt – not any insulin or meal entries
             let insulinTypes = bolusTypes + [basalType]
             return treatments.filter { !insulinTypes.contains($0.eventType) && !mealTypes.contains($0.eventType) }
         default: // Allt
@@ -250,7 +253,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Setup Segmented Control
     
     private func setupSegmentedControl() {
-        let segments = ["Allt", "Basal", "Bolus", "Måltider", "Övrigt"]
+        let segments = ["Allt", "Manuell", "Basal", "Bolus", "Måltid", "Övrigt"]
         segmentedControl = UISegmentedControl(items: segments)
         segmentedControl.selectedSegmentIndex = 0
         segmentedControl.addTarget(self, action: #selector(filterChanged), for: .valueChanged)
@@ -496,11 +499,11 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if treatment.eventType == "Bolus" {
                 let mainText = treatment.amount != nil ? "\(displayEventType) • \(treatment.amount!)" : displayEventType
                 if let enteredBy = treatment.rawData["enteredBy"] as? String, !enteredBy.isEmpty {
-                    // Use a regex pattern to capture content within parentheses after "Trio"
-                    let pattern = "^Trio(?:\\((.*?)\\))?$"
-                    if let regex = try? NSRegularExpression(pattern: pattern),
+                    // Regex pattern to capture text inside parentheses after "Trio", allowing an optional whitespace.
+                    let pattern = "^Trio(?:\\s*\\((.*?)\\))?$"
+                    if let regex = try? NSRegularExpression(pattern: pattern, options: []),
                        let match = regex.firstMatch(in: enteredBy, range: NSRange(location: 0, length: enteredBy.utf16.count)) {
-                        // Capture group 1 will contain the text inside parentheses, if present.
+                        // Capture group 1 contains the text inside the parentheses.
                         if match.numberOfRanges >= 2, let range = Range(match.range(at: 1), in: enteredBy) {
                             let extracted = String(enteredBy[range])
                             // Only append if the extracted string is not empty.
