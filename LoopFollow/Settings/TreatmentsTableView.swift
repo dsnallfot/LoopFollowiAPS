@@ -465,7 +465,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if let notes = treatment.overrideNotes {
                 let preview = previewOverrideText(for: notes)
                 if let duration = treatment.overrideDuration {
-                    cell.textLabel?.text = duration > 1440 ? "\(preview) • Tillsvidare" : "\(preview) • \(Int(duration)) m"
+                    cell.textLabel?.text = duration > 1439 ? "\(preview) • Tillsvidare" : "\(preview) • \(Int(duration)) m"
                 } else {
                     cell.textLabel?.text = preview
                 }
