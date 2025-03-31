@@ -574,9 +574,31 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             $0.eventType != "Note"
         }.count
         
-        cell.backgroundColor = (duplicateCount > 1 && treatment.eventType != "Note")
-            ? UIColor.systemRed.withAlphaComponent(0.3)
-            : UIColor.systemBackground
+        if treatment.eventType == "Exercise", let duration = treatment.overrideDuration {
+            let exerciseEndTime = treatment.timestamp.addingTimeInterval(duration * 60)
+            if Date() < exerciseEndTime {
+                cell.backgroundColor = UIColor.systemPurple.withAlphaComponent(0.3)
+            } else {
+                cell.backgroundColor = (duplicateCount > 1)
+                    ? UIColor.systemRed.withAlphaComponent(0.3)
+                    : UIColor.systemBackground
+            }
+        } else if treatment.eventType == "Temp Basal" {
+            // Find the newest Temp Basal treatment.
+            if let newestTempBasal = treatments.first(where: { $0.eventType == "Temp Basal" }),
+               treatment.timestamp == newestTempBasal.timestamp {
+                cell.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.2)
+            } else {
+                cell.backgroundColor = (duplicateCount > 1)
+                    ? UIColor.systemRed.withAlphaComponent(0.3)
+                    : UIColor.systemBackground
+            }
+        } else {
+            cell.backgroundColor = (duplicateCount > 1 && treatment.eventType != "Note")
+                ? UIColor.systemRed.withAlphaComponent(0.3)
+                : UIColor.systemBackground
+        }
+
         
         return cell
     }
@@ -967,8 +989,12 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 let title = "Override \(timeString)"
                 var message = "\(fullOverride)"
                 if let duration = treatment.overrideDuration {
-                    message += "\nVaraktighet: \(Int(duration)) min"
-                }
+                            message += "\nVaraktighet: \(Int(duration)) min"
+                            // Calculate the expiration time.
+                            let expirationTime = treatment.timestamp.addingTimeInterval(duration * 60)
+                            let expirationString = timeFormatter.string(from: expirationTime)
+                            message += "\nAktiv till kl: \(expirationString)"
+                        }
                 // Append the enteredBy value if available:
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
