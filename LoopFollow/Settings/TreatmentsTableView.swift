@@ -924,7 +924,11 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let fullNote = treatment.rawData["notes"] as? String {
                 let title = "Notering \(timeString)"
-                let message = "\(fullNote)"
+                var message = "\(fullNote)"
+                // Append the enteredBy value if available:
+                if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                    message += "\nInlagt av: \(enteredBy)"
+                }
                 let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                 present(alert, animated: true, completion: nil)
@@ -950,6 +954,10 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 var message = "\(fullOverride)"
                 if let duration = treatment.overrideDuration {
                     message += "\nVaraktighet: \(Int(duration)) min"
+                }
+                // Append the enteredBy value if available:
+                if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                    message += "\nInlagt av: \(enteredBy)"
                 }
                 let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
