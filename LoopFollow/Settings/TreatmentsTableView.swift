@@ -115,7 +115,18 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private var filteredTreatments: [Treatment] {
         switch segmentedControl.selectedSegmentIndex {
         case 1: // Manual – only Manual entries
-            return treatments.filter { manualTypes.contains($0.eventType) }
+            return treatments.filter { treatment in
+                if treatment.eventType == "Carb Correction" {
+                    // Only include if foodType is non-empty.
+                    if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
+                        return true
+                    } else {
+                        return false
+                    }
+                } else {
+                    return manualTypes.contains(treatment.eventType)
+                }
+            }
         case 2: // Basal – only Temp Basal entries
             return treatments.filter { $0.eventType == basalType }
         case 3: // Bolus – filter for all bolus-related entries
