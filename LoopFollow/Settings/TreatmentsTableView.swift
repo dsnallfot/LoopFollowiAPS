@@ -537,31 +537,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             // For all other treatments.
             if treatment.eventType == "Bolus" {
                 let mainText = treatment.amount != nil ? "\(displayEventType) • \(treatment.amount!)" : displayEventType
-                if let enteredBy = treatment.rawData["enteredBy"] as? String, !enteredBy.isEmpty {
-                    // Regex pattern to capture text inside parentheses after "Trio", allowing an optional whitespace.
-                    let pattern = "^Trio(?:\\s*\\((.*?)\\))?$"
-                    if let regex = try? NSRegularExpression(pattern: pattern, options: []),
-                       let match = regex.firstMatch(in: enteredBy, range: NSRange(location: 0, length: enteredBy.utf16.count)) {
-                        // Capture group 1 contains the text inside the parentheses.
-                        if match.numberOfRanges >= 2, let range = Range(match.range(at: 1), in: enteredBy) {
-                            let extracted = String(enteredBy[range])
-                            // Only append if the extracted string is not empty.
-                            if !extracted.isEmpty {
-                                cell.textLabel?.text = "\(mainText) • \(extracted)"
-                            } else {
-                                cell.textLabel?.text = mainText
-                            }
-                        } else {
-                            // No capture group, so show mainText only.
-                            cell.textLabel?.text = mainText
-                        }
-                    } else {
-                        // If regex fails, fallback to mainText.
-                        cell.textLabel?.text = mainText
-                    }
-                } else {
-                    cell.textLabel?.text = mainText
-                }
+                cell.textLabel?.text = mainText
                 cell.accessoryType = .none
             } else {
                 // Default display for any other event.
