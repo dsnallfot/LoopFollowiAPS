@@ -109,7 +109,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private let basalType = "Temp Basal"
     private let bolusTypes = ["Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "SMB"]
     private let mealTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid"]
-    private let manualTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid", "Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "Exercise"]
+    private let manualTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid", "Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "Exercise", "BG Check"]
     
     // Computed property that returns the treatments filtered by the segmented control.
     private var filteredTreatments: [Treatment] {
@@ -376,8 +376,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     private func previewNoteText(for text: String) -> String {
-        if text.count > 22 {
-            return String(text.prefix(22)) + "…"
+        if text.count > 25 {
+            return String(text.prefix(25)) + "…"
         } else {
             return text
         }
@@ -393,7 +393,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     // Helper to determine symbol name and color for a given event type.
-    private func symbolForEventType(_ eventType: String, foodType: String? = nil) -> (name: String, color: UIColor) {
+    private func symbolForEventType(_ eventType: String, foodType: String? = nil, fullNote: String? = nil) -> (name: String, color: UIColor) {
         if eventType == "Carb Correction" {
             // If foodType is empty or nil, use brown; otherwise use systemOrange.
             if let food = foodType, !food.isEmpty {
@@ -417,7 +417,18 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         case "Exercise":
             return ("circle.fill", .systemPurple.withAlphaComponent(0.7))
         case "Note", "Announcement":
-            return ("circle.fill", .label.withAlphaComponent(0.5))
+            // Use the full note text from rawData to determine the symbol.
+            if let noteText = fullNote, noteText.contains("Justerad") {
+                return ("gearshape.circle.fill", .label.withAlphaComponent(0.5))
+            } else if let noteText = fullNote, noteText.contains("PumpSuspend") {
+                return ("pause.circle.fill", .label.withAlphaComponent(0.5))
+            } else if let noteText = fullNote, noteText.contains("PumpResume") {
+                return ("play.circle.fill", .label.withAlphaComponent(0.5))
+            } else {
+                return ("circle.fill", .label.withAlphaComponent(0.5))
+            }
+        case "Site Change", "Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart", "Insulin Change":
+            return ("repeat.circle.fill", .label.withAlphaComponent(0.5))
         default:
             return ("circle.fill", .label.withAlphaComponent(0.5))
         }
@@ -443,6 +454,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 } else {
                     return "Fett / Protein"
                 }
+            } else if treatment.eventType == "Site Change" {
+                return "Pumpbyte"
             } else {
                 return treatment.eventType
             }
@@ -490,12 +503,27 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             
         } else if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let note = treatment.rawData["notes"] as? String {
-                let preview = previewNoteText(for: note)
-                cell.textLabel?.text = "Not: " + preview
+                // Create regex patterns for the replacements.
+                let resumePattern = "PumpResume"
+                let suspendPattern = "PumpSuspend"
+                var modifiedNote = note
+
+                // Replace "PumpResume" with "Pump startades".
+                if let resumeRegex = try? NSRegularExpression(pattern: resumePattern, options: []) {
+                    let range = NSRange(location: 0, length: modifiedNote.utf16.count)
+                    modifiedNote = resumeRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "Pump startades")
+                }
+                // Replace "PumpSuspend" with "Pump pausades".
+                if let suspendRegex = try? NSRegularExpression(pattern: suspendPattern, options: []) {
+                    let range = NSRange(location: 0, length: modifiedNote.utf16.count)
+                    modifiedNote = suspendRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "Pump pausades")
+                }
+
+                let preview = previewNoteText(for: modifiedNote)
+                cell.textLabel?.text = preview
             } else {
                 cell.textLabel?.text = displayEventType
             }
-            // Optionally, you might add an accessory type here.
             
         } else if treatment.eventType == "Temp Basal" {
             if let duration = treatment.tempBasalDuration, let amount = treatment.amount {
@@ -556,6 +584,9 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if treatment.eventType == "Carb Correction" {
                 let foodType = treatment.rawData["foodType"] as? String
                 return symbolForEventType(treatment.eventType, foodType: foodType)
+            } else if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
+                let fullNote = treatment.rawData["notes"] as? String
+                return symbolForEventType(treatment.eventType, fullNote: fullNote)
             } else {
                 return symbolForEventType(treatment.eventType)
             }
@@ -676,6 +707,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     displayEventName = "Notering"
                 } else if treatment.eventType == "Exercise" {
                     displayEventName = "Override"
+                } else if treatment.eventType == "Site Change" {
+                    displayEventName = "Pumpbyte"
                 } else {
                     displayEventName = treatment.eventType
                 }
@@ -936,7 +969,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let timeString = timeFormatter.string(from: treatment.timestamp)
         
         // Fetch reason-string from device status for the particular event timestamp
-        if treatment.eventType == "Bolus" || treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
+        if treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
             // Adjust timestamp by adding 30 seconds
             let adjustedTimestamp = treatment.timestamp.addingTimeInterval(30)
             
@@ -959,8 +992,22 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         // For Note entries:
         if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let fullNote = treatment.rawData["notes"] as? String {
+                // Perform the same regex replacements.
+                let resumePattern = "PumpResume"
+                let suspendPattern = "PumpSuspend"
+                var modifiedNote = fullNote
+
+                if let resumeRegex = try? NSRegularExpression(pattern: resumePattern, options: []) {
+                    let range = NSRange(location: 0, length: modifiedNote.utf16.count)
+                    modifiedNote = resumeRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "Pump startades")
+                }
+                if let suspendRegex = try? NSRegularExpression(pattern: suspendPattern, options: []) {
+                    let range = NSRange(location: 0, length: modifiedNote.utf16.count)
+                    modifiedNote = suspendRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "Pump pausades")
+                }
+                
                 let title = "Notering \(timeString)"
-                var message = "\(fullNote)"
+                var message = "\(modifiedNote)"
                 // Append the enteredBy value if available:
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
@@ -974,11 +1021,46 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         // Handle Sensor Start Notes
         if treatment.eventType == "Sensor Start" || treatment.eventType == "Sensor Change" || treatment.eventType == "Sensorbyte" || treatment.eventType == "Sensorstart" {
             let title = "Sensorbyte \(timeString)"
-            let message = treatment.sensorStartNotes ?? "Inga anteckningar"
+            var message = treatment.sensorStartNotes ?? "Inga anteckningar"
+            if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                message += "Inlagt av: \(enteredBy)"
+            }
             
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alert, animated: true, completion: nil)
+        }
+        
+        // Handle Pump change Notes
+        if treatment.eventType == "Site Change" {
+            let title = "Pumpbyte \(timeString)"
+            var message = ""
+            if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                message += "Inlagt av: \(enteredBy)"
+            }
+            
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            present(alert, animated: true, completion: nil)
+        }
+        
+        // Handle BG Check
+        if treatment.eventType == "BG Check" {
+            if let glucose = treatment.rawData["glucose"] as? Double,
+               let units = treatment.rawData["units"] as? String {
+                let mmol = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
+                let title = "Fingerstick \(timeString)"
+                var message = "Blodsocker: \(glucose) mmol/L"
+                // Append the enteredBy value if available:
+                if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                    message += "\nInlagt av: \(enteredBy)"
+                    
+                }
+                
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                present(alert, animated: true, completion: nil)
+            }
         }
         
         // For override treatments:
@@ -1048,6 +1130,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             present(alert, animated: true, completion: nil)
+        }
+        
+        else if treatment.eventType == "Bolus" {
+            let bolusValue = treatment.amount
+            let title = "Bolus \(timeString)"
+            var message = "Insulin: \(bolusValue ?? "0.0")"
+            // Append the enteredBy value if available:
+            if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                message += "\nInlagt av: \(enteredBy)"
+            }
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            present(alert, animated: true, completion: nil)
+            
         }
 
     }
