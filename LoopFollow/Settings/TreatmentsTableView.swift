@@ -106,15 +106,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private var segmentedControl: UISegmentedControl!
     
     // Define event type arrays for filtering.
-    private let basalType = "Temp Basal"
-    private let bolusTypes = ["Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "SMB"]
-    private let mealTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid"]
+    private let autoTypes = ["Temp Basal", "SMB"]
+    //private let mealTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid"]
     private let manualTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid", "Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "Exercise", "BG Check"]
     
     // Computed property that returns the treatments filtered by the segmented control.
     private var filteredTreatments: [Treatment] {
         switch segmentedControl.selectedSegmentIndex {
-        case 1: // Manual – only Manual entries
+        case 1: // Auto – filter for all auto treatment entries
+            return treatments.filter { autoTypes.contains($0.eventType) }
+        case 2: // Manual – only Manual entries
             return treatments.filter { treatment in
                 if treatment.eventType == "Carb Correction" {
                     // Only include if foodType is non-empty.
@@ -127,15 +128,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     return manualTypes.contains(treatment.eventType)
                 }
             }
-        case 2: // Basal – only Temp Basal entries
-            return treatments.filter { $0.eventType == basalType }
-        case 3: // Bolus – filter for all bolus-related entries
-            return treatments.filter { bolusTypes.contains($0.eventType) }
-        case 4: // Måltider
-            return treatments.filter { mealTypes.contains($0.eventType) }
-        case 5: // Övrigt – not any insulin or meal entries
-            let insulinTypes = bolusTypes + [basalType]
-            return treatments.filter { !insulinTypes.contains($0.eventType) && !mealTypes.contains($0.eventType) }
+        case 3: // Övrigt – not any insulin or meal entries
+            return treatments.filter { !autoTypes.contains($0.eventType) && !manualTypes.contains($0.eventType) }
         default: // Allt
             return treatments
         }
@@ -264,7 +258,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Setup Segmented Control
     
     private func setupSegmentedControl() {
-        let segments = ["Allt", "Manuell", "Basal", "Bolus", "Måltid", "Övrigt"]
+        let segments = ["Alla", "Auto", "Manuella", "Övriga"]
         segmentedControl = UISegmentedControl(items: segments)
         segmentedControl.selectedSegmentIndex = 0
         segmentedControl.addTarget(self, action: #selector(filterChanged), for: .valueChanged)
