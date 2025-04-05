@@ -412,7 +412,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             return ("circle.fill", .systemPurple.withAlphaComponent(0.7))
         case "Note", "Announcement":
             // Use the full note text from rawData to determine the symbol.
-            if let noteText = fullNote, noteText.contains("Justerad") {
+            if let noteText = fullNote, noteText.contains("Justerad") || noteText.contains("ändrades") {
                 return ("gearshape.circle.fill", .label.withAlphaComponent(0.5))
             } else if let noteText = fullNote, noteText.contains("PumpSuspend") {
                 return ("pause.circle.fill", .label.withAlphaComponent(0.5))
