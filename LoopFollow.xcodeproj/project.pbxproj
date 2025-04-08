@@ -26,6 +26,8 @@
 		65B3E5D32D3FFB3000622194 /* MealViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C72D3FFB3000622194 /* MealViewController.swift */; };
 		65BB9A422D43CAC800FCFCA8 /* AdvancedSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BB9A412D43CAC300FCFCA8 /* AdvancedSettingsViewModel.swift */; };
 		65BB9A442D43CB0300FCFCA8 /* AdvancedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BB9A432D43CB0100FCFCA8 /* AdvancedSettingsView.swift */; };
+		65EBBB512DA5520B00212D5C /* TrioOrefViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */; };
+		65EBBB532DA5526100212D5C /* TrioOrefView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65EBBB522DA5526000212D5C /* TrioOrefView.swift */; };
 		DD07B5C929E2F9C400C6A635 /* NightscoutUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */; };
 		DD0C0C602C415B9D00DBADDF /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0C0C5F2C415B9D00DBADDF /* ProfileManager.swift */; };
 		DD0C0C622C4175FD00DBADDF /* NSProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0C0C612C4175FD00DBADDF /* NSProfile.swift */; };
@@ -312,6 +314,8 @@
 		65B3E5CC2D3FFB3000622194 /* CustomActionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomActionViewController.swift; sourceTree = "<group>"; };
 		65BB9A412D43CAC300FCFCA8 /* AdvancedSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsViewModel.swift; sourceTree = "<group>"; };
 		65BB9A432D43CB0100FCFCA8 /* AdvancedSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsView.swift; sourceTree = "<group>"; };
+		65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioOrefViewModel.swift; sourceTree = "<group>"; };
+		65EBBB522DA5526000212D5C /* TrioOrefView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioOrefView.swift; sourceTree = "<group>"; };
 		A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_LoopFollow.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutUtils.swift; sourceTree = "<group>"; };
 		DD0C0C5F2C415B9D00DBADDF /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
@@ -615,6 +619,8 @@
 		65BB9A402D43CA9C00FCFCA8 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				65EBBB522DA5526000212D5C /* TrioOrefView.swift */,
+				65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */,
 				6540EF952D7DD4C5008BC98D /* AddManualSensorNoteViewController.swift */,
 				6540EF932D7DCDD4008BC98D /* SensorHistoryViewController.swift */,
 				659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */,
@@ -1435,6 +1441,7 @@
 				DD4878202C7DAF890048F05C /* PushMessage.swift in Sources */,
 				65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */,
 				FC7CE59F248D8D23001F83B8 /* SnoozeViewController.swift in Sources */,
+				65EBBB512DA5520B00212D5C /* TrioOrefViewModel.swift in Sources */,
 				DDF6999B2C5AA32E0058A8D9 /* TempTargetPreset.swift in Sources */,
 				DD9ACA0E2D340BFF00415D8A /* AlarmTask.swift in Sources */,
 				DD7FFAFD2A72953000C3A304 /* EKEventStore+Extensions.swift in Sources */,
@@ -1494,6 +1501,7 @@
 				FCFEECA02488157B00402A7F /* Chart.swift in Sources */,
 				DDCF979424C0D380002C9752 /* UIViewExtension.swift in Sources */,
 				DD0C0C6D2C48606200DBADDF /* CarbMetric.swift in Sources */,
+				65EBBB532DA5526100212D5C /* TrioOrefView.swift in Sources */,
 				DD7E19882ACDA5DA00DBD158 /* Notes.swift in Sources */,
 				FCEF87AC24A141A700AE6FA0 /* Localizer.swift in Sources */,
 				FC1BDD3224A2585C001B652C /* DataStructs.swift in Sources */,

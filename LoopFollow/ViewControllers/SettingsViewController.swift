@@ -95,6 +95,21 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
+            $0.title = "Oref-variabler"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let trioOrefView = TrioOrefView()
+                    let hostingController = UIHostingController(rootView: trioOrefView)
+                    hostingController.modalPresentationStyle = .formSheet
+                    if UserDefaultsRepository.forceDarkMode.value {
+                        hostingController.overrideUserInterfaceStyle = .dark
+                    }
+                    return hostingController
+                }),
+                onDismiss: nil
+            )
+        }
+        <<< ButtonRow() {
             $0.title = "Profilinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
