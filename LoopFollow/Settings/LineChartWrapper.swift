@@ -10,7 +10,7 @@ import SwiftUI
 import Charts
 
 struct LineChartWrapper: UIViewRepresentable {
-    var chartData: [ChartDataEntry]
+    var chartData: [(data: [ChartDataEntry], label: String)]
     var title: String
 
     func makeUIView(context: Context) -> Charts.LineChartView {
@@ -55,29 +55,35 @@ struct LineChartWrapper: UIViewRepresentable {
     }
 
     func updateUIView(_ chartView: Charts.LineChartView, context: Context) {
-        let stepChartData = createStepChartData(from: chartData)
+        let dataSets = chartData.map { item -> LineChartDataSet in
+            let stepEntries = createStepChartData(from: item.data)
+            let dataSet = LineChartDataSet(entries: stepEntries, label: item.label)
+            dataSet.drawCirclesEnabled = false
+            dataSet.lineWidth = 3.0
+            dataSet.drawValuesEnabled = false
+            dataSet.mode = .linear
 
-        let dataSet = LineChartDataSet(entries: stepChartData, label: title)
-        dataSet.drawCirclesEnabled = false
-        dataSet.lineWidth = 3.0
-        dataSet.setColor(.systemPurple)
-        dataSet.drawValuesEnabled = false
-        dataSet.mode = .linear // No smoothing (sharp edges)
+            // Auto assign color (you can make this customizable later)
+            if item.label.lowercased().contains("uam") {
+                dataSet.setColor(.systemBlue)
+            } else {
+                dataSet.setColor(.systemPurple)
+            }
 
-        let data = LineChartData(dataSet: dataSet)
-        chartView.data = data
+            return dataSet
+        }
 
-        // 🔹 Update the Y-axis formatter dynamically
+        let lineChartData = LineChartData(dataSets: dataSets)
+        chartView.data = lineChartData
+
         chartView.leftAxis.valueFormatter = NoZeroYAxisFormatter(decimalPlaces: getDecimalPlaces(for: title))
-
-        // 🔹 Refresh the chart
         chartView.notifyDataSetChanged()
     }
 
     /// Determines the number of decimal places for the Y-axis based on the section title
     private func getDecimalPlaces(for title: String) -> Int {
         switch title {
-        case "Basal":
+        case "Basal", "SMB Limits":
             return 2 // Show 2 decimal places
         case "Targets", "Insulin Sensitivity Factor", "Carb Sensitivity Factor":
             return 1 // Show 1 decimal place
@@ -91,18 +97,23 @@ struct LineChartWrapper: UIViewRepresentable {
     /// Converts standard chart data into step-like data
     private func createStepChartData(from data: [ChartDataEntry]) -> [ChartDataEntry] {
         var stepData: [ChartDataEntry] = []
-        
+
         for i in 0..<data.count {
             let entry = data[i]
-            stepData.append(entry) // Keep original point
-            
-            // If not the last point, insert an extra point with the same Y-value
+            stepData.append(entry) // original point
+
+            // Insert horizontal step to next x, using current y
             if i < data.count - 1 {
                 let nextEntry = data[i + 1]
                 stepData.append(ChartDataEntry(x: nextEntry.x, y: entry.y))
             }
         }
-        
+
+        // 🟣 Add final point at x=24 to stretch the line
+        if let last = data.last, last.x < 24 {
+            stepData.append(ChartDataEntry(x: 24.0, y: last.y))
+        }
+
         return stepData
     }
 }

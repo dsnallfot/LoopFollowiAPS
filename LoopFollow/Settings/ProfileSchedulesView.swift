@@ -21,7 +21,8 @@ struct ProfileSchedulesView: View {
         case cr = "CR"
         case isf = "ISF"
         case csf = "CSF"
-        case cHr = "Kh g/h"
+        case cHr = "Kh/h"
+        case smb = "SMB"
 
         var displayName: String {
             switch self {
@@ -31,6 +32,7 @@ struct ProfileSchedulesView: View {
             case .isf: return "Insulin Sensitivity Factor"
             case .csf: return "Carb Sensitivity Factor"
             case .cHr: return "Minimum Carbs grams/hour"
+            case .smb: return "SMB Limits"
             }
         }
     }
@@ -50,6 +52,41 @@ struct ProfileSchedulesView: View {
             return extractChartData(from: viewModel.csfEntries)
         case .cHr:
             return extractChartData(from: viewModel.minCarbsEntries, skipLast: true)
+        case .smb:
+            // Parse the first number from the "x.xx / y.yy" string for graph
+            let entries = viewModel.smbEntries.compactMap { entry -> ScheduleEntry? in
+                guard let valueString = entry.value.split(separator: "/").first,
+                      let value = Double(valueString.trimmingCharacters(in: .whitespaces)) else {
+                    return nil
+                }
+                return ScheduleEntry(time: entry.time, value: String(format: "%.2f", value))
+            }
+            return extractChartData(from: entries)
+        }
+    }
+    
+    var multiChartData: [(data: [ChartDataEntry], label: String)] {
+        switch selectedSection {
+        case .smb:
+            let smbValues = viewModel.smbEntries.compactMap { entry -> (x: Double, smb: Double, uam: Double)? in
+                guard let hour = Double(entry.time.prefix(2)) else { return nil }
+                let parts = entry.value.split(separator: "/").map { $0.trimmingCharacters(in: .whitespaces) }
+                guard parts.count == 2,
+                      let smb = Double(parts[0]),
+                      let uam = Double(parts[1]) else { return nil }
+                return (x: hour, smb: smb, uam: uam)
+            }
+
+            let smbData = smbValues.map { ChartDataEntry(x: $0.x, y: $0.smb) }
+            let uamData = smbValues.map { ChartDataEntry(x: $0.x, y: $0.uam) }
+
+            return [
+                (data: smbData, label: "Max SMB"),
+                (data: uamData, label: "Max UAMSMB")
+            ]
+
+        default:
+            return [(data: chartData, label: selectedSection.displayName)]
         }
     }
     
@@ -98,7 +135,7 @@ struct ProfileSchedulesView: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .padding()
 
-                LineChartWrapper(chartData: chartData, title: selectedSection.displayName)
+                LineChartWrapper(chartData: multiChartData, title: selectedSection.displayName)
                     .frame(height: 150)
                     .padding(.horizontal)
 
@@ -112,15 +149,15 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .basal {
-                        Section(header: Text("Basal")) {
+                        Section(header: Text("Basal (E/h)")) {
                             ForEach(viewModel.basalEntries) { entry in
-                                scheduleRow(entry, isBold: entry.time == "Total Daily Basal")
+                                scheduleRow(entry, isBold: entry.time == "Total daglig basal")
                             }
                         }
                     }
                     
                     if selectedSection == .cr {
-                        Section(header: Text("Insulinkvoter (CR)")) {
+                        Section(header: Text("Insulinkvoter CR (g/E)")) {
                             ForEach(viewModel.carbRatioEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -128,7 +165,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .isf {
-                        Section(header: Text("Insulinkänslighet (ISF)")) {
+                        Section(header: Text("Insulinkänslighet ISF (mmol/L/E)")) {
                             ForEach(viewModel.isfEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -136,7 +173,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .csf {
-                        Section(header: Text("Kolhydratskänslighet (CSF)")) {
+                        Section(header: Text("Kolhydratskänslighet CSF (mmol/L/g)")) {
                             ForEach(viewModel.csfEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -144,9 +181,16 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .cHr {
-                        Section(header: Text("Minimum kolhydrater gram/timme")) {
+                        Section(header: Text("Minsta absorption kh (g/h))")) {
                             ForEach(viewModel.minCarbsEntries) { entry in
-                                scheduleRow(entry, isBold: entry.time == "Average")
+                                scheduleRow(entry, isBold: entry.time == "Medelvärde")
+                            }
+                        }
+                    }
+                    if selectedSection == .smb {
+                        Section(header: Text("Maxgränser SMB / UAMSMB (E/SMB)")) {
+                            ForEach(viewModel.smbEntries) { entry in
+                                scheduleRow(entry)
                             }
                         }
                     }

@@ -95,7 +95,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
-            $0.title = "Oref-variabler"
+            $0.title = "Oref status"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let trioOrefView = TrioOrefView()

@@ -15,7 +15,7 @@ struct Oref2Entry: Identifiable {
 
 class TrioOrefViewModel: ObservableObject {
     @Published var orefEntries: [Oref2Entry] = []
-    @Published var formattedTitle: String = "Trio Oref-variabler"
+    @Published var formattedTitle: String = "Oref status"
     
     init() {
         fetchLatestOref2()
@@ -30,14 +30,14 @@ class TrioOrefViewModel: ObservableObject {
                     guard let firstStatus = statusList.first else {
                         print("✅ Successfully fetched device status, but status list is empty.")
                         self.orefEntries = []
-                        self.formattedTitle = "Trio Oref-variabler"
+                        self.formattedTitle = "Oref status"
                         return
                     }
 
                     guard let oref2 = firstStatus.oref2 else {
                         print("✅ Fetched device status, but oref2 field is missing.")
                         self.orefEntries = []
-                        self.formattedTitle = "Trio Oref-variabler"
+                        self.formattedTitle = "Oref status"
                         return
                     }
 
@@ -47,16 +47,26 @@ class TrioOrefViewModel: ObservableObject {
                     }
                     .sorted { $0.key < $1.key }
 
-                    // 🔹 Format the `date` field for use in title
-                    let formatter = DateFormatter()
-                    formatter.dateFormat = "yyyy-MM-dd HH:mm"
-                    formatter.timeZone = .current
-                    self.formattedTitle = "Oref \(formatter.string(from: oref2.date))"
+                    // 🔹 Format the `date` string to local time
+                    let isoFormatter = ISO8601DateFormatter()
+                    isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+                    if let parsedDate = isoFormatter.date(from: oref2.date) {
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+                        formatter.timeZone = .current
+                        let localTime = formatter.string(from: parsedDate)
+                        self.formattedTitle = "Oref status: \(localTime)"
+                        print("✅ Parsed and displayed local date: \(localTime)")
+                    } else {
+                        print("⚠️ Could not parse oref2.date: \(oref2.date)")
+                        self.formattedTitle = "Oref status"
+                    }
 
                 case .failure(let error):
                     print("❌ Failed to fetch oref2:", error)
                     self.orefEntries = []
-                    self.formattedTitle = "Trio Oref-variabler"
+                    self.formattedTitle = "Oref status"
                 }
             }
         }
@@ -71,7 +81,7 @@ struct Oref2_variables: Codable {
     let average_total_data: Decimal
     let weightedAverage: Decimal
     let past2hoursAverage: Decimal
-    let date: Date
+    let date: String
     let overridePercentage: Decimal
     let useOverride: Bool
     let duration: Decimal

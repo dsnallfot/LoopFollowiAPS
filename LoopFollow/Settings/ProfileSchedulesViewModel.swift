@@ -22,6 +22,7 @@ class ProfileSchedulesViewModel: ObservableObject {
     @Published var targetEntries: [ScheduleEntry] = []
     @Published var csfEntries: [ScheduleEntry] = []
     @Published var minCarbsEntries: [ScheduleEntry] = []
+    @Published var smbEntries: [ScheduleEntry] = []
     
     private var minCarbImpact: Double = 8 // Default value, will be fetched
 
@@ -66,20 +67,36 @@ class ProfileSchedulesViewModel: ObservableObject {
         }
     
     private func fetchPreferences(completion: @escaping () -> Void) {
-            NightscoutUtils.executeRequest(eventType: .profile, parameters: [:]) { (result: Result<NSProfile, Error>) in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let profileData):
-                        if let value = profileData.nsPreferences?.preferences["min_5m_carbimpact"], let impact = Double(value) {
-                            self.minCarbImpact = impact
-                        }
-                    case .failure(let error):
-                        print("Error fetching preferences: \(error)")
+        NightscoutUtils.executeRequest(eventType: .profile, parameters: [:]) { (result: Result<NSProfile, Error>) in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let profileData):
+                    // Existing logic for minCarbImpact
+                    if let value = profileData.nsPreferences?.preferences["min_5m_carbimpact"],
+                       let impact = Double(value) {
+                        self.minCarbImpact = impact
                     }
-                    completion()
+
+                    // ✅ New: Extract SMB preferences here
+                    let maxSMBMinutes = Int(profileData.nsPreferences?.preferences["maxSMBBasalMinutes"] ?? "") ?? 30
+                    let maxUAMSMBMinutes = Int(profileData.nsPreferences?.preferences["maxUAMSMBBasalMinutes"] ?? "") ?? 30
+
+                    // ✅ Trigger SMB calculation
+                    let profile = ProfileManager.shared
+                    self.smbEntries = self.calculateSMBSchedule(
+                        basalSchedule: profile.basalSchedule,
+                        maxSMBMinutes: maxSMBMinutes,
+                        maxUAMSMBMinutes: maxUAMSMBMinutes
+                    )
+
+                case .failure(let error):
+                    print("Error fetching preferences: \(error)")
                 }
+
+                completion()
             }
         }
+    }
     
     private func calculateBasalSchedule(basalSchedule: [ProfileManager.TimeValue<Double>]) -> [ScheduleEntry] {
             var basalEntries: [ScheduleEntry] = []
@@ -188,6 +205,36 @@ class ProfileSchedulesViewModel: ObservableObject {
 
             return minCarbsEntries
         }
+    
+    private func calculateSMBSchedule(basalSchedule: [ProfileManager.TimeValue<Double>],
+                                      maxSMBMinutes: Int,
+                                      maxUAMSMBMinutes: Int) -> [ScheduleEntry] {
+        var entries: [ScheduleEntry] = []
+        var lastBasal: Double?
+        var basalDict: [Int: Double] = [:]
+
+        for entry in basalSchedule {
+            basalDict[entry.timeAsSeconds / 3600] = entry.value
+        }
+
+        for hour in 0..<24 {
+            if let newBasal = basalDict[hour] {
+                lastBasal = newBasal
+            }
+
+            if let basal = lastBasal {
+                let maxSMB = basal * Double(maxSMBMinutes) / 60.0
+                let maxUAMSMB = basal * Double(maxUAMSMBMinutes) / 60.0
+                let time = String(format: "%02d:00", hour)
+                let roundedSMB = (maxSMB * 100).rounded() / 100
+                let roundedUAMSMB = (maxUAMSMB * 100).rounded() / 100
+                let value = String(format: "%.2f / %.2f", roundedSMB, roundedUAMSMB)
+                entries.append(ScheduleEntry(time: time, value: value))
+            }
+        }
+
+        return entries
+    }
 
         private func formatTime(_ seconds: Int) -> String {
             let hours = seconds / 3600
