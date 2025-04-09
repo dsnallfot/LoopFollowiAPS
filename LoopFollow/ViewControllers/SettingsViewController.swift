@@ -165,7 +165,21 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 onDismiss: nil
             )
         }
-
+        <<< ButtonRow("syncNewSensor") {
+            $0.title = "Synka ny sensor"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let syncNewSensorView = SyncNewSensorView()
+                    let hostingController = UIHostingController(rootView: syncNewSensorView)
+                    hostingController.modalPresentationStyle = .formSheet
+                    if UserDefaultsRepository.forceDarkMode.value {
+                        hostingController.overrideUserInterfaceStyle = .dark
+                    }
+                    return hostingController
+                }),
+                onDismiss: nil
+            )
+        }
         <<< ButtonRow() {
             $0.title = "Allmänna inställningar"
             $0.presentationMode = .show(
