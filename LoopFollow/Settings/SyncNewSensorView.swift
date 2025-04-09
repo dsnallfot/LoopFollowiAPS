@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import AudioToolbox
 
 // Global bgData – updated by your Nightscout BG data logic.
 var bgData: [ShareGlucoseData] = []
@@ -15,50 +16,54 @@ struct SyncNewSensorView: View {
     // Updated with the timestamp from the latest Nightscout BG reading.
     @State private var lastBG: Date = Date()
     
-    // First button countdown: 60-second mode (for sensor sync).
+    // Sensor sync countdown (60-second cycle) state.
     @State private var sensorSecondsSync: Int = 60
+    @State private var sensorPaused: Bool = false
+    @State private var sensorPauseStart: Date? = nil
+    @State private var sensorPauseAdjustment: TimeInterval = 0
     
-    // Second button pairing countdown: 300-second mode.
+    // Pairing countdown (300-second cycle) state.
     @State private var pairingCountdown: Int = 300
+    @State private var pairingPaused: Bool = false
+    @State private var pairingPauseStart: Date? = nil
+    @State private var pairingPauseAdjustment: TimeInterval = 0
     
-    // Timer publisher fires every second.
+    // Timer publisher: fires every second.
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
-    // Offset values as per your requirements:
-    let sensorOffset: Int = 15    // For the first button countdown.
-    let pairingOffset: Int = 30   // For the pairing countdown.
+    // Offsets: for sensor sync use 15 sec; for pairing use 30 sec.
+    let sensorOffset: Int = 15
+    let pairingOffset: Int = 30
     
     // MARK: - Countdown Calculations
-    
-    /// Computes the initial offset for the 60-second cycle based on lastBG.
-    /// Formula: (lastBGSeconds – sensorOffset + 60) mod 60.
-    private var initialOffset: Int {
+
+    /// Calculates sensor sync countdown (60-sec cycle) based on lastBG.
+    private var sensorInitialOffset: Int {
         let lastBGSeconds = Calendar.current.component(.second, from: lastBG)
         let offset = (lastBGSeconds - sensorOffset + 60) % 60
-        print("DEBUG: [initialOffset] lastBG seconds = \(lastBGSeconds), computed sensor offset = \(offset)")
+        print("DEBUG: [sensorInitialOffset] lastBG seconds = \(lastBGSeconds), computed sensor offset = \(offset)")
         return offset
     }
-    
-    /// Calculates the sensor sync countdown (60-second cycle).
+
     private func calculateSensorCountdown(for current: Date) -> Int {
-        let currentSecond = Calendar.current.component(.second, from: current)
-        let elapsed = (currentSecond - initialOffset + 60) % 60
+        let effectiveTime = current.addingTimeInterval(sensorPauseAdjustment)
+        let currentSecond = Calendar.current.component(.second, from: effectiveTime)
+        let elapsed = (currentSecond - sensorInitialOffset + 60) % 60
         let countdown = 60 - elapsed
         print("DEBUG: [calculateSensorCountdown] currentSecond = \(currentSecond), elapsed = \(elapsed), sensor countdown = \(countdown)")
         return countdown
     }
-    
-    /// Calculates the pairing countdown (300-second cycle) using lastBG and pairingOffset.
+
+    /// Calculates pairing countdown (300-sec cycle) based on lastBG.
     private func calculatePairingCountdown(for current: Date) -> Int {
-        let cycle = 300  // Total seconds in the cycle.
+        let cycle = 300
+        let effectiveTime = current.addingTimeInterval(pairingPauseAdjustment)
         
-        // Use the full timestamp modulo cycle.
         let lastBGTime = Int(lastBG.timeIntervalSince1970)
         let lastBGCycle = lastBGTime % cycle
-        // Compute offset for pairing: subtract pairingOffset and wrap.
         let offset = (lastBGCycle - pairingOffset + cycle) % cycle
         
-        let currentTime = Int(current.timeIntervalSince1970)
+        let currentTime = Int(effectiveTime.timeIntervalSince1970)
         let currentCycle = currentTime % cycle
         let elapsed = (currentCycle - offset + cycle) % cycle
         let countdown = cycle - elapsed
@@ -66,18 +71,83 @@ struct SyncNewSensorView: View {
         return countdown
     }
     
-    /// Formats a number of seconds into a "MM:SS" string.
-    private func formatTime(_ seconds: Int) -> String {
-        let minutes = seconds / 60
-        let secs = seconds % 60
-        return String(format: "%02d:%02d", minutes, secs)
+    // MARK: - Sound Playback
+    
+    private func playBeep() {
+        AudioServicesPlaySystemSound(1057)
     }
     
-    // MARK: - NS BG Data Fetching (Once on View Appear)
+    private func playFinalBeep() {
+        AudioServicesPlaySystemSound(1013)
+    }
     
-    /// Replicates your Nightscout BG fetch logic.
-    /// Fetches NS BG data once when the view appears, converts timestamps, sorts data,
-    /// updates global bgData, and sets lastBG to the timestamp from the newest reading (data[0]).
+    // For sensor countdown sounds.
+    @State private var prevSensorCountdown: Int = 60
+    private func checkSensorSounds(with countdown: Int) {
+        // Check for the last 5 seconds (1 to 5) and compare with the previous countdown value.
+        if countdown >= 1 && countdown <= 5 && countdown != prevSensorCountdown {
+            if countdown == 1 {
+                playFinalBeep()
+            } else {
+                playBeep()
+            }
+        }
+        prevSensorCountdown = countdown
+    }
+
+    // For pairing countdown sounds.
+    @State private var prevPairingCountdown: Int = 300
+    private func checkPairingSounds(with countdown: Int) {
+        if countdown >= 1 && countdown <= 5 && countdown != prevPairingCountdown {
+            if countdown == 1 {
+                playFinalBeep()
+            } else {
+                playBeep()
+            }
+        }
+        prevPairingCountdown = countdown
+    }
+    
+    // MARK: - Pause/Resume per Button
+    
+    private func toggleSensorPause() {
+        if sensorPaused {
+            // Resuming sensor countdown.
+            if let pauseStart = sensorPauseStart {
+                let pauseDuration = Date().timeIntervalSince(pauseStart)
+                sensorPauseAdjustment += pauseDuration
+                print("DEBUG: [toggleSensorPause] Resuming sensor after pause \(pauseDuration) sec. Total adjustment = \(sensorPauseAdjustment)")
+            }
+            sensorPaused = false
+            sensorPauseStart = nil
+        } else {
+            // Pausing sensor countdown.
+            sensorPauseStart = Date()
+            sensorPaused = true
+            print("DEBUG: [toggleSensorPause] Sensor countdown paused at \(sensorPauseStart!)")
+        }
+    }
+    
+    private func togglePairingPause() {
+        if pairingPaused {
+            // Resuming pairing countdown.
+            if let pauseStart = pairingPauseStart {
+                let pauseDuration = Date().timeIntervalSince(pauseStart)
+                pairingPauseAdjustment += pauseDuration
+                print("DEBUG: [togglePairingPause] Resuming pairing after pause \(pauseDuration) sec. Total adjustment = \(pairingPauseAdjustment)")
+            }
+            pairingPaused = false
+            pairingPauseStart = nil
+        } else {
+            // Pausing pairing countdown.
+            pairingPauseStart = Date()
+            pairingPaused = true
+            print("DEBUG: [togglePairingPause] Pairing countdown paused at \(pairingPauseStart!)")
+        }
+    }
+    
+    // MARK: - NS BG Data Fetching
+    
     private func fetchNSBGData() {
         guard IsNightscoutEnabled() else {
             print("DEBUG: [fetchNSBGData] Nightscout is disabled.")
@@ -94,7 +164,7 @@ struct SyncNewSensorView: View {
         }
         parameters["count"] = "\(UserDefaultsRepository.downloadDays.value * 2 * 24 * 60 / 5)"
         parameters["find[dateString][$gte]"] = utcISODateFormatter.string(from: startDate)
-        parameters["find[type][$ne]"] = "cal"  // Exclude calibration entries.
+        parameters["find[type][$ne]"] = "cal"
         
         print("DEBUG: [fetchNSBGData] Fetching NS BG data with parameters: \(parameters)")
         
@@ -103,15 +173,11 @@ struct SyncNewSensorView: View {
             case .success(let entriesResponse):
                 var nsData = entriesResponse
                 DispatchQueue.main.async {
-                    // Convert NS timestamps from milliseconds to seconds.
                     for i in 0..<nsData.count {
                         nsData[i].date /= 1000
                         nsData[i].date.round(FloatingPointRoundingRule.toNearestOrEven)
                     }
-                    // Sort so that the newest reading is first.
                     nsData.sort { $0.date > $1.date }
-                    
-                    // Update global bgData.
                     bgData = nsData
                     if let latest = nsData.first {
                         let newLastBG = Date(timeIntervalSince1970: latest.date)
@@ -124,15 +190,13 @@ struct SyncNewSensorView: View {
                 }
             case .failure(let error):
                 print("DEBUG: [fetchNSBGData] Failed to fetch NS BG data: \(error)")
-                // Optionally, schedule a retry here.
             }
         }
     }
     
-    /// Updates lastBG using the available bgData.
     private func updateLatestBG() {
         if !bgData.isEmpty {
-            let latestReading = bgData[0]  // Use the first (newest) element.
+            let latestReading = bgData[0]
             let newLastBG = Date(timeIntervalSince1970: latestReading.date)
             print("DEBUG: [updateLatestBG] Latest reading from bgData[0]: \(newLastBG)")
             if newLastBG != lastBG {
@@ -155,38 +219,57 @@ struct SyncNewSensorView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 40) {
-                // First large button – sensor sync countdown (60-second cycle).
+                // First button: Sensor sync countdown (60-sec cycle).
                 Button(action: {
-                    // Implement sensor sync action.
+                    toggleSensorPause()
                 }) {
                     VStack {
-                        Text("Skjut fast ny sensor om:")
-                            .font(.title2)
-                            .multilineTextAlignment(.center)
-                        Text("\(sensorSecondsSync) sekunder")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .multilineTextAlignment(.center)
+                        if sensorPaused {
+                            Text("Återuppta?")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Skjut fast ny sensor om:")
+                                .font(.title)
+                                .padding(.bottom, 2)
+                                .foregroundColor(.primary)
+                            Text("\(sensorSecondsSync) sekunder")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                        }
                     }
+                    .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, minHeight: 120)
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(12)
                 }
                 
-                // Second large button – new sensor pairing countdown (300-second cycle).
+                // Second button: Pairing countdown (300-sec cycle).
                 Button(action: {
-                    // Implement pairing action.
+                    togglePairingPause()
                 }) {
                     VStack {
-                        Text("Parkoppla ny sensor om:")
-                            .font(.title2)
-                            .multilineTextAlignment(.center)
-                        Text("\(formatTime(pairingCountdown))")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .multilineTextAlignment(.center)
+                        if pairingPaused {
+                            Text("Återuppta?")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Parkoppla ny sensor om:")
+                                .font(.title)
+                                .padding(.bottom, 2)
+                                .foregroundColor(.primary)
+                            // Display raw seconds with " sekunder" appended.
+                            Text("\(pairingCountdown) sekunder")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                        }
                     }
+                    .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, minHeight: 120)
                     .padding()
                     .background(Color(.secondarySystemBackground))
@@ -206,22 +289,24 @@ struct SyncNewSensorView: View {
             }
             .onAppear {
                 print("DEBUG: [onAppear] SyncNewSensorView onAppear triggered")
-                // Fetch NS BG data once when the view appears.
                 fetchNSBGData()
-                
-                // Log the current state of lastBG.
                 let bgSec = Calendar.current.component(.second, from: lastBG)
                 print("DEBUG: [onAppear] lastBG after NS fetch: \(lastBG) (seconds: \(bgSec))")
                 
-                // Initialize both countdowns.
+                // Initialize countdowns using effective time.
                 sensorSecondsSync = calculateSensorCountdown(for: Date())
                 pairingCountdown = calculatePairingCountdown(for: Date())
-                print("DEBUG: [onAppear] Initialized sensor countdown: \(sensorSecondsSync) sec, pairing countdown: \(formatTime(pairingCountdown))")
+                print("DEBUG: [onAppear] Initialized sensor countdown: \(sensorSecondsSync) sec, pairing countdown: \(pairingCountdown)")
             }
             .onReceive(timer) { currentTime in
-                // Update only the countdowns (do not fetch NS data every second).
-                sensorSecondsSync = calculateSensorCountdown(for: currentTime)
-                pairingCountdown = calculatePairingCountdown(for: currentTime)
+                if !sensorPaused {
+                    sensorSecondsSync = calculateSensorCountdown(for: currentTime)
+                    checkSensorSounds(with: sensorSecondsSync)
+                }
+                if !pairingPaused {
+                    pairingCountdown = calculatePairingCountdown(for: currentTime)
+                    checkPairingSounds(with: pairingCountdown)
+                }
             }
         }
     }
