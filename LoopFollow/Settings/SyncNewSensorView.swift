@@ -18,13 +18,13 @@ struct SyncNewSensorView: View {
     
     // Sensor sync countdown (60-second cycle) state.
     @State private var sensorSecondsSync: Int = 60
-    @State private var sensorPaused: Bool = false
+    @State private var sensorPaused: Bool = true
     @State private var sensorPauseStart: Date? = nil
     @State private var sensorPauseAdjustment: TimeInterval = 0
     
     // Pairing countdown (300-second cycle) state.
     @State private var pairingCountdown: Int = 300
-    @State private var pairingPaused: Bool = false
+    @State private var pairingPaused: Bool = true
     @State private var pairingPauseStart: Date? = nil
     @State private var pairingPauseAdjustment: TimeInterval = 0
     
@@ -41,7 +41,7 @@ struct SyncNewSensorView: View {
     private var sensorInitialOffset: Int {
         let lastBGSeconds = Calendar.current.component(.second, from: lastBG)
         let offset = (lastBGSeconds - sensorOffset + 60) % 60
-        print("DEBUG: [sensorInitialOffset] lastBG seconds = \(lastBGSeconds), computed sensor offset = \(offset)")
+        //print("DEBUG: [sensorInitialOffset] lastBG seconds = \(lastBGSeconds), computed sensor offset = \(offset)")
         return offset
     }
 
@@ -50,7 +50,7 @@ struct SyncNewSensorView: View {
         let currentSecond = Calendar.current.component(.second, from: effectiveTime)
         let elapsed = (currentSecond - sensorInitialOffset + 60) % 60
         let countdown = 60 - elapsed
-        print("DEBUG: [calculateSensorCountdown] currentSecond = \(currentSecond), elapsed = \(elapsed), sensor countdown = \(countdown)")
+        //print("DEBUG: [calculateSensorCountdown] currentSecond = \(currentSecond), elapsed = \(elapsed), sensor countdown = \(countdown)")
         return countdown
     }
 
@@ -67,7 +67,7 @@ struct SyncNewSensorView: View {
         let currentCycle = currentTime % cycle
         let elapsed = (currentCycle - offset + cycle) % cycle
         let countdown = cycle - elapsed
-        print("DEBUG: [calculatePairingCountdown] currentCycle = \(currentCycle), lastBGCycle = \(lastBGCycle), offset = \(offset), pairing countdown = \(countdown)")
+        //print("DEBUG: [calculatePairingCountdown] currentCycle = \(currentCycle), lastBGCycle = \(lastBGCycle), offset = \(offset), pairing countdown = \(countdown)")
         return countdown
     }
     
@@ -217,98 +217,122 @@ struct SyncNewSensorView: View {
     // MARK: - View Body
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 40) {
-                // First button: Sensor sync countdown (60-sec cycle).
-                Button(action: {
-                    toggleSensorPause()
-                }) {
-                    VStack {
-                        if sensorPaused {
-                            Text("Återuppta?")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("Skjut fast ny sensor om:")
-                                .font(.title)
-                                .padding(.bottom, 2)
-                                .foregroundColor(.primary)
-                            Text("\(sensorSecondsSync) sekunder")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                                .foregroundColor(.primary)
+            NavigationView {
+                VStack(spacing: 20) {
+                    // First button: Sensor sync countdown (60-sec cycle).
+                    Button(action: {
+                        toggleSensorPause()
+                    }) {
+                        VStack {
+                            if sensorPaused {
+                                Text("1. Skjut fast ny sensor")
+                                    .font(.title)
+                                    .padding(.bottom, 2)
+                                    .foregroundColor(.gray)
+                                Text("Starta nedräkning")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.gray)
+                            } else {
+                                Text("Skjut fast ny sensor om:")
+                                    .font(.title)
+                                    .padding(.bottom, 2)
+                                    .foregroundColor(.primary)
+                                Text("\(sensorSecondsSync) sekunder")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity, minHeight: 90)
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(12)
+                    }
+                    
+                    // Footer text with explanation.
+                    Text("""
+                    Steg 1: 'Skjut fast ny sensor'-nedräkningen hjälper dig att hitta rätt offset mellan den nya sensorn du sätter och den nuvarande, om den nuvarande ska användas som heartbeat till Loop Follow efter att ha stoppats och avlägsnats från kroppen. Efter att sensorn har skjutits fast kommer den att skicka en BT-parningsförfrågan en gång i minuten. Detta första steg hjälper till att få parningsförfrågningen synkad till \(sensorOffset) sek innan den gamla sensorn skickar sin heartbeat.
+                    """)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 20)
+                    
+                    // Second button: Pairing countdown (300-sec cycle).
+                    Button(action: {
+                        togglePairingPause()
+                    }) {
+                        VStack {
+                            if pairingPaused {
+                                Text("2. Parkoppla ny sensor")
+                                    .font(.title)
+                                    .padding(.bottom, 2)
+                                    .foregroundColor(.gray)
+                                Text("Starta nedräkning")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.gray)
+                            } else {
+                                Text("Parkoppla ny sensor om:")
+                                    .font(.title)
+                                    .padding(.bottom, 2)
+                                    .foregroundColor(.primary)
+                                Text("\(pairingCountdown) sekunder")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity, minHeight: 90)
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(12)
+                    }
+                    
+                    // Footer text with explanation.
+                    Text("""
+                    Steg 2: 'Parkoppla ny sensor'-nedräkningen hjälper dig att initiera parkopplingen med den nya sensorn i dexcomappen vid exakt rätt ögonblick. Efter parkopplingen kommer den nya sensorn att skicka ett heartbeat var 5e minut. Genom att tajma offseten noggrant i detta andra steg, så kommer du kunna använda den gamla sensorn som heartbeat för att väcka Loop Follow och hämta nya data från Nightscout med minimal fördröjning.
+                    """)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle("Synka heartbeat för ny sensor")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Klar") {
+                            // Add dismissal logic.
                         }
                     }
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, minHeight: 120)
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(12)
                 }
-                
-                // Second button: Pairing countdown (300-sec cycle).
-                Button(action: {
-                    togglePairingPause()
-                }) {
-                    VStack {
-                        if pairingPaused {
-                            Text("Återuppta?")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("Parkoppla ny sensor om:")
-                                .font(.title)
-                                .padding(.bottom, 2)
-                                .foregroundColor(.primary)
-                            // Display raw seconds with " sekunder" appended.
-                            Text("\(pairingCountdown) sekunder")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                                .foregroundColor(.primary)
-                        }
+                .onAppear {
+                    print("DEBUG: [onAppear] SyncNewSensorView onAppear triggered")
+                    fetchNSBGData()
+                    let bgSec = Calendar.current.component(.second, from: lastBG)
+                    print("DEBUG: [onAppear] lastBG after NS fetch: \(lastBG) (seconds: \(bgSec))")
+                    
+                    sensorSecondsSync = calculateSensorCountdown(for: Date())
+                    pairingCountdown = calculatePairingCountdown(for: Date())
+                    print("DEBUG: [onAppear] Initialized sensor countdown: \(sensorSecondsSync) sec, pairing countdown: \(pairingCountdown)")
+                }
+                .onReceive(timer) { currentTime in
+                    if !sensorPaused {
+                        sensorSecondsSync = calculateSensorCountdown(for: currentTime)
+                        checkSensorSounds(with: sensorSecondsSync)
                     }
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, minHeight: 120)
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(12)
-                }
-                
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("Synka ny sensor")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        // Add dismissal logic.
+                    if !pairingPaused {
+                        pairingCountdown = calculatePairingCountdown(for: currentTime)
+                        checkPairingSounds(with: pairingCountdown)
                     }
-                }
-            }
-            .onAppear {
-                print("DEBUG: [onAppear] SyncNewSensorView onAppear triggered")
-                fetchNSBGData()
-                let bgSec = Calendar.current.component(.second, from: lastBG)
-                print("DEBUG: [onAppear] lastBG after NS fetch: \(lastBG) (seconds: \(bgSec))")
-                
-                // Initialize countdowns using effective time.
-                sensorSecondsSync = calculateSensorCountdown(for: Date())
-                pairingCountdown = calculatePairingCountdown(for: Date())
-                print("DEBUG: [onAppear] Initialized sensor countdown: \(sensorSecondsSync) sec, pairing countdown: \(pairingCountdown)")
-            }
-            .onReceive(timer) { currentTime in
-                if !sensorPaused {
-                    sensorSecondsSync = calculateSensorCountdown(for: currentTime)
-                    checkSensorSounds(with: sensorSecondsSync)
-                }
-                if !pairingPaused {
-                    pairingCountdown = calculatePairingCountdown(for: currentTime)
-                    checkPairingSounds(with: pairingCountdown)
                 }
             }
         }
     }
-}
 

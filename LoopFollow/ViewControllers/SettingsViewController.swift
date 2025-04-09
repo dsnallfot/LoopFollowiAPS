@@ -166,7 +166,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow("syncNewSensor") {
-            $0.title = "Synka ny sensor"
+            $0.title = "Synka heartbeat för ny sensor"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let syncNewSensorView = SyncNewSensorView()
