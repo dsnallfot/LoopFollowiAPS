@@ -1138,7 +1138,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                         replacement += "• SMB Ratio: \(smbValue)\n"
                     }
                 }
-                replacement += "\n\n👉  OREF SLUTSATS:\n•"
+                replacement += "\n👉  OREF SLUTSATS:\n•"
                 formatted = (formatted as NSString).replacingCharacters(in: fullRange, with: replacement)
             }
         }
@@ -1148,31 +1148,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         
         // Step 3: Specific replacements.
         formatted = formatted.replacingOccurrences(of: "SMB INAKTIVERADE!", with: "SMB Inaktiverade 🚫")
-        formatted = formatted.replacingOccurrences(of: "Mikrobolus:", with: "\n🔹 Mikrobolus:")
-        formatted = formatted.replacingOccurrences(of: "Microbolusing", with: "\n🔹 Mikrobolus:")
+        formatted = formatted.replacingOccurrences(of: "Mikrobolus:", with: "🔹 Mikrobolus:")
+        formatted = formatted.replacingOccurrences(of: ". ;", with: "\n• ")
         formatted = formatted.replacingOccurrences(of: "E. ", with: "E\n")
         formatted = formatted.replacingOccurrences(of: "U. ", with: "E\n")
-        
-        // Step 4: Replace "; " with a line break bullet.
-        formatted = formatted.replacingOccurrences(of: "; ", with: "\n•")
-        
-        // Step 5: Other formatting rules.
-        formatted = formatted.replacingOccurrences(of: "add'l carbs req w/in", with: "g kh behövs inom")
+        formatted = formatted.replacingOccurrences(of: "E/h. ", with: "E/h\n")
+        formatted = formatted.replacingOccurrences(of: "temp.", with: "temp.\n")
+        formatted = formatted.replacingOccurrences(of: ". ", with: "")
+        formatted = formatted.replacingOccurrences(of: "; ", with: "\n• ")
         
         // Replace TDD: <number> U with bold TDD (using regex)
         if let regexTDD = try? NSRegularExpression(pattern: "TDD:\\s(\\d+(?:\\.\\d{1,2})?)\\sU", options: []) {
             let range = NSRange(location: 0, length: formatted.utf16.count)
             formatted = regexTDD.stringByReplacingMatches(in: formatted, options: [], range: range, withTemplate: "TDD: $1E")
         }
-        
-        // Replace temp <number>&lt;<number>U/hr. with "Temp <number>&lt;<number>E/h"
-        if let regexTemp = try? NSRegularExpression(pattern: "temp\\s(\\d+\\.\\d{1,2})&lt;(\\d+\\.\\d{1,2})U/hr\\.", options: []) {
-            let range = NSRange(location: 0, length: formatted.utf16.count)
-            formatted = regexTemp.stringByReplacingMatches(in: formatted, options: [], range: range, withTemplate: "Temp $1&lt;$2E/h")
-        }
-        
-        // Replace "insulinReq" with "Insulinbehov:"
-        formatted = formatted.replacingOccurrences(of: "insulinReq", with: "Insulinbehov:")
         
         // New step: Replace HTML encoded less-than and greater-than signs
         formatted = formatted.replacingOccurrences(of: "&lt;", with: "<")
