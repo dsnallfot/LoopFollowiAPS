@@ -566,7 +566,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             cell.imageView?.tintColor = symbolInfo.color
         }
         
-        cell.selectionStyle = .none
+        cell.selectionStyle = .default
         
         // Check for duplicates: only count duplicates that have the same timestamp and event type (excluding "Note").
         let duplicateCount = filteredTreatments.filter {
@@ -931,191 +931,122 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - UITableViewDelegate Methods
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.selectRow(at: indexPath, animated: true, scrollPosition: .none)
+        
         let treatment = filteredTreatments[indexPath.row]
         
-        // Create a time formatter to display the timestamp as "HH:mm"
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH:mm"
         let timeString = timeFormatter.string(from: treatment.timestamp)
+
+        func presentAlert(title: String, message: String) {
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+                tableView.deselectRow(at: indexPath, animated: true)
+            })
+            present(alert, animated: true)
+        }
         
-        // Fetch reason-string from device status for the particular event timestamp
         if treatment.eventType == "SMB" || treatment.eventType == "Temp Basal" {
-            // Adjust timestamp by adding 30 seconds
             let adjustedTimestamp = treatment.timestamp.addingTimeInterval(30)
-            
             NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: adjustedTimestamp) { result in
                 switch result {
                 case .success(let reason):
                     let formattedReason = self.formatReason(reason)
-                    let alert = UIAlertController(title: "Trio behandlingsbeslut", message: formattedReason, preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "OK", style: .default))
-                    self.present(alert, animated: true)
-                    
+                    presentAlert(title: "Trio behandlingsbeslut", message: formattedReason)
                 case .failure(let error):
-                    let alert = UIAlertController(title: "Fel", message: error.localizedDescription, preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "OK", style: .default))
-                    self.present(alert, animated: true)
+                    presentAlert(title: "Fel", message: error.localizedDescription)
                 }
             }
         }
         
-        // For Note entries:
         if treatment.eventType == "Note" || treatment.eventType == "Announcement" {
             if let fullNote = treatment.rawData["notes"] as? String {
-                // Perform the same regex replacements.
-                let resumePattern = "PumpResume"
-                let suspendPattern = "PumpSuspend"
                 var modifiedNote = fullNote
-
-                if let resumeRegex = try? NSRegularExpression(pattern: resumePattern, options: []) {
-                    let range = NSRange(location: 0, length: modifiedNote.utf16.count)
-                    modifiedNote = resumeRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "Pump startades")
-                }
-                if let suspendRegex = try? NSRegularExpression(pattern: suspendPattern, options: []) {
-                    let range = NSRange(location: 0, length: modifiedNote.utf16.count)
-                    modifiedNote = suspendRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "Pump pausades")
-                }
-                
-                let title = "Notering \(timeString)"
-                var message = "\(modifiedNote)"
-                // Append the enteredBy value if available:
+                modifiedNote = modifiedNote.replacingOccurrences(of: "PumpResume", with: "Pump startades")
+                modifiedNote = modifiedNote.replacingOccurrences(of: "PumpSuspend", with: "Pump pausades")
+                var message = modifiedNote
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
                 }
-                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                present(alert, animated: true, completion: nil)
+                presentAlert(title: "Notering \(timeString)", message: message)
             }
         }
         
-        // Handle Sensor Start Notes
-        if treatment.eventType == "Sensor Start" || treatment.eventType == "Sensor Change" || treatment.eventType == "Sensorbyte" || treatment.eventType == "Sensorstart" {
-            let title = "Sensorbyte \(timeString)"
+        if ["Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart"].contains(treatment.eventType) {
             var message = treatment.sensorStartNotes ?? "Inga anteckningar"
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
-                message += "Inlagt av: \(enteredBy)"
+                message += "\nInlagt av: \(enteredBy)"
             }
-            
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-            present(alert, animated: true, completion: nil)
+            presentAlert(title: "Sensorbyte \(timeString)", message: message)
         }
         
-        // Handle Pump change Notes
         if treatment.eventType == "Site Change" {
-            let title = "Pumpbyte \(timeString)"
             var message = ""
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
-                message += "Inlagt av: \(enteredBy)"
+                message = "Inlagt av: \(enteredBy)"
             }
-            
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-            present(alert, animated: true, completion: nil)
+            presentAlert(title: "Pumpbyte \(timeString)", message: message)
         }
         
-        // Handle BG Check
         if treatment.eventType == "BG Check" {
             if let glucose = treatment.rawData["glucose"] as? Double,
                let units = treatment.rawData["units"] as? String {
                 let mmol = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
-                let title = "Fingerstick \(timeString)"
                 var message = "Blodsocker: \(glucose) mmol/L"
-                // Append the enteredBy value if available:
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
-                    
                 }
-                
-                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                present(alert, animated: true, completion: nil)
+                presentAlert(title: "Fingerstick \(timeString)", message: message)
             }
         }
         
-        // For override treatments:
-        else if treatment.eventType == "Temporary Override" ||
-                    treatment.eventType == "Exercise" ||
-                    treatment.eventType == "Override" {
+        if ["Temporary Override", "Exercise", "Override"].contains(treatment.eventType) {
             if let fullOverride = treatment.overrideNotes {
-                let title = "Override \(timeString)"
-                var message = "\(fullOverride)"
+                var message = fullOverride
                 if let duration = treatment.overrideDuration {
-                            message += "\nVaraktighet: \(Int(duration)) min"
-                            // Calculate the expiration time.
-                            let expirationTime = treatment.timestamp.addingTimeInterval(duration * 60)
-                            let expirationString = timeFormatter.string(from: expirationTime)
-                            message += "\nAktiv till kl: \(expirationString)"
-                        }
-                // Append the enteredBy value if available:
+                    message += "\nVaraktighet: \(Int(duration)) min"
+                    let expirationTime = treatment.timestamp.addingTimeInterval(duration * 60)
+                    message += "\nAktiv till kl: \(timeFormatter.string(from: expirationTime))"
+                }
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
                 }
-                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                present(alert, animated: true, completion: nil)
+                presentAlert(title: "Override \(timeString)", message: message)
             }
-        }
-        // For Carb Correction entries:
-        else if treatment.eventType == "Carb Correction" {
-            // Retrieve the foodType value
-            let foodTypeValue = treatment.rawData["foodType"] as? String ?? ""
-            
-            // Determine title and initial message based on foodType content
-            let title: String
-            var message: String
-            if foodTypeValue.isEmpty {
-                title = "Fett / Protein \(timeString)"
-                message = "Kolhydratsekvivalenter: "
-            } else {
-                title = "Måltid \(timeString)"
-                message = foodTypeValue
-            }
-            
-            // Carbohydrates (use different label if foodType is empty)
-            let carbsValue: Double = (treatment.rawData["carbs"] as? Double) ?? 0.0
-            if foodTypeValue.isEmpty {
-                message += "\(formatValue(carbsValue)) g"
-            } else {
-                message += "\nKolhydrater: \(formatValue(carbsValue)) g"
-            }
-            
-            // Fat:
-            let fatValue: Double = (treatment.rawData["fat"] as? Double) ?? 0.0
-            if fatValue != 0 {
-                message += "\nFett: \(formatValue(fatValue)) g"
-            }
-            
-            // Protein:
-            let proteinValue: Double = (treatment.rawData["protein"] as? Double) ?? 0.0
-            if proteinValue != 0 {
-                message += "\nProtein: \(formatValue(proteinValue)) g"
-            }
-            
-            // Append the enteredBy value if available:
-            if let enteredBy = treatment.rawData["enteredBy"] as? String {
-                message += "\nInlagt av: \(enteredBy)"
-            }
-            
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-            present(alert, animated: true, completion: nil)
-        }
-        
-        else if treatment.eventType == "Bolus" {
-            let bolusValue = treatment.amount
-            let title = "Bolus \(timeString)"
-            var message = "Insulin: \(bolusValue ?? "0.0")"
-            // Append the enteredBy value if available:
-            if let enteredBy = treatment.rawData["enteredBy"] as? String {
-                message += "\nInlagt av: \(enteredBy)"
-            }
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-            present(alert, animated: true, completion: nil)
-            
         }
 
+        if treatment.eventType == "Carb Correction" {
+            let foodTypeValue = treatment.rawData["foodType"] as? String ?? ""
+            let title = foodTypeValue.isEmpty ? "Fett / Protein \(timeString)" : "Måltid \(timeString)"
+            var message = foodTypeValue.isEmpty ? "Kolhydratsekvivalenter: " : foodTypeValue
+            let carbsValue: Double = treatment.rawData["carbs"] as? Double ?? 0.0
+            message += foodTypeValue.isEmpty ? "\(formatValue(carbsValue)) g" : "\nKolhydrater: \(formatValue(carbsValue)) g"
+            if let fatValue = treatment.rawData["fat"] as? Double, fatValue != 0 {
+                message += "\nFett: \(formatValue(fatValue)) g"
+            }
+            if let proteinValue = treatment.rawData["protein"] as? Double, proteinValue != 0 {
+                message += "\nProtein: \(formatValue(proteinValue)) g"
+            }
+            if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                message += "\nInlagt av: \(enteredBy)"
+            }
+            presentAlert(title: title, message: message)
+        }
+
+        if treatment.eventType == "Bolus" {
+            let bolusValue = treatment.amount ?? "0.0"
+            var message = "Insulin: \(bolusValue)"
+            if let enteredBy = treatment.rawData["enteredBy"] as? String {
+                message += "\nInlagt av: \(enteredBy)"
+            }
+            presentAlert(title: "Bolus \(timeString)", message: message)
+        }
+    }
+
+    
+    func deselectRowAfterAlert(_ tableView: UITableView, indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
     }
     
     func formatReason(_ reason: String) -> String {
