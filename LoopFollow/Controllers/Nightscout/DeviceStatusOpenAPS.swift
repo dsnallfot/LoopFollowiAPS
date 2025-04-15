@@ -380,7 +380,7 @@ extension MainViewController {
                     let yString = nsReasonString.substring(with: match.range(at: 2))
  
                     if let xValue = Double(xString), let yValue = Double(yString) {
-                        formattedSensLimit = String(format: "%.0f%% (%.0f%%)", xValue * 100.0, yValue * 100.0)
+                        formattedSensLimit = String(format: "%.0f% % → %.0f% %", yValue * 100.0, xValue * 100.0)
                     }
                 }
             }
