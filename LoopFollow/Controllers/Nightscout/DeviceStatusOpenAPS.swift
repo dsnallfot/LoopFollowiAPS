@@ -367,8 +367,31 @@ extension MainViewController {
         if let sens = enactedOrSuggested["sensitivityRatio"] as? Double {
             let formattedSens = String(format: "%.0f", sens * 100.0) + " %"
             sharedLatestSens = formattedSens
-            infoManager.updateInfoData(type: .autosens, value: formattedSens)
-            print("Sensitivity Ratio updated: \(formattedSens)")
+ 
+            var formattedSensLimit: String?
+ 
+            if let reasonString = enactedOrSuggested["reason"] as? String {
+                let sensLimitPattern = "Autosens limit: ([0-9]+(?:\\.[0-9]{1,2})?) \\(([0-9]+(?:\\.[0-9]{1,2})?)\\)"
+                if let regex = try? NSRegularExpression(pattern: sensLimitPattern),
+                   let match = regex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count)) {
+                    
+                    let nsReasonString = reasonString as NSString
+                    let xString = nsReasonString.substring(with: match.range(at: 1))
+                    let yString = nsReasonString.substring(with: match.range(at: 2))
+ 
+                    if let xValue = Double(xString), let yValue = Double(yString) {
+                        formattedSensLimit = String(format: "%.0f%% (%.0f%%)", xValue * 100.0, yValue * 100.0)
+                    }
+                }
+            }
+ 
+            if let formattedSensLimit = formattedSensLimit {
+                infoManager.updateInfoData(type: .autosens, value: formattedSensLimit)
+                print("Sensitivity Ratio (limit) updated: \(formattedSensLimit)")
+            } else {
+                infoManager.updateInfoData(type: .autosens, value: formattedSens)
+                print("Sensitivity Ratio updated: \(formattedSens)")
+            }
         } else {
             print("Missing or invalid sensitivityRatio in enactedOrSuggested.")
         }
