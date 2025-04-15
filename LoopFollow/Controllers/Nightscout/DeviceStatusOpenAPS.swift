@@ -297,6 +297,28 @@ extension MainViewController {
             }
         }
         
+        // Max SMB
+        if let reasonString = enactedOrSuggested["reason"] as? String {
+            let maxSmbPattern = "MaxSMB:\\s(\\d+\\.\\d{1,2})" // Matches "MaxSMB: x.x" or "MaxSMB: x.xx"
+            
+            if let maxSmbRegex = try? NSRegularExpression(pattern: maxSmbPattern),
+               let maxSmbMatch = maxSmbRegex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count)) {
+                
+                let maxSmbValueString = (reasonString as NSString).substring(with: maxSmbMatch.range(at: 1))
+                
+                if let maxSmbValue = Double(maxSmbValueString) {
+                    infoManager.updateInfoData(type: .maxSMB, value: maxSmbValue, unit: "E")
+                    print("Extracted MaxSMB: \(maxSmbValue)")
+                } else {
+                    print("Invalid MaxSMB value extracted from reason string: \(maxSmbValueString)")
+                    infoManager.updateInfoData(type: .maxSMB, value: 0, unit: "E") // Default to 0 if parsing fails
+                }
+            } else {
+                print("MaxSMB pattern not found in reason string. Using default value: 0.50")
+                infoManager.updateInfoData(type: .maxSMB, value: 0, unit: "E") // Default to 0 if pattern is not found
+            }
+        }
+        
         // SMB Status
         if let reasonString = enactedOrSuggested["reason"] as? String {
             let smbInactivePattern = "SMB INAKTIVERADE" // Matches exactly "SMB INAKTIVERADE"
