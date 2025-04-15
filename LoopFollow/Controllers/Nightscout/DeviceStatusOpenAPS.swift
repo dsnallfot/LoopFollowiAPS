@@ -324,15 +324,16 @@ extension MainViewController {
                 let maxSmbValueString = (reasonString as NSString).substring(with: maxSmbMatch.range(at: 1))
                 
                 if let maxSmbValue = Double(maxSmbValueString) {
-                    infoManager.updateInfoData(type: .maxSMB, value: maxSmbValue, unit: "E")
-                    print("Extracted MaxSMB: \(maxSmbValue)")
+                    let formattedValue = String(format: "%.2f", maxSmbValue)  // Ensures two decimals e.g. "0.25"
+                    infoManager.updateInfoData(type: .maxSMB, value: formattedValue, unit: "E")
+                    print("Extracted MaxSMB: \(formattedValue)")
                 } else {
                     print("Invalid MaxSMB value extracted from reason string: \(maxSmbValueString)")
-                    infoManager.updateInfoData(type: .maxSMB, value: 0, unit: "E") // Default to 0 if parsing fails
+                    infoManager.updateInfoData(type: .maxSMB, value: "0.00", unit: "E") // Default to 0 if parsing fails
                 }
             } else {
-                print("MaxSMB pattern not found in reason string. Using default value: 0.50")
-                infoManager.updateInfoData(type: .maxSMB, value: 0, unit: "E") // Default to 0 if pattern is not found
+                print("MaxSMB pattern not found in reason string. Using default value: 0.00")
+                infoManager.updateInfoData(type: .maxSMB, value: "0.00", unit: "E") // Default to 0.50 if pattern is not found
             }
         }
         
