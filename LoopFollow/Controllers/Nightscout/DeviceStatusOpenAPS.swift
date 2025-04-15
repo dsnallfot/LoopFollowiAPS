@@ -151,25 +151,42 @@ extension MainViewController {
             }
 */
 
-            // ISF
-            let profileISF = profileManager.currentISF()
-            var enactedISF: HKQuantity?
-            if let enactedISFValue = enactedOrSuggested["ISF"] as? Double {
-                let isfInMmol = enactedISFValue * 0.0555 // Conversion factor
-                let isfUnit = "mmol/L"
-                sharedLatestISF = String(format: "%.1f %@", isfInMmol, isfUnit)
+        // ISF
+        let profileISF = profileManager.currentISF()
+        var enactedISF: HKQuantity?
+        if let enactedISFValue = enactedOrSuggested["ISF"] as? Double {
+            let isfInMmol = enactedISFValue * 0.0555 // Conversion factor for mmol/L
+            let isfUnit = "mmol/L"
+            sharedLatestISF = String(format: "%.1f %@", isfInMmol, isfUnit)
 
-                var determinedISFUnit: HKUnit = .milligramsPerDeciliter
-                if enactedISFValue < 25 {
-                    determinedISFUnit = .millimolesPerLiter
-                }
-                enactedISF = HKQuantity(unit: determinedISFUnit, doubleValue: enactedISFValue)
+            var determinedISFUnit: HKUnit = .milligramsPerDeciliter
+            if enactedISFValue < 25 {
+                determinedISFUnit = .millimolesPerLiter
             }
-            if let profileISF = profileISF, let enactedISF = enactedISF, profileISF != enactedISF {
-                infoManager.updateInfoData(type: .isf, firstValue: profileISF, secondValue: enactedISF, separator: .arrow, unit: "mmol/L/E")
-            } else if let profileISF = profileISF {
-                infoManager.updateInfoData(type: .isf, value: profileISF, unit: "mmol/L/E")
+            enactedISF = HKQuantity(unit: determinedISFUnit, doubleValue: enactedISFValue)
+        }
+        
+        // Use mmol/L as the display unit
+        let displayUnit: HKUnit = .millimolesPerLiter
+        if let profileISF = profileISF, let enactedISF = enactedISF {
+            let profileISFValue = profileISF.doubleValue(for: displayUnit)
+            let enactedISFValue = enactedISF.doubleValue(for: displayUnit)
+            var isfString = ""
+            if sharedOverrideFactor != 1.0 {
+                // Calculate an override ISF based on the sharedOverrideFactor
+                let overrideISFValue = profileISFValue / sharedOverrideFactor
+                isfString = String(format: "%.1f → %.1f → %.1f mmol/L/E", profileISFValue, overrideISFValue, enactedISFValue)
+            } else {
+                isfString = String(format: "%.1f → %.1f mmol/L/E", profileISFValue, enactedISFValue)
             }
+            infoManager.updateInfoData(type: .isf, value: isfString)
+            print("ISF updated: \(isfString)")
+        } else if let profileISF = profileISF {
+            let profileISFValue = profileISF.doubleValue(for: displayUnit)
+            let isfString = String(format: "%.1f mmol/L/E", profileISFValue)
+            infoManager.updateInfoData(type: .isf, value: isfString)
+            print("ISF updated: \(isfString)")
+        }
             
             // MinPredBG
             if let reasonString = enactedOrSuggested["reason"] as? String {

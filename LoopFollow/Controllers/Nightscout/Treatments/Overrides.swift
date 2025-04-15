@@ -9,6 +9,8 @@
 import Foundation
 import UIKit
 
+var sharedOverrideFactor: Double = 1.0
+
 extension MainViewController {
     // NS Override Response Processor
     func processNSOverrides(entries: [[String:AnyObject]]) {
@@ -96,7 +98,35 @@ extension MainViewController {
                 LogManager.shared.log(category: .general, message: "\(note) presented in infotable", isDebug: true)
             }
         }
-
+        
+        // Add override percentage update:
+        var percentageString = "100 %"
+        if let note = persistentNote {
+            for trio in ProfileManager.shared.trioOverrides {
+                // Check if the persistent note contains the trio's name
+                if note.contains(trio.name) {
+                    if let perc = trio.percentage {
+                        // Determine the arrow to display based on the percentage
+                        let arrow: String
+                        if perc > 100.0 {
+                            arrow = "⬆️"
+                        } else if perc < 100.0 {
+                            arrow = "⬇️"
+                        } else {
+                            arrow = ""
+                        }
+                        percentageString = "\(Int(perc)) %" + (arrow.isEmpty ? "" : " \(arrow)")
+                        // Directly set the shared override factor using the double value from trio.percentage (converted to a factor)
+                        sharedOverrideFactor = perc / 100.0
+                        break
+                    }
+                }
+            }
+        }
+        infoManager.updateInfoData(type: .overridePercentage, value: percentageString)
+        LogManager.shared.log(category: .general, message: "Override percentage updated: \(percentageString)", isDebug: true)
+        LogManager.shared.log(category: .general, message: "Override factor updated: \(sharedOverrideFactor)", isDebug: true)
+        
         if UserDefaultsRepository.graphOtherTreatments.value {
             updateOverrideGraph()
         }
