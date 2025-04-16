@@ -101,6 +101,8 @@ extension MainViewController {
         
         // Add override percentage update:
         var percentageString = "100 %"
+        var foundOverride = false
+
         if let note = persistentNote {
             for trio in ProfileManager.shared.trioOverrides {
                 // Check if the persistent note contains the trio's name
@@ -109,20 +111,27 @@ extension MainViewController {
                         // Determine the arrow to display based on the percentage
                         let arrow: String
                         if perc > 100.0 {
-                            arrow = "⬆️"
+                            arrow = "▲"
                         } else if perc < 100.0 {
-                            arrow = "⬇️"
+                            arrow = "▼"
                         } else {
                             arrow = ""
                         }
                         percentageString = "\(Int(perc)) %" + (arrow.isEmpty ? "" : " \(arrow)")
                         // Directly set the shared override factor using the double value from trio.percentage (converted to a factor)
                         sharedOverrideFactor = perc / 100.0
+                        foundOverride = true
                         break
                     }
                 }
             }
         }
+
+        // If no override was found (or note was nil), reset to 1.0
+        if !foundOverride {
+            sharedOverrideFactor = 1.0
+        }
+
         infoManager.updateInfoData(type: .overridePercentage, value: percentageString)
         LogManager.shared.log(category: .general, message: "Override percentage updated: \(percentageString)", isDebug: true)
         LogManager.shared.log(category: .general, message: "Override factor updated: \(sharedOverrideFactor)", isDebug: true)
