@@ -175,16 +175,16 @@ extension MainViewController {
             if sharedOverrideFactor != 1.0 {
                 // Calculate an override ISF based on the sharedOverrideFactor
                 let overrideISFValue = profileISFValue / sharedOverrideFactor
-                isfString = String(format: "%.1f → %.1f → %.1f mmol/L/E", profileISFValue, overrideISFValue, enactedISFValue)
+                isfString = String(format: "%.1f → %.1f → %.1f", profileISFValue, overrideISFValue, enactedISFValue)
             } else {
-                isfString = String(format: "%.1f → %.1f mmol/L/E", profileISFValue, enactedISFValue)
+                isfString = String(format: "%.1f → %.1f", profileISFValue, enactedISFValue)
             }
-            infoManager.updateInfoData(type: .isf, value: isfString)
+            infoManager.updateInfoData(type: .isf, value: isfString, unit: "mmol/L/E")
             print("ISF updated: \(isfString)")
         } else if let profileISF = profileISF {
             let profileISFValue = profileISF.doubleValue(for: displayUnit)
-            let isfString = String(format: "%.1f mmol/L/E", profileISFValue)
-            infoManager.updateInfoData(type: .isf, value: isfString)
+            let isfString = String(format: "%.1f", profileISFValue)
+            infoManager.updateInfoData(type: .isf, value: isfString, unit: "mmol/L/E")
             print("ISF updated: \(isfString)")
         }
             
@@ -283,9 +283,9 @@ extension MainViewController {
 
                 if let bgiValue = Double(bgiValueString) {
                     let formattedBGI = String(format: "%@%.1f", bgiValue > 0 ? "+" : "", bgiValue)
-                    let bgiString = "\(formattedBGI) mmol/L"
+                    let bgiString = "\(formattedBGI)"
                     
-                    infoManager.updateInfoData(type: .bgi, value: bgiString)
+                    infoManager.updateInfoData(type: .bgi, value: bgiString, unit: "mmol/L")
                     print("Extracted BGI: \(bgiString)")
                 } else {
                     print("Failed to convert BGI value to Double.")
@@ -306,9 +306,9 @@ extension MainViewController {
 
                 if let devValue = Double(devValueString) {
                     let formattedDev = String(format: "%@%.1f", devValue > 0 ? "+" : "", devValue)
-                    let devString = "\(formattedDev) mmol/L"
+                    let devString = "\(formattedDev)"
 
-                    infoManager.updateInfoData(type: .dev, value: devString)
+                    infoManager.updateInfoData(type: .dev, value: devString, unit: "mmol/L")
                     print("Extracted Dev: \(devString)")
                 } else {
                     print("Failed to convert Dev value to Double.")
@@ -416,13 +416,13 @@ extension MainViewController {
             sharedLatestCarbReq = latestCarbReq // Keep this unchanged
             
             let displayCarbReq = carbsReq > 0 ? "\(latestCarbReq) 🟡" : latestCarbReq
-            infoManager.updateInfoData(type: .carbReq, value: displayCarbReq)
+            infoManager.updateInfoData(type: .carbReq, value: displayCarbReq, unit: "g")
             
             print("Carbs Required updated: \(displayCarbReq)")
         } else {
-            let defaultCarbReq = "0 g"
+            let defaultCarbReq = "0"
             sharedLatestCarbReq = defaultCarbReq // Keep this unchanged
-            infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq)
+            infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq, unit: "g")
             
             print("Carbs Required not available, using default: \(defaultCarbReq)")
         }

@@ -89,8 +89,8 @@ extension MainViewController {
             }
         }
         
-        let resultString = String(format: "%.0f", totalCarbs) + " g"
-        infoManager.updateInfoData(type: .carbsToday, value: resultString)
+        let resultString = String(format: "%.0f", totalCarbs)
+        infoManager.updateInfoData(type: .carbsToday, value: resultString, unit: "g")
         //infoTable.reloadData()
     }
 }

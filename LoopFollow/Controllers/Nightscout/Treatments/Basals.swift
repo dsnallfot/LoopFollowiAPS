@@ -97,7 +97,7 @@ extension MainViewController {
             if i == tempArray.count - 1, duration == 0.0 {
                 lastDot = dateTimeStamp + (30 * 60)
             }
-            latestBasal = Localizer.formatToLocalizedString(basalRate, maxFractionDigits: 2, minFractionDigits: 0)
+            latestBasal = Localizer.formatToLocalizedString(basalRate, maxFractionDigits: 2, minFractionDigits: 1)
 
             // Overlap check
             if i < tempArray.count - 1 {
@@ -132,7 +132,7 @@ extension MainViewController {
 
             latestBasal = Localizer.formatToLocalizedString(scheduled,
                                                             maxFractionDigits: 2,
-                                                            minFractionDigits: 0)
+                                                            minFractionDigits: 1)
 
             let startDot = basalGraphStruct(basalRate: scheduled, date: lastEndDot)
             basalData.append(startDot)
@@ -148,8 +148,8 @@ extension MainViewController {
 
         if let profileBasal = profileManager.currentBasal(),
            profileBasal != latestBasal {
-            latestBasal = "\(profileBasal) → \(latestBasal) E/h"
+            latestBasal = "\(profileBasal) → \(latestBasal)"
         }
-        infoManager.updateInfoData(type: .basal, value: latestBasal)
+        infoManager.updateInfoData(type: .basal, value: latestBasal, unit: "E/h")
     }
 }
