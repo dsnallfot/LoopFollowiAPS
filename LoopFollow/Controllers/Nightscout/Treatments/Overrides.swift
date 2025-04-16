@@ -111,9 +111,9 @@ extension MainViewController {
                         // Determine the arrow to display based on the percentage
                         let arrow: String
                         if perc > 100.0 {
-                            arrow = "▲"
+                            arrow = "🔺"
                         } else if perc < 100.0 {
-                            arrow = "▼"
+                            arrow = "🔻"
                         } else {
                             arrow = ""
                         }
