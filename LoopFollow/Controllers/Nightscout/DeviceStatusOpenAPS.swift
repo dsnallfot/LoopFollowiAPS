@@ -272,6 +272,52 @@ extension MainViewController {
                 }
             }
         
+        // BGI
+        if let reasonString = enactedOrSuggested["reason"] as? String {
+            let pattern = "BGI:\\s([-+]?[0-9]*\\.?[0-9])"
+
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let match = regex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count)) {
+
+                let bgiValueString = (reasonString as NSString).substring(with: match.range(at: 1))
+
+                if let bgiValue = Double(bgiValueString) {
+                    let formattedBGI = String(format: "%@%.1f", bgiValue > 0 ? "+" : "", bgiValue)
+                    let bgiString = "\(formattedBGI) mmol/L"
+                    
+                    infoManager.updateInfoData(type: .bgi, value: bgiString)
+                    print("Extracted BGI: \(bgiString)")
+                } else {
+                    print("Failed to convert BGI value to Double.")
+                }
+            } else {
+                print("BGI pattern not found in reason string.")
+            }
+        }
+
+        // Dev
+        if let reasonString = enactedOrSuggested["reason"] as? String {
+            let pattern = "Dev:\\s([-+]?[0-9]*\\.?[0-9])"
+
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let match = regex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count)) {
+
+                let devValueString = (reasonString as NSString).substring(with: match.range(at: 1))
+
+                if let devValue = Double(devValueString) {
+                    let formattedDev = String(format: "%@%.1f", devValue > 0 ? "+" : "", devValue)
+                    let devString = "\(formattedDev) mmol/L"
+
+                    infoManager.updateInfoData(type: .dev, value: devString)
+                    print("Extracted Dev: \(devString)")
+                } else {
+                    print("Failed to convert Dev value to Double.")
+                }
+            } else {
+                print("Dev pattern not found in reason string.")
+            }
+        }
+        
         // AF (Adjustment Factor)
         if let reasonString = enactedOrSuggested["reason"] as? String {
             let afPattern = "AF:\\s(\\d+\\.\\d{1,2})" // Matches "AF: x.x" or "AF: x.xx"
