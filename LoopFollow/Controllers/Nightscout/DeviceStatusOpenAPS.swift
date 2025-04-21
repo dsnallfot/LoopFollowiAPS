@@ -370,16 +370,31 @@ extension MainViewController {
                 let maxSmbValueString = (reasonString as NSString).substring(with: maxSmbMatch.range(at: 1))
                 
                 if let maxSmbValue = Double(maxSmbValueString) {
-                    let formattedValue = String(format: "%.2f", maxSmbValue)  // Ensures two decimals e.g. "0.25"
-                    infoManager.updateInfoData(type: .maxSMB, value: formattedValue, unit: "E")
-                    print("Extracted MaxSMB: \(formattedValue)")
+                    let formattedValue = String(format: "%.2f", maxSmbValue)  // e.g. "0.00" or "1.25"
+                    // append 🚫 if zero
+                    let unitForInfo = maxSmbValue == 0 ? "E 🚫" : "E 🔵"
+                    
+                    infoManager.updateInfoData(
+                        type: .maxSMB,
+                        value: formattedValue,
+                        unit: unitForInfo
+                    )
+                    print("Extracted MaxSMB: \(formattedValue) \(unitForInfo)")
                 } else {
-                    print("Invalid MaxSMB value extracted from reason string: \(maxSmbValueString)")
-                    infoManager.updateInfoData(type: .maxSMB, value: "0.00", unit: "E") // Default to 0 if parsing fails
+                    print("Invalid MaxSMB value extracted: \(maxSmbValueString), defaulting to N/A")
+                    infoManager.updateInfoData(
+                        type: .maxSMB,
+                        value: "N/A",
+                        unit: "E ⚫️"
+                    )
                 }
             } else {
-                print("MaxSMB pattern not found in reason string. Using default value: 0.00")
-                infoManager.updateInfoData(type: .maxSMB, value: "0.00", unit: "E") // Default to 0.50 if pattern is not found
+                print("MaxSMB pattern not found. Using default 0.00")
+                infoManager.updateInfoData(
+                    type: .maxSMB,
+                    value: "0.00",
+                    unit: "E 🚫"
+                )
             }
         }
         
