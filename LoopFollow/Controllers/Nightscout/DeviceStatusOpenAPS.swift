@@ -402,7 +402,8 @@ extension MainViewController {
         
         // Insulin Required
         if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
-            infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: "E")
+            let unitForInfo = insulinReqMetric.value > 0 ? "E 🔵" : "E"
+            infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: unitForInfo)
             UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
             sharedLatestInsulinReq = String(format: "%.2f E", insulinReqMetric.value)
         } else {
@@ -412,17 +413,16 @@ extension MainViewController {
         
         // Daniel: Carbs Required
         if let carbsReq = enactedOrSuggested["carbsReq"] as? Double {
-            let latestCarbReq = String(format: "%.0f g", carbsReq)
-            sharedLatestCarbReq = latestCarbReq // Keep this unchanged
+            let latestCarbReq = String(format: "%.0f", carbsReq)
+            let unitForInfo = carbsReq > 0 ? "g 🟡" : "g"
+            infoManager.updateInfoData(type: .carbReq, value: latestCarbReq, unit: unitForInfo)
+            sharedLatestCarbReq = "\(latestCarbReq) g"
             
-            let displayCarbReq = carbsReq > 0 ? "\(latestCarbReq) 🟡" : latestCarbReq
-            infoManager.updateInfoData(type: .carbReq, value: displayCarbReq, unit: "g")
-            
-            print("Carbs Required updated: \(displayCarbReq)")
+            print("Carbs Required updated: \(latestCarbReq)")
         } else {
             let defaultCarbReq = "0"
-            sharedLatestCarbReq = defaultCarbReq // Keep this unchanged
             infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq, unit: "g")
+            sharedLatestCarbReq = "\(defaultCarbReq) g"
             
             print("Carbs Required not available, using default: \(defaultCarbReq)")
         }
@@ -444,7 +444,7 @@ extension MainViewController {
                     let yString = nsReasonString.substring(with: match.range(at: 2))
  
                     if let xValue = Double(xString), let yValue = Double(yString) {
-                        formattedSensLimit = String(format: "%.0f% % → %.0f% %", yValue * 100.0, xValue * 100.0)
+                        formattedSensLimit = String(format: "%.0f% % ⇥ %.0f% %", yValue * 100.0, xValue * 100.0)
                     }
                 }
             }
