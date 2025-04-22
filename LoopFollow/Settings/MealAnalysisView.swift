@@ -20,9 +20,12 @@ class MealAnalysisView: UIViewController {
 
     // All fetched events handed in by the presenting VC
     private let events: [Event]
+    /// Optional initial start time provided by the caller
+    private let initialStartOverride: Date?
 
-    init(events: [Event]) {
+    init(events: [Event], initialStart: Date? = nil) {
         self.events = events
+        self.initialStartOverride = initialStart
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -49,7 +52,7 @@ class MealAnalysisView: UIViewController {
 
     private let startDateLabel: UILabel = {
         let label = UILabel()
-        label.text = "Välj starttid:"
+        label.text = "Välj Starttid:"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -57,7 +60,7 @@ class MealAnalysisView: UIViewController {
 
     private let startTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Välj sluttid:"
+        label.text = "Välj Sluttid:"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -111,6 +114,12 @@ class MealAnalysisView: UIViewController {
         startPicker.minimumDate = Date().addingTimeInterval(-24 * 60 * 60)
         startPicker.maximumDate = Date()
         startPicker.date = startTime
+        // Apply caller‑provided start time override, if any
+        if let override = initialStartOverride {
+            startTime = override
+            startPicker.date = override
+            recalcEndTimeBasedOnDuration()
+        }
         startPicker.addTarget(self, action: #selector(startTimeChanged(_:)), for: .valueChanged)
 
         // Configure duration control action
@@ -137,7 +146,7 @@ class MealAnalysisView: UIViewController {
             carbsRow,
             makeRow(iconName: "circle.fill",
                     iconColor: .systemBlue,
-                    text: "Insulin Totalt",
+                    text: "Måltidsinsulin Totalt",
                     valueLabel: insulinTotalValueLabel,
                     boldText: true),
             makeRow(iconName: "circle.fill",
@@ -167,9 +176,9 @@ class MealAnalysisView: UIViewController {
 
         // Additional stats rows
         let statsStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: " • Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
-            makeStatRow(text: " • Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: "%"),
-            makeStatRow(text: " • Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: "%")
+            makeStatRow(text: "  •  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
+            makeStatRow(text: "  •  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: "%"),
+            makeStatRow(text: "  •  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: "%")
         ])
         statsStack.axis = .vertical
         statsStack.spacing = 4
@@ -219,7 +228,13 @@ class MealAnalysisView: UIViewController {
     }
 
     @objc private func endTimeChanged(_ sender: UIDatePicker) {
-        endTime = sender.date
+        var selected = sender.date
+        let now = Date()
+        if selected > now {
+            selected = now
+            sender.date = now
+        }
+        endTime = selected
         updateTotals()
     }
 
@@ -229,6 +244,12 @@ class MealAnalysisView: UIViewController {
         let hours = Int(hoursString) ?? 1
         endTime = Calendar.current.date(byAdding: .hour, value: hours, to: startTime) ?? startTime
         datePicker.date = endTime
+        // Ensure endTime never exceeds "now"
+        let now = Date()
+        if endTime > now {
+            endTime = now
+            datePicker.date = now
+        }
         updateTotals()
     }
 
@@ -373,7 +394,7 @@ private extension UIFont {
         row.spacing = 6
         valueLabel.setContentHuggingPriority(.required, for: .horizontal)
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        textLabel.textColor = .secondaryLabel
-        valueLabel.textColor = .secondaryLabel
+        textLabel.textColor = .label
+        valueLabel.textColor = .label
         return row
     }

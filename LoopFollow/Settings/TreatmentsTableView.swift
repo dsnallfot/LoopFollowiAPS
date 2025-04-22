@@ -191,88 +191,61 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
 
     @objc private func mealAnalysisButtonTapped() {
-        // Map current treatments to Event model for the analysis view
+        let events = buildEventsArray()
+        let analysisVC = MealAnalysisView(events: events)
+        let navController = UINavigationController(rootViewController: analysisVC)
+        navController.modalPresentationStyle = .formSheet
+        present(navController, animated: true, completion: nil)
+    }
+
+    private func buildEventsArray() -> [Event] {
         var events: [Event] = treatments.compactMap { treatment in
             switch treatment.eventType {
-            // --- Insulin events ---
             case "SMB", "Bolus":
-                // Prefer raw numeric insulin field if present
                 if let value = treatment.rawData["insulin"] as? Double {
-                    return Event(date: treatment.timestamp,
-                                 eventType: treatment.eventType,
-                                 amount: value)
+                    return Event(date: treatment.timestamp, eventType: treatment.eventType, amount: value)
                 }
-                // Otherwise parse the formatted amount string (e.g. "1.2 E")
                 if let amountStr = treatment.amount {
-                    let numberStr = amountStr.replacingOccurrences(of: "[^0-9.]", with: "",
-                                                                    options: .regularExpression)
+                    let numberStr = amountStr.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
                     if let value = Double(numberStr) {
-                        return Event(date: treatment.timestamp,
-                                     eventType: treatment.eventType,
-                                     amount: value)
+                        return Event(date: treatment.timestamp, eventType: treatment.eventType, amount: value)
                     }
                 }
-                return nil   // discard if no numeric value found
-                
-            // --- Carbohydrate events ---
+                return nil
             case "Carb Correction":
                 if let value = treatment.rawData["carbs"] as? Double {
-                    return Event(date: treatment.timestamp,
-                                 eventType: treatment.eventType,
-                                 amount: value)
+                    return Event(date: treatment.timestamp, eventType: treatment.eventType, amount: value)
                 }
                 if let amountStr = treatment.amount {
-                    let numberStr = amountStr.replacingOccurrences(of: "[^0-9.]", with: "",
-                                                                    options: .regularExpression)
+                    let numberStr = amountStr.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
                     if let value = Double(numberStr) {
-                        return Event(date: treatment.timestamp,
-                                     eventType: treatment.eventType,
-                                     amount: value)
+                        return Event(date: treatment.timestamp, eventType: treatment.eventType, amount: value)
                     }
                 }
-                return nil   // ignore if we couldn't extract carbs
-                
+                return nil
             default:
-                return nil   // ignore all other event types
+                return nil
             }
         }
-        // --- Temp Basal delivered insulin ---
-        let tempBasals = treatments
-            .filter { $0.eventType == "Temp Basal" }
-            .sorted { $0.timestamp < $1.timestamp }
-
+        // Temp Basal calculation (same block as before) --------------------------------
+        let tempBasals = treatments.filter { $0.eventType == "Temp Basal" }.sorted { $0.timestamp < $1.timestamp }
         for (index, basal) in tempBasals.enumerated() {
-            // Determine end time for this basal: next basal timestamp or its programmed duration if last.
             let end: Date = {
                 if index < tempBasals.count - 1 {
                     return tempBasals[index + 1].timestamp
                 } else if let dur = basal.tempBasalDuration {
                     return basal.timestamp.addingTimeInterval(dur * 60)
-                } else {
-                    return basal.timestamp   // zero duration → ignore
-                }
+                } else { return basal.timestamp }
             }()
-
             let minutes = max(end.timeIntervalSince(basal.timestamp) / 60, 0)
             guard minutes > 0 else { continue }
-
-            // Use "rate" or "absolute" field as units/hour.
-            let rate = (basal.rawData["rate"] as? Double)
-                    ?? (basal.rawData["absolute"] as? Double)
-                    ?? 0.0
-            // Linear delivery, then round *down* to nearest 0.05 U (pump delivers in 0.05‑U steps)
-            let deliveredRaw = rate * (minutes / 60.0)
-            let delivered = (deliveredRaw / 0.05).rounded(.down) * 0.05
+            let rate = (basal.rawData["rate"] as? Double) ?? (basal.rawData["absolute"] as? Double) ?? 0.0
+            let raw = rate * (minutes / 60.0)
+            let delivered = (raw / 0.05).rounded(.down) * 0.05
             guard delivered > 0 else { continue }
-
-            events.append(Event(date: basal.timestamp,
-                                eventType: "Temp Basal",
-                                amount: delivered))
+            events.append(Event(date: basal.timestamp, eventType: "Temp Basal", amount: delivered))
         }
-        let analysisVC = MealAnalysisView(events: events)
-        let navController = UINavigationController(rootViewController: analysisVC)
-        navController.modalPresentationStyle = .formSheet
-        present(navController, animated: true, completion: nil)
+        return events
     }
     
     private func updateDuplicateIndicator() {
@@ -1123,7 +1096,19 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message += "\nInlagt av: \(enteredBy)"
             }
-            presentAlert(title: title, message: message)
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Analysera måltid", style: .default, handler: { _ in
+                let events = self.buildEventsArray()
+                let analysisStart = treatment.timestamp.addingTimeInterval(-60) // minus 1 min
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart)
+                let nav = UINavigationController(rootViewController: analysisVC)
+                nav.modalPresentationStyle = .formSheet
+                self.present(nav, animated: true)
+            }))
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                tableView.deselectRow(at: indexPath, animated: true)
+            }))
+            self.present(alert, animated: true)
         }
 
         if treatment.eventType == "Bolus" {
