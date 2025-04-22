@@ -74,7 +74,7 @@ class MealAnalysisView: UIViewController {
     }()
 
     private let durationControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "5h", "6h", "24h"])
+        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "6h", "12h", "24h"])
         control.selectedSegmentIndex = 2   // 3 h default
         control.translatesAutoresizingMaskIntoConstraints = false
         return control
@@ -111,8 +111,8 @@ class MealAnalysisView: UIViewController {
 
     // MARK: - Glucose data
     private var bgEntries: [BGEntry] = []
-    // BG line chart
-    private let bgChartView = LineChartView()
+    // BG chart (CombinedChartView for lines and scatter)
+    private let bgChartView = CombinedChartView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -399,7 +399,7 @@ class MealAnalysisView: UIViewController {
         let spacer = UIView()
         let row = UIStackView(arrangedSubviews: [icon, textLabel, spacer, valueLabel])
         row.axis = .horizontal
-        row.spacing = 6
+        row.spacing = 5
         valueLabel.setContentHuggingPriority(.required, for: .horizontal)
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         if secondary {
@@ -418,11 +418,14 @@ class MealAnalysisView: UIViewController {
         bgChartView.dragEnabled = false
         bgChartView.scaleXEnabled = false
         bgChartView.scaleYEnabled = false
+        bgChartView.drawOrder = [CombinedChartView.DrawOrder.scatter.rawValue,
+                                 CombinedChartView.DrawOrder.line.rawValue]
 
         // Y axis 0‑24 mmol
         let y = bgChartView.leftAxis
         y.axisMinimum = 0
         y.axisMaximum = 24
+        y.spaceTop = 0.02   // small headroom so dots at 22 are visible
         y.labelCount = 6
         y.gridColor = NSUIColor.lightGray.withAlphaComponent(0.4)
         y.gridLineWidth = 0.5
@@ -459,13 +462,52 @@ class MealAnalysisView: UIViewController {
             ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
                            y: $0.mmol)
         }
-        let ds = LineChartDataSet(entries: entries, label: "")
-        ds.setColor(NSUIColor.systemRed)
-        ds.lineWidth = 3
-        ds.drawCirclesEnabled = false
-        ds.drawValuesEnabled = false
-        ds.mode = .linear
-        bgChartView.data = LineChartData(dataSet: ds)
+        // Main BG line dataset
+        let bgDataSet = LineChartDataSet(entries: entries, label: "")
+        bgDataSet.setColor(NSUIColor.systemRed)
+        bgDataSet.lineWidth = 3
+        bgDataSet.drawCirclesEnabled = false
+        bgDataSet.drawValuesEnabled = false
+        bgDataSet.mode = .linear
+
+        // ▸ Blue dots for Bolus at y = 22 mmol
+        let bolusEntries = events.filter { ["Bolus"].contains($0.eventType) &&
+                                          $0.date >= startTime && $0.date <= endTime }
+                                .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
+                                                      y: 22.0) }
+        let bolusDots = ScatterChartDataSet(entries: bolusEntries, label: "")
+        bolusDots.setColor(NSUIColor.systemBlue)
+        bolusDots.setScatterShape(.circle)
+        bolusDots.scatterShapeSize = 8
+        bolusDots.drawValuesEnabled = false
+        
+        // ▸ Blue triangles for SMB at y = 22 mmol
+        let smbEntries = events.filter { ["SMB"].contains($0.eventType) &&
+                                          $0.date >= startTime && $0.date <= endTime }
+                                .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
+                                                      y: 22.0) }
+        let smbDots = ScatterChartDataSet(entries: smbEntries, label: "")
+        smbDots.setColor(NSUIColor.systemBlue)
+        smbDots.setScatterShape(.triangleFlipped)
+        smbDots.scatterShapeSize = 8
+        smbDots.drawValuesEnabled = false
+
+        // ▸ Orange triangles for Carb Correction at y = 2 mmol
+        let carbEntries = events.filter { $0.eventType == "Carb Correction" &&
+                                          $0.date >= startTime && $0.date <= endTime }
+                                .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
+                                                      y: 2.0) }
+        let carbDots = ScatterChartDataSet(entries: carbEntries, label: "")
+        carbDots.setColor(NSUIColor.systemOrange)
+        carbDots.setScatterShape(.triangle)
+        carbDots.scatterShapeSize = 8
+        carbDots.drawValuesEnabled = false
+
+        // Combine
+        let combined = CombinedChartData()
+        combined.lineData   = LineChartData(dataSet: bgDataSet)
+        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, carbDots])
+        bgChartView.data = combined
 
         // X range & labels
         let hrs = max(endTime.timeIntervalSince(startTime)/3600.0, 0.1)
@@ -492,7 +534,7 @@ class MealAnalysisView: UIViewController {
         valueLabel.text = "--\(unit)"
         let row = UIStackView(arrangedSubviews: [textLabel, spacer, valueLabel])
         row.axis = .horizontal
-        row.spacing = 6
+        row.spacing = 5
         valueLabel.setContentHuggingPriority(.required, for: .horizontal)
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         textLabel.textColor = .label

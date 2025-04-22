@@ -21,6 +21,7 @@ open class ScatterChartDataSet: LineScatterCandleRadarChartDataSet, ScatterChart
         case square
         case circle
         case triangle
+        case triangleFlipped
         case cross
         case x
         case chevronUp
@@ -57,6 +58,7 @@ open class ScatterChartDataSet: LineScatterCandleRadarChartDataSet, ScatterChart
         case .square: return SquareShapeRenderer()
         case .circle: return CircleShapeRenderer()
         case .triangle: return TriangleShapeRenderer()
+        case .triangleFlipped: return TriangleShapeRendererFlipped()
         case .cross: return CrossShapeRenderer()
         case .x: return XShapeRenderer()
         case .chevronUp: return ChevronUpShapeRenderer()
