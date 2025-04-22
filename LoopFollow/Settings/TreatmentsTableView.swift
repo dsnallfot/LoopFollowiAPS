@@ -252,17 +252,19 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     return basal.timestamp   // zero duration → ignore
                 }
             }()
-            
+
             let minutes = max(end.timeIntervalSince(basal.timestamp) / 60, 0)
             guard minutes > 0 else { continue }
-            
+
             // Use "rate" or "absolute" field as units/hour.
             let rate = (basal.rawData["rate"] as? Double)
                     ?? (basal.rawData["absolute"] as? Double)
                     ?? 0.0
-            let delivered = rate * (minutes / 60.0)
+            // Linear delivery, then round *down* to nearest 0.05 U (pump delivers in 0.05‑U steps)
+            let deliveredRaw = rate * (minutes / 60.0)
+            let delivered = (deliveredRaw / 0.05).rounded(.down) * 0.05
             guard delivered > 0 else { continue }
-            
+
             events.append(Event(date: basal.timestamp,
                                 eventType: "Temp Basal",
                                 amount: delivered))

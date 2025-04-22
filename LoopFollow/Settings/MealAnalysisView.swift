@@ -74,22 +74,28 @@ class MealAnalysisView: UIViewController {
     private var startTime: Date = Calendar.current.date(byAdding: .hour, value: -3, to: Date())!
 
     // MARK: - Insulin values
-    private var insulinTotal = 0.0
-    private var bolusTotal   = 0.0
-    private var smbTotal     = 0.0
-    private var basalTotal   = 0.0
-    private var carbsTotal   = 0.0
+    private var insulinTotal     = 0.0      // delivered insulin (SMB+Bolus+TempBasal)
+    private var bolusTotal       = 0.0
+    private var smbTotal         = 0.0
+    private var basalTotal       = 0.0      // delivered temp basal
+    private var profileBasalTotal = 0.0     // scheduled basal to subtract
+    private var carbsTotal       = 0.0
 
     // Value labels (placeholders for now)
     private let insulinTotalValueLabel = MealAnalysisView.makeValueLabel(bold: true)
     private let bolusValueLabel        = MealAnalysisView.makeValueLabel()
     private let smbValueLabel          = MealAnalysisView.makeValueLabel()
     private let basalValueLabel        = MealAnalysisView.makeValueLabel()
+    private let profileBasalValueLabel = MealAnalysisView.makeValueLabel()
     private let carbsValueLabel: UILabel = {
         let label = MealAnalysisView.makeValueLabel(bold: true)
         label.text = "0 g"
         return label
     }()
+    // Statistics value labels
+    private let realCRValueLabel          = MealAnalysisView.makeValueLabel()
+    private let manualBolusValueLabel     = MealAnalysisView.makeValueLabel()
+    private let smbTempValueLabel         = MealAnalysisView.makeValueLabel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -136,22 +142,39 @@ class MealAnalysisView: UIViewController {
                     boldText: true),
             makeRow(iconName: "circle.fill",
                     iconColor: UIColor.systemBlue.withAlphaComponent(0.8),
-                    text: "Varav Bolus",
-                    valueLabel: bolusValueLabel),
+                    text: "varav Bolus",
+                    valueLabel: bolusValueLabel,
+                    secondary: true),
             makeRow(iconName: "bolt.circle.fill",
                     iconColor: UIColor.systemBlue.withAlphaComponent(0.8),
-                    text: "Varav SMB",
-                    valueLabel: smbValueLabel),
+                    text: "varav SMB",
+                    valueLabel: smbValueLabel,
+                    secondary: true),
             makeRow(iconName: "circle.fill",
                     iconColor: UIColor.systemBlue.withAlphaComponent(0.2),
-                    text: "Varav Temp Basal",
-                    valueLabel: basalValueLabel)
+                    text: "varav Temp Basal",
+                    valueLabel: basalValueLabel,
+                    secondary: true),
+            makeRow(iconName: "calendar",
+                    iconColor: UIColor.systemBlue.withAlphaComponent(0.2),
+                    text: "minus Profilbasal",
+                    valueLabel: profileBasalValueLabel,
+                    secondary: true)
         ])
         rowsStack.axis = .vertical
         rowsStack.spacing = 5
         rowsStack.setCustomSpacing(12, after: carbsRow) // extra space before insulin rows
 
-        let mainStack = UIStackView(arrangedSubviews: [startRow, endRow, durationControl, rowsStack])
+        // Additional stats rows
+        let statsStack = UIStackView(arrangedSubviews: [
+            makeStatRow(text: " • Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
+            makeStatRow(text: " • Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: "%"),
+            makeStatRow(text: " • Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: "%")
+        ])
+        statsStack.axis = .vertical
+        statsStack.spacing = 4
+
+        let mainStack = UIStackView(arrangedSubviews: [startRow, endRow, durationControl, rowsStack, statsStack])
         mainStack.axis = .vertical
         mainStack.spacing = 12
         mainStack.translatesAutoresizingMaskIntoConstraints = false
@@ -162,6 +185,8 @@ class MealAnalysisView: UIViewController {
             mainStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
+        mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
+        mainStack.setCustomSpacing(20, after: rowsStack)   // clear separation
 
         recalcEndTimeBasedOnDuration()
         updateTotals()
@@ -207,9 +232,57 @@ class MealAnalysisView: UIViewController {
         updateTotals()
     }
 
+    /// Integrate scheduled profile basal (units) between two dates
+    private func scheduledBasal(from start: Date, to end: Date) -> Double {
+        let schedule = ProfileManager.shared.basalSchedule  // array of .timeAsSeconds + value
+        guard !schedule.isEmpty else { return 0 }
+        let calendar = Calendar.current
+        var total = 0.0
+        var current = start
+
+        func basalRate(at date: Date) -> Double {
+            let comps = calendar.dateComponents([.hour, .minute, .second], from: date)
+            let secondsOfDay = comps.hour! * 3600 + comps.minute! * 60 + comps.second!
+            // find last entry whose timeAsSeconds <= secondsOfDay
+            var rate = schedule.last!.value
+            for entry in schedule {
+                if entry.timeAsSeconds <= secondsOfDay {
+                    rate = entry.value
+                } else {
+                    break
+                }
+            }
+            return rate
+        }
+
+        func nextChange(after date: Date) -> Date {
+            let comps = calendar.dateComponents([.year, .month, .day], from: date)
+            let base = calendar.date(from: comps)!
+            let secondsOfDay = calendar.dateComponents([.hour, .minute, .second], from: date)
+            let currentSec = secondsOfDay.hour! * 3600 + secondsOfDay.minute! * 60 + secondsOfDay.second!
+            // find next entry whose timeAsSeconds > currentSec
+            for entry in schedule {
+                if entry.timeAsSeconds > currentSec {
+                    return base.addingTimeInterval(TimeInterval(entry.timeAsSeconds))
+                }
+            }
+            // next change is first entry of next day
+            return base.addingTimeInterval(24*3600 + TimeInterval(schedule[0].timeAsSeconds))
+        }
+
+        while current < end {
+            let rate = basalRate(at: current)
+            let next = min(end, nextChange(after: current))
+            let hours = next.timeIntervalSince(current) / 3600.0
+            total += rate * hours
+            current = next
+        }
+        return max(total, 0)
+    }
+
     // MARK: - Summation
     private func updateTotals() {
-        insulinTotal = 0; bolusTotal = 0; smbTotal = 0; basalTotal = 0; carbsTotal = 0
+        insulinTotal = 0; bolusTotal = 0; smbTotal = 0; basalTotal = 0; carbsTotal = 0; profileBasalTotal = 0
         for event in events where event.date >= startTime && event.date <= endTime {
             switch event.eventType {
             case "SMB":
@@ -223,14 +296,25 @@ class MealAnalysisView: UIViewController {
             default: break
             }
         }
-        // Overall insulin = SMB + Bolus + Temp Basal
-        insulinTotal = smbTotal + bolusTotal + basalTotal
+        // scheduled basal for the timeframe
+        profileBasalTotal = scheduledBasal(from: startTime, to: endTime)
+        // Net insulin for meal = delivered insulin - scheduled profile basal
+        let netInsulin = (smbTotal + bolusTotal + basalTotal) - profileBasalTotal
+        // Derived statistics
+        let realCR = netInsulin > 0 ? carbsTotal / netInsulin : 0
+        let manualBolusPct = netInsulin > 0 ? (bolusTotal / netInsulin) * 100 : 0
+        let smbTempDelivered = smbTotal + basalTotal - profileBasalTotal
+        let smbTempPct = netInsulin > 0 ? (smbTempDelivered / netInsulin) * 100 : 0
         // update UI
-        insulinTotalValueLabel.text = String(format: "%.2f E", insulinTotal)
+        insulinTotalValueLabel.text = String(format: "%.2f E", netInsulin)
         bolusValueLabel.text        = String(format: "%.2f E", bolusTotal)
         smbValueLabel.text          = String(format: "%.2f E", smbTotal)
         basalValueLabel.text        = String(format: "%.2f E", basalTotal)
+        profileBasalValueLabel.text = String(format: "-%.2f E", profileBasalTotal)
         carbsValueLabel.text        = String(format: "%.0f g",  carbsTotal)
+        realCRValueLabel.text       = String(format: "%.0f g/E", realCR)
+        manualBolusValueLabel.text  = String(format: "%.0f %%", manualBolusPct)
+        smbTempValueLabel.text      = String(format: "%.0f %%", smbTempPct)
     }
 
     private static func makeValueLabel(bold: Bool = false) -> UILabel {
@@ -246,7 +330,8 @@ class MealAnalysisView: UIViewController {
                          iconColor: UIColor,
                          text: String,
                          valueLabel: UILabel,
-                         boldText: Bool = false) -> UIStackView {
+                         boldText: Bool = false,
+                         secondary: Bool = false) -> UIStackView {
         let icon = UIImageView(image: UIImage(systemName: iconName))
         icon.tintColor = iconColor
         let textLabel = UILabel()
@@ -260,6 +345,10 @@ class MealAnalysisView: UIViewController {
         row.spacing = 6
         valueLabel.setContentHuggingPriority(.required, for: .horizontal)
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        if secondary {
+            textLabel.textColor = .secondaryLabel
+            valueLabel.textColor = .secondaryLabel
+        }
         return row
     }
 }
@@ -270,3 +359,21 @@ private extension UIFont {
         return UIFont(descriptor: descriptor, size: 0)
     }
 }
+
+    private func makeStatRow(text: String,
+                             valueLabel: UILabel,
+                             unit: String) -> UIStackView {
+        let textLabel = UILabel()
+        textLabel.text = text
+        let spacer = UIView()
+        // Append unit to value label later; start blank
+        valueLabel.text = "--\(unit)"
+        let row = UIStackView(arrangedSubviews: [textLabel, spacer, valueLabel])
+        row.axis = .horizontal
+        row.spacing = 6
+        valueLabel.setContentHuggingPriority(.required, for: .horizontal)
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        textLabel.textColor = .secondaryLabel
+        valueLabel.textColor = .secondaryLabel
+        return row
+    }
