@@ -8,6 +8,7 @@
 
 import HealthKit
 import UIKit
+import Charts
 
 /// Minimal representation of a treatment event we need
 struct Event {
@@ -58,7 +59,7 @@ class MealAnalysisView: UIViewController {
 
     private let startDateLabel: UILabel = {
         let label = UILabel()
-        label.text = "Välj starttid:"
+        label.text = "Välj starttid"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -66,7 +67,7 @@ class MealAnalysisView: UIViewController {
 
     private let startTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Välj sluttid:"
+        label.text = "Välj sluttid"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -110,6 +111,8 @@ class MealAnalysisView: UIViewController {
 
     // MARK: - Glucose data
     private var bgEntries: [BGEntry] = []
+    // BG line chart
+    private let bgChartView = LineChartView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -187,26 +190,33 @@ class MealAnalysisView: UIViewController {
 
         // Additional stats rows
         let statsStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "  •  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
-            makeStatRow(text: "  •  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: "%"),
-            makeStatRow(text: "  •  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: "%")
+            makeStatRow(text: " •  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
+            makeStatRow(text: " •  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: "%"),
+            makeStatRow(text: " •  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: "%")
         ])
         statsStack.axis = .vertical
         statsStack.spacing = 4
 
         // BG rows
         let bgStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "  •  Glukos vid starttid", valueLabel: startBGValueLabel, unit: " mmol/L"),
-            makeStatRow(text: "  •  Glukos vid sluttid",  valueLabel: endBGValueLabel,   unit: " mmol/L")
+            makeStatRow(text: " •  Startglukos", valueLabel: startBGValueLabel, unit: " mmol/L"),
+            makeStatRow(text: " •  Slutglukos",  valueLabel: endBGValueLabel,   unit: " mmol/L")
         ])
         bgStack.axis = .vertical
         bgStack.spacing = 4
 
-        let mainStack = UIStackView(arrangedSubviews: [startRow, endRow, durationControl, rowsStack, statsStack, bgStack])
+        let mainStack = UIStackView(arrangedSubviews: [startRow, endRow, durationControl,
+                                                       rowsStack, statsStack, bgStack, bgChartView])
         mainStack.axis = .vertical
         mainStack.spacing = 12
         mainStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mainStack)
+
+        // chart config & height
+        setupBGChart()
+        bgChartView.translatesAutoresizingMaskIntoConstraints = false
+        bgChartView.heightAnchor.constraint(equalToConstant: 150).isActive = true
+        mainStack.setCustomSpacing(12, after: bgStack)
 
         NSLayoutConstraint.activate([
             mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
@@ -398,6 +408,80 @@ class MealAnalysisView: UIViewController {
         }
         return row
     }
+    // MARK: - BG chart helpers
+    private func setupBGChart() {
+        bgChartView.chartDescription.enabled = false
+        bgChartView.legend.enabled = false
+        bgChartView.rightAxis.enabled = false
+        bgChartView.pinchZoomEnabled = false
+        bgChartView.doubleTapToZoomEnabled = false
+        bgChartView.dragEnabled = false
+        bgChartView.scaleXEnabled = false
+        bgChartView.scaleYEnabled = false
+
+        // Y axis 0‑24 mmol
+        let y = bgChartView.leftAxis
+        y.axisMinimum = 0
+        y.axisMaximum = 24
+        y.labelCount = 6
+        y.gridColor = NSUIColor.lightGray.withAlphaComponent(0.4)
+        y.gridLineWidth = 0.5
+        y.gridLineDashLengths = [2,2]
+
+        // threshold lines
+        [3.9, 7.9].forEach {
+            let ll = ChartLimitLine(limit: $0)
+            ll.lineColor = .label.withAlphaComponent(0.6)
+            ll.lineWidth = 2
+            y.addLimitLine(ll)
+        }
+
+        // Draw limit lines behind the data so the red BG line stays on top
+        y.drawLimitLinesBehindDataEnabled = true
+
+        // X axis
+        let x = bgChartView.xAxis
+        x.labelPosition = .bottom
+        x.gridColor = NSUIColor.lightGray.withAlphaComponent(0.4)
+        x.gridLineWidth = 0.5
+        x.gridLineDashLengths = [2,2]
+        x.valueFormatter = self
+        // Avoid clipping of last X‑label and give the line some breathing room
+        x.avoidFirstLastClippingEnabled = true
+        bgChartView.extraRightOffset = 12
+    }
+
+    private func refreshBGChart() {
+        let pts = bgEntries
+            .filter { $0.date >= startTime && $0.date <= endTime }
+            .sorted { $0.date < $1.date }
+        let entries = pts.map {
+            ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
+                           y: $0.mmol)
+        }
+        let ds = LineChartDataSet(entries: entries, label: "")
+        ds.setColor(NSUIColor.systemRed)
+        ds.lineWidth = 3
+        ds.drawCirclesEnabled = false
+        ds.drawValuesEnabled = false
+        ds.mode = .linear
+        bgChartView.data = LineChartData(dataSet: ds)
+
+        // X range & labels
+        let hrs = max(endTime.timeIntervalSince(startTime)/3600.0, 0.1)
+        let x = bgChartView.xAxis
+        x.axisMinimum = 0
+        x.axisMaximum = hrs
+        if hrs <= 6 {
+            x.granularity = 1
+            x.labelCount = Int(hrs.rounded(.up)) + 1
+        } else {
+            x.granularity = 3
+            x.labelCount = Int((hrs/3).rounded(.up)) + 1
+        }
+        bgChartView.notifyDataSetChanged()
+    }
+
     private func makeStatRow(text: String,
                              valueLabel: UILabel,
                              unit: String) -> UIStackView {
@@ -426,6 +510,7 @@ class MealAnalysisView: UIViewController {
                         mmol: Double($0.sgv) / 18.0182)
             }
             self.updateBGLabels()
+            self.refreshBGChart()
         }
     }
 
@@ -438,6 +523,16 @@ class MealAnalysisView: UIViewController {
         let endBG   = nearestBG(to: endTime)
         startBGValueLabel.text = startBG != nil ? String(format: "%.1f mmol/L", startBG!) : "-- mmol/L"
         endBGValueLabel.text   = endBG   != nil ? String(format: "%.1f mmol/L", endBG!)   : "-- mmol/L"
+        refreshBGChart()
+    }
+}
+
+extension MealAnalysisView: AxisValueFormatter {
+    func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+        let date = startTime.addingTimeInterval(value * 3600)
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f.string(from: date)
     }
 }
 
