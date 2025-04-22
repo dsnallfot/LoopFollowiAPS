@@ -6,7 +6,7 @@
 //  Copyright © 2025 Jon Fawcett. All rights reserved.
 //
 
-
+import HealthKit
 import UIKit
 
 /// Minimal representation of a treatment event we need
@@ -14,6 +14,12 @@ struct Event {
     let date: Date
     let eventType: String   // "SMB", "Bolus", "Carb Correction", etc.
     let amount: Double      // insulin units or carb grams
+}
+
+/// Glucose data point (mmol/L)
+struct BGEntry {
+    let date: Date
+    let mmol: Double
 }
 
 class MealAnalysisView: UIViewController {
@@ -52,7 +58,7 @@ class MealAnalysisView: UIViewController {
 
     private let startDateLabel: UILabel = {
         let label = UILabel()
-        label.text = "Välj Starttid:"
+        label.text = "Välj starttid:"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -60,7 +66,7 @@ class MealAnalysisView: UIViewController {
 
     private let startTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Välj Sluttid:"
+        label.text = "Välj sluttid:"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -99,6 +105,11 @@ class MealAnalysisView: UIViewController {
     private let realCRValueLabel          = MealAnalysisView.makeValueLabel()
     private let manualBolusValueLabel     = MealAnalysisView.makeValueLabel()
     private let smbTempValueLabel         = MealAnalysisView.makeValueLabel()
+    private let startBGValueLabel       = MealAnalysisView.makeValueLabel()
+    private let endBGValueLabel         = MealAnalysisView.makeValueLabel()
+
+    // MARK: - Glucose data
+    private var bgEntries: [BGEntry] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -183,7 +194,15 @@ class MealAnalysisView: UIViewController {
         statsStack.axis = .vertical
         statsStack.spacing = 4
 
-        let mainStack = UIStackView(arrangedSubviews: [startRow, endRow, durationControl, rowsStack, statsStack])
+        // BG rows
+        let bgStack = UIStackView(arrangedSubviews: [
+            makeStatRow(text: "  •  Glukos vid starttid", valueLabel: startBGValueLabel, unit: " mmol/L"),
+            makeStatRow(text: "  •  Glukos vid sluttid",  valueLabel: endBGValueLabel,   unit: " mmol/L")
+        ])
+        bgStack.axis = .vertical
+        bgStack.spacing = 4
+
+        let mainStack = UIStackView(arrangedSubviews: [startRow, endRow, durationControl, rowsStack, statsStack, bgStack])
         mainStack.axis = .vertical
         mainStack.spacing = 12
         mainStack.translatesAutoresizingMaskIntoConstraints = false
@@ -196,9 +215,11 @@ class MealAnalysisView: UIViewController {
         ])
         mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
         mainStack.setCustomSpacing(20, after: rowsStack)   // clear separation
+        mainStack.setCustomSpacing(20, after: statsStack)   // space before BG rows
 
         recalcEndTimeBasedOnDuration()
         updateTotals()
+        fetchBG24h()
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
@@ -220,11 +241,13 @@ class MealAnalysisView: UIViewController {
         startTime = sender.date
         recalcEndTimeBasedOnDuration()
         updateTotals()
+        updateBGLabels()
     }
 
     @objc private func durationChanged(_ sender: UISegmentedControl) {
         recalcEndTimeBasedOnDuration()
         updateTotals()
+        updateBGLabels()
     }
 
     @objc private func endTimeChanged(_ sender: UIDatePicker) {
@@ -236,6 +259,7 @@ class MealAnalysisView: UIViewController {
         }
         endTime = selected
         updateTotals()
+        updateBGLabels()
     }
 
     private func recalcEndTimeBasedOnDuration() {
@@ -251,6 +275,7 @@ class MealAnalysisView: UIViewController {
             datePicker.date = now
         }
         updateTotals()
+        updateBGLabels()
     }
 
     /// Integrate scheduled profile basal (units) between two dates
@@ -336,6 +361,7 @@ class MealAnalysisView: UIViewController {
         realCRValueLabel.text       = String(format: "%.0f g/E", realCR)
         manualBolusValueLabel.text  = String(format: "%.0f %%", manualBolusPct)
         smbTempValueLabel.text      = String(format: "%.0f %%", smbTempPct)
+        updateBGLabels()
     }
 
     private static func makeValueLabel(bold: Bool = false) -> UILabel {
@@ -372,15 +398,6 @@ class MealAnalysisView: UIViewController {
         }
         return row
     }
-}
-
-private extension UIFont {
-    func withTraits(traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
-        guard let descriptor = fontDescriptor.withSymbolicTraits(traits) else { return self }
-        return UIFont(descriptor: descriptor, size: 0)
-    }
-}
-
     private func makeStatRow(text: String,
                              valueLabel: UILabel,
                              unit: String) -> UIStackView {
@@ -398,3 +415,35 @@ private extension UIFont {
         valueLabel.textColor = .label
         return row
     }
+
+    // MARK: - BG Handling
+    private func fetchBG24h() {
+        BGProvider.fetch { [weak self] sgv in
+            guard let self = self else { return }
+            // convert mg/dL → mmol/L (18.0182) and store
+            self.bgEntries = sgv.map {
+                BGEntry(date: Date(timeIntervalSince1970: $0.date),
+                        mmol: Double($0.sgv) / 18.0182)
+            }
+            self.updateBGLabels()
+        }
+    }
+
+    private func nearestBG(to date: Date) -> Double? {
+        return bgEntries.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }?.mmol
+    }
+
+    private func updateBGLabels() {
+        let startBG = nearestBG(to: startTime)
+        let endBG   = nearestBG(to: endTime)
+        startBGValueLabel.text = startBG != nil ? String(format: "%.1f mmol/L", startBG!) : "-- mmol/L"
+        endBGValueLabel.text   = endBG   != nil ? String(format: "%.1f mmol/L", endBG!)   : "-- mmol/L"
+    }
+}
+
+private extension UIFont {
+    func withTraits(traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
+        guard let descriptor = fontDescriptor.withSymbolicTraits(traits) else { return self }
+        return UIFont(descriptor: descriptor, size: 0)
+    }
+}

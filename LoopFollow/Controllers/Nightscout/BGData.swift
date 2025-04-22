@@ -475,3 +475,51 @@ extension InsulinMetric: CustomStringConvertible {
         return String(format: "%.2f", value) // Adjust format as needed
     }
 }
+
+// MARK: - Lightweight BG provider (Nightscout only)
+
+/// Provides recent BG readings to other view‑controllers without UI coupling.
+final class BGProvider {
+
+    /// Return the latest `hours` worth of SGV entries (newest‑first).
+    /// Each entry’s `date` is already in **seconds**.
+    static func fetch(hours: Int = 24,
+                      completion: @escaping ([ShareGlucoseData]) -> Void) {
+
+        guard IsNightscoutEnabled() else {       // fallback if NS disabled
+            completion([])
+            return
+        }
+
+        var params: [String: String] = [:]
+        let iso = ISO8601DateFormatter()
+        let since = Calendar.current.date(byAdding: .hour, value: -hours, to: Date())!
+        params["count"] = "\(hours * 12 + 12)"                      // a little extra
+        params["find[dateString][$gte]"] = iso.string(from: since)
+        params["find[type][$ne]"] = "cal"                            // skip calibration rows
+
+        NightscoutUtils.executeRequest(eventType: .sgv, parameters: params) {
+            (result: Result<[ShareGlucoseData], Error>) in
+
+            var cleaned: [ShareGlucoseData] = []
+
+            if case .success(let raw) = result {
+                var lastAdded = Double.infinity
+                for var e in raw {           // NS is newest‑first
+                    e.date /= 1000          // ms → s
+                    e.date.round()
+                    if lastAdded - e.date >= 240 {   // keep ≥4 min apart
+                        cleaned.append(e)
+                        lastAdded = e.date
+                    }
+                    if cleaned.count >= hours * 12 { break }
+                }
+            } else if case .failure(let err) = result {
+                LogManager.shared.log(category: .nightscout,
+                                      message: "BGProvider fetch error \(err)",
+                                      limitIdentifier: "BGProvider fetch error")
+            }
+            DispatchQueue.main.async { completion(cleaned) }
+        }
+    }
+}
