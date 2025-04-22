@@ -61,7 +61,7 @@ class MealAnalysisView: UIViewController {
 
     private let startDateLabel: UILabel = {
         let label = UILabel()
-        label.text = "Välj starttid"
+        label.text = "Starttid"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -69,7 +69,7 @@ class MealAnalysisView: UIViewController {
 
     private let startTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Välj sluttid"
+        label.text = "Sluttid"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -118,7 +118,11 @@ class MealAnalysisView: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Måltidsanalys"
+        if modalWithMeal {
+            title = "Analys timmar efter måltid"
+        } else {
+            title = "Analys timmar tillbaka"
+        }
 
         // When opened without a linked meal, default to the last 24 h window
         if !modalWithMeal {
@@ -214,8 +218,15 @@ class MealAnalysisView: UIViewController {
         bgStack.axis = .vertical
         bgStack.spacing = 4
 
-        let mainStack = UIStackView(arrangedSubviews: [startRow, endRow, durationControl,
-                                                       rowsStack, statsStack, bgStack, bgChartView])
+        let mainStack = UIStackView(arrangedSubviews: [
+            startRow,
+            endRow,
+            durationControl,
+            rowsStack,
+            bgChartView,
+            statsStack,
+            bgStack
+        ])
         mainStack.axis = .vertical
         mainStack.spacing = 12
         mainStack.translatesAutoresizingMaskIntoConstraints = false
@@ -224,17 +235,16 @@ class MealAnalysisView: UIViewController {
         // chart config & height
         setupBGChart()
         bgChartView.translatesAutoresizingMaskIntoConstraints = false
-        bgChartView.heightAnchor.constraint(equalToConstant: 150).isActive = true
-        mainStack.setCustomSpacing(12, after: bgStack)
+        bgChartView.heightAnchor.constraint(equalToConstant: 180).isActive = true
 
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8), // reduced padding
             mainStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
         mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
-        mainStack.setCustomSpacing(20, after: rowsStack)   // clear separation
-        mainStack.setCustomSpacing(20, after: statsStack)   // space before BG rows
+        mainStack.setCustomSpacing(15, after: rowsStack)   // clear separation
+        mainStack.setCustomSpacing(20, after: bgChartView)   // extra gap before stats
 
         recalcEndTimeBasedOnDuration()
         updateTotals()
@@ -376,7 +386,9 @@ class MealAnalysisView: UIViewController {
             }
         }
         // scheduled basal for the timeframe
-        profileBasalTotal = scheduledBasal(from: startTime, to: endTime)
+        // Round scheduled basal down to nearest 0.05
+        let rawBasal = scheduledBasal(from: startTime, to: endTime)
+        profileBasalTotal = floor(rawBasal / 0.05) * 0.05
         // Net insulin for meal = delivered insulin - scheduled profile basal
         let netInsulin = (smbTotal + bolusTotal + basalTotal) - profileBasalTotal
         // Derived statistics
@@ -473,8 +485,8 @@ class MealAnalysisView: UIViewController {
         x.gridLineDashLengths = [2,2]
         x.valueFormatter = self
         // Avoid clipping of last X‑label and give the line some breathing room
-        x.avoidFirstLastClippingEnabled = true
-        bgChartView.extraRightOffset = 12
+        x.avoidFirstLastClippingEnabled = false
+        bgChartView.extraRightOffset = 16
     }
 
     private func refreshBGChart() {
