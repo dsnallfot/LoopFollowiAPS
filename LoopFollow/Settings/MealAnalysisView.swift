@@ -150,8 +150,8 @@ class MealAnalysisView: UIViewController {
         endRow.alignment = .center
         endRow.spacing = 12
 
-        let carbsRow = makeRow(iconName: "circle.fill",
-                               iconColor: UIColor.systemOrange.withAlphaComponent(0.8),
+        let carbsRow = makeRow(iconName: "arrowtriangle.up.circle",
+                               iconColor: UIColor.systemOrange.withAlphaComponent(1.0),
                                text: "Kolhydrater Totalt",
                                valueLabel: carbsValueLabel,
                                boldText: true)
@@ -163,23 +163,23 @@ class MealAnalysisView: UIViewController {
                     text: "Måltidsinsulin Totalt",
                     valueLabel: insulinTotalValueLabel,
                     boldText: true),
-            makeRow(iconName: "circle.fill",
-                    iconColor: UIColor.systemBlue.withAlphaComponent(0.8),
+            makeRow(iconName: "record.circle",
+                    iconColor: UIColor.systemBlue.withAlphaComponent(1.0),
                     text: "varav Bolus",
                     valueLabel: bolusValueLabel,
                     secondary: true),
-            makeRow(iconName: "bolt.circle.fill",
-                    iconColor: UIColor.systemBlue.withAlphaComponent(0.8),
+            makeRow(iconName: "arrowtriangle.down.circle",
+                    iconColor: UIColor.systemBlue.withAlphaComponent(1.0),
                     text: "varav SMB",
                     valueLabel: smbValueLabel,
                     secondary: true),
             makeRow(iconName: "circle.fill",
-                    iconColor: UIColor.systemBlue.withAlphaComponent(0.35),
+                    iconColor: UIColor.systemBlue.withAlphaComponent(0.45),
                     text: "varav Temp Basal",
                     valueLabel: basalValueLabel,
                     secondary: true),
             makeRow(iconName: "calendar",
-                    iconColor: UIColor.systemBlue.withAlphaComponent(0.35),
+                    iconColor: UIColor.systemBlue.withAlphaComponent(0.45),
                     text: "minus Profilbasal",
                     valueLabel: profileBasalValueLabel,
                     secondary: true)
@@ -537,8 +537,8 @@ class MealAnalysisView: UIViewController {
         row.spacing = 5
         valueLabel.setContentHuggingPriority(.required, for: .horizontal)
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        textLabel.textColor = .label
-        valueLabel.textColor = .label
+        textLabel.textColor = .secondaryLabel
+        valueLabel.textColor = .secondaryLabel
         return row
     }
 
