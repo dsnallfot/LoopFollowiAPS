@@ -61,7 +61,7 @@ class MealAnalysisView: UIViewController {
 
     private let startDateLabel: UILabel = {
         let label = UILabel()
-        label.text = "Starttid"
+        label.text = "Valt tidsintervall"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -69,7 +69,7 @@ class MealAnalysisView: UIViewController {
 
     private let startTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Sluttid"
+        label.text = " till"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -152,16 +152,22 @@ class MealAnalysisView: UIViewController {
         // Configure duration control action
         durationControl.addTarget(self, action: #selector(durationChanged(_:)), for: .valueChanged)
 
-        // Lay out components
-        let startRow = UIStackView(arrangedSubviews: [startDateLabel, startPicker])
-        startRow.axis = .horizontal
-        startRow.alignment = .center
-        startRow.spacing = 12
+        let startGroup = UIStackView(arrangedSubviews: [startDateLabel, startPicker])
+        startGroup.axis = .horizontal
+        startGroup.alignment = .center
+        startGroup.spacing = 6
+        startGroup.setContentHuggingPriority(.required, for: .horizontal)
 
-        let endRow = UIStackView(arrangedSubviews: [startTimeLabel, datePicker])
-        endRow.axis = .horizontal
-        endRow.alignment = .center
-        endRow.spacing = 12
+        let endGroup = UIStackView(arrangedSubviews: [startTimeLabel, datePicker])
+        endGroup.axis = .horizontal
+        endGroup.alignment = .center
+        endGroup.spacing = 6
+        endGroup.setContentHuggingPriority(.required, for: .horizontal)
+
+        let timeRow = UIStackView(arrangedSubviews: [startGroup, endGroup])
+        timeRow.axis = .horizontal
+        timeRow.alignment = .center
+        timeRow.spacing = 0
 
         let carbsRow = makeRow(iconName: "arrowtriangle.up.circle",
                                iconColor: UIColor.systemOrange.withAlphaComponent(1.0),
@@ -204,23 +210,22 @@ class MealAnalysisView: UIViewController {
         // Additional stats rows
         let statsStack = UIStackView(arrangedSubviews: [
             makeStatRow(text: "☆  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
-            makeStatRow(text: "☆  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: "%"),
-            makeStatRow(text: "☆  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: "%")
+            makeStatRow(text: "☆  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: " %"),
+            makeStatRow(text: "☆  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: " %")
         ])
         statsStack.axis = .vertical
         statsStack.spacing = 4
 
         // BG rows
         let bgStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "☆  Startglukos", valueLabel: startBGValueLabel, unit: " mmol/L"),
-            makeStatRow(text: "☆  Slutglukos",  valueLabel: endBGValueLabel,   unit: " mmol/L")
+            makeStatRow(text: "☆  Glukos vid starttid", valueLabel: startBGValueLabel, unit: " mmol/L"),
+            makeStatRow(text: "☆  Glukos vid sluttid",  valueLabel: endBGValueLabel,   unit: " mmol/L")
         ])
         bgStack.axis = .vertical
         bgStack.spacing = 4
 
         let mainStack = UIStackView(arrangedSubviews: [
-            startRow,
-            endRow,
+            timeRow,
             durationControl,
             rowsStack,
             bgChartView,
@@ -235,7 +240,7 @@ class MealAnalysisView: UIViewController {
         // chart config & height
         setupBGChart()
         bgChartView.translatesAutoresizingMaskIntoConstraints = false
-        bgChartView.heightAnchor.constraint(equalToConstant: 180).isActive = true
+        bgChartView.heightAnchor.constraint(equalToConstant: 200).isActive = true
 
         NSLayoutConstraint.activate([
             mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8), // reduced padding
@@ -243,8 +248,8 @@ class MealAnalysisView: UIViewController {
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
         mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
-        mainStack.setCustomSpacing(15, after: rowsStack)   // clear separation
-        mainStack.setCustomSpacing(20, after: bgChartView)   // extra gap before stats
+        mainStack.setCustomSpacing(20, after: rowsStack)   // clear separation
+        mainStack.setCustomSpacing(25, after: bgChartView)   // extra gap before stats
 
         recalcEndTimeBasedOnDuration()
         updateTotals()
@@ -524,7 +529,7 @@ class MealAnalysisView: UIViewController {
         let smbDots = ScatterChartDataSet(entries: smbEntries, label: "")
         smbDots.setColor(NSUIColor.systemBlue)
         smbDots.setScatterShape(.triangleFlipped)
-        smbDots.scatterShapeSize = 8
+        smbDots.scatterShapeSize = 9
         smbDots.drawValuesEnabled = false
 
         // ▸ Orange triangles for Carb Correction at y = 2 mmol
@@ -535,7 +540,7 @@ class MealAnalysisView: UIViewController {
         let carbDots = ScatterChartDataSet(entries: carbEntries, label: "")
         carbDots.setColor(NSUIColor.systemOrange)
         carbDots.setScatterShape(.triangle)
-        carbDots.scatterShapeSize = 8
+        carbDots.scatterShapeSize = 9
         carbDots.drawValuesEnabled = false
 
         // Combine
