@@ -192,7 +192,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
 
     @objc private func mealAnalysisButtonTapped() {
         let events = buildEventsArray()
-        let analysisVC = MealAnalysisView(events: events)
+        let analysisVC = MealAnalysisView(events: events, modalWithMeal: false)
         let navController = UINavigationController(rootViewController: analysisVC)
         navController.modalPresentationStyle = .formSheet
         present(navController, animated: true, completion: nil)
@@ -1100,7 +1100,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             alert.addAction(UIAlertAction(title: "Analysera måltid", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-60) // minus 1 min
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart)
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithMeal: true)
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)

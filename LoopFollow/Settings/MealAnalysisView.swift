@@ -29,10 +29,12 @@ class MealAnalysisView: UIViewController {
     private let events: [Event]
     /// Optional initial start time provided by the caller
     private let initialStartOverride: Date?
+    private let modalWithMeal: Bool
 
-    init(events: [Event], initialStart: Date? = nil) {
+    init(events: [Event], initialStart: Date? = nil, modalWithMeal: Bool = true) {
         self.events = events
         self.initialStartOverride = initialStart
+        self.modalWithMeal = modalWithMeal
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -117,6 +119,13 @@ class MealAnalysisView: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Måltidsanalys"
+
+        // When opened without a linked meal, default to the last 24 h window
+        if !modalWithMeal {
+            endTime = Date()
+            startTime = Calendar.current.date(byAdding: .hour, value: -24, to: endTime)!
+            durationControl.selectedSegmentIndex = 6   // "24h"
+        }
         view.backgroundColor = .systemBackground
 
         // Configure picker limits (now‒24h ... ∞) and initial value
@@ -128,8 +137,8 @@ class MealAnalysisView: UIViewController {
         startPicker.minimumDate = Date().addingTimeInterval(-24 * 60 * 60)
         startPicker.maximumDate = Date()
         startPicker.date = startTime
-        // Apply caller‑provided start time override, if any
-        if let override = initialStartOverride {
+        // Apply caller‑provided start time override only when analysing a meal
+        if modalWithMeal, let override = initialStartOverride {
             startTime = override
             startPicker.date = override
             recalcEndTimeBasedOnDuration()
@@ -249,9 +258,12 @@ class MealAnalysisView: UIViewController {
 
     @objc private func startTimeChanged(_ sender: UIDatePicker) {
         startTime = sender.date
-        recalcEndTimeBasedOnDuration()
-        updateTotals()
-        updateBGLabels()
+        if modalWithMeal {
+            recalcEndTimeBasedOnDuration()
+        } else {
+            updateTotals()
+            updateBGLabels()
+        }
     }
 
     @objc private func durationChanged(_ sender: UISegmentedControl) {
@@ -268,21 +280,32 @@ class MealAnalysisView: UIViewController {
             sender.date = now
         }
         endTime = selected
-        updateTotals()
-        updateBGLabels()
+        if modalWithMeal {
+            updateTotals()
+            updateBGLabels()
+        } else {
+            recalcEndTimeBasedOnDuration()
+        }
     }
 
     private func recalcEndTimeBasedOnDuration() {
         guard let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) else { return }
         let hoursString = title.replacingOccurrences(of: "h", with: "")
         let hours = Int(hoursString) ?? 1
-        endTime = Calendar.current.date(byAdding: .hour, value: hours, to: startTime) ?? startTime
-        datePicker.date = endTime
-        // Ensure endTime never exceeds "now"
-        let now = Date()
-        if endTime > now {
-            endTime = now
-            datePicker.date = now
+        
+        if modalWithMeal {
+            // startTime → endTime
+            endTime = Calendar.current.date(byAdding: .hour, value: hours, to: startTime) ?? startTime
+            datePicker.date = endTime
+            let now = Date()
+            if endTime > now {
+                endTime = now
+                datePicker.date = now
+            }
+        } else {
+            // endTime is fixed → derive startTime
+            startTime = Calendar.current.date(byAdding: .hour, value: -hours, to: endTime) ?? endTime
+            startPicker.date = startTime
         }
         updateTotals()
         updateBGLabels()
