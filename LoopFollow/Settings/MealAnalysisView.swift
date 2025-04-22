@@ -174,12 +174,12 @@ class MealAnalysisView: UIViewController {
                     valueLabel: smbValueLabel,
                     secondary: true),
             makeRow(iconName: "circle.fill",
-                    iconColor: UIColor.systemBlue.withAlphaComponent(0.2),
+                    iconColor: UIColor.systemBlue.withAlphaComponent(0.35),
                     text: "varav Temp Basal",
                     valueLabel: basalValueLabel,
                     secondary: true),
             makeRow(iconName: "calendar",
-                    iconColor: UIColor.systemBlue.withAlphaComponent(0.2),
+                    iconColor: UIColor.systemBlue.withAlphaComponent(0.35),
                     text: "minus Profilbasal",
                     valueLabel: profileBasalValueLabel,
                     secondary: true)
@@ -190,17 +190,17 @@ class MealAnalysisView: UIViewController {
 
         // Additional stats rows
         let statsStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: " •  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
-            makeStatRow(text: " •  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: "%"),
-            makeStatRow(text: " •  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: "%")
+            makeStatRow(text: "☆  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
+            makeStatRow(text: "☆  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: "%"),
+            makeStatRow(text: "☆  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: "%")
         ])
         statsStack.axis = .vertical
         statsStack.spacing = 4
 
         // BG rows
         let bgStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: " •  Startglukos", valueLabel: startBGValueLabel, unit: " mmol/L"),
-            makeStatRow(text: " •  Slutglukos",  valueLabel: endBGValueLabel,   unit: " mmol/L")
+            makeStatRow(text: "☆  Startglukos", valueLabel: startBGValueLabel, unit: " mmol/L"),
+            makeStatRow(text: "☆  Slutglukos",  valueLabel: endBGValueLabel,   unit: " mmol/L")
         ])
         bgStack.axis = .vertical
         bgStack.spacing = 4
