@@ -310,7 +310,7 @@ class MealAnalysisView: UIViewController {
         ])
         mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
         mainStack.setCustomSpacing(10, after: rowsStack)   // clear separation
-        mainStack.setCustomSpacing(20, after: bgChartView)   // extra gap before stats
+        mainStack.setCustomSpacing(15, after: bgChartView)   // extra gap before stats
         mainStack.setCustomSpacing(5, after: statsStack)   // smaller gap after stats
 
         recalcEndTimeBasedOnDuration()
@@ -522,6 +522,7 @@ class MealAnalysisView: UIViewController {
         bgChartView.pinchZoomEnabled = false
         bgChartView.doubleTapToZoomEnabled = false
         bgChartView.dragEnabled = false
+        bgChartView.highlightPerTapEnabled = false
         bgChartView.scaleXEnabled = false
         bgChartView.scaleYEnabled = false
         bgChartView.drawOrder = [CombinedChartView.DrawOrder.scatter.rawValue,
@@ -537,10 +538,13 @@ class MealAnalysisView: UIViewController {
         y.gridLineWidth = 0.5
         y.gridLineDashLengths = [2,2]
 
-        // threshold lines with bespoke colors
+        // threshold lines with bespoke colors using user-defined values
+        let lowMmol = Double(UserDefaultsRepository.lowLine.value) / 18.0182
+        let highMmol = Double(UserDefaultsRepository.highLine.value) / 18.0182
+
         let thresholds: [(limit: Double, color: UIColor)] = [
-            (3.9, UIColor.red.withAlphaComponent(0.7)),      // low boundary in red
-            (7.9, UIColor.purple.withAlphaComponent(1.0))   // high boundary in purple
+            (lowMmol, UIColor.red.withAlphaComponent(0.7)),
+            (highMmol, UIColor.purple.withAlphaComponent(1.0))
         ]
 
         for (limit, color) in thresholds {
@@ -744,9 +748,11 @@ class MealAnalysisView: UIViewController {
         let windowEntries = bgEntries.filter { $0.date >= startTime && $0.date <= endTime }
         let totalCount    = windowEntries.count
         
-        let belowCount = windowEntries.filter { $0.mmol <  3.9 }.count
-        let inCount    = windowEntries.filter { $0.mmol >= 3.9 && $0.mmol <= 7.9 }.count
-        let aboveCount = windowEntries.filter { $0.mmol >  7.9 }.count
+        let lowMmol = Double(UserDefaultsRepository.lowLine.value) / 18.0182
+        let highMmol = Double(UserDefaultsRepository.highLine.value) / 18.0182
+        let belowCount = windowEntries.filter { $0.mmol <  lowMmol }.count
+        let inCount    = windowEntries.filter { $0.mmol >= lowMmol && $0.mmol <= highMmol }.count
+        let aboveCount = windowEntries.filter { $0.mmol >  highMmol }.count
         
         let belowRange = totalCount > 0
         ? Double(belowCount) / Double(totalCount) * 100
