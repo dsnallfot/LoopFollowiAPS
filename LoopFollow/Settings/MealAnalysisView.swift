@@ -26,6 +26,13 @@ struct BGEntry {
 
 class MealAnalysisView: UIViewController {
 
+    // MARK: - BG Bar Properties
+    // Promoted from viewDidLoad to file-private properties for access in updateBGLabels()
+    private let belowBar = UILabel()
+    private let inBar = UILabel()
+    private let aboveBar = UILabel()
+    private let inRangeRow = UIStackView()
+
     // All fetched events handed in by the presenting VC
     private let events: [Event]
     /// Optional initial start time provided by the caller
@@ -238,17 +245,45 @@ class MealAnalysisView: UIViewController {
         statsStack.spacing = 5
 
         // BG rows
-        let inRangeRow = makeStatRow(
-            text: "✧  Låg ◦ Inom mål ◦ Hög",
-            valueLabel: inRangeValueLabel,
-            unit: " %"
-        )
+        // Configure inRangeRow and BG bars (now properties)
+        inRangeRow.axis = .horizontal
+        inRangeRow.spacing = 0
+        inRangeRow.distribution = .fillProportionally
+        inRangeRow.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        inRangeRow.layer.cornerRadius = 6
+        inRangeRow.clipsToBounds = true
+
+        // Configure belowBar
+        belowBar.backgroundColor = UIColor(named: "LoopRed")
+        belowBar.textColor = .white
+        belowBar.font = .preferredFont(forTextStyle: .footnote).withTraits(traits: .traitBold)
+        belowBar.textAlignment = .center
+        belowBar.adjustsFontSizeToFitWidth = false
+        belowBar.minimumScaleFactor = 0.5
+        // Configure inBar
+        inBar.backgroundColor = UIColor(named: "LoopGreen")
+        inBar.textColor = .white
+        inBar.font = .preferredFont(forTextStyle: .footnote).withTraits(traits: .traitBold)
+        inBar.textAlignment = .center
+        inBar.adjustsFontSizeToFitWidth = false
+        inBar.minimumScaleFactor = 0.5
+        // Configure aboveBar
+        aboveBar.backgroundColor = .systemPurple
+        aboveBar.textColor = .white
+        aboveBar.font = .preferredFont(forTextStyle: .footnote).withTraits(traits: .traitBold)
+        aboveBar.textAlignment = .center
+        aboveBar.adjustsFontSizeToFitWidth = false
+        aboveBar.minimumScaleFactor = 0.5
+        // Add bars directly to inRangeRow
+        inRangeRow.addArrangedSubview(belowBar)
+        inRangeRow.addArrangedSubview(inBar)
+        inRangeRow.addArrangedSubview(aboveBar)
         let bgStack = UIStackView(arrangedSubviews: [
             makeStatRow(text: "✧  Glukosförändring", valueLabel: changeBGValueLabel, unit: " mmol/L"),
             inRangeRow
         ])
         bgStack.axis = .vertical
-        bgStack.spacing = 5
+        bgStack.spacing = 15
 
         let mainStack = UIStackView(arrangedSubviews: [
             timeRow,
@@ -274,8 +309,8 @@ class MealAnalysisView: UIViewController {
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
         mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
-        mainStack.setCustomSpacing(15, after: rowsStack)   // clear separation
-        mainStack.setCustomSpacing(25, after: bgChartView)   // extra gap before stats
+        mainStack.setCustomSpacing(10, after: rowsStack)   // clear separation
+        mainStack.setCustomSpacing(20, after: bgChartView)   // extra gap before stats
         mainStack.setCustomSpacing(5, after: statsStack)   // smaller gap after stats
 
         recalcEndTimeBasedOnDuration()
@@ -723,11 +758,22 @@ class MealAnalysisView: UIViewController {
             ? Double(aboveCount) / Double(totalCount) * 100
             : 0
 
-        // Show “low / in‐range / high” all in one label
-        inRangeValueLabel.text = String(
-            format: "%.0f% % ◦ %.0f% % ◦ %.0f% %",
-            belowRange, inRange, aboveRange
-        )
+        // Dynamic update of the horizontal bar labels (belowBar, inBar, aboveBar)
+        // Always show the bars, even for very small values
+        belowBar.text = String(format: "%.0f%%", belowRange)
+        belowBar.isHidden = false
+        belowBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(belowRange / 100)).isActive = true
+        belowBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+
+        inBar.text = String(format: "%.0f%%", inRange)
+        inBar.isHidden = false
+        inBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(inRange / 100)).isActive = true
+        inBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+
+        aboveBar.text = String(format: "%.0f%%", aboveRange)
+        aboveBar.isHidden = false
+        aboveBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(aboveRange / 100)).isActive = true
+        aboveBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
 
         // Redraw chart
         refreshBGChart()
