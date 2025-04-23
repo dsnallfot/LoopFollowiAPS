@@ -108,8 +108,7 @@ class MealAnalysisView: UIViewController {
     private let realCRValueLabel          = MealAnalysisView.makeValueLabel()
     private let manualBolusValueLabel     = MealAnalysisView.makeValueLabel()
     private let smbTempValueLabel         = MealAnalysisView.makeValueLabel()
-    private let startBGValueLabel       = MealAnalysisView.makeValueLabel()
-    private let endBGValueLabel         = MealAnalysisView.makeValueLabel()
+    private let changeBGValueLabel = MealAnalysisView.makeValueLabel()
     private let inRangeValueLabel     = MealAnalysisView.makeValueLabel()
     private var inRange: Double = 0.0
 
@@ -181,12 +180,12 @@ class MealAnalysisView: UIViewController {
             carbsRow,
             makeRow(iconName: "circle.fill",
                     iconColor: .systemBlue,
-                    text: "Måltidsinsulin Totalt",
+                    text: "Måltidsinsulin Netto",
                     valueLabel: insulinTotalValueLabel,
                     boldText: true),
             makeRow(iconName: "record.circle",
                     iconColor: UIColor.systemBlue.withAlphaComponent(1.0),
-                    text: "varav Bolus",
+                    text: "varav Manuell Bolus",
                     valueLabel: bolusValueLabel,
                     secondary: true),
             makeRow(iconName: "arrowtriangle.down.circle",
@@ -194,7 +193,7 @@ class MealAnalysisView: UIViewController {
                     text: "varav SMB",
                     valueLabel: smbValueLabel,
                     secondary: true),
-            makeRow(iconName: "circle.fill",
+            makeRow(iconName: "square.fill",
                     iconColor: UIColor.systemBlue.withAlphaComponent(0.45),
                     text: "varav Temp Basal",
                     valueLabel: basalValueLabel,
@@ -211,22 +210,21 @@ class MealAnalysisView: UIViewController {
 
         // Additional stats rows
         let statsStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "☆  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
-            makeStatRow(text: "☆  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: " %"),
-            makeStatRow(text: "☆  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: " %")
+            makeStatRow(text: "✧  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
+            makeStatRow(text: "✧  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: " %"),
+            makeStatRow(text: "✧  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: " %")
         ])
         statsStack.axis = .vertical
         statsStack.spacing = 4
 
         // BG rows
         let inRangeRow = makeStatRow(
-            text: "☆  Tid inom mål (3.9 - 7.9)",
+            text: "✧  Låg ◦ Inom mål ◦ Hög",
             valueLabel: inRangeValueLabel,
             unit: " %"
         )
         let bgStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "☆  Glukos vid starttid", valueLabel: startBGValueLabel, unit: " mmol/L"),
-            makeStatRow(text: "☆  Glukos vid sluttid",  valueLabel: endBGValueLabel,   unit: " mmol/L"),
+            makeStatRow(text: "✧  Glukosförändring", valueLabel: changeBGValueLabel, unit: " mmol/L"),
             inRangeRow
         ])
         bgStack.axis = .vertical
@@ -479,15 +477,23 @@ class MealAnalysisView: UIViewController {
         y.gridLineWidth = 0.5
         y.gridLineDashLengths = [2,2]
 
-        // threshold lines
-        [3.9, 7.9].forEach {
-            let ll = ChartLimitLine(limit: $0)
-            ll.lineColor = .label.withAlphaComponent(0.6)
-            ll.lineWidth = 2
+        // threshold lines with bespoke colors
+        let thresholds: [(limit: Double, color: UIColor)] = [
+            (3.9, UIColor.red.withAlphaComponent(0.7)),      // low boundary in red
+            (7.9, UIColor.purple.withAlphaComponent(1.0))   // high boundary in purple
+        ]
+
+        for (limit, color) in thresholds {
+            let ll = ChartLimitLine(limit: limit)
+            ll.lineColor   = color
+            ll.lineWidth   = 1.5
+            //ll.lineDashLengths = [4, 2]    // optional: dashed look
+            //ll.label       = String(format: "%.1f", limit)
+            ll.valueTextColor = color     // so the label matches
             y.addLimitLine(ll)
         }
 
-        // Draw limit lines behind the data so the red BG line stays on top
+        // Draw limit lines behind the data so the BG line stays on top
         y.drawLimitLinesBehindDataEnabled = true
 
         // X axis
@@ -501,6 +507,42 @@ class MealAnalysisView: UIViewController {
         x.avoidFirstLastClippingEnabled = false
         bgChartView.extraRightOffset = 16
     }
+    
+    /// Same hue interpolation as in graphs.swift, but thresholds are converted once into mmol/L
+    private func setBGColorForMmol(_ mmolValue: Double) -> NSUIColor {
+        // 1) Grab your mg/dL thresholds
+        let minMgdl    = Double(UserDefaultsRepository.alertUrgentLowBG.value)
+        let targetMgdl = Double(UserDefaultsRepository.targetLine.value)
+        let maxMgdl    = Double(UserDefaultsRepository.alertUrgentHighBG.value)
+
+        // 2) Convert once to mmol/L
+        let factor = 18.0182
+        let minMmol    = minMgdl    / factor
+        let targetMmol = targetMgdl / factor
+        let maxMmol    = maxMgdl    / factor
+
+        // 3) Hues
+        let redHue    : CGFloat = 0.0   / 360.0
+        let greenHue  : CGFloat = 120.0 / 360.0
+        let purpleHue : CGFloat = 270.0 / 360.0
+
+        // 4) Interpolate
+        let hue: CGFloat
+        if mmolValue <= minMmol {
+            hue = redHue
+        } else if mmolValue >= maxMmol {
+            hue = purpleHue
+        } else if mmolValue <= targetMmol {
+            let ratio = CGFloat((mmolValue - minMmol) / (targetMmol - minMmol))
+            hue = redHue + ratio * (greenHue - redHue)
+        } else {
+            let ratio = CGFloat((mmolValue - targetMmol) / (maxMmol - targetMmol))
+            hue = greenHue + ratio * (purpleHue - greenHue)
+        }
+
+        return UIColor(hue: hue, saturation: 0.9, brightness: 0.9, alpha: 1.0)
+    }
+
 
     private func refreshBGChart() {
         let pts = bgEntries
@@ -512,7 +554,9 @@ class MealAnalysisView: UIViewController {
         }
         // Main BG line dataset
         let bgDataSet = LineChartDataSet(entries: entries, label: "")
-        bgDataSet.setColor(NSUIColor.systemRed)
+        bgDataSet.colors = entries.map { entry in
+            setBGColorForMmol(entry.y)
+        }
         bgDataSet.lineWidth = 3
         bgDataSet.drawCirclesEnabled = false
         bgDataSet.drawValuesEnabled = false
@@ -607,21 +651,46 @@ class MealAnalysisView: UIViewController {
     private func nearestBG(to date: Date) -> Double? {
         return bgEntries.min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }?.mmol
     }
-
+    
     private func updateBGLabels() {
         let startBG = nearestBG(to: startTime)
         let endBG   = nearestBG(to: endTime)
-        startBGValueLabel.text = startBG != nil ? String(format: "%.1f mmol/L", startBG!) : "-- mmol/L"
-        endBGValueLabel.text   = endBG   != nil ? String(format: "%.1f mmol/L", endBG!)   : "-- mmol/L"
-        // ——— NEW: compute percentage of entries in 3.9…7.9 mmol/L ———
+        // format as "X.X → Y.Y mmol/L"
+        let startText = startBG != nil
+        ? String(format: "%.1f", startBG!)
+        : "--"
+        let endText = endBG != nil
+        ? String(format: "%.1f", endBG!)
+        : "--"
+        changeBGValueLabel.text = "\(startText) → \(endText) mmol/L"
+        // ——— NEW: compute percentages below, within, and above target ———
         let windowEntries = bgEntries.filter { $0.date >= startTime && $0.date <= endTime }
         let totalCount    = windowEntries.count
-        let inRangeCount  = windowEntries.filter { $0.mmol > 3.9 && $0.mmol <= 7.9 }.count
-        inRange = totalCount > 0 ? (Double(inRangeCount) / Double(totalCount)) * 100 : 0
-        inRangeValueLabel.text = String(format: "%.0f %%", inRange)
         
+        let belowCount = windowEntries.filter { $0.mmol <  3.9 }.count
+        let inCount    = windowEntries.filter { $0.mmol >= 3.9 && $0.mmol <= 7.9 }.count
+        let aboveCount = windowEntries.filter { $0.mmol >  7.9 }.count
+        
+        let belowRange = totalCount > 0
+        ? Double(belowCount) / Double(totalCount) * 100
+        : 0
+        let inRange = totalCount > 0
+        ? Double(inCount)    / Double(totalCount) * 100
+            : 0
+        let aboveRange = totalCount > 0
+            ? Double(aboveCount) / Double(totalCount) * 100
+            : 0
+
+        // Show “low / in‐range / high” all in one label
+        inRangeValueLabel.text = String(
+            format: "%.0f%% ◦ %.0f%% ◦ %.0f%%",
+            belowRange, inRange, aboveRange
+        )
+
+        // Redraw chart
         refreshBGChart()
     }
+
 }
 
 extension MealAnalysisView: AxisValueFormatter {
