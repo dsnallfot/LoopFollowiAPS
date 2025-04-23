@@ -13,8 +13,9 @@ import Charts
 /// Minimal representation of a treatment event we need
 struct Event {
     let date: Date
-    let eventType: String   // "SMB", "Bolus", "Carb Correction", etc.
-    let amount: Double      // insulin units or carb grams
+    let eventType: String      // "SMB", "Bolus", "Carb Correction", etc.
+    let amount: Double         // insulin units or carb grams
+    let foodType: String?      // non-nil for Carb Corrections with fat/protein equivalents
 }
 
 /// Glucose data point (mmol/L)
@@ -584,21 +585,38 @@ class MealAnalysisView: UIViewController {
         smbDots.scatterShapeSize = 9
         smbDots.drawValuesEnabled = false
 
-        // ▸ Orange triangles for Carb Correction at y = 2 mmol
-        let carbEntries = events.filter { $0.eventType == "Carb Correction" &&
-                                          $0.date >= startTime && $0.date <= endTime }
-                                .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
-                                                      y: 2.0) }
-        let carbDots = ScatterChartDataSet(entries: carbEntries, label: "")
-        carbDots.setColor(NSUIColor.systemOrange)
-        carbDots.setScatterShape(.triangle)
-        carbDots.scatterShapeSize = 9
-        carbDots.drawValuesEnabled = false
+        // ▸ Triangles for Carb Correction: orange for “real” carbs, brown for fat/protein equivalents
+        let carbCorrections = events.filter {
+            $0.eventType == "Carb Correction" &&
+            $0.date >= startTime && $0.date <= endTime
+        }
+
+        // Orange for those with a non-empty foodType
+        let orangeEntries = carbCorrections
+            .filter { ($0.foodType ?? "").isEmpty == false }
+            .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
+                                  y: 2.0) }
+        let orangeDots = ScatterChartDataSet(entries: orangeEntries, label: "")
+        orangeDots.setColor(.systemOrange.withAlphaComponent(1.0))
+        orangeDots.setScatterShape(.triangle)
+        orangeDots.scatterShapeSize = 9
+        orangeDots.drawValuesEnabled = false
+
+        // Brown for fat/protein equivalents (empty foodType)
+        let brownEntries = carbCorrections
+            .filter { ($0.foodType ?? "").isEmpty }
+            .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
+                                  y: 2.0) }
+        let brownDots = ScatterChartDataSet(entries: brownEntries, label: "")
+        brownDots.setColor(.brown.withAlphaComponent(0.6))
+        brownDots.setScatterShape(.triangle)
+        brownDots.scatterShapeSize = 9
+        brownDots.drawValuesEnabled = false
 
         // Combine
         let combined = CombinedChartData()
         combined.lineData   = LineChartData(dataSet: bgDataSet)
-        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, carbDots])
+        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, orangeDots, brownDots])
         bgChartView.data = combined
 
         // X range & labels

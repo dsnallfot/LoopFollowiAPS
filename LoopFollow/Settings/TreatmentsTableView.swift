@@ -199,30 +199,53 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
 
     private func buildEventsArray() -> [Event] {
-        var events: [Event] = treatments.compactMap { treatment in
+        // note: -> Event? in the closure so `return nil` is allowed
+        var events: [Event] = treatments.compactMap { treatment -> Event? in
             switch treatment.eventType {
             case "SMB", "Bolus":
-                if let value = treatment.rawData["insulin"] as? Double {
-                    return Event(date: treatment.timestamp, eventType: treatment.eventType, amount: value)
+                // parse insulin value as before…
+                let amt: Double?
+                if let v = treatment.rawData["insulin"] as? Double {
+                    amt = v
+                } else if let str = treatment.amount?
+                            .replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression),
+                          let v = Double(str) {
+                    amt = v
+                } else {
+                    amt = nil
                 }
-                if let amountStr = treatment.amount {
-                    let numberStr = amountStr.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
-                    if let value = Double(numberStr) {
-                        return Event(date: treatment.timestamp, eventType: treatment.eventType, amount: value)
-                    }
-                }
-                return nil
+                guard let amount = amt else { return nil }
+                return Event(
+                    date: treatment.timestamp,
+                    eventType: treatment.eventType,
+                    amount: amount,
+                    foodType: nil
+                )
+
             case "Carb Correction":
-                if let value = treatment.rawData["carbs"] as? Double {
-                    return Event(date: treatment.timestamp, eventType: treatment.eventType, amount: value)
+                // parse carb grams
+                let amt: Double?
+                if let v = treatment.rawData["carbs"] as? Double {
+                    amt = v
+                } else if let str = treatment.amount?
+                            .replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression),
+                          let v = Double(str) {
+                    amt = v
+                } else {
+                    amt = nil
                 }
-                if let amountStr = treatment.amount {
-                    let numberStr = amountStr.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
-                    if let value = Double(numberStr) {
-                        return Event(date: treatment.timestamp, eventType: treatment.eventType, amount: value)
-                    }
-                }
-                return nil
+                guard let amount = amt else { return nil }
+
+                // **here**: grab the foodType from rawData (or nil)
+                let foodType = treatment.rawData["foodType"] as? String
+
+                return Event(
+                    date: treatment.timestamp,
+                    eventType: treatment.eventType,
+                    amount: amount,
+                    foodType: foodType
+                )
+
             default:
                 return nil
             }
@@ -243,7 +266,10 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             let raw = rate * (minutes / 60.0)
             let delivered = (raw / 0.05).rounded(.down) * 0.05
             guard delivered > 0 else { continue }
-            events.append(Event(date: basal.timestamp, eventType: "Temp Basal", amount: delivered))
+            events.append(Event(date: basal.timestamp,
+                                      eventType: "Temp Basal",
+                                      amount: delivered,
+                                      foodType: nil))
         }
         return events
     }
