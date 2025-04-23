@@ -110,6 +110,8 @@ class MealAnalysisView: UIViewController {
     private let smbTempValueLabel         = MealAnalysisView.makeValueLabel()
     private let startBGValueLabel       = MealAnalysisView.makeValueLabel()
     private let endBGValueLabel         = MealAnalysisView.makeValueLabel()
+    private let inRangeValueLabel     = MealAnalysisView.makeValueLabel()
+    private var inRange: Double = 0.0
 
     // MARK: - Glucose data
     private var bgEntries: [BGEntry] = []
@@ -217,9 +219,15 @@ class MealAnalysisView: UIViewController {
         statsStack.spacing = 4
 
         // BG rows
+        let inRangeRow = makeStatRow(
+            text: "☆  Tid inom mål (3.9 - 7.9)",
+            valueLabel: inRangeValueLabel,
+            unit: " %"
+        )
         let bgStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "☆  Glukos vid starttid", valueLabel: startBGValueLabel, unit: " mmol/L"),
-            makeStatRow(text: "☆  Glukos vid sluttid",  valueLabel: endBGValueLabel,   unit: " mmol/L")
+            makeStatRow(text: "☆  Glukos vid starttid", valueLabel: startBGValueLabel, unit: " mmol/L"),
+            makeStatRow(text: "☆  Glukos vid sluttid",  valueLabel: endBGValueLabel,   unit: " mmol/L"),
+            inRangeRow
         ])
         bgStack.axis = .vertical
         bgStack.spacing = 4
@@ -605,6 +613,13 @@ class MealAnalysisView: UIViewController {
         let endBG   = nearestBG(to: endTime)
         startBGValueLabel.text = startBG != nil ? String(format: "%.1f mmol/L", startBG!) : "-- mmol/L"
         endBGValueLabel.text   = endBG   != nil ? String(format: "%.1f mmol/L", endBG!)   : "-- mmol/L"
+        // ——— NEW: compute percentage of entries in 3.9…7.9 mmol/L ———
+        let windowEntries = bgEntries.filter { $0.date >= startTime && $0.date <= endTime }
+        let totalCount    = windowEntries.count
+        let inRangeCount  = windowEntries.filter { $0.mmol > 3.9 && $0.mmol <= 7.9 }.count
+        inRange = totalCount > 0 ? (Double(inRangeCount) / Double(totalCount)) * 100 : 0
+        inRangeValueLabel.text = String(format: "%.0f %%", inRange)
+        
         refreshBGChart()
     }
 }
