@@ -445,24 +445,24 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - UITableViewDataSource Methods
     
     private func previewOverrideText(for text: String) -> String {
-        if text.count > 16 {
-            return String(text.prefix(16)) + "…"
+        if text.count > 19 {
+            return String(text.prefix(19)) + "…"
         } else {
             return text
         }
     }
     
     private func previewCarbsText(for text: String) -> String {
-        if text.count > 5 {
-            return String(text.prefix(5)) + "…"
+        if text.count > 6 {
+            return String(text.prefix(6)) + "…"
         } else {
             return text
         }
     }
     
     private func previewNoteText(for text: String) -> String {
-        if text.count > 25 {
-            return String(text.prefix(25)) + "…"
+        if text.count > 28 {
+            return String(text.prefix(28)) + "…"
         } else {
             return text
         }
@@ -537,7 +537,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
                     return "Kh"
                 } else {
-                    return "Fett / Protein"
+                    return "Fett & Protein"
                 }
             } else if treatment.eventType == "Site Change" {
                 return "Pumpbyte"
@@ -635,9 +635,9 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             }
         }
         
-        // Format the timestamp as HH:mm:ss.
+        // Format the timestamp as HH:mm.
         let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm:ss"
+        timeFormatter.dateFormat = "HH:mm"
         cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
         
         // Determine symbol and color.
@@ -700,7 +700,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let treatment = filteredTreatments[indexPath.row]
         let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm:ss"
+        timeFormatter.dateFormat = "HH:mm"
         let timeString = timeFormatter.string(from: treatment.timestamp)
         
         let deleteAction = UIContextualAction(style: .destructive, title: nil) { (action, view, completionHandler) in
@@ -762,7 +762,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
                         displayEventName = "Kolhydrater"
                     } else {
-                        displayEventName = "Fett / Protein"
+                        displayEventName = "Fett & Protein"
                     }
                 } else if treatment.eventType == "Note" {
                     displayEventName = "Notering"
@@ -1027,7 +1027,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let treatment = filteredTreatments[indexPath.row]
         
         let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm"
+        timeFormatter.dateFormat = "dd MMM HH:mm:ss"
         let timeString = timeFormatter.string(from: treatment.timestamp)
 
         func presentAlert(title: String, message: String) {

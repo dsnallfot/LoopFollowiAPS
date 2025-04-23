@@ -483,7 +483,7 @@ final class BGProvider {
 
     /// Return the latest `hours` worth of SGV entries (newest‑first).
     /// Each entry’s `date` is already in **seconds**.
-    static func fetch(hours: Int = 24,
+    static func fetch(hours: Int = 24 * UserDefaultsRepository.downloadDays.value,
                       completion: @escaping ([ShareGlucoseData]) -> Void) {
 
         guard IsNightscoutEnabled() else {       // fallback if NS disabled

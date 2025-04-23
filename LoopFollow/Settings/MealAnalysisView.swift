@@ -128,9 +128,9 @@ class MealAnalysisView: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         if modalWithMeal {
-            title = "Analys timmar efter måltid"
+            title = "Utveckling efter måltid"
         } else {
-            title = "Analys timmar tillbaka"
+            title = "Utveckling fram till nu"
         }
 
         // When opened without a linked meal, default to the last 24 h window
@@ -142,12 +142,12 @@ class MealAnalysisView: UIViewController {
         view.backgroundColor = .systemBackground
 
         // Configure picker limits (now‒24h ... ∞) and initial value
-        datePicker.minimumDate = Date().addingTimeInterval(-24 * 60 * 60)
-        datePicker.maximumDate = nil            // allow future times
+        datePicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
+        datePicker.maximumDate = Date()
         datePicker.date = endTime
         datePicker.addTarget(self, action: #selector(endTimeChanged(_:)), for: .valueChanged)
 
-        startPicker.minimumDate = Date().addingTimeInterval(-24 * 60 * 60)
+        startPicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
         startPicker.maximumDate = Date()
         startPicker.date = startTime
         // Apply caller‑provided start time override only when analysing a meal
