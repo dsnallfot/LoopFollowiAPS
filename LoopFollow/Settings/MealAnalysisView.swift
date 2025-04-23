@@ -93,6 +93,7 @@ class MealAnalysisView: UIViewController {
     private var basalTotal       = 0.0      // delivered temp basal
     private var profileBasalTotal = 0.0     // scheduled basal to subtract
     private var carbsTotal       = 0.0
+    private var fpuTotal       = 0.0
 
     // Value labels (placeholders for now)
     private let insulinTotalValueLabel = MealAnalysisView.makeValueLabel(bold: true)
@@ -103,6 +104,12 @@ class MealAnalysisView: UIViewController {
     private let carbsValueLabel: UILabel = {
         let label = MealAnalysisView.makeValueLabel(bold: true)
         label.text = "0 g"
+        return label
+    }()
+    private let fpuValueLabel: UILabel = {
+        let label = MealAnalysisView.makeValueLabel()
+        label.text = "0 g"
+        label.textColor = .secondaryLabel
         return label
     }()
     // Statistics value labels
@@ -171,14 +178,25 @@ class MealAnalysisView: UIViewController {
         timeRow.alignment = .center
         timeRow.spacing = 0
 
-        let carbsRow = makeRow(iconName: "arrowtriangle.up.circle",
-                               iconColor: UIColor.systemOrange.withAlphaComponent(1.0),
-                               text: "Kolhydrater Totalt",
-                               valueLabel: carbsValueLabel,
-                               boldText: true)
+        let carbsRow = makeRow(
+            iconName: "arrowtriangle.up.circle",
+            iconColor: UIColor.systemOrange.withAlphaComponent(1.0),
+            text: "Kolhydrater Totalt",
+            valueLabel: carbsValueLabel,
+            boldText: true
+        )
+
+        let fpuRow = makeRow(
+            iconName: "arrowtriangle.up.circle",
+            iconColor: UIColor.brown.withAlphaComponent(0.8),
+            text: "varav Kolhydratsekvivalenter (FPU)",
+            valueLabel: fpuValueLabel,
+            secondary: true
+        )
 
         let rowsStack = UIStackView(arrangedSubviews: [
             carbsRow,
+            fpuRow,
             makeRow(iconName: "circle.fill",
                     iconColor: .systemBlue,
                     text: "Måltidsinsulin Netto",
@@ -207,7 +225,8 @@ class MealAnalysisView: UIViewController {
         ])
         rowsStack.axis = .vertical
         rowsStack.spacing = 5
-        rowsStack.setCustomSpacing(12, after: carbsRow) // extra space before insulin rows
+        rowsStack.setCustomSpacing(5, after: carbsRow) // extra space before fpuRow
+        rowsStack.setCustomSpacing(15, after: fpuRow) // extra space before insulin rows
 
         // Additional stats rows
         let statsStack = UIStackView(arrangedSubviews: [
@@ -216,7 +235,7 @@ class MealAnalysisView: UIViewController {
             makeStatRow(text: "✧  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: " %")
         ])
         statsStack.axis = .vertical
-        statsStack.spacing = 4
+        statsStack.spacing = 5
 
         // BG rows
         let inRangeRow = makeStatRow(
@@ -229,7 +248,7 @@ class MealAnalysisView: UIViewController {
             inRangeRow
         ])
         bgStack.axis = .vertical
-        bgStack.spacing = 4
+        bgStack.spacing = 5
 
         let mainStack = UIStackView(arrangedSubviews: [
             timeRow,
@@ -255,8 +274,9 @@ class MealAnalysisView: UIViewController {
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
         mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
-        mainStack.setCustomSpacing(20, after: rowsStack)   // clear separation
+        mainStack.setCustomSpacing(15, after: rowsStack)   // clear separation
         mainStack.setCustomSpacing(25, after: bgChartView)   // extra gap before stats
+        mainStack.setCustomSpacing(5, after: statsStack)   // smaller gap after stats
 
         recalcEndTimeBasedOnDuration()
         updateTotals()
@@ -383,7 +403,7 @@ class MealAnalysisView: UIViewController {
 
     // MARK: - Summation
     private func updateTotals() {
-        insulinTotal = 0; bolusTotal = 0; smbTotal = 0; basalTotal = 0; carbsTotal = 0; profileBasalTotal = 0
+        insulinTotal = 0; bolusTotal = 0; smbTotal = 0; basalTotal = 0; carbsTotal = 0; fpuTotal = 0; profileBasalTotal = 0
         for event in events where event.date >= startTime && event.date <= endTime {
             switch event.eventType {
             case "SMB":
@@ -392,6 +412,9 @@ class MealAnalysisView: UIViewController {
                 bolusTotal += event.amount
             case "Carb Correction":
                 carbsTotal += event.amount
+                if (event.foodType ?? "").isEmpty {
+                        fpuTotal += event.amount
+                    }
             case "Temp Basal":
                 basalTotal += event.amount
             default: break
@@ -415,6 +438,7 @@ class MealAnalysisView: UIViewController {
         basalValueLabel.text        = String(format: "%.2f E", basalTotal)
         profileBasalValueLabel.text = String(format: "-%.2f E", profileBasalTotal)
         carbsValueLabel.text        = String(format: "%.0f g",  carbsTotal)
+        fpuValueLabel.text          = String(format: "%.0f g", fpuTotal)
         realCRValueLabel.text       = String(format: "%.0f g/E", realCR)
         manualBolusValueLabel.text  = String(format: "%.0f %%", manualBolusPct)
         smbTempValueLabel.text      = String(format: "%.0f %%", smbTempPct)
@@ -472,7 +496,7 @@ class MealAnalysisView: UIViewController {
         let y = bgChartView.leftAxis
         y.axisMinimum = 0
         y.axisMaximum = 24
-        y.spaceTop = 0.02   // small headroom so dots at 22 are visible
+        y.spaceTop = 0.02   // small headroom so dots at 23 are visible
         y.labelCount = 6
         y.gridColor = NSUIColor.lightGray.withAlphaComponent(0.4)
         y.gridLineWidth = 0.5
@@ -608,9 +632,9 @@ class MealAnalysisView: UIViewController {
             .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
                                   y: 2.0) }
         let brownDots = ScatterChartDataSet(entries: brownEntries, label: "")
-        brownDots.setColor(.brown.withAlphaComponent(0.6))
+        brownDots.setColor(.brown.withAlphaComponent(0.8))
         brownDots.setScatterShape(.triangle)
-        brownDots.scatterShapeSize = 9
+        brownDots.scatterShapeSize = 7
         brownDots.drawValuesEnabled = false
 
         // Combine
@@ -701,7 +725,7 @@ class MealAnalysisView: UIViewController {
 
         // Show “low / in‐range / high” all in one label
         inRangeValueLabel.text = String(
-            format: "%.0f%% ◦ %.0f%% ◦ %.0f%%",
+            format: "%.0f% % ◦ %.0f% % ◦ %.0f% %",
             belowRange, inRange, aboveRange
         )
 
