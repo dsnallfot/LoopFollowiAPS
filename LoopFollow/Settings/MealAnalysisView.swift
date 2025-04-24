@@ -26,6 +26,11 @@ struct BGEntry {
 
 class MealAnalysisView: UIViewController {
 
+    // MARK: - BG Bar Width Constraints
+    private var belowWidthConstraint: NSLayoutConstraint?
+    private var inWidthConstraint: NSLayoutConstraint?
+    private var aboveWidthConstraint: NSLayoutConstraint?
+
     // MARK: - BG Bar Properties
     // Promoted from viewDidLoad to file-private properties for access in updateBGLabels()
     private let belowBar = UILabel()
@@ -256,21 +261,21 @@ class MealAnalysisView: UIViewController {
         // Configure belowBar
         belowBar.backgroundColor = UIColor(named: "LoopRed")
         belowBar.textColor = .white
-        belowBar.font = .preferredFont(forTextStyle: .footnote).withTraits(traits: .traitBold)
+        belowBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
         belowBar.textAlignment = .center
         belowBar.adjustsFontSizeToFitWidth = false
         belowBar.minimumScaleFactor = 0.5
         // Configure inBar
         inBar.backgroundColor = UIColor(named: "LoopGreen")
         inBar.textColor = .white
-        inBar.font = .preferredFont(forTextStyle: .footnote).withTraits(traits: .traitBold)
+        inBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
         inBar.textAlignment = .center
         inBar.adjustsFontSizeToFitWidth = false
         inBar.minimumScaleFactor = 0.5
         // Configure aboveBar
         aboveBar.backgroundColor = .systemPurple
         aboveBar.textColor = .white
-        aboveBar.font = .preferredFont(forTextStyle: .footnote).withTraits(traits: .traitBold)
+        aboveBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
         aboveBar.textAlignment = .center
         aboveBar.adjustsFontSizeToFitWidth = false
         aboveBar.minimumScaleFactor = 0.5
@@ -278,6 +283,15 @@ class MealAnalysisView: UIViewController {
         inRangeRow.addArrangedSubview(belowBar)
         inRangeRow.addArrangedSubview(inBar)
         inRangeRow.addArrangedSubview(aboveBar)
+        // Initial width constraints for bars (equal split, sum to 1.0)
+        belowWidthConstraint = belowBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.33)
+        inWidthConstraint    = inBar.widthAnchor   .constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.34)
+        aboveWidthConstraint = aboveBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.33)
+        [belowWidthConstraint, inWidthConstraint, aboveWidthConstraint].forEach { $0?.isActive = true }
+        // Minimum width constraints (once)
+        belowBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+        inBar   .widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+        aboveBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
         let bgStack = UIStackView(arrangedSubviews: [
             makeStatRow(text: "✧  Glukosförändring", valueLabel: changeBGValueLabel, unit: " mmol/L"),
             inRangeRow
@@ -765,21 +779,42 @@ class MealAnalysisView: UIViewController {
             : 0
 
         // Dynamic update of the horizontal bar labels (belowBar, inBar, aboveBar)
-        // Always show the bars, even for very small values
-        belowBar.text = String(format: "%.0f%%", belowRange)
+        // Show nothing for <1%, show number only for 2–6%, show with % for ≥6%
+        if belowRange < 1 {
+            belowBar.text = ""
+        } else if belowRange < 6 {
+            belowBar.text = String(format: "%.0f", belowRange)
+        } else {
+            belowBar.text = String(format: "%.0f%%", belowRange)
+        }
         belowBar.isHidden = false
-        belowBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(belowRange / 100)).isActive = true
-        belowBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
 
-        inBar.text = String(format: "%.0f%%", inRange)
+        if inRange < 1 {
+            inBar.text = ""
+        } else if inRange < 6 {
+            inBar.text = String(format: "%.0f", inRange)
+        } else {
+            inBar.text = String(format: "%.0f%%", inRange)
+        }
         inBar.isHidden = false
-        inBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(inRange / 100)).isActive = true
-        inBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
 
-        aboveBar.text = String(format: "%.0f%%", aboveRange)
+        if aboveRange < 1 {
+            aboveBar.text = ""
+        } else if aboveRange < 6 {
+            aboveBar.text = String(format: "%.0f", aboveRange)
+        } else {
+            aboveBar.text = String(format: "%.0f%%", aboveRange)
+        }
         aboveBar.isHidden = false
-        aboveBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(aboveRange / 100)).isActive = true
-        aboveBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+        // Deactivate old width constraints
+        belowWidthConstraint?.isActive = false
+        inWidthConstraint?.isActive = false
+        aboveWidthConstraint?.isActive = false
+        // Create new width constraints with updated multipliers and activate
+        belowWidthConstraint = belowBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(belowRange / 100))
+        inWidthConstraint    = inBar.widthAnchor   .constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(inRange / 100))
+        aboveWidthConstraint = aboveBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: CGFloat(aboveRange / 100))
+        [belowWidthConstraint, inWidthConstraint, aboveWidthConstraint].forEach { $0?.isActive = true }
 
         // Redraw chart
         refreshBGChart()
