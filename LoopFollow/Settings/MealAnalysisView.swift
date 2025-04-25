@@ -55,41 +55,41 @@ class MealAnalysisView: UIViewController {
 
     // MARK: - UI components & state
 
-    private let datePicker: UIDatePicker = {
-        let picker = UIDatePicker()
-        picker.datePickerMode = .time
-        picker.preferredDatePickerStyle = .compact
-        picker.translatesAutoresizingMaskIntoConstraints = false
-        return picker
-    }()
-
     // New start‑time picker
     private let startPicker: UIDatePicker = {
         let picker = UIDatePicker()
-        picker.datePickerMode = .time
+        picker.datePickerMode = .dateAndTime
+        picker.preferredDatePickerStyle = .compact
+        picker.translatesAutoresizingMaskIntoConstraints = false
+        return picker
+    }()
+    
+    private let endPicker: UIDatePicker = {
+        let picker = UIDatePicker()
+        picker.datePickerMode = .dateAndTime
         picker.preferredDatePickerStyle = .compact
         picker.translatesAutoresizingMaskIntoConstraints = false
         return picker
     }()
 
-    private let startDateLabel: UILabel = {
+    private let startTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Valt tidsintervall"
+        label.text = "Vald starttid"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
 
-    private let startTimeLabel: UILabel = {
+    private let endTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = " till"
+        label.text = "Vald sluttid"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
 
     private let durationControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "6h", "12h", "24h"])
+        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "6h", "12h", "24h", "Idag", "Ⓢ"])
         control.selectedSegmentIndex = 2   // 3 h default
         control.translatesAutoresizingMaskIntoConstraints = false
         return control
@@ -149,15 +149,15 @@ class MealAnalysisView: UIViewController {
         if !modalWithMeal {
             endTime = Date()
             startTime = Calendar.current.date(byAdding: .hour, value: -24, to: endTime)!
-            durationControl.selectedSegmentIndex = 6   // "24h"
+            durationControl.selectedSegmentIndex = 6   // "24h", keep default (index 6)
         }
         view.backgroundColor = .systemBackground
 
         // Configure picker limits (now‒24h ... ∞) and initial value
-        datePicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
-        datePicker.maximumDate = Date()
-        datePicker.date = endTime
-        datePicker.addTarget(self, action: #selector(endTimeChanged(_:)), for: .valueChanged)
+        endPicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
+        endPicker.maximumDate = Date()
+        endPicker.date = endTime
+        endPicker.addTarget(self, action: #selector(endTimeChanged(_:)), for: .valueChanged)
 
         startPicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
         startPicker.maximumDate = Date()
@@ -173,22 +173,22 @@ class MealAnalysisView: UIViewController {
         // Configure duration control action
         durationControl.addTarget(self, action: #selector(durationChanged(_:)), for: .valueChanged)
 
-        let startGroup = UIStackView(arrangedSubviews: [startDateLabel, startPicker])
+        let startGroup = UIStackView(arrangedSubviews: [startTimeLabel, startPicker])
         startGroup.axis = .horizontal
         startGroup.alignment = .center
-        startGroup.spacing = 6
+        startGroup.spacing = 5
         startGroup.setContentHuggingPriority(.required, for: .horizontal)
 
-        let endGroup = UIStackView(arrangedSubviews: [startTimeLabel, datePicker])
+        let endGroup = UIStackView(arrangedSubviews: [endTimeLabel, endPicker])
         endGroup.axis = .horizontal
         endGroup.alignment = .center
-        endGroup.spacing = 6
+        endGroup.spacing = 5
         endGroup.setContentHuggingPriority(.required, for: .horizontal)
 
         let timeRow = UIStackView(arrangedSubviews: [startGroup, endGroup])
-        timeRow.axis = .horizontal
-        timeRow.alignment = .center
-        timeRow.spacing = 0
+        timeRow.axis = .vertical
+        timeRow.alignment = .fill
+        timeRow.spacing = 5
 
         let carbsRow = makeRow(
             iconName: "arrowtriangle.up.circle",
@@ -308,14 +308,14 @@ class MealAnalysisView: UIViewController {
             bgStack
         ])
         mainStack.axis = .vertical
-        mainStack.spacing = 12
+        mainStack.spacing = 5
         mainStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mainStack)
 
         // chart config & height
         setupBGChart()
         bgChartView.translatesAutoresizingMaskIntoConstraints = false
-        bgChartView.heightAnchor.constraint(equalToConstant: 200).isActive = true
+        bgChartView.heightAnchor.constraint(equalToConstant: 190).isActive = true
 
         NSLayoutConstraint.activate([
             mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8), // reduced padding
@@ -381,22 +381,38 @@ class MealAnalysisView: UIViewController {
 
     private func recalcEndTimeBasedOnDuration() {
         guard let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) else { return }
-        let hoursString = title.replacingOccurrences(of: "h", with: "")
-        let hours = Int(hoursString) ?? 1
-        
-        if modalWithMeal {
-            // startTime → endTime
-            endTime = Calendar.current.date(byAdding: .hour, value: hours, to: startTime) ?? startTime
-            datePicker.date = endTime
+        if title == "Idag" {
+            let calendar = Calendar.current
             let now = Date()
-            if endTime > now {
-                endTime = now
-                datePicker.date = now
-            }
-        } else {
-            // endTime is fixed → derive startTime
-            startTime = Calendar.current.date(byAdding: .hour, value: -hours, to: endTime) ?? endTime
+            endTime = now
+            startTime = calendar.startOfDay(for: now)
             startPicker.date = startTime
+            endPicker.date = endTime
+        } else if title == "Ⓢ" {
+            let calendar = Calendar.current
+            let now = Date()
+            let components = calendar.dateComponents([.year, .month, .day], from: now)
+            startTime = calendar.date(from: DateComponents(year: components.year, month: components.month, day: components.day, hour: 8, minute: 0)) ?? now
+            endTime = calendar.date(from: DateComponents(year: components.year, month: components.month, day: components.day, hour: 16, minute: 30)) ?? now
+            startPicker.date = startTime
+            endPicker.date = endTime
+        } else {
+            let hoursString = title.replacingOccurrences(of: "h", with: "")
+            let hours = Int(hoursString) ?? 1
+            if modalWithMeal {
+                // startTime → endTime
+                endTime = Calendar.current.date(byAdding: .hour, value: hours, to: startTime) ?? startTime
+                endPicker.date = endTime
+                let now = Date()
+                if endTime > now {
+                    endTime = now
+                    endPicker.date = now
+                }
+            } else {
+                // endTime is fixed → derive startTime
+                startTime = Calendar.current.date(byAdding: .hour, value: -hours, to: endTime) ?? endTime
+                startPicker.date = startTime
+            }
         }
         updateTotals()
         updateBGLabels()
