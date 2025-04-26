@@ -28,6 +28,8 @@
 		65BB9A422D43CAC800FCFCA8 /* AdvancedSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BB9A412D43CAC300FCFCA8 /* AdvancedSettingsViewModel.swift */; };
 		65BB9A442D43CB0300FCFCA8 /* AdvancedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BB9A432D43CB0100FCFCA8 /* AdvancedSettingsView.swift */; };
 		65BFAF1E2DA6E8FE00947A66 /* SyncNewSensorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65BFAF1D2DA6E8FB00947A66 /* SyncNewSensorView.swift */; };
+		65CDBDCF2DBD1A8F00587289 /* NightscoutCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDBDCE2DBD1A8900587289 /* NightscoutCache.swift */; };
+		65CDBDD12DBD296800587289 /* NSCacheTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDBDD02DBD296600587289 /* NSCacheTask.swift */; };
 		65EBBB512DA5520B00212D5C /* TrioOrefViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */; };
 		65EBBB532DA5526100212D5C /* TrioOrefView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65EBBB522DA5526000212D5C /* TrioOrefView.swift */; };
 		DD07B5C929E2F9C400C6A635 /* NightscoutUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */; };
@@ -318,6 +320,8 @@
 		65BB9A412D43CAC300FCFCA8 /* AdvancedSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsViewModel.swift; sourceTree = "<group>"; };
 		65BB9A432D43CB0100FCFCA8 /* AdvancedSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSettingsView.swift; sourceTree = "<group>"; };
 		65BFAF1D2DA6E8FB00947A66 /* SyncNewSensorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncNewSensorView.swift; sourceTree = "<group>"; };
+		65CDBDCE2DBD1A8900587289 /* NightscoutCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutCache.swift; sourceTree = "<group>"; };
+		65CDBDD02DBD296600587289 /* NSCacheTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSCacheTask.swift; sourceTree = "<group>"; };
 		65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioOrefViewModel.swift; sourceTree = "<group>"; };
 		65EBBB522DA5526000212D5C /* TrioOrefView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioOrefView.swift; sourceTree = "<group>"; };
 		A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_LoopFollow.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -623,6 +627,7 @@
 		65BB9A402D43CA9C00FCFCA8 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				65CDBDCE2DBD1A8900587289 /* NightscoutCache.swift */,
 				6540979D2DB79FF600983772 /* MealAnalysisView.swift */,
 				65BFAF1D2DA6E8FB00947A66 /* SyncNewSensorView.swift */,
 				65EBBB522DA5526000212D5C /* TrioOrefView.swift */,
@@ -856,6 +861,7 @@
 				DD9ACA072D32F68900415D8A /* BGTask.swift */,
 				DD9ACA052D32AF6E00415D8A /* TreatmentsTask.swift */,
 				DD9ACA032D32821200415D8A /* DeviceStatusTask.swift */,
+				65CDBDD02DBD296600587289 /* NSCacheTask.swift */,
 				DDEF503E2D32754A00999A5D /* ProfileTask.swift */,
 				DDEF503B2D31BE2A00999A5D /* TaskScheduler.swift */,
 			);
@@ -1501,6 +1507,7 @@
 				DD4878172C7B75350048F05C /* BolusView.swift in Sources */,
 				DD493AE72ACF23CF009A6922 /* DeviceStatus.swift in Sources */,
 				FCFEECA2248857A600402A7F /* SettingsViewController.swift in Sources */,
+				65CDBDCF2DBD1A8F00587289 /* NightscoutCache.swift in Sources */,
 				DD9ACA0C2D33BB8600415D8A /* CalendarTask.swift in Sources */,
 				DD13BC792C3FE63A0062313B /* InfoManager.swift in Sources */,
 				DD0C0C702C4AFFE800DBADDF /* RemoteViewController.swift in Sources */,
@@ -1598,6 +1605,7 @@
 				DD493ADD2ACF21E0009A6922 /* Basals.swift in Sources */,
 				FC16A98124996C07003D6245 /* DateTime.swift in Sources */,
 				FC3CAB022493B6220068A152 /* BackgroundTaskAudio.swift in Sources */,
+				65CDBDD12DBD296800587289 /* NSCacheTask.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -18,5 +18,6 @@ extension MainViewController {
         scheduleMinAgoTask()
         scheduleCalendarTask()
         scheduleAlarmTask()
+        scheduleCacheTask()
     }
 }

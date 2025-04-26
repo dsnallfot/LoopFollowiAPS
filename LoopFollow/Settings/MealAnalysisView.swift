@@ -39,7 +39,7 @@ class MealAnalysisView: UIViewController {
     private let inRangeRow = UIStackView()
 
     // All fetched events handed in by the presenting VC
-    private let events: [Event]
+    private var events: [Event]          // will be augmented with cached entries
     /// Optional initial start time provided by the caller
     private let initialStartOverride: Date?
     private let modalWithTimestamp: Bool
@@ -91,7 +91,7 @@ class MealAnalysisView: UIViewController {
     }()
 
     private let durationControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "6h", "12h", "24h", "Idag", "Ⓢ"])
+        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "6h", "12h", "24h", "Ⓢ", "Idag"])
         control.selectedSegmentIndex = 2   // 3 h default
         control.translatesAutoresizingMaskIntoConstraints = false
         return control
@@ -338,6 +338,8 @@ class MealAnalysisView: UIViewController {
         recalcEndTimeBasedOnDuration()
         updateTotals()
         fetchBG24h()
+        // — Pull additional days from NightscoutCache (if any) —
+        loadCachedData()
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
@@ -356,10 +358,32 @@ class MealAnalysisView: UIViewController {
     // MARK: - Time calculations
 
     @objc private func startTimeChanged(_ sender: UIDatePicker) {
-        startTime = sender.date
-        if modalWithTimestamp {
-            recalcEndTimeBasedOnDuration()
+        let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex)
+        if modalWithTimestamp || title == "Ⓢ" {
+            if title == "Ⓢ" {
+                // Force Schoolday times on the selected date
+                let calendar = Calendar.current
+                let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
+                let newStart = calendar.date(from: DateComponents(
+                    year: comps.year, month: comps.month, day: comps.day,
+                    hour: 8, minute: 0))!
+                let newEnd = calendar.date(from: DateComponents(
+                    year: comps.year, month: comps.month, day: comps.day,
+                    hour: 16, minute: 30))!
+                startTime = newStart
+                endTime   = newEnd
+                startPicker.date = newStart
+                endPicker.date   = newEnd
+            } else {
+                startTime = sender.date
+                if modalWithTimestamp {
+                    recalcEndTimeBasedOnDuration()
+                }
+            }
+            updateTotals()
+            updateBGLabels()
         } else {
+            startTime = sender.date
             updateTotals()
             updateBGLabels()
         }
@@ -372,17 +396,37 @@ class MealAnalysisView: UIViewController {
     }
 
     @objc private func endTimeChanged(_ sender: UIDatePicker) {
+        // Enforce max = now
         var selected = sender.date
         let now = Date()
         if selected > now {
             selected = now
             sender.date = now
         }
-        endTime = selected
-        if modalWithTimestamp {
+        let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex)
+        if modalWithTimestamp || title == "Ⓢ" {
+            if title == "Ⓢ" {
+                // Force Schoolday times on the selected date
+                let calendar = Calendar.current
+                let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
+                let newStart = calendar.date(from: DateComponents(
+                    year: comps.year, month: comps.month, day: comps.day,
+                    hour: 8, minute: 0))!
+                let newEnd = calendar.date(from: DateComponents(
+                    year: comps.year, month: comps.month, day: comps.day,
+                    hour: 16, minute: 30))!
+                startTime = newStart
+                endTime   = newEnd
+                startPicker.date = newStart
+                endPicker.date   = newEnd
+            } else {
+                endTime = selected
+            }
             updateTotals()
             updateBGLabels()
         } else {
+            endTime = selected
+            // For other segments, recalculate start/end based on duration
             recalcEndTimeBasedOnDuration()
         }
     }
@@ -889,13 +933,100 @@ class MealAnalysisView: UIViewController {
     private func fetchBG24h() {
         BGProvider.fetch { [weak self] sgv in
             guard let self = self else { return }
-            // convert mg/dL → mmol/L (18.0182) and store
-            self.bgEntries = sgv.map {
+            // Convert mg/dL → mmol/L for new readings
+            let newBG = sgv.map {
                 BGEntry(date: Date(timeIntervalSince1970: $0.date),
                         mmol: Double($0.sgv) / 18.0182)
             }
+            // Merge with existing entries without duplicates
+            let existingTimes = Set(self.bgEntries.map { $0.date.timeIntervalSince1970 })
+            self.bgEntries += newBG.filter { !existingTimes.contains($0.date.timeIntervalSince1970) }
+            self.bgEntries.sort { $0.date < $1.date }
+            
+            // Update UI
             self.updateBGLabels()
             self.refreshBGChart()
+        }
+    }
+
+    // MARK: - Cache integration
+    /// Extend `events` and `bgEntries` with any older data kept in NightscoutCache,
+    /// then widen the startPicker’s lower bound.
+    private func loadCachedData() {
+        Task.detached { [weak self] in
+            guard let self = self else { return }
+            // Ask for the full retention window (default 7 days)
+            let cal = Calendar.current
+            guard let oldestWanted = cal.date(byAdding: .day,
+                                              value: -NightscoutCache.retentionDays,
+                                              to: Date()) else { return }
+
+            print("Cache ▸ loadCachedData: requesting from \(oldestWanted) to \(self.endTime)")
+
+            let (sgvJSON, treatsJSON) = await NightscoutCache.loadWindow(
+                from: oldestWanted,
+                to: self.endTime
+            )
+
+            print("Cache ▸ raw sgvJSON.count = \(sgvJSON.count), treatsJSON.count = \(treatsJSON.count)")
+
+            // Convert SGVs → BGEntry, convert mg/dL → mmol/L (18.0182)
+            let extraBG = sgvJSON.map {
+                BGEntry(
+                    date: Date(timeIntervalSince1970: $0.date),
+                    mmol: Double($0.sgv) / 18.0182  // mg/dL → mmol/L
+                )
+            }
+
+            // Convert Treatments → Event (subset of buildEventsArray logic)
+            let extraEvents: [Event] = treatsJSON.compactMap { t in
+                switch t.eventType {
+                case "SMB":
+                    guard let amt = t.insulin else { return nil }
+                    return Event(date: t.created_at, eventType: "SMB", amount: amt, foodType: nil)
+                case "Bolus", "Correction Bolus":
+                    guard let amt = t.insulin else { return nil }
+                    return Event(date: t.created_at, eventType: "Bolus", amount: amt, foodType: nil)
+                case "Carb Correction":
+                    guard let grams = t.carbs else { return nil }
+                    return Event(date: t.created_at, eventType: "Carb Correction",
+                                 amount: grams, foodType: t.foodType)
+                case "Temp Basal":
+                    let rate = t.rate ?? t.absolute ?? 0.0
+                    return Event(date: t.created_at, eventType: "Temp Basal", amount: rate, foodType: nil)
+                default:
+                    return nil
+                }
+            }
+
+            // Merge without duplicates (by exact timestamp + type)
+            DispatchQueue.main.async {
+                print("Cache ▸ existing bgEntries.count = \(self.bgEntries.count)")
+                print("Cache ▸ extraBG.count = \(extraBG.count)")
+                // BG merge
+                let existingBGTS = Set(self.bgEntries.map { $0.date.timeIntervalSince1970 })
+                self.bgEntries += extraBG.filter { !existingBGTS.contains($0.date.timeIntervalSince1970) }
+                self.bgEntries.sort { $0.date < $1.date }
+                print("Cache ▸ merged bgEntries.count = \(self.bgEntries.count)")
+
+                // Event merge
+                let existingKeys = Set(self.events.map { "\($0.date.timeIntervalSince1970)|\($0.eventType)" })
+                self.events += extraEvents.filter {
+                    !existingKeys.contains("\($0.date.timeIntervalSince1970)|\($0.eventType)")
+                }
+                self.events.sort { $0.date < $1.date }
+                print("Cache ▸ extraEvents.count = \(extraEvents.count), merged events.count = \(self.events.count)")
+
+                // Broaden the picker’s lower bound to the earliest entry we now have
+                if let earliest = (self.events.map { $0.date } + self.bgEntries.map { $0.date }).min() {
+                    self.startPicker.minimumDate = earliest
+                    self.endPicker.minimumDate = earliest
+                }
+
+                // Refresh totals & charts if the user is looking at an older window
+                self.updateTotals()
+                self.updateBGLabels()
+            }
         }
     }
 
