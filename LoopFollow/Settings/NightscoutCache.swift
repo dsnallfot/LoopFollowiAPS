@@ -27,12 +27,15 @@ struct TreatmentJSON: Codable {
     let absolute:   Double?      // fallback field for Temp‑Basal
     let insulin:    Double?      // SMB / Bolus
     let carbs:      Double?      // Carb Correction
+    let glucose:    Double?      // Fingersticks
 
     // --- textual amount Nightscout sometimes stores in `amount` ---
-    let amount:     String?      // “0.2u”, “12g”, …
+    let amount:     String?      // “0.2u”, “12g”, … // Daniel: Denna tror jag inte finns
+    let units:     String?       //mmol or mgdl
 
     // --- extra meta the array builder wants ---
     let foodType:   String?      // e.g. "pizza" or nil
+    let notes: String?
     let tempBasalDuration: Double? // minutes; Nightscout's `duration`
 
     // If you add more Nightscout keys later, pop them in here as optionals.
@@ -57,6 +60,9 @@ struct TreatmentJSON: Codable {
         self.carbs      = dict["carbs"]    as? Double
         self.amount     = dict["amount"]   as? String
         self.foodType   = dict["foodType"] as? String
+        self.notes      = dict["notes"] as? String
+        self.glucose      = dict["glucose"]    as? Double
+        self.units      = dict["units"] as? String
         self.tempBasalDuration = dict["duration"] as? Double
     }
 }

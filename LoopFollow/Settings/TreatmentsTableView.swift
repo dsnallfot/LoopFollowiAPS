@@ -481,6 +481,9 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     "carbs":    tjson.carbs    as AnyObject,
                     "amount":   tjson.amount   as AnyObject,
                     "foodType": tjson.foodType as AnyObject,
+                    "notes":    tjson.notes as AnyObject,
+                    "glucose":  tjson.glucose as AnyObject,
+                    "units":    tjson.units as AnyObject,
                     "duration": tjson.tempBasalDuration as AnyObject
                 ])
             }
