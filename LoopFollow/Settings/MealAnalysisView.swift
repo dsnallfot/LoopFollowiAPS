@@ -1154,7 +1154,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
     // MARK: - Chart popup handler (for value selection)
     func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
-        let message: String
+        let title: String
         if let s = entry.data as? String {
             title = s
         } else {
