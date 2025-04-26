@@ -103,6 +103,16 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private let tableView = UITableView()
     // The complete set of downloaded treatments.
     private var treatments: [Treatment] = []
+    /// Picker for selecting a calendar date (“Valt datum”)
+    private let datePicker: UIDatePicker = {
+        let picker = UIDatePicker()
+        picker.datePickerMode = .date
+        picker.preferredDatePickerStyle = .compact
+        picker.translatesAutoresizingMaskIntoConstraints = false
+        return picker
+    }()
+    /// Currently selected calendar date
+    private var selectedDate: Date = Date()
     // Segmented control to filter treatments.
     private var segmentedControl: UISegmentedControl!
     
@@ -141,20 +151,34 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Shift table content down to make room for the date picker
         self.title = "Behandlingslogg"
         view.backgroundColor = .systemBackground
         setupNavigationBar()
         setupSegmentedControl()
         setupTableView()
+        // Add “Valt datum” picker
+        view.addSubview(datePicker)
+        datePicker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
+        // Restrict selectable range to cached window
+        let cal = Calendar.current
+        if let oldest = cal.date(byAdding: .day,
+                                  value: -NightscoutCache.retentionDays,
+                                  to: Date()) {
+            datePicker.minimumDate = oldest
+        }
+        datePicker.maximumDate = Date()
+        datePicker.date = selectedDate
         setupConstraints()
-        loadTreatments()
+        
+        // Initial load for today
+        loadTreatments(for: selectedDate)
         
         // Register observers for shortcut callback notifications
-            NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutSuccess), name: NSNotification.Name("ShortcutSuccess"), object: nil)
-            NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutError), name: NSNotification.Name("ShortcutError"), object: nil)
-            NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutCancel), name: NSNotification.Name("ShortcutCancel"), object: nil)
-            NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
-
+        NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutSuccess), name: NSNotification.Name("ShortcutSuccess"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutError), name: NSNotification.Name("ShortcutError"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutCancel), name: NSNotification.Name("ShortcutCancel"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
     }
     
     deinit {
@@ -328,8 +352,12 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Refresh Button Action
     
     @objc private func refreshButtonTapped() {
+        // Reset picker to today
+        selectedDate = Date()
+        datePicker.setDate(selectedDate, animated: true)
+        // Refresh treatments for today
         showRefreshIndicator()
-        loadTreatments()
+        loadTreatments(for: selectedDate)
     }
     
     private func showRefreshIndicator() {
@@ -376,10 +404,17 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private func setupConstraints() {
         let safeArea = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            segmentedControl.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 8),
+            // Date picker on its own row, top-center
+            datePicker.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 8),
+            datePicker.centerXAnchor.constraint(equalTo: safeArea.centerXAnchor),
+
+            // Segmented control below the date picker
+            segmentedControl.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 8),
             segmentedControl.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor, constant: 16),
-            segmentedControl.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor, constant: -16),
-            
+            segmentedControl.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor, constant: -16)
+        ])
+
+        NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: segmentedControl.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
@@ -390,48 +425,77 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Data Loading
     
     private func loadTreatments() {
-        if !UserDefaultsRepository.downloadTreatments.value {
-            hideRefreshIndicator()
-            return
-        }
-        
-        let startTimeString = dateTimeUtils.getDateTimeString(addingDays: -1 * UserDefaultsRepository.downloadDays.value)
-        let currentTimeString = dateTimeUtils.getDateTimeString(addingHours: 6)
-        let parameters: [String: String] = [
-            "find[created_at][$gte]": startTimeString,
-            "find[created_at][$lte]": currentTimeString
-        ]
-        
-        NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: parameters) { (result: Result<Any, Error>) in
-            switch result {
-            case .success(let data):
-                if let entries = data as? [[String: AnyObject]] {
-                    var downloadedTreatments: [Treatment] = []
-                    for entry in entries {
-                        if let treatment = Treatment(dictionary: entry) {
-                            downloadedTreatments.append(treatment)
-                        }
-                    }
-                    downloadedTreatments.sort { $0.timestamp > $1.timestamp }
-                    
+        // For legacy/manual refresh, default to today
+        loadTreatments(for: selectedDate)
+    }
+
+    /// Load treatments for a full calendar day from NightscoutCache
+    private func loadTreatments(for date: Date) {
+        let cal    = Calendar.current
+        let start  = cal.startOfDay(for: date)
+        let now    = Date()
+
+        // If the user picked today, fetch live 24‑h treatments
+        if cal.isDate(date, inSameDayAs: now) {
+            // Show loading UI
+            showRefreshIndicator()
+
+            // Prepare Nightscout query for created_at >= midnight … <= now
+            let iso = ISO8601DateFormatter()
+            let params: [String: String] = [
+                "find[created_at][$gte]": iso.string(from: start),
+                "find[created_at][$lte]": iso.string(from: now)
+            ]
+
+            NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
+                if case .success(let raw) = result,
+                   let entries = raw as? [[String: AnyObject]] {
+                    let fetched = entries.compactMap { Treatment(dictionary: $0) }
                     DispatchQueue.main.async {
-                        self.treatments = downloadedTreatments
+                        self.treatments = fetched.sorted { $0.timestamp > $1.timestamp }
                         self.tableView.reloadData()
                         self.hideRefreshIndicator()
                     }
                 } else {
-                    LogManager.shared.log(category: .nightscout, message: "TreatmentsTableView, Unexpected data structure")
                     DispatchQueue.main.async {
                         self.hideRefreshIndicator()
                     }
                 }
-            case .failure(let error):
-                LogManager.shared.log(category: .nightscout, message: "TreatmentsTableView, error \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.hideRefreshIndicator()
-                }
+            }
+            return
+        }
+
+        // Otherwise, fall back to the cache-based day loader:
+        let end = cal.date(byAdding: .day, value: 1, to: start)!
+
+        Task {
+            let (_, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
+            let newTreatments = treatsJSON.compactMap { tjson in
+                Treatment(dictionary: [
+                    "_id":      tjson._id as AnyObject,
+                    "eventType":tjson.eventType as AnyObject,
+                    "created_at": ISO8601DateFormatter().string(from: tjson.created_at) as AnyObject,
+                    "rate":     tjson.rate    as AnyObject,
+                    "absolute": tjson.absolute as AnyObject,
+                    "insulin":  tjson.insulin  as AnyObject,
+                    "carbs":    tjson.carbs    as AnyObject,
+                    "amount":   tjson.amount   as AnyObject,
+                    "foodType": tjson.foodType as AnyObject,
+                    "duration": tjson.tempBasalDuration as AnyObject
+                ])
+            }
+
+            DispatchQueue.main.async {
+                self.treatments = newTreatments.sorted { $0.timestamp > $1.timestamp }
+                self.tableView.reloadData()
+                self.hideRefreshIndicator()
             }
         }
+    }
+
+    @objc private func dateChanged(_ sender: UIDatePicker) {
+        selectedDate = sender.date
+        loadTreatments(for: selectedDate)
     }
     
     @objc private func refreshTreatments(_ sender: UIRefreshControl) {
