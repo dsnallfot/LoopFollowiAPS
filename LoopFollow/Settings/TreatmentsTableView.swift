@@ -250,26 +250,24 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 return nil
             }
         }
-        // Temp Basal calculation (same block as before) --------------------------------
-        let tempBasals = treatments.filter { $0.eventType == "Temp Basal" }.sorted { $0.timestamp < $1.timestamp }
-        for (index, basal) in tempBasals.enumerated() {
-            let end: Date = {
-                if index < tempBasals.count - 1 {
-                    return tempBasals[index + 1].timestamp
-                } else if let dur = basal.tempBasalDuration {
-                    return basal.timestamp.addingTimeInterval(dur * 60)
-                } else { return basal.timestamp }
-            }()
-            let minutes = max(end.timeIntervalSince(basal.timestamp) / 60, 0)
-            guard minutes > 0 else { continue }
-            let rate = (basal.rawData["rate"] as? Double) ?? (basal.rawData["absolute"] as? Double) ?? 0.0
-            let raw = rate * (minutes / 60.0)
-            let delivered = (raw / 0.05).rounded(.down) * 0.05
-            guard delivered > 0 else { continue }
-            events.append(Event(date: basal.timestamp,
-                                      eventType: "Temp Basal",
-                                      amount: delivered,
-                                      foodType: nil))
+        // Temp Basal → forward the *rate* (U/h) so MealAnalysisView can compute pulses.
+        let tempBasals = treatments
+            .filter { $0.eventType == "Temp Basal" }
+            .sorted { $0.timestamp < $1.timestamp }
+
+        for basal in tempBasals {
+            // Use `rate` first, fall back to `absolute`, default 0.0
+            let rate = (basal.rawData["rate"] as? Double) ??
+                       (basal.rawData["absolute"] as? Double) ?? 0.0
+
+            events.append(
+                Event(
+                    date: basal.timestamp,
+                    eventType: "Temp Basal",
+                    amount: rate,          // pass the basal *rate* in U/h
+                    foodType: nil
+                )
+            )
         }
         return events
     }

@@ -139,6 +139,11 @@ class MealAnalysisView: UIViewController {
     // BG chart (CombinedChartView for lines and scatter)
     private let bgChartView = CombinedChartView()
 
+    /// When `true`, any undelivered insulin (< 0.05 U) at the end of a Temp‑Basal segment
+    /// is carried over to the next segment.
+    /// When `false`, each segment starts its own accumulator (default behaviour).
+    var carryOverUndeliveredBasals: Bool = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         if modalWithTimestamp {
@@ -483,11 +488,73 @@ class MealAnalysisView: UIViewController {
                 if (event.foodType ?? "").isEmpty {
                         fpuTotal += event.amount
                     }
-            case "Temp Basal":
-                basalTotal += event.amount
             default: break
             }
         }
+        // ——— Delivered Temp‑Basal pulses (0.05 U) with rate‑dependent timing ———
+        basalTotal = 0
+        let tempBasals = events
+            .filter { $0.eventType == "Temp Basal" && $0.date < endTime }
+            .sorted { $0.date < $1.date }
+        //#if DEBUG
+        //        print("Totals ▸ TempBasal events in window:")
+        //tempBasals.forEach {
+        //    print("Totals ▸   event \($0.date)  rate \($0.amount) U/h")
+        //}
+        //#endif
+
+        //#if DEBUG
+        // Carry‑over aware pulse simulation
+        //#endif
+        
+        var residual = 0.0                      // undelivered <0.05 U from previous segment
+        for (idx, evt) in tempBasals.enumerated() {
+            let segmentStart = max(evt.date, startTime)
+            let segmentEnd: Date = {
+                if idx + 1 < tempBasals.count {
+                    return min(tempBasals[idx + 1].date, endTime)
+                } else {
+                    return endTime
+                }
+            }()
+            guard segmentStart < segmentEnd else { continue }
+            let rate = evt.amount                       // U/h
+            guard rate > 0 else {                       // 0 U/h just closes previous segment
+                if !carryOverUndeliveredBasals { residual = 0 }
+                continue
+            }
+
+            let ratePerSec = rate / 3600.0
+            var t = segmentStart
+            var accum = carryOverUndeliveredBasals ? residual : 0.0
+
+            //#if DEBUG
+            //print("Totals ▸ TempBasal  rate=\(rate) U/h  segmentStart=\(segmentStart)  segmentEnd=\(segmentEnd)  residualIn=\(accum)")
+            //#endif
+
+            while true {
+                let remaining = 0.05 - accum
+                let dt = remaining / ratePerSec            // seconds to next pulse
+                if t.addingTimeInterval(dt) > segmentEnd { // will not reach next pulse
+                    accum += ratePerSec * segmentEnd.timeIntervalSince(t)
+                    t = segmentEnd
+                    break
+                }
+                t = t.addingTimeInterval(dt)               // pulse moment
+                if t >= startTime {
+                    basalTotal += 0.05
+                    //#if DEBUG
+                    //print("Totals ▸   counting pulse \(t)")
+                    //#endif
+                }
+                accum = 0.0                                // reset after delivery
+            }
+
+            residual = carryOverUndeliveredBasals ? accum : 0.0
+        }
+        //#if DEBUG
+        //print("Totals ▸ basalTotal delivered = \(basalTotal) U")
+        //#endif
         // scheduled basal for the timeframe
         // Round scheduled basal down to nearest 0.05
         let rawBasal = scheduledBasal(from: startTime, to: endTime)
@@ -709,10 +776,80 @@ class MealAnalysisView: UIViewController {
         brownDots.scatterShapeSize = 7
         brownDots.drawValuesEnabled = false
 
+        // ▸ Squares for Temp Basal actual deliveries (0.05 U pulses) at y = 23 mmol
+        // Pulse interval = 180 / rate seconds. Counter resets on each rate change.
+        let tempBasals = events
+            .filter { $0.eventType == "Temp Basal" }
+            .sorted { $0.date < $1.date }
+        //#if DEBUG
+        //print("Chart  ▸ TempBasal events in window:")
+        //tempBasals.forEach {
+        //print("Chart  ▸   event \($0.date)  rate \($0.amount) U/h")
+        //}
+        //#endif
+
+        var basalEntries: [ChartDataEntry] = []
+
+        // Carry‑over aware pulse simulation for scatter dots
+        var residual = 0.0
+        for (idx, evt) in tempBasals.enumerated() {
+            let segmentStart = max(evt.date, startTime)
+            let segmentEnd: Date = {
+                if idx + 1 < tempBasals.count {
+                    return min(tempBasals[idx + 1].date, endTime)
+                } else {
+                    return endTime
+                }
+            }()
+            guard segmentStart < segmentEnd else { continue }
+            let rate = evt.amount
+            //#if DEBUG
+            //print("Chart  ▸ TempBasal  rate=\(rate) U/h  segmentStart=\(segmentStart)  segmentEnd=\(segmentEnd)  residualIn=\(residual)")
+            //#endif
+            guard rate > 0 else {
+                if !carryOverUndeliveredBasals { residual = 0 }
+                continue
+            }
+
+            let ratePerSec = rate / 3600.0
+            var t = segmentStart
+            var accum = carryOverUndeliveredBasals ? residual : 0.0
+
+            while true {
+                let remaining = 0.05 - accum
+                let dt = remaining / ratePerSec
+                if t.addingTimeInterval(dt) > segmentEnd {        // no more pulses
+                    accum += ratePerSec * segmentEnd.timeIntervalSince(t)
+                    t = segmentEnd
+                    break
+                }
+                t = t.addingTimeInterval(dt)
+                if t >= startTime {
+                    basalEntries.append(
+                        ChartDataEntry(
+                            x: t.timeIntervalSince(startTime) / 3600.0,
+                            y: 23.0
+                        )
+                    )
+                    //#if DEBUG
+                    //print("Chart  ▸   pulse at \(t)")
+                    //#endif
+                }
+                accum = 0.0
+            }
+            residual = carryOverUndeliveredBasals ? accum : 0.0
+        }
+
+        let basalSquares = ScatterChartDataSet(entries: basalEntries, label: "")
+        basalSquares.setColor(NSUIColor.systemBlue.withAlphaComponent(0.45))
+        basalSquares.setScatterShape(.square)
+        basalSquares.scatterShapeSize = 7
+        basalSquares.drawValuesEnabled = false
+
         // Combine
         let combined = CombinedChartData()
         combined.lineData   = LineChartData(dataSet: bgDataSet)
-        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, orangeDots, brownDots])
+        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, orangeDots, brownDots, basalSquares])
         bgChartView.data = combined
 
         // X range & labels
