@@ -192,7 +192,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
 
     @objc private func mealAnalysisButtonTapped() {
         let events = buildEventsArray()
-        let analysisVC = MealAnalysisView(events: events, modalWithMeal: false)
+        let analysisVC = MealAnalysisView(events: events, modalWithTimestamp: false, modalTitleString: "")
         let navController = UINavigationController(rootViewController: analysisVC)
         navController.modalPresentationStyle = .formSheet
         present(navController, animated: true, completion: nil)
@@ -1061,39 +1061,80 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     message += "\nInlagt av: \(enteredBy)"
                 }
                 presentAlert(title: "Notering \(timeString)", message: message)
+                
             }
         }
         
         if ["Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart"].contains(treatment.eventType) {
+            let title = "Sensorbyte \(timeString)"
             var message = treatment.sensorStartNotes ?? "Inga anteckningar"
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message += "\nInlagt av: \(enteredBy)"
             }
-            presentAlert(title: "Sensorbyte \(timeString)", message: message)
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Analysera Sensorbyte", style: .default, handler: { _ in
+                let events = self.buildEventsArray()
+                let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Sensorbyte")
+                let nav = UINavigationController(rootViewController: analysisVC)
+                nav.modalPresentationStyle = .formSheet
+                self.present(nav, animated: true)
+            }))
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                tableView.deselectRow(at: indexPath, animated: true)
+            }))
+            self.present(alert, animated: true)
         }
         
         if treatment.eventType == "Site Change" {
+            let title = "Pumpbyte \(timeString)"
             var message = ""
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message = "Inlagt av: \(enteredBy)"
             }
-            presentAlert(title: "Pumpbyte \(timeString)", message: message)
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Analysera Pumpbyte", style: .default, handler: { _ in
+                let events = self.buildEventsArray()
+                let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Pumpbyte")
+                let nav = UINavigationController(rootViewController: analysisVC)
+                nav.modalPresentationStyle = .formSheet
+                self.present(nav, animated: true)
+            }))
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                tableView.deselectRow(at: indexPath, animated: true)
+            }))
+            self.present(alert, animated: true)
         }
         
         if treatment.eventType == "BG Check" {
             if let glucose = treatment.rawData["glucose"] as? Double,
                let units = treatment.rawData["units"] as? String {
                 let mmol = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
+                let title = "Fingerstick \(timeString)"
                 var message = "Blodsocker: \(glucose) mmol/L"
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
                 }
-                presentAlert(title: "Fingerstick \(timeString)", message: message)
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Analysera Fingerstick", style: .default, handler: { _ in
+                    let events = self.buildEventsArray()
+                    let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Fingerstick")
+                    let nav = UINavigationController(rootViewController: analysisVC)
+                    nav.modalPresentationStyle = .formSheet
+                    self.present(nav, animated: true)
+                }))
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                    tableView.deselectRow(at: indexPath, animated: true)
+                }))
+                self.present(alert, animated: true)
             }
         }
         
         if ["Temporary Override", "Exercise", "Override"].contains(treatment.eventType) {
             if let fullOverride = treatment.overrideNotes {
+                let title = "Override \(timeString)"
                 var message = fullOverride
                 if let duration = treatment.overrideDuration {
                     message += "\nVaraktighet: \(Int(duration)) min"
@@ -1103,7 +1144,19 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
                 }
-                presentAlert(title: "Override \(timeString)", message: message)
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Analysera Override", style: .default, handler: { _ in
+                    let events = self.buildEventsArray()
+                    let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Override")
+                    let nav = UINavigationController(rootViewController: analysisVC)
+                    nav.modalPresentationStyle = .formSheet
+                    self.present(nav, animated: true)
+                }))
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+                    tableView.deselectRow(at: indexPath, animated: true)
+                }))
+                self.present(alert, animated: true)
             }
         }
 
@@ -1123,10 +1176,10 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 message += "\nInlagt av: \(enteredBy)"
             }
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Analysera måltid", style: .default, handler: { _ in
+            alert.addAction(UIAlertAction(title: "Analysera Måltid", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
-                let analysisStart = treatment.timestamp.addingTimeInterval(-60) // minus 1 min
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithMeal: true)
+                let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Måltid")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)

@@ -42,12 +42,14 @@ class MealAnalysisView: UIViewController {
     private let events: [Event]
     /// Optional initial start time provided by the caller
     private let initialStartOverride: Date?
-    private let modalWithMeal: Bool
+    private let modalWithTimestamp: Bool
+    private let modalTitleString: String
 
-    init(events: [Event], initialStart: Date? = nil, modalWithMeal: Bool = true) {
+    init(events: [Event], initialStart: Date? = nil, modalWithTimestamp: Bool = true, modalTitleString: String = "") {
         self.events = events
         self.initialStartOverride = initialStart
-        self.modalWithMeal = modalWithMeal
+        self.modalWithTimestamp = modalWithTimestamp
+        self.modalTitleString = modalTitleString
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -139,14 +141,15 @@ class MealAnalysisView: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        if modalWithMeal {
-            title = "Utveckling efter måltid"
+        if modalWithTimestamp {
+            //title = "Utveckling efter måltid"
+            title = modalTitleString
         } else {
             title = "Utveckling fram till nu"
         }
 
         // When opened without a linked meal, default to the last 24 h window
-        if !modalWithMeal {
+        if !modalWithTimestamp {
             endTime = Date()
             startTime = Calendar.current.date(byAdding: .hour, value: -24, to: endTime)!
             durationControl.selectedSegmentIndex = 6   // "24h", keep default (index 6)
@@ -163,7 +166,7 @@ class MealAnalysisView: UIViewController {
         startPicker.maximumDate = Date()
         startPicker.date = startTime
         // Apply caller‑provided start time override only when analysing a meal
-        if modalWithMeal, let override = initialStartOverride {
+        if modalWithTimestamp, let override = initialStartOverride {
             startTime = override
             startPicker.date = override
             recalcEndTimeBasedOnDuration()
@@ -349,7 +352,7 @@ class MealAnalysisView: UIViewController {
 
     @objc private func startTimeChanged(_ sender: UIDatePicker) {
         startTime = sender.date
-        if modalWithMeal {
+        if modalWithTimestamp {
             recalcEndTimeBasedOnDuration()
         } else {
             updateTotals()
@@ -371,7 +374,7 @@ class MealAnalysisView: UIViewController {
             sender.date = now
         }
         endTime = selected
-        if modalWithMeal {
+        if modalWithTimestamp {
             updateTotals()
             updateBGLabels()
         } else {
@@ -399,7 +402,7 @@ class MealAnalysisView: UIViewController {
         } else {
             let hoursString = title.replacingOccurrences(of: "h", with: "")
             let hours = Int(hoursString) ?? 1
-            if modalWithMeal {
+            if modalWithTimestamp {
                 // startTime → endTime
                 endTime = Calendar.current.date(byAdding: .hour, value: hours, to: startTime) ?? startTime
                 endPicker.date = endTime
