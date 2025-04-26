@@ -1005,11 +1005,12 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                                               value: -NightscoutCache.retentionDays,
                                               to: Date()) else { return }
 
-            print("Cache ▸ loadCachedData: requesting from \(oldestWanted) to \(self.endTime)")
+            print("Cache ▸ loadCachedData: requesting from \(oldestWanted) to now")
 
+            // Always load cached data up through the current moment
             let (sgvJSON, treatsJSON) = await NightscoutCache.loadWindow(
                 from: oldestWanted,
-                to: self.endTime
+                to: Date()
             )
 
             print("Cache ▸ raw sgvJSON.count = \(sgvJSON.count), treatsJSON.count = \(treatsJSON.count)")

@@ -440,10 +440,13 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             // Show loading UI
             showRefreshIndicator()
 
-            // Prepare Nightscout query for created_at >= midnight … <= now
+            // Fetch the last 24 hours (UTC) so events from yesterday are included
+            let since = now.addingTimeInterval(-24 * 60 * 60)
             let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime]
+            iso.timeZone = TimeZone(secondsFromGMT: 0)
             let params: [String: String] = [
-                "find[created_at][$gte]": iso.string(from: start),
+                "find[created_at][$gte]": iso.string(from: since),
                 "find[created_at][$lte]": iso.string(from: now)
             ]
 
@@ -468,6 +471,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         // Otherwise, fall back to the cache-based day loader:
         let end = cal.date(byAdding: .day, value: 1, to: start)!
 
+        // Show loading UI before async task
+        showRefreshIndicator()
         Task {
             let (_, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
             let newTreatments = treatsJSON.compactMap { tjson in
@@ -489,7 +494,40 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             }
 
             DispatchQueue.main.async {
-                self.treatments = newTreatments.sorted { $0.timestamp > $1.timestamp }
+                if newTreatments.isEmpty {
+                    // If cache is empty for that day, fall back to live fetch
+                    self.fetchDynamicTreatments(for: date)
+                } else {
+                    self.treatments = newTreatments.sorted { $0.timestamp > $1.timestamp }
+                    self.tableView.reloadData()
+                    self.hideRefreshIndicator()
+                }
+            }
+        }
+    }
+
+    /// Fetch treatments dynamically for a specific calendar date (fallback if cache empty)
+    private func fetchDynamicTreatments(for date: Date) {
+        // Show loading UI
+        showRefreshIndicator()
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
+        let end = cal.date(byAdding: .day, value: 1, to: start)!
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+        // Use system timezone so we cover the local day
+        iso.timeZone = .current
+        let params: [String: String] = [
+            "find[created_at][$gte]": iso.string(from: start),
+            "find[created_at][$lte]": iso.string(from: end)
+        ]
+        NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
+            DispatchQueue.main.async {
+                if case .success(let raw) = result,
+                   let entries = raw as? [[String: AnyObject]] {
+                    let fetched = entries.compactMap { Treatment(dictionary: $0) }
+                    self.treatments = fetched.sorted { $0.timestamp > $1.timestamp }
+                }
                 self.tableView.reloadData()
                 self.hideRefreshIndicator()
             }
@@ -1125,13 +1163,13 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
                 }
-                presentAlert(title: "Notering \(timeString)", message: message)
+                presentAlert(title: "\(timeString)\nNotering", message: message)
                 
             }
         }
         
         if ["Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart"].contains(treatment.eventType) {
-            let title = "Sensorbyte \(timeString)"
+            let title = "\(timeString)\nSensorbyte"
             var message = treatment.sensorStartNotes ?? "Inga anteckningar"
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message += "\nInlagt av: \(enteredBy)"
@@ -1152,7 +1190,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         if treatment.eventType == "Site Change" {
-            let title = "Pumpbyte \(timeString)"
+            let title = "\(timeString)\nPumpbyte"
             var message = ""
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message = "Inlagt av: \(enteredBy)"
@@ -1176,7 +1214,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if let glucose = treatment.rawData["glucose"] as? Double,
                let units = treatment.rawData["units"] as? String {
                 let mmol = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
-                let title = "Fingerstick \(timeString)"
+                let title = "\(timeString)\nFingerstick"
                 var message = "Blodsocker: \(glucose) mmol/L"
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
@@ -1199,10 +1237,15 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         
         if ["Temporary Override", "Exercise", "Override"].contains(treatment.eventType) {
             if let fullOverride = treatment.overrideNotes {
-                let title = "Override \(timeString)"
+                let title = "\(timeString)\nOverride"
                 var message = fullOverride
                 if let duration = treatment.overrideDuration {
-                    message += "\nVaraktighet: \(Int(duration)) min"
+                    // Show “Tillsvidare” if duration > 1439 minutes
+                    if duration > 1439 {
+                        message += "\nVaraktighet: Tillsvidare"
+                    } else {
+                        message += "\nVaraktighet: \(Int(duration)) min"
+                    }
                     let expirationTime = treatment.timestamp.addingTimeInterval(duration * 60)
                     message += "\nAktiv till kl: \(timeFormatter.string(from: expirationTime))"
                 }
@@ -1227,7 +1270,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
 
         if treatment.eventType == "Carb Correction" {
             let foodTypeValue = treatment.rawData["foodType"] as? String ?? ""
-            let title = foodTypeValue.isEmpty ? "Fett / Protein \(timeString)" : "Måltid \(timeString)"
+            let title = foodTypeValue.isEmpty ? "\(timeString)\nFett & Protein" : "\(timeString)\nMåltid"
             var message = foodTypeValue.isEmpty ? "Kolhydratsekvivalenter: " : foodTypeValue
             let carbsValue: Double = treatment.rawData["carbs"] as? Double ?? 0.0
             message += foodTypeValue.isEmpty ? "\(formatValue(carbsValue)) g" : "\nKolhydrater: \(formatValue(carbsValue)) g"
@@ -1261,7 +1304,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message += "\nInlagt av: \(enteredBy)"
             }
-            presentAlert(title: "Bolus \(timeString)", message: message)
+            presentAlert(title: "\(timeString)\nBolus", message: message)
         }
     }
 
