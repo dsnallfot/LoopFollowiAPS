@@ -24,7 +24,7 @@ struct BGEntry {
     let mmol: Double
 }
 
-class MealAnalysisView: UIViewController {
+class MealAnalysisView: UIViewController, ChartViewDelegate {
 
     // MARK: - BG Bar Width Constraints
     private var belowWidthConstraint: NSLayoutConstraint?
@@ -660,13 +660,14 @@ class MealAnalysisView: UIViewController {
     }
     // MARK: - BG chart helpers
     private func setupBGChart() {
+        bgChartView.delegate = self
         bgChartView.chartDescription.enabled = false
         bgChartView.legend.enabled = false
         bgChartView.rightAxis.enabled = false
         bgChartView.pinchZoomEnabled = false
         bgChartView.doubleTapToZoomEnabled = false
         bgChartView.dragEnabled = false
-        bgChartView.highlightPerTapEnabled = false
+        bgChartView.highlightPerTapEnabled = true
         bgChartView.scaleXEnabled = false
         bgChartView.scaleYEnabled = false
         bgChartView.drawOrder = [CombinedChartView.DrawOrder.scatter.rawValue,
@@ -769,28 +770,46 @@ class MealAnalysisView: UIViewController {
         bgDataSet.drawCirclesEnabled = false
         bgDataSet.drawValuesEnabled = false
         bgDataSet.mode = .linear
+        bgDataSet.highlightColor = .clear
+        bgDataSet.highlightLineWidth = 0
 
         // ▸ Blue dots for Bolus at y = 22 mmol
-        let bolusEntries = events.filter { ["Bolus"].contains($0.eventType) &&
-                                          $0.date >= startTime && $0.date <= endTime }
-                                .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
-                                                      y: 22.0) }
+        let bolusEntries = events.filter {
+            $0.eventType == "Bolus" && $0.date >= startTime && $0.date <= endTime
+        }.map { event in
+            ChartDataEntry(
+                x: event.date.timeIntervalSince(startTime) / 3600.0,
+                y: 22.0,
+                data: String(format: "%.2f E", event.amount)
+            )
+        }
         let bolusDots = ScatterChartDataSet(entries: bolusEntries, label: "")
         bolusDots.setColor(NSUIColor.systemBlue)
         bolusDots.setScatterShape(.circle)
         bolusDots.scatterShapeSize = 8
         bolusDots.drawValuesEnabled = false
+        bolusDots.highlightEnabled = true
+        bolusDots.highlightColor = .clear
+        bolusDots.highlightLineWidth = 0
         
         // ▸ Blue triangles for SMB at y = 22 mmol
-        let smbEntries = events.filter { ["SMB"].contains($0.eventType) &&
-                                          $0.date >= startTime && $0.date <= endTime }
-                                .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
-                                                      y: 22.0) }
+        let smbEntries = events.filter {
+            $0.eventType == "SMB" && $0.date >= startTime && $0.date <= endTime
+        }.map { event in
+            ChartDataEntry(
+                x: event.date.timeIntervalSince(startTime) / 3600.0,
+                y: 22.0,
+                data: String(format: "%.2f E", event.amount)
+            )
+        }
         let smbDots = ScatterChartDataSet(entries: smbEntries, label: "")
         smbDots.setColor(NSUIColor.systemBlue)
         smbDots.setScatterShape(.triangleFlipped)
         smbDots.scatterShapeSize = 9
         smbDots.drawValuesEnabled = false
+        smbDots.highlightEnabled = true
+        smbDots.highlightColor = .clear
+        smbDots.highlightLineWidth = 0
 
         // ▸ Triangles for Carb Correction: orange for “real” carbs, brown for fat/protein equivalents
         let carbCorrections = events.filter {
@@ -801,24 +820,40 @@ class MealAnalysisView: UIViewController {
         // Orange for those with a non-empty foodType
         let orangeEntries = carbCorrections
             .filter { ($0.foodType ?? "").isEmpty == false }
-            .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
-                                  y: 2.0) }
+            .map { event in
+                ChartDataEntry(
+                    x: event.date.timeIntervalSince(startTime) / 3600.0,
+                    y: 2.0,
+                    data: String(format: "%.0f g", event.amount)
+                )
+            }
         let orangeDots = ScatterChartDataSet(entries: orangeEntries, label: "")
         orangeDots.setColor(.systemOrange.withAlphaComponent(1.0))
         orangeDots.setScatterShape(.triangle)
         orangeDots.scatterShapeSize = 9
         orangeDots.drawValuesEnabled = false
+        orangeDots.highlightEnabled = true
+        orangeDots.highlightColor = .clear
+        orangeDots.highlightLineWidth = 0
 
         // Brown for fat/protein equivalents (empty foodType)
         let brownEntries = carbCorrections
             .filter { ($0.foodType ?? "").isEmpty }
-            .map { ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
-                                  y: 2.0) }
+            .map { event in
+                ChartDataEntry(
+                    x: event.date.timeIntervalSince(startTime) / 3600.0,
+                    y: 2.0,
+                    data: String(format: "%.0f g", event.amount)
+                )
+            }
         let brownDots = ScatterChartDataSet(entries: brownEntries, label: "")
         brownDots.setColor(.brown.withAlphaComponent(0.8))
         brownDots.setScatterShape(.triangle)
         brownDots.scatterShapeSize = 7
         brownDots.drawValuesEnabled = false
+        brownDots.highlightEnabled = true
+        brownDots.highlightColor = .clear
+        brownDots.highlightLineWidth = 0
 
         // ▸ Squares for Temp Basal actual deliveries (0.05 U pulses) at y = 23 mmol
         // Pulse interval = 180 / rate seconds. Counter resets on each rate change.
@@ -872,7 +907,8 @@ class MealAnalysisView: UIViewController {
                     basalEntries.append(
                         ChartDataEntry(
                             x: t.timeIntervalSince(startTime) / 3600.0,
-                            y: 23.0
+                            y: 23.0,
+                            data: String(format: "%.2f U/h", rate)
                         )
                     )
                     //#if DEBUG
@@ -889,6 +925,8 @@ class MealAnalysisView: UIViewController {
         basalSquares.setScatterShape(.square)
         basalSquares.scatterShapeSize = 7
         basalSquares.drawValuesEnabled = false
+        basalSquares.highlightColor = .clear
+        basalSquares.highlightLineWidth = 0
 
         // Combine
         let combined = CombinedChartData()
@@ -904,9 +942,15 @@ class MealAnalysisView: UIViewController {
         if hrs <= 6 {
             x.granularity = 1
             x.labelCount = Int(hrs.rounded(.up)) + 1
-        } else {
+        } else if hrs <= 24 {
             x.granularity = 3
             x.labelCount = Int((hrs/3).rounded(.up)) + 1
+        } else if hrs <= 72 {
+            x.granularity = 12
+            x.labelCount = Int((hrs/12).rounded(.up)) + 1
+        } else {
+            x.granularity = 24
+            x.labelCount = Int((hrs/24).rounded(.up)) + 1
         }
         bgChartView.notifyDataSetChanged()
     }
@@ -1107,6 +1151,18 @@ class MealAnalysisView: UIViewController {
         refreshBGChart()
     }
 
+    // MARK: - Chart popup handler (for value selection)
+    func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+        let message: String
+        if let s = entry.data as? String {
+            title = s
+        } else {
+            title = String(format: "%.2f", entry.y)
+        }
+        let alert = UIAlertController(title: title, message: "", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true, completion: nil)
+    }
 }
 
 extension MealAnalysisView: AxisValueFormatter {
