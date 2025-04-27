@@ -63,6 +63,8 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         picker.datePickerMode = .dateAndTime
         picker.preferredDatePickerStyle = .compact
         picker.translatesAutoresizingMaskIntoConstraints = false
+        // Compact height
+        picker.heightAnchor.constraint(equalToConstant: 30).isActive = true
         return picker
     }()
     
@@ -71,6 +73,8 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         picker.datePickerMode = .dateAndTime
         picker.preferredDatePickerStyle = .compact
         picker.translatesAutoresizingMaskIntoConstraints = false
+        // Compact height
+        picker.heightAnchor.constraint(equalToConstant: 30).isActive = true
         return picker
     }()
 
@@ -91,7 +95,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     }()
 
     private let durationControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "6h", "12h", "24h", "Ⓢ", "Idag"])
+        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "6h", "12h", "24h", "Dag", "Ⓢ"])
         control.selectedSegmentIndex = 2   // 3 h default
         control.translatesAutoresizingMaskIntoConstraints = false
         return control
@@ -184,19 +188,19 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         let startGroup = UIStackView(arrangedSubviews: [startTimeLabel, startPicker])
         startGroup.axis = .horizontal
         startGroup.alignment = .center
-        startGroup.spacing = 5
+        startGroup.spacing = 8
         startGroup.setContentHuggingPriority(.required, for: .horizontal)
 
         let endGroup = UIStackView(arrangedSubviews: [endTimeLabel, endPicker])
         endGroup.axis = .horizontal
         endGroup.alignment = .center
-        endGroup.spacing = 5
+        endGroup.spacing = 8
         endGroup.setContentHuggingPriority(.required, for: .horizontal)
 
         let timeRow = UIStackView(arrangedSubviews: [startGroup, endGroup])
         timeRow.axis = .vertical
         timeRow.alignment = .fill
-        timeRow.spacing = 5
+        timeRow.spacing = 8
 
         let carbsRow = makeRow(
             iconName: "arrowtriangle.up.circle",
@@ -330,6 +334,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             mainStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
+        mainStack.setCustomSpacing(8, after: timeRow)   // extra gap before duration
         mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
         mainStack.setCustomSpacing(10, after: rowsStack)   // clear separation
         mainStack.setCustomSpacing(15, after: bgChartView)   // extra gap before stats
@@ -359,34 +364,51 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
     @objc private func startTimeChanged(_ sender: UIDatePicker) {
         let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex)
-        if modalWithTimestamp || title == "Ⓢ" {
-            if title == "Ⓢ" {
-                // Force Schoolday times on the selected date
-                let calendar = Calendar.current
-                let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
-                let newStart = calendar.date(from: DateComponents(
-                    year: comps.year, month: comps.month, day: comps.day,
-                    hour: 8, minute: 0))!
-                let newEnd = calendar.date(from: DateComponents(
-                    year: comps.year, month: comps.month, day: comps.day,
-                    hour: 16, minute: 30))!
-                startTime = newStart
-                endTime   = newEnd
-                startPicker.date = newStart
-                endPicker.date   = newEnd
+        let calendar = Calendar.current
+
+        if title == "Ⓢ" {
+            // Schoolday logic (unchanged)
+            let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
+            let newStart = calendar.date(from: DateComponents(year: comps.year,
+                                                              month: comps.month,
+                                                              day: comps.day,
+                                                              hour: 8, minute: 0))!
+            let newEnd = calendar.date(from: DateComponents(year: comps.year,
+                                                            month: comps.month,
+                                                            day: comps.day,
+                                                            hour: 16, minute: 30))!
+            startTime = newStart
+            endTime   = newEnd
+            startPicker.date = newStart
+            endPicker.date   = newEnd
+        } else if title == "Dag" {
+            // “Dag” → full calendar day for non-timestamp use:
+            let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
+            let newStart = calendar.date(from: DateComponents(year: comps.year,
+                                                              month: comps.month,
+                                                              day: comps.day,
+                                                              hour: 0, minute: 0))!
+            let newEnd: Date
+            if calendar.isDateInToday(sender.date) {
+                newEnd = Date()
             } else {
-                startTime = sender.date
-                if modalWithTimestamp {
-                    recalcEndTimeBasedOnDuration()
-                }
+                newEnd = calendar.date(byAdding: .day, value: 1, to: newStart)!
             }
-            updateTotals()
-            updateBGLabels()
+            startTime = newStart
+            endTime   = newEnd
+            startPicker.date = newStart
+            endPicker.date   = newEnd
         } else {
+            // All other cases (modalWithTimestamp or other durations)
             startTime = sender.date
-            updateTotals()
-            updateBGLabels()
+            if modalWithTimestamp {
+                recalcEndTimeBasedOnDuration()
+            }
         }
+
+        // Update UI for all cases
+        updateTotals()
+        updateBGLabels()
     }
 
     @objc private func durationChanged(_ sender: UISegmentedControl) {
@@ -396,48 +418,81 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     }
 
     @objc private func endTimeChanged(_ sender: UIDatePicker) {
-        // Enforce max = now
-        var selected = sender.date
-        let now = Date()
-        if selected > now {
-            selected = now
-            sender.date = now
-        }
         let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex)
-        if modalWithTimestamp || title == "Ⓢ" {
-            if title == "Ⓢ" {
-                // Force Schoolday times on the selected date
-                let calendar = Calendar.current
-                let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
-                let newStart = calendar.date(from: DateComponents(
-                    year: comps.year, month: comps.month, day: comps.day,
-                    hour: 8, minute: 0))!
-                let newEnd = calendar.date(from: DateComponents(
-                    year: comps.year, month: comps.month, day: comps.day,
-                    hour: 16, minute: 30))!
-                startTime = newStart
-                endTime   = newEnd
-                startPicker.date = newStart
-                endPicker.date   = newEnd
+        let calendar = Calendar.current
+
+        if title == "Ⓢ" {
+            // Schoolday logic
+            let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
+            let newStart = calendar.date(from: DateComponents(year: comps.year,
+                                                              month: comps.month,
+                                                              day: comps.day,
+                                                              hour: 8, minute: 0))!
+            let newEnd = calendar.date(from: DateComponents(year: comps.year,
+                                                            month: comps.month,
+                                                            day: comps.day,
+                                                            hour: 16, minute: 30))!
+            startTime = newStart
+            endTime   = newEnd
+            startPicker.date = newStart
+            endPicker.date   = newEnd
+        } else if title == "Dag" {
+            // “Dag” → full calendar day
+            let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
+            let newStart = calendar.date(from: DateComponents(year: comps.year,
+                                                              month: comps.month,
+                                                              day: comps.day,
+                                                              hour: 0, minute: 0))!
+            let newEnd: Date
+            if calendar.isDateInToday(sender.date) {
+                newEnd = Date()
             } else {
-                endTime = selected
+                newEnd = calendar.date(byAdding: .day, value: 1, to: newStart)!
             }
-            updateTotals()
+            startTime = newStart
+            endTime   = newEnd
+            startPicker.date = newStart
+            endPicker.date   = newEnd
+        } else {
+            // All other cases
+            var selected = sender.date
+            let now = Date()
+            if selected > now {
+                selected = now
+                sender.date = now
+            }
+            endTime = selected
+
+            if modalWithTimestamp {
+                recalcEndTimeBasedOnDuration()
+            }
+        }
+
+        // Update UI
+        updateTotals()
+        if !(title == "Dag" && !modalWithTimestamp) {
             updateBGLabels()
         } else {
-            endTime = selected
-            // For other segments, recalculate start/end based on duration
-            recalcEndTimeBasedOnDuration()
+            // For full-day Dag, recalc BG labels too
+            updateBGLabels()
         }
     }
 
     private func recalcEndTimeBasedOnDuration() {
         guard let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) else { return }
-        if title == "Idag" {
+        if title == "Dag" {
             let calendar = Calendar.current
-            let now = Date()
-            endTime = now
-            startTime = calendar.startOfDay(for: now)
+            if modalWithTimestamp {
+                // Full calendar day of the meal’s date
+                let dayStart = calendar.startOfDay(for: startTime)
+                startTime = dayStart
+                endTime = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+            } else {
+                // Today: midnight → now
+                let now = Date()
+                startTime = calendar.startOfDay(for: now)
+                endTime = now
+            }
             startPicker.date = startTime
             endPicker.date = endTime
         } else if title == "Ⓢ" {
