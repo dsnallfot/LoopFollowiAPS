@@ -14,7 +14,7 @@ import Charts
 struct Event {
     let date: Date
     let eventType: String      // "SMB", "Bolus", "Carb Correction", etc.
-    let amount: Double         // insulin units or carb grams
+    let amount: Double         // insulin units, carb grams, or blood glucose (mmol/L)
     let foodType: String?      // non-nil for Carb Corrections with fat/protein equivalents
 }
 
@@ -344,6 +344,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         recalcEndTimeBasedOnDuration()
         updateTotals()
         fetchBG24h()
+        fetchBGChecks24h()
         // — Pull additional days from NightscoutCache (if any) —
         loadCachedData()
 
@@ -770,8 +771,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         bgChartView.highlightPerTapEnabled = true
         bgChartView.scaleXEnabled = false
         bgChartView.scaleYEnabled = false
-        bgChartView.drawOrder = [CombinedChartView.DrawOrder.scatter.rawValue,
-                                 CombinedChartView.DrawOrder.line.rawValue]
+        bgChartView.drawOrder = [CombinedChartView.DrawOrder.line.rawValue, CombinedChartView.DrawOrder.scatter.rawValue]
 
         // Y axis 0‑24 mmol
         let y = bgChartView.leftAxis
@@ -861,17 +861,37 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             ChartDataEntry(x: $0.date.timeIntervalSince(startTime)/3600.0,
                            y: $0.mmol)
         }
-        // Main BG line dataset
-        let bgDataSet = LineChartDataSet(entries: entries, label: "")
-        bgDataSet.colors = entries.map { entry in
-            setBGColorForMmol(entry.y)
+        // Main BG line dataset broken on gaps > 9 min
+        let segmentGap: TimeInterval = 9 * 60  // seconds
+        var segments: [[ChartDataEntry]] = []
+        var currentSegment: [ChartDataEntry] = []
+        var lastX: Double? = nil
+
+        for entry in entries {
+            if let last = lastX, (entry.x - last) * 3600.0 > segmentGap {
+                if !currentSegment.isEmpty {
+                    segments.append(currentSegment)
+                }
+                currentSegment = []
+            }
+            currentSegment.append(entry)
+            lastX = entry.x
         }
-        bgDataSet.lineWidth = 3
-        bgDataSet.drawCirclesEnabled = false
-        bgDataSet.drawValuesEnabled = false
-        bgDataSet.mode = .linear
-        bgDataSet.highlightColor = .clear
-        bgDataSet.highlightLineWidth = 0
+        if !currentSegment.isEmpty {
+            segments.append(currentSegment)
+        }
+
+        let lineDataSets = segments.map { segEntries -> LineChartDataSet in
+            let ds = LineChartDataSet(entries: segEntries, label: "")
+            ds.colors = segEntries.map { setBGColorForMmol($0.y) }
+            ds.lineWidth = 3
+            ds.drawCirclesEnabled = false
+            ds.drawValuesEnabled = false
+            ds.mode = .linear
+            ds.highlightColor = .clear
+            ds.highlightLineWidth = 0
+            return ds
+        }
 
         // ▸ Blue dots for Bolus at y = 22 mmol
         let bolusEntries = events.filter {
@@ -955,6 +975,32 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         brownDots.highlightColor = .clear
         brownDots.highlightLineWidth = 0
 
+        // ▸ Red circles for BG Check events at their glucose level
+        let bgCheckEvents = events.filter {
+            $0.eventType == "BG Check" && $0.date >= startTime && $0.date <= endTime
+        }
+        //print("DEBUG ▸ BG Check events: count = \(bgCheckEvents.count)")
+        for evt in bgCheckEvents {
+            let x = evt.date.timeIntervalSince(startTime) / 3600.0
+            let y = evt.amount
+            //print("DEBUG ▸ BG Check event: date = \(evt.date), x = \(x), y = \(y)")
+        }
+        let bgCheckEntries = bgCheckEvents.map { event in
+            ChartDataEntry(
+                x: event.date.timeIntervalSince(startTime) / 3600.0,
+                y: event.amount,
+                data: String(format: "%.1f mmol", event.amount)
+            )
+        }
+        let bgCheckDots = ScatterChartDataSet(entries: bgCheckEntries, label: "")
+        bgCheckDots.setColor(.systemRed)
+        bgCheckDots.setScatterShape(.circle)
+        bgCheckDots.scatterShapeSize = 8
+        bgCheckDots.drawValuesEnabled = false
+        bgCheckDots.highlightEnabled = true
+        bgCheckDots.highlightColor = .clear
+        bgCheckDots.highlightLineWidth = 0
+
         // ▸ Squares for Temp Basal actual deliveries (0.05 U pulses) at y = 23 mmol
         // Pulse interval = 180 / rate seconds. Counter resets on each rate change.
         let tempBasals = events
@@ -1030,8 +1076,8 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
         // Combine
         let combined = CombinedChartData()
-        combined.lineData   = LineChartData(dataSet: bgDataSet)
-        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, orangeDots, brownDots, basalSquares])
+        combined.lineData   = LineChartData(dataSets: lineDataSets)
+        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, orangeDots, brownDots, bgCheckDots, basalSquares])
         bgChartView.data = combined
 
         // X range & labels
@@ -1092,6 +1138,48 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             self.refreshBGChart()
         }
     }
+    
+    /// Fetch live BG-Check treatments between startTime/endTime and merge them into `events`.
+    private func fetchBGChecks24h() {
+        guard IsNightscoutEnabled() else { return }
+
+        let iso = ISO8601DateFormatter()
+        let params: [String: String] = [
+          "find[created_at][$gte]": iso.string(from: startTime),
+          "find[created_at][$lte]": iso.string(from: endTime),
+          "find[eventType]": "BG Check"
+        ]
+
+        NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
+            guard
+              case .success(let raw) = result,
+              let arr = raw as? [[String:AnyObject]]
+            else { return }
+
+            let checks = arr.compactMap { dict -> Event? in
+                guard
+                  let createdAtStr = dict["created_at"] as? String,
+                  let date = NightscoutUtils.parseDate(createdAtStr),
+                  let glucose = dict["glucose"] as? Double
+                else { return nil }
+
+                let units = (dict["units"] as? String ?? "").lowercased()
+                let mmol = units.contains("mmol") ? glucose : glucose / 18.0
+                return Event(date: date, eventType: "BG Check", amount: mmol, foodType: nil)
+            }
+
+            DispatchQueue.main.async {
+                // merge without duplicates
+                let existingKeys = Set(self.events.map { "\($0.date.timeIntervalSince1970)|\($0.eventType)" })
+                let newOnes = checks.filter {
+                  !existingKeys.contains("\($0.date.timeIntervalSince1970)|\($0.eventType)")
+                }
+                self.events.append(contentsOf: newOnes)
+                self.events.sort { $0.date < $1.date }
+                self.refreshBGChart()
+            }
+        }
+    }
 
     // MARK: - Cache integration
     /// Extend `events` and `bgEntries` with any older data kept in NightscoutCache,
@@ -1141,6 +1229,15 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                 case "Temp Basal":
                     let rate = t.rate ?? t.absolute ?? 0.0
                     return Event(date: t.created_at, eventType: "Temp Basal", amount: rate, foodType: nil)
+                case "BG Check":
+                    guard let glucose = t.glucose else { return nil }
+                    let mmol: Double
+                    if let units = t.units?.lowercased(), units.contains("mmol") {
+                        mmol = glucose
+                    } else {
+                        mmol = glucose / 18.0
+                    }
+                    return Event(date: t.created_at, eventType: "BG Check", amount: mmol, foodType: nil)
                 default:
                     return nil
                 }
