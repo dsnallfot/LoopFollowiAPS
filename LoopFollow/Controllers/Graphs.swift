@@ -638,6 +638,20 @@ extension MainViewController {
         data.append(lineSmb) // Dataset 16
         data.append(lineTempTarget)
         data.append(linePump)
+        // Pulses for Temp Basal deliveries as small circles at bottom
+        let basalPulseEntries: [ChartDataEntry] = []
+        let basalPulseSet = LineChartDataSet(entries: basalPulseEntries, label: "TempBasal Pulses")
+        basalPulseSet.axisDependency = .left
+        basalPulseSet.drawCirclesEnabled = true
+        basalPulseSet.drawCircleHoleEnabled = false
+        basalPulseSet.circleRadius = 3.5
+        basalPulseSet.circleColors = [NSUIColor.systemBlue.withAlphaComponent(0.6)]
+        basalPulseSet.lineWidth = 0
+        basalPulseSet.drawValuesEnabled = false
+        basalPulseSet.highlightEnabled = false
+        basalPulseSet.highlightColor = .clear
+        basalPulseSet.highlightLineWidth = 0
+        data.append(basalPulseSet)
 
         data.setValueFont(UIFont.systemFont(ofSize: 10))
         
@@ -1006,6 +1020,9 @@ extension MainViewController {
         BGChartFull.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChartFull.data?.notifyDataChanged()
         BGChartFull.notifyDataSetChanged()
+        
+        // Refresh temp basal pulse dots
+        updateTempBasalPulses()
         
         // (Additional code for zooming and auto-scrolling…)
         if firstGraphLoad {
@@ -2259,5 +2276,46 @@ extension MainViewController {
         BGChart.notifyDataSetChanged()
         BGChartFull.data?.notifyDataChanged()
         BGChartFull.notifyDataSetChanged()
+    }
+    /// Simulates and plots 0.05 U temp basal pulses at the bottom of the chart
+    func updateTempBasalPulses() {
+        guard let data = BGChart.data else { return }
+        // The last dataset in our chart is the pulse set
+        let idx = data.dataSets.count - 1
+        let pulseSet = data.dataSets[idx] as! LineChartDataSet
+        pulseSet.clear()
+
+        // Use actual basalData rates for pulse simulation
+        let sortedBasals = basalData.sorted { $0.date < $1.date }
+        for (i, entry) in sortedBasals.enumerated() {
+            // Define segment start/end in chart X-axis domain
+            let segmentStart = max(entry.date, BGChart.xAxis.axisMinimum)
+            let segmentEnd: TimeInterval = {
+                if i + 1 < sortedBasals.count {
+                    return min(sortedBasals[i+1].date, BGChart.xAxis.axisMaximum)
+                } else {
+                    return BGChart.xAxis.axisMaximum
+                }
+            }()
+            guard segmentStart < segmentEnd else { continue }
+            let rate = entry.basalRate
+            guard rate > 0 else { continue }
+
+            let ratePerSec = rate / 3600.0
+            var t = segmentStart
+            // Simulate 0.05 U pulses without carry‑over
+            while true {
+                let dt = 0.05 / ratePerSec
+                if t + dt > segmentEnd { break }
+                t += dt
+                // Plot at bottom (x is epoch seconds)
+                pulseSet.addEntry(ChartDataEntry(x: t, y: 0))
+            }
+        }
+
+        // Refresh chart display
+        pulseSet.notifyDataSetChanged()
+        data.notifyDataChanged()
+        BGChart.notifyDataSetChanged()
     }
 }

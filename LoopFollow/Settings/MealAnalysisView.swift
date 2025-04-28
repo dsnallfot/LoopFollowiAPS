@@ -236,7 +236,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                     text: "varav SMB",
                     valueLabel: smbValueLabel,
                     secondary: true),
-            makeRow(iconName: "square.fill",
+            makeRow(iconName: "stop.fill",
                     iconColor: UIColor.systemBlue.withAlphaComponent(0.45),
                     text: "varav Temp Basal",
                     valueLabel: basalValueLabel,
@@ -1026,7 +1026,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         let basalSquares = ScatterChartDataSet(entries: basalEntries, label: "")
         basalSquares.setColor(NSUIColor.systemBlue.withAlphaComponent(0.45))
         basalSquares.setScatterShape(.square)
-        basalSquares.scatterShapeSize = 7
+        basalSquares.scatterShapeSize = 6
         basalSquares.drawValuesEnabled = false
         basalSquares.highlightColor = .clear
         basalSquares.highlightLineWidth = 0
