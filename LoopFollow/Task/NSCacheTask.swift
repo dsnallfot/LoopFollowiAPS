@@ -23,14 +23,14 @@ extension MainViewController {
         let now = Date()
         let cal = Calendar.current
 
-        // First run: immediately if cache empty, else tomorrow at 00:02
+        // First run: immediately if cache empty, else tomorrow at 00:01
         let firstRun: Date
         if !NightscoutCache.hasAnyFiles {
             firstRun = now.addingTimeInterval(initialDelay)
         } else {
             var comps = cal.dateComponents([.year, .month, .day], from: now)
             comps.day! += 1
-            comps.hour = 0; comps.minute = 2; comps.second = 0
+            comps.hour = 0; comps.minute = 1; comps.second = 0
             firstRun = cal.date(from: comps) ?? now.addingTimeInterval(3600)
         }
 

@@ -1101,9 +1101,11 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             guard let self = self else { return }
             // Ask for the full retention window (default 10 days)
             let cal = Calendar.current
-            guard let oldestWanted = cal.date(byAdding: .day,
-                                              value: -NightscoutCache.retentionDays,
-                                              to: Date()) else { return }
+            // Compute the start-of-day for the retention window
+            let tempDate = cal.date(byAdding: .day,
+                                    value: -NightscoutCache.retentionDays,
+                                    to: Date())!
+            let oldestWanted = cal.startOfDay(for: tempDate)
 
             print("Cache ▸ loadCachedData: requesting from \(oldestWanted) to now")
 
