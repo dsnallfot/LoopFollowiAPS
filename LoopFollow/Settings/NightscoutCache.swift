@@ -77,8 +77,8 @@ struct DayPayload: Codable {
 
 final class NightscoutCache {
 
-    // Change to 7 if you decide a one-week window is enough
-    static var retentionDays = 7
+    // Number of days to keep in cache (x * 24 hours back from now)
+    static var retentionDays = 10
 
     // MARK: public API --------------------------------------------------------
 

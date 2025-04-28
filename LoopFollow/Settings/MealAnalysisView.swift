@@ -161,7 +161,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         if !modalWithTimestamp {
             endTime = Date()
             startTime = Calendar.current.date(byAdding: .hour, value: -24, to: endTime)!
-            durationControl.selectedSegmentIndex = 6   // "24h", keep default (index 6)
+            durationControl.selectedSegmentIndex = 7   // "Dag"
         }
         view.backgroundColor = .systemBackground
 
@@ -367,39 +367,49 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         let calendar = Calendar.current
 
         if title == "Ⓢ" {
-            // Schoolday logic (unchanged)
+            // Schoolday: always 08:00 → (now if before 16:30 today, else 16:30)
             let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
-            let newStart = calendar.date(from: DateComponents(year: comps.year,
-                                                              month: comps.month,
-                                                              day: comps.day,
-                                                              hour: 8, minute: 0))!
-            let newEnd = calendar.date(from: DateComponents(year: comps.year,
-                                                            month: comps.month,
-                                                            day: comps.day,
-                                                            hour: 16, minute: 30))!
+            let newStart = calendar.date(from: DateComponents(
+                year: comps.year, month: comps.month, day: comps.day,
+                hour: 8, minute: 0
+            ))!
+            let schoolEnd = calendar.date(from: DateComponents(
+                year: comps.year, month: comps.month, day: comps.day,
+                hour: 16, minute: 30
+            ))!
+            let newEnd: Date
+            if calendar.isDateInToday(sender.date), Date() < schoolEnd {
+                newEnd = Date()
+            } else {
+                newEnd = schoolEnd
+            }
+
             startTime = newStart
             endTime   = newEnd
             startPicker.date = newStart
             endPicker.date   = newEnd
+
         } else if title == "Dag" {
-            // “Dag” → full calendar day for non-timestamp use:
+            // Full calendar day: midnight → (now if today, else next midnight)
             let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
-            let newStart = calendar.date(from: DateComponents(year: comps.year,
-                                                              month: comps.month,
-                                                              day: comps.day,
-                                                              hour: 0, minute: 0))!
+            let newStart = calendar.date(from: DateComponents(
+                year: comps.year, month: comps.month, day: comps.day,
+                hour: 0, minute: 0
+            ))!
             let newEnd: Date
             if calendar.isDateInToday(sender.date) {
                 newEnd = Date()
             } else {
                 newEnd = calendar.date(byAdding: .day, value: 1, to: newStart)!
             }
+
             startTime = newStart
             endTime   = newEnd
             startPicker.date = newStart
             endPicker.date   = newEnd
+
         } else {
-            // All other cases (modalWithTimestamp or other durations)
+            // Other modes (timestamp modal or fixed durations)
             startTime = sender.date
             if modalWithTimestamp {
                 recalcEndTimeBasedOnDuration()
@@ -422,39 +432,49 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         let calendar = Calendar.current
 
         if title == "Ⓢ" {
-            // Schoolday logic
+            // Schoolday: always 08:00 → (now if before 16:30 today, else 16:30)
             let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
-            let newStart = calendar.date(from: DateComponents(year: comps.year,
-                                                              month: comps.month,
-                                                              day: comps.day,
-                                                              hour: 8, minute: 0))!
-            let newEnd = calendar.date(from: DateComponents(year: comps.year,
-                                                            month: comps.month,
-                                                            day: comps.day,
-                                                            hour: 16, minute: 30))!
+            let newStart = calendar.date(from: DateComponents(
+                year: comps.year, month: comps.month, day: comps.day,
+                hour: 8, minute: 0
+            ))!
+            let schoolEnd = calendar.date(from: DateComponents(
+                year: comps.year, month: comps.month, day: comps.day,
+                hour: 16, minute: 30
+            ))!
+            let newEnd: Date
+            if calendar.isDateInToday(sender.date), Date() < schoolEnd {
+                newEnd = Date()
+            } else {
+                newEnd = schoolEnd
+            }
+
             startTime = newStart
             endTime   = newEnd
             startPicker.date = newStart
             endPicker.date   = newEnd
+
         } else if title == "Dag" {
-            // “Dag” → full calendar day
+            // Full calendar day: midnight → (now if today, else next midnight)
             let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
-            let newStart = calendar.date(from: DateComponents(year: comps.year,
-                                                              month: comps.month,
-                                                              day: comps.day,
-                                                              hour: 0, minute: 0))!
+            let newStart = calendar.date(from: DateComponents(
+                year: comps.year, month: comps.month, day: comps.day,
+                hour: 0, minute: 0
+            ))!
             let newEnd: Date
             if calendar.isDateInToday(sender.date) {
                 newEnd = Date()
             } else {
                 newEnd = calendar.date(byAdding: .day, value: 1, to: newStart)!
             }
+
             startTime = newStart
             endTime   = newEnd
             startPicker.date = newStart
             endPicker.date   = newEnd
+
         } else {
-            // All other cases
+            // Other modes
             var selected = sender.date
             let now = Date()
             if selected > now {
@@ -468,22 +488,18 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             }
         }
 
-        // Update UI
         updateTotals()
-        if !(title == "Dag" && !modalWithTimestamp) {
-            updateBGLabels()
-        } else {
-            // For full-day Dag, recalc BG labels too
-            updateBGLabels()
-        }
+        updateBGLabels()
     }
-
+    
     private func recalcEndTimeBasedOnDuration() {
         guard let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) else { return }
+        let calendar = Calendar.current
+
         if title == "Dag" {
-            let calendar = Calendar.current
+            // Full calendar day
             if modalWithTimestamp {
-                // Full calendar day of the meal’s date
+                // Use the meal’s day
                 let dayStart = calendar.startOfDay(for: startTime)
                 startTime = dayStart
                 endTime = calendar.date(byAdding: .day, value: 1, to: dayStart)!
@@ -494,30 +510,48 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                 endTime = now
             }
             startPicker.date = startTime
-            endPicker.date = endTime
+            endPicker.date   = endTime
+
         } else if title == "Ⓢ" {
-            let calendar = Calendar.current
-            let now = Date()
-            let components = calendar.dateComponents([.year, .month, .day], from: now)
-            startTime = calendar.date(from: DateComponents(year: components.year, month: components.month, day: components.day, hour: 8, minute: 0)) ?? now
-            endTime = calendar.date(from: DateComponents(year: components.year, month: components.month, day: components.day, hour: 16, minute: 30)) ?? now
-            startPicker.date = startTime
-            endPicker.date = endTime
+            // Schoolday: always 08:00 → (now if before 16:30; else 16:30)
+            // Use the same calendar-day as startTime (preserves date if you entered via modal)
+            let comps = calendar.dateComponents([.year, .month, .day], from: startTime)
+            let newStart = calendar.date(from: DateComponents(
+                year: comps.year, month: comps.month, day: comps.day,
+                hour: 8, minute: 0
+            ))!
+            let schoolEnd = calendar.date(from: DateComponents(
+                year: comps.year, month: comps.month, day: comps.day,
+                hour: 16, minute: 30
+            ))!
+            let newEnd: Date
+            if calendar.isDateInToday(newStart), Date() < schoolEnd {
+                // if it’s today *and* before 16:30, end = now
+                newEnd = Date()
+            } else {
+                // otherwise end = 16:30 of that day
+                newEnd = schoolEnd
+            }
+            startTime = newStart
+            endTime   = newEnd
+            startPicker.date = newStart
+            endPicker.date   = newEnd
+
         } else {
+            // Hacker for “1h”, “2h”, etc., or modal-with-timestamp
             let hoursString = title.replacingOccurrences(of: "h", with: "")
             let hours = Int(hoursString) ?? 1
+
             if modalWithTimestamp {
-                // startTime → endTime
-                endTime = Calendar.current.date(byAdding: .hour, value: hours, to: startTime) ?? startTime
-                endPicker.date = endTime
-                let now = Date()
-                if endTime > now {
-                    endTime = now
-                    endPicker.date = now
+                // From startTime + hours → endTime
+                endTime = calendar.date(byAdding: .hour, value: hours, to: startTime)!
+                if endTime > Date() {
+                    endTime = Date()
                 }
+                endPicker.date = endTime
             } else {
-                // endTime is fixed → derive startTime
-                startTime = Calendar.current.date(byAdding: .hour, value: -hours, to: endTime) ?? endTime
+                // From endTime − hours → startTime
+                startTime = calendar.date(byAdding: .hour, value: -hours, to: endTime)!
                 startPicker.date = startTime
             }
         }
@@ -1054,7 +1088,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     private func loadCachedData() {
         Task.detached { [weak self] in
             guard let self = self else { return }
-            // Ask for the full retention window (default 7 days)
+            // Ask for the full retention window (default 10 days)
             let cal = Calendar.current
             guard let oldestWanted = cal.date(byAdding: .day,
                                               value: -NightscoutCache.retentionDays,
