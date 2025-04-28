@@ -270,6 +270,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     foodType: foodType
                 )
 
+            case "BG Check":
+                // Map BG Check to Event, converting units to mmol if needed
+                if let glucose = treatment.rawData["glucose"] as? Double {
+                    let units = treatment.rawData["units"] as? String ?? ""
+                    let mmol = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
+                    return Event(
+                        date: treatment.timestamp,
+                        eventType: "BG Check",
+                        amount: mmol,
+                        foodType: nil
+                    )
+                }
+                return nil
+
             default:
                 return nil
             }

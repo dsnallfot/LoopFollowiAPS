@@ -344,7 +344,6 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         recalcEndTimeBasedOnDuration()
         updateTotals()
         fetchBG24h()
-        fetchBGChecks24h()
         // — Pull additional days from NightscoutCache (if any) —
         loadCachedData()
 
@@ -980,11 +979,11 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             $0.eventType == "BG Check" && $0.date >= startTime && $0.date <= endTime
         }
         //print("DEBUG ▸ BG Check events: count = \(bgCheckEvents.count)")
-        for evt in bgCheckEvents {
-            let x = evt.date.timeIntervalSince(startTime) / 3600.0
-            let y = evt.amount
+        //for evt in bgCheckEvents {
+            //let x = evt.date.timeIntervalSince(startTime) / 3600.0
+            //let y = evt.amount
             //print("DEBUG ▸ BG Check event: date = \(evt.date), x = \(x), y = \(y)")
-        }
+        //}
         let bgCheckEntries = bgCheckEvents.map { event in
             ChartDataEntry(
                 x: event.date.timeIntervalSince(startTime) / 3600.0,
@@ -995,7 +994,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         let bgCheckDots = ScatterChartDataSet(entries: bgCheckEntries, label: "")
         bgCheckDots.setColor(.systemRed)
         bgCheckDots.setScatterShape(.circle)
-        bgCheckDots.scatterShapeSize = 8
+        bgCheckDots.scatterShapeSize = 7
         bgCheckDots.drawValuesEnabled = false
         bgCheckDots.highlightEnabled = true
         bgCheckDots.highlightColor = .clear
@@ -1136,48 +1135,6 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             // Update UI
             self.updateBGLabels()
             self.refreshBGChart()
-        }
-    }
-    
-    /// Fetch live BG-Check treatments between startTime/endTime and merge them into `events`.
-    private func fetchBGChecks24h() {
-        guard IsNightscoutEnabled() else { return }
-
-        let iso = ISO8601DateFormatter()
-        let params: [String: String] = [
-          "find[created_at][$gte]": iso.string(from: startTime),
-          "find[created_at][$lte]": iso.string(from: endTime),
-          "find[eventType]": "BG Check"
-        ]
-
-        NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
-            guard
-              case .success(let raw) = result,
-              let arr = raw as? [[String:AnyObject]]
-            else { return }
-
-            let checks = arr.compactMap { dict -> Event? in
-                guard
-                  let createdAtStr = dict["created_at"] as? String,
-                  let date = NightscoutUtils.parseDate(createdAtStr),
-                  let glucose = dict["glucose"] as? Double
-                else { return nil }
-
-                let units = (dict["units"] as? String ?? "").lowercased()
-                let mmol = units.contains("mmol") ? glucose : glucose / 18.0
-                return Event(date: date, eventType: "BG Check", amount: mmol, foodType: nil)
-            }
-
-            DispatchQueue.main.async {
-                // merge without duplicates
-                let existingKeys = Set(self.events.map { "\($0.date.timeIntervalSince1970)|\($0.eventType)" })
-                let newOnes = checks.filter {
-                  !existingKeys.contains("\($0.date.timeIntervalSince1970)|\($0.eventType)")
-                }
-                self.events.append(contentsOf: newOnes)
-                self.events.sort { $0.date < $1.date }
-                self.refreshBGChart()
-            }
         }
     }
 
