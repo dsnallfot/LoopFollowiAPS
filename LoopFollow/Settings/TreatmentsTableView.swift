@@ -1163,13 +1163,13 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
                 }
-                presentAlert(title: "\(timeString)\nNotering", message: message)
+                presentAlert(title: "\(timeString)\n\nNotering", message: message)
                 
             }
         }
         
         if ["Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart"].contains(treatment.eventType) {
-            let title = "\(timeString)\nSensorbyte"
+            let title = "\(timeString)\n\nSensorbyte"
             var message = treatment.sensorStartNotes ?? "Inga anteckningar"
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message += "\nInlagt av: \(enteredBy)"
@@ -1190,7 +1190,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         if treatment.eventType == "Site Change" {
-            let title = "\(timeString)\nPumpbyte"
+            let title = "\(timeString)\n\nPumpbyte"
             var message = ""
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message = "Inlagt av: \(enteredBy)"
@@ -1214,7 +1214,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if let glucose = treatment.rawData["glucose"] as? Double,
                let units = treatment.rawData["units"] as? String {
                 let mmol = units.lowercased().contains("mmol") ? glucose : glucose / 18.0
-                let title = "\(timeString)\nFingerstick"
+                let title = "\(timeString)\n\nFingerstick"
                 var message = "Blodsocker: \(glucose) mmol/L"
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"
@@ -1237,7 +1237,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         
         if ["Temporary Override", "Exercise", "Override"].contains(treatment.eventType) {
             if let fullOverride = treatment.overrideNotes {
-                let title = "\(timeString)\nOverride"
+                let title = "\(timeString)\n\nOverride"
                 var message = fullOverride
                 if let duration = treatment.overrideDuration {
                     // Show “Tillsvidare” if duration > 1439 minutes
@@ -1270,7 +1270,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
 
         if treatment.eventType == "Carb Correction" {
             let foodTypeValue = treatment.rawData["foodType"] as? String ?? ""
-            let title = foodTypeValue.isEmpty ? "\(timeString)\nFett & Protein" : "\(timeString)\nMåltid"
+            let title = foodTypeValue.isEmpty ? "\(timeString)\n\nFett & Protein" : "\(timeString)\n\nMåltid"
             var message = foodTypeValue.isEmpty ? "Kolhydratsekvivalenter: " : foodTypeValue
             let carbsValue: Double = treatment.rawData["carbs"] as? Double ?? 0.0
             message += foodTypeValue.isEmpty ? "\(formatValue(carbsValue)) g" : "\nKolhydrater: \(formatValue(carbsValue)) g"
@@ -1304,7 +1304,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message += "\nInlagt av: \(enteredBy)"
             }
-            presentAlert(title: "\(timeString)\nBolus", message: message)
+            presentAlert(title: "\(timeString)\n\nBolus", message: message)
         }
     }
 

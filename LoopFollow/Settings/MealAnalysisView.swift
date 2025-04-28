@@ -80,7 +80,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
     private let startTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Vald starttid"
+        label.text = "Starttid"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -88,7 +88,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
     private let endTimeLabel: UILabel = {
         let label = UILabel()
-        label.text = "Vald sluttid"
+        label.text = "Sluttid"
         label.setContentHuggingPriority(.required, for: .horizontal)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -154,14 +154,15 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             //title = "Utveckling efter måltid"
             title = modalTitleString
         } else {
-            title = "Utveckling fram till nu"
+            title = "Utveckling under vald tid"
         }
 
-        // When opened without a linked meal, default to the last 24 h window
+        // When opened without a linked meal, default to "Dag" (today 00:00–now)
         if !modalWithTimestamp {
-            endTime = Date()
-            startTime = Calendar.current.date(byAdding: .hour, value: -24, to: endTime)!
             durationControl.selectedSegmentIndex = 7   // "Dag"
+            let now = Date()
+            startTime = Calendar.current.startOfDay(for: now)
+            endTime = now
         }
         view.backgroundColor = .systemBackground
 
@@ -363,12 +364,10 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     // MARK: - Time calculations
 
     @objc private func startTimeChanged(_ sender: UIDatePicker) {
-        // Only drop “1h…24h” selection when *not* in timestamp-modal mode
-        if !modalWithTimestamp,
-           (0...6).contains(durationControl.selectedSegmentIndex)
-            {
-                durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
-            }
+        // Drop "1h…24h" selection when manually adjusting dates
+        if (0...6).contains(durationControl.selectedSegmentIndex) {
+            durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+        }
         // Grab the (optional) title now that we might have cleared it
         let title = durationControl.selectedSegmentIndex >= 0 ? durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) : nil
         let calendar = Calendar.current
@@ -418,7 +417,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         } else {
             // Other modes (timestamp modal or fixed durations)
             startTime = sender.date
-            if modalWithTimestamp {
+            if modalWithTimestamp && durationControl.selectedSegmentIndex != UISegmentedControl.noSegment {
                 recalcEndTimeBasedOnDuration()
             }
         }
@@ -435,12 +434,10 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     }
 
     @objc private func endTimeChanged(_ sender: UIDatePicker) {
-        // Only drop “1h…24h” selection when *not* in timestamp-modal mode
-        if !modalWithTimestamp,
-           (0...6).contains(durationControl.selectedSegmentIndex)
-            {
-                durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
-            }
+        // Drop "1h…24h" selection when manually adjusting dates
+        if (0...6).contains(durationControl.selectedSegmentIndex) {
+            durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+        }
         // Grab the (optional) title now that we might have cleared it
         let title = durationControl.selectedSegmentIndex >= 0 ? durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) : nil
         let calendar = Calendar.current
@@ -496,8 +493,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                 sender.date = now
             }
             endTime = selected
-
-            if modalWithTimestamp {
+            if modalWithTimestamp && durationControl.selectedSegmentIndex != UISegmentedControl.noSegment {
                 recalcEndTimeBasedOnDuration()
             }
         }
@@ -507,24 +503,25 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     }
     
     private func recalcEndTimeBasedOnDuration() {
-        guard let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) else { return }
+        let idx = durationControl.selectedSegmentIndex
+        guard idx != UISegmentedControl.noSegment,
+              idx < durationControl.numberOfSegments,
+              let title = durationControl.titleForSegment(at: idx) else { return }
         let calendar = Calendar.current
 
         if title == "Dag" {
-            // Full calendar day
-            if modalWithTimestamp {
-                // Use the meal’s day
-                let dayStart = calendar.startOfDay(for: startTime)
-                startTime = dayStart
-                endTime = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+            // Full calendar day: midnight → (now if today, else next midnight)
+            let dayStart = calendar.startOfDay(for: startTime)
+            startTime = dayStart
+            let newEnd: Date
+            if calendar.isDateInToday(dayStart) {
+                newEnd = Date()
             } else {
-                // Today: midnight → now
-                let now = Date()
-                startTime = calendar.startOfDay(for: now)
-                endTime = now
+                newEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
             }
+            endTime = newEnd
             startPicker.date = startTime
-            endPicker.date   = endTime
+            endPicker.date = endTime
 
         } else if title == "Ⓢ" {
             // Schoolday: always 08:00 → (now if before 16:30; else 16:30)
