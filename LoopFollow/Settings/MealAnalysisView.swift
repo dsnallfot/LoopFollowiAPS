@@ -363,7 +363,14 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     // MARK: - Time calculations
 
     @objc private func startTimeChanged(_ sender: UIDatePicker) {
-        let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex)
+        // Only drop “1h…24h” selection when *not* in timestamp-modal mode
+        if !modalWithTimestamp,
+           (0...6).contains(durationControl.selectedSegmentIndex)
+            {
+                durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+            }
+        // Grab the (optional) title now that we might have cleared it
+        let title = durationControl.selectedSegmentIndex >= 0 ? durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) : nil
         let calendar = Calendar.current
 
         if title == "Ⓢ" {
@@ -428,7 +435,14 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     }
 
     @objc private func endTimeChanged(_ sender: UIDatePicker) {
-        let title = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex)
+        // Only drop “1h…24h” selection when *not* in timestamp-modal mode
+        if !modalWithTimestamp,
+           (0...6).contains(durationControl.selectedSegmentIndex)
+            {
+                durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+            }
+        // Grab the (optional) title now that we might have cleared it
+        let title = durationControl.selectedSegmentIndex >= 0 ? durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) : nil
         let calendar = Calendar.current
 
         if title == "Ⓢ" {
