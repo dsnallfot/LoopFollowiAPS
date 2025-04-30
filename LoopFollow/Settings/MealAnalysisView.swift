@@ -347,6 +347,17 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         // — Pull additional days from NightscoutCache (if any) —
         loadCachedData()
 
+        // ← / → dag‑hopp
+        let prevBtn = UIBarButtonItem(image: UIImage(systemName: "chevron.left"),
+                                      style: .plain,
+                                      target: self,
+                                      action: #selector(previousDayTapped))
+        let nextBtn = UIBarButtonItem(image: UIImage(systemName: "chevron.right"),
+                                      style: .plain,
+                                      target: self,
+                                      action: #selector(nextDayTapped))
+        navigationItem.leftBarButtonItems = [prevBtn, nextBtn]
+
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
             style: .done,
@@ -357,6 +368,42 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
     @objc private func dismissSelf() {
         dismiss(animated: true, completion: nil)
+    }
+
+    // MARK: - ±1‑day navigation
+    @objc private func previousDayTapped() {
+        shiftWindow(byDays: -1)
+    }
+
+    @objc private func nextDayTapped() {
+        shiftWindow(byDays: 1)
+    }
+
+    /// Shifts the current time window an integral number of days while keeping its width.
+    /// - Parameter days: Negative = back in time, Positive = forward.
+    private func shiftWindow(byDays days: Int) {
+        guard days != 0 else { return }
+        let oneDay = TimeInterval(86_400 * days)
+
+        let newStart = startTime.addingTimeInterval(oneDay)
+        let newEnd   = endTime  .addingTimeInterval(oneDay)
+
+        // Respect data limits already enforced by the pickers
+        if let minDate = startPicker.minimumDate, newStart < minDate { return }
+        if let maxDate = endPicker.maximumDate,  newEnd   > maxDate { return }
+
+        startTime = newStart
+        endTime   = newEnd
+        startPicker.date = newStart
+        endPicker.date   = newEnd
+
+        // Clear “1h–24h” preset so UI reflects a custom interval
+        if (0...6).contains(durationControl.selectedSegmentIndex) {
+            durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+        }
+
+        updateTotals()
+        updateBGLabels()
     }
 
     // MARK: - Actions
