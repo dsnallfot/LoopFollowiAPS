@@ -389,12 +389,13 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Setup Segmented Control
     
     private func setupSegmentedControl() {
-        let segments = ["Alla", "Auto", "Manuella", "Övriga"]
+        let segments = ["Alla", "Auto", "Manuell", "Övriga"]
         segmentedControl = UISegmentedControl(items: segments)
         segmentedControl.selectedSegmentIndex = 0
         segmentedControl.addTarget(self, action: #selector(filterChanged), for: .valueChanged)
         segmentedControl.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(segmentedControl)
+        // Constraints added later via headerStack in setupConstraints()
     }
     
     @objc private func filterChanged() {
@@ -417,19 +418,37 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     private func setupConstraints() {
         let safeArea = view.safeAreaLayoutGuide
-        NSLayoutConstraint.activate([
-            // Date picker on its own row, top-center
-            datePicker.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 8),
-            datePicker.centerXAnchor.constraint(equalTo: safeArea.centerXAnchor),
 
-            // Segmented control below the date picker
-            segmentedControl.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 8),
-            segmentedControl.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor, constant: 16),
-            segmentedControl.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor, constant: -16)
+        // --- Horizontal stack for date picker + segmented control ---
+        let headerStack = UIStackView(arrangedSubviews: [datePicker, segmentedControl])
+        headerStack.axis = .horizontal
+        headerStack.spacing = 6
+        headerStack.alignment = .center
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(headerStack)
+
+        // Ensure the date picker shows its full content, let the segmented control shrink first
+        datePicker.setContentHuggingPriority(.required, for: .horizontal)
+        datePicker.setContentCompressionResistancePriority(.required, for: .horizontal)
+        segmentedControl.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        segmentedControl.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        // Uniform compact heights (same as in MealAnalysisView)
+        datePicker.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        segmentedControl.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        // Ensure the date text has room after we hid the calendar glyph
+        datePicker.widthAnchor.constraint(lessThanOrEqualToConstant: 105).isActive = true
+
+        NSLayoutConstraint.activate([
+            // Pin headerStack at the top
+            headerStack.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 8),
+            headerStack.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor, constant: 8),
+            headerStack.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor, constant: -8)
         ])
 
+        // TableView below the headerStack
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: segmentedControl.bottomAnchor, constant: 8),
+            tableView.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor)
