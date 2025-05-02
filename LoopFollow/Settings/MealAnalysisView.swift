@@ -237,7 +237,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                     text: "varav SMB",
                     valueLabel: smbValueLabel,
                     secondary: true),
-            makeRow(iconName: "stop.fill",
+            makeRow(iconName: "stop.circle",
                     iconColor: UIColor.systemBlue.withAlphaComponent(0.45),
                     text: "varav Temp Basal",
                     valueLabel: basalValueLabel,
