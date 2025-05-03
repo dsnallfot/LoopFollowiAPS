@@ -749,10 +749,10 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 
                 if UserDefaultsRepository.hideRemoteBolus.value {
                     // Construct and return the combinedString without bolus
-                    return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
+                    return "Remote Måltid\nKh: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNot: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
                 } else {
                     // Construct and return the combinedString with bolus
-                    return "Remote Måltid\nKolhydrater: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNotering: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
+                    return "Remote Måltid\nKh: \(carbs)g\nFett: \(fats)g\nProtein: \(proteins)g\nNot: \(cleanedMealNotes)\nDatum: \(formattedDate)\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
                 }
             }
         

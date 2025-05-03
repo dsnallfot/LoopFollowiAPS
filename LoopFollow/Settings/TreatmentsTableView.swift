@@ -982,7 +982,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             let formattedTimestamp = dateFormatter.string(from: currentTimestamp)
             
             // Build the combined command string.
-            let combinedString = "Remote Delete\nKolhydrater: \(carbsValue)g\nDatum: \(formattedDate)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
+            let combinedString = "Remote Delete\nKh: \(carbsValue)g\nDatum: \(formattedDate)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
             
             // Send the remote command.
             sendRemoteDeleteCommand(combinedString: combinedString)
