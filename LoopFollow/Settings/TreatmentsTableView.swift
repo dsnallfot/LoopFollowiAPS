@@ -108,6 +108,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let picker = UIDatePicker()
         picker.datePickerMode = .date
         picker.preferredDatePickerStyle = .compact
+        picker.locale = Locale(identifier: "sv_SE")
         picker.translatesAutoresizingMaskIntoConstraints = false
         return picker
     }()
@@ -773,6 +774,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         
         // Format the timestamp as HH:mm.
         let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "sv_SE")
         timeFormatter.dateFormat = "HH:mm"
         cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
         
@@ -836,6 +838,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let treatment = filteredTreatments[indexPath.row]
         let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "sv_SE")
         timeFormatter.dateFormat = "HH:mm"
         let timeString = timeFormatter.string(from: treatment.timestamp)
         
@@ -970,6 +973,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             
             // Format the treatment's timestamp.
             let dateFormatter = DateFormatter()
+            dateFormatter.locale = Locale(identifier: "sv_SE")
             dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
             let formattedDate = dateFormatter.string(from: treatment.timestamp)
             
@@ -1163,6 +1167,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         let treatment = filteredTreatments[indexPath.row]
         
         let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "sv_SE")
         timeFormatter.dateFormat = "dd MMM HH:mm:ss"
         let timeString = timeFormatter.string(from: treatment.timestamp)
 

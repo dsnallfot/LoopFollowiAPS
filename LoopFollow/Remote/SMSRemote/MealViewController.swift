@@ -67,6 +67,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         
         setupInputAccessoryView()
         setupDatePickerLimits()
+        // Use Swedish locale so months show "maj", "juni", etc.
+        mealDateTime.locale = Locale(identifier: "sv_SE")
         self.focusCarbsEntryField()
         
         // Disable autocomplete and spell checking

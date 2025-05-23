@@ -62,9 +62,10 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         let picker = UIDatePicker()
         picker.datePickerMode = .dateAndTime
         picker.preferredDatePickerStyle = .compact
+        picker.locale = Locale(identifier: "sv_SE")
         picker.translatesAutoresizingMaskIntoConstraints = false
         // Compact height
-        picker.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        picker.heightAnchor.constraint(equalToConstant: 32).isActive = true
         return picker
     }()
     
@@ -72,9 +73,10 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         let picker = UIDatePicker()
         picker.datePickerMode = .dateAndTime
         picker.preferredDatePickerStyle = .compact
+        picker.locale = Locale(identifier: "sv_SE")
         picker.translatesAutoresizingMaskIntoConstraints = false
         // Compact height
-        picker.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        picker.heightAnchor.constraint(equalToConstant: 32).isActive = true
         return picker
     }()
 
@@ -1373,6 +1375,7 @@ extension MealAnalysisView: AxisValueFormatter {
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
         let date = startTime.addingTimeInterval(value * 3600)
         let f = DateFormatter()
+        f.locale = Locale(identifier: "sv_SE")
         f.dateFormat = "HH:mm"
         return f.string(from: date)
     }
