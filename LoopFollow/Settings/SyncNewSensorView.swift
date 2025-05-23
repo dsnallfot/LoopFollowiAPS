@@ -24,11 +24,12 @@ struct SyncNewSensorView: View {
         @State private var pairingPauseAdjustment: TimeInterval = 0
 
         // Now mutable via UI
-        /// Offset for how many seconds before the curretn sensor heartbeat the insert sensor countdown should aim towards
-        /// Maybe needs to be tweaked, but initial findings indicates that the sensor needs 180 s extra during warmup before the 300 s cycle starts, ie 150 s offset should give an effective offset of -30 s between the new sensor readings and the old sensor that will be used as heartbeat in LF
-        @State private var pairingOffset: Int = 30
-        @State private var offsetString: String = "30"
-        @State private var lastValidOffset: Int = 30
+        /// Offset for how many seconds before the current sensor heartbeat the insert sensor countdown should aim towards
+        /// Maybe needs to be tweaked, but initial findings indicates that the sensor needs ~183 s extra during warmup before the 300 s cycle starts, ie 153 s offset should give an effective offset of -30 s between the new sensor readings and the old sensor that will be used as heartbeat in LF
+        // Persist these values through UserDefaultsRepository
+        @State private var pairingOffset: Int = UserDefaultsRepository.pairingOffset.value
+        @State private var offsetString: String = UserDefaultsRepository.offsetString.value
+        @State private var lastValidOffset: Int = UserDefaultsRepository.pairingOffset.value
         @State private var showOffsetError: Bool = false
 
         // For pairing countdown sounds
@@ -48,7 +49,7 @@ struct SyncNewSensorView: View {
         
         let lastBGTime = Int(lastBG.timeIntervalSince1970)
         let lastBGCycle = lastBGTime % cycle
-        let offset = (lastBGCycle - pairingOffset - 120 + cycle) % cycle
+        let offset = (lastBGCycle - pairingOffset - 123 + cycle) % cycle
         
         let currentTime = Int(effectiveTime.timeIntervalSince1970)
         let currentCycle = currentTime % cycle
@@ -204,7 +205,7 @@ struct SyncNewSensorView: View {
 
                     // Explanation text
                     Text("""
-                    'Skjut fast ny sensor'-nedräkningen hjälper dig att initiera parkopplingen med den nya sensorn i dexcomappen vid exakt rätt ögonblick. Efter parkopplingen kommer den nya sensorn att skicka ett heartbeat var 5e minut. Genom att tajma offseten noggrant, så kommer du kunna använda den gamla sensorn som heartbeat för att väcka Loop Follow och hämta nya data från Nightscout med minimal fördröjning.\n\n Justera offset nedan till hur många sekunder tidigare du vill att den nya sensorn du skjuter fast ska skicka sin heartbeat vs när den nuvarande sensorn skickar sitt heartbeat (Standard 30s).
+                    'Skjut fast ny sensor'-nedräkningen hjälper dig att initiera parkopplingen med den nya sensorn i dexcomappen vid exakt rätt ögonblick. Efter parkopplingen kommer den nya sensorn att skicka ett heartbeat var 5e minut. Genom att tajma offseten noggrant, så kommer du kunna använda den gamla sensorn som heartbeat för att väcka Loop Follow och hämta nya data från Nightscout med minimal fördröjning.\n\n Justera offset nedan till hur många sekunder tidigare du vill att den nya sensorn du skjuter fast ska skicka sin heartbeat vs när den nuvarande sensorn skickar sitt heartbeat (Standard 30s). \n\nExempel: Om du vill att heartbeat ska ske samma sekund som den gamla sätter du offset till 0s. Om du vill att heartbeat ska ske 30s efter den gamla sätter du offset till 270s.
                     """)
                     .font(.caption2)
                     .foregroundColor(.secondary)
@@ -224,6 +225,8 @@ struct SyncNewSensorView: View {
                                     if (0...299).contains(val) {
                                         // valid: update both offset and lastValid
                                         pairingOffset = val
+                                        UserDefaultsRepository.pairingOffset.value = val
+                                        UserDefaultsRepository.offsetString.value = "\(val)"
                                         lastValidOffset = val
                                         pairingCountdown = calculatePairingCountdown(for: Date())
                                     } else {

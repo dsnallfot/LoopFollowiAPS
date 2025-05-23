@@ -166,6 +166,10 @@ class UserDefaultsRepository {
     static let overrideSystemOutputVolume = UserDefaultsValue<Bool>(key: "overrideSystemOutputVolume", default: true)
     static let forcedOutputVolume = UserDefaultsValue<Float>(key: "forcedOutputVolume", default: 0.5)
     
+    // Sensor Sync Offset
+    static let pairingOffset = UserDefaultsValue<Int>(key: "pairingOffset", default: 30)
+    static let offsetString = UserDefaultsValue<String>(key: "offsetString", default: "30")
+    
     
     // Alerts
     
