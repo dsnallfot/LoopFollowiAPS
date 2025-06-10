@@ -872,6 +872,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                 if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
                                     self.treatments.remove(at: index)
                                 }
+                                self.removeTreatmentFromCache(treatment)
                                 self.tableView.reloadData()
                                 self.updateDuplicateIndicator()
                             }
@@ -930,6 +931,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                 if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
                                     self.treatments.remove(at: index)
                                 }
+                                self.removeTreatmentFromCache(treatment)
                                 self.tableView.reloadData()
                                 self.updateDuplicateIndicator()
                             }
@@ -1401,5 +1403,28 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         formatted = formatted.replacingOccurrences(of: "&gt;", with: ">")
         
         return formatted
+    }
+    
+    /// Remove a treatment that has just been deleted in Nightscout from the
+    /// local NightscoutCache so duplicates don’t re-appear after an app restart.
+    private func removeTreatmentFromCache(_ treatment: Treatment) {
+        let dayStart = Calendar.current.startOfDay(for: treatment.timestamp)
+
+        // Load the cached payload for that calendar day (if any).
+        guard var payload = try? NightscoutCache.readDay(dayStart) else { return }
+
+        // Prefer to match by Nightscout `_id`; fall back to timestamp + eventType.
+        if let id = treatment.documentId {
+            payload.treatments.removeAll { $0._id == id }
+        } else {
+            payload.treatments.removeAll {
+                $0.created_at == treatment.timestamp && $0.eventType == treatment.eventType
+            }
+        }
+
+        // Save the pruned day payload back to disk.
+        try? NightscoutCache.writeDay(date: dayStart,
+                                      sgv: payload.sgv,
+                                      treatments: payload.treatments)
     }
 }
