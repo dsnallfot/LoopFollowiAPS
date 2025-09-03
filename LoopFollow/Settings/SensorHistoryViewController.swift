@@ -80,6 +80,44 @@ class SensorHistoryViewController: UITableViewController {
         return cell
     }
 
+    // MARK: - Swipe to Edit/Delete
+    override func tableView(_ tableView: UITableView,
+                            trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let entry = sensorHistory[indexPath.row]
+
+        let deleteAction = UIContextualAction(style: .destructive, title: "Radera") { [weak self] _, _, completion in
+            guard let self = self else { completion(false); return }
+            var stored = Storage.shared.sensorStartNotes
+            // Remove the first matching entry (date+note) from storage
+            if let idx = stored.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) {
+                stored.remove(at: idx)
+                Storage.shared.sensorStartNotes = stored
+                // Update local datasource and table view
+                self.sensorHistory.remove(at: indexPath.row)
+                tableView.deleteRows(at: [indexPath], with: .automatic)
+                completion(true)
+            } else {
+                completion(false)
+            }
+        }
+
+        let editAction = UIContextualAction(style: .normal, title: "Redigera") { [weak self] _, _, completion in
+            guard let self = self else { completion(false); return }
+            let editVC = AddManualSensorNoteViewController()
+            editVC.delegate = self
+            editVC.configureForEditing(entry: entry, index: indexPath.row)
+            let nav = UINavigationController(rootViewController: editVC)
+            self.present(nav, animated: true)
+            completion(true)
+        }
+
+        editAction.backgroundColor = .systemBlue
+
+        let config = UISwipeActionsConfiguration(actions: [deleteAction, editAction])
+        config.performsFirstActionWithFullSwipe = false
+        return config
+    }
+    
     // MARK: - Add Manual Sensor Note
     
     @objc private func addManualSensorNote() {
@@ -141,6 +179,19 @@ extension SensorHistoryViewController: AddManualSensorNoteDelegate {
         Storage.shared.sensorStartNotes = storedHistory
         
         loadSensorHistory() // Reload table with updated data
+    }
+    
+    func didUpdateManualSensorNote(note: SensorStartHistoryEntry, at index: Int) {
+        // Update the entry in persistent storage by matching on original index in current list
+        var stored = Storage.shared.sensorStartNotes
+        // Find the original entry we are replacing using the snapshot of the table's ordering
+        let original = sensorHistory[index]
+        if let storedIndex = stored.firstIndex(where: { $0.date == original.date && $0.note == original.note }) {
+            stored[storedIndex] = note
+            Storage.shared.sensorStartNotes = stored
+        }
+        // Refresh local cache and table order
+        loadSensorHistory()
     }
 }
 

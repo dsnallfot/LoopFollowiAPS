@@ -10,11 +10,25 @@ import UIKit
 
 protocol AddManualSensorNoteDelegate: AnyObject {
     func didAddManualSensorNote(note: SensorStartHistoryEntry)
+    func didUpdateManualSensorNote(note: SensorStartHistoryEntry, at index: Int)
 }
 
 class AddManualSensorNoteViewController: UIViewController {
     
     weak var delegate: AddManualSensorNoteDelegate?
+    private var editingIndex: Int?
+    private var editingOriginal: SensorStartHistoryEntry?
+
+    func configureForEditing(entry: SensorStartHistoryEntry, index: Int) {
+        editingIndex = index
+        editingOriginal = entry
+        if isViewLoaded {
+            datePicker.date = Date(timeIntervalSince1970: entry.date)
+            notesTextField.text = entry.note
+            self.title = "Redigera sensor"
+            navigationItem.rightBarButtonItem?.title = "Uppdatera"
+        }
+    }
     
     private let datePicker: UIDatePicker = {
         let picker = UIDatePicker()
@@ -37,6 +51,12 @@ class AddManualSensorNoteViewController: UIViewController {
         view.backgroundColor = .systemBackground
         setupUI()
         setupNavigationBar()
+        if let existing = editingOriginal {
+            datePicker.date = Date(timeIntervalSince1970: existing.date)
+            notesTextField.text = existing.note
+            self.title = "Redigera sensor"
+            navigationItem.rightBarButtonItem?.title = "Uppdatera"
+        }
     }
     
     private func setupNavigationBar() {
@@ -62,12 +82,16 @@ class AddManualSensorNoteViewController: UIViewController {
     @objc private func saveTapped() {
         guard let noteText = notesTextField.text, !noteText.isEmpty else { return }
 
-        let newEntry = SensorStartHistoryEntry(
+        let updatedEntry = SensorStartHistoryEntry(
             date: datePicker.date.timeIntervalSince1970,
             note: noteText
         )
 
-        delegate?.didAddManualSensorNote(note: newEntry)
+        if let idx = editingIndex {
+            delegate?.didUpdateManualSensorNote(note: updatedEntry, at: idx)
+        } else {
+            delegate?.didAddManualSensorNote(note: updatedEntry)
+        }
         dismiss(animated: true)
     }
     
