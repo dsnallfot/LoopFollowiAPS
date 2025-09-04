@@ -7,9 +7,28 @@
 //
 import UIKit
 
+struct SessionBuckets {
+    // Counts
+    var lt1d: Int = 0        // < 1 day
+    var d1to5: Int = 0       // 1 - 5 days
+    var d5to9_5: Int = 0     // 5 - 9.5 days
+    var gt9_5: Int = 0       // > 9.5 days (>= 228h)
+
+    // Total hours per bucket (for averages)
+    var hrs_lt1d: Int = 0
+    var hrs_d1to5: Int = 0
+    var hrs_d5to9_5: Int = 0
+    var hrs_gt9_5: Int = 0
+
+    // Overall totals
+    var total: Int { lt1d + d1to5 + d5to9_5 + gt9_5 }
+    var hrs_total: Int { hrs_lt1d + hrs_d1to5 + hrs_d5to9_5 + hrs_gt9_5 }
+}
+
 class SensorHistoryViewController: UITableViewController {
     
     private var sensorHistory: [SensorStartHistoryEntry] = []
+    private let openedAt = Date() // snapshot when modal opened
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -45,22 +64,66 @@ class SensorHistoryViewController: UITableViewController {
 
         navigationItem.leftBarButtonItems = [addButton, shareButton, importButton]
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+        let infoButton = UIBarButtonItem(
+            image: UIImage(systemName: "info.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(showSessionStats)
+        )
+
+        let doneButton = UIBarButtonItem(
             title: "Klar",
             style: .done,
             target: self,
             action: #selector(doneButtonTapped)
         )
+
+        navigationItem.rightBarButtonItems = [doneButton, infoButton]
     }
     
     @objc private func doneButtonTapped() {
         dismiss(animated: true, completion: nil)
     }
 
+    @objc private func showSessionStats() {
+        let buckets = computeSessionBuckets()
+        let statsVC = SensorSessionStatsViewController(buckets: buckets)
+        let nav = UINavigationController(rootViewController: statsVC)
+        present(nav, animated: true)
+    }
+
     private func loadSensorHistory() {
         sensorHistory = Storage.shared.sensorStartNotes
         sensorHistory.sort { $0.date > $1.date }
         tableView.reloadData()
+    }
+    
+    private func computeSessionBuckets() -> SessionBuckets {
+        guard sensorHistory.count > 1 else { return SessionBuckets() }
+        var buckets = SessionBuckets()
+        // Exclude index 0 (ongoing). For each i >= 1, endDate is the newer entry at i-1
+        for i in 1..<sensorHistory.count {
+            let start = Date(timeIntervalSince1970: sensorHistory[i].date)
+            let end = Date(timeIntervalSince1970: sensorHistory[i - 1].date)
+            var interval = end.timeIntervalSince(start)
+            if interval < 0 { interval = 0 }
+            let hours = Int(interval / 3600)
+            switch hours {
+            case ..<24:
+                buckets.lt1d += 1
+                buckets.hrs_lt1d += hours
+            case 24..<120:
+                buckets.d1to5 += 1
+                buckets.hrs_d1to5 += hours
+            case 120..<228:
+                buckets.d5to9_5 += 1
+                buckets.hrs_d5to9_5 += hours
+            default: // >= 228h
+                buckets.gt9_5 += 1
+                buckets.hrs_gt9_5 += hours
+            }
+        }
+        return buckets
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -75,9 +138,56 @@ class SensorHistoryViewController: UITableViewController {
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
         let formattedDate = dateFormatter.string(from: Date(timeIntervalSince1970: entry.date))
 
-        cell.textLabel?.text = "\(formattedDate)\n\(entry.note)"
+        let baseText = "\(formattedDate)\n\(entry.note)"
+        let attributed = NSMutableAttributedString(string: baseText, attributes: [
+            .font: cell.textLabel?.font as Any,
+            .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
+        ])
+        let append = sessionAppendInfo(for: indexPath.row)
+        let appendAttr = NSAttributedString(string: append.text, attributes: [
+            .font: cell.textLabel?.font as Any,
+            .foregroundColor: append.color
+        ])
+        attributed.append(appendAttr)
+        cell.textLabel?.attributedText = attributed
         cell.textLabel?.numberOfLines = 0
         return cell
+    }
+
+    private func sessionAppendInfo(for index: Int) -> (text: String, color: UIColor) {
+        let current = sensorHistory[index]
+        let currentStart = Date(timeIntervalSince1970: current.date)
+        let endDate: Date
+        let isOngoing = (index == 0)
+        if isOngoing {
+            endDate = openedAt
+        } else {
+            // "Next" activation in time is the row above (newer) since list is sorted desc
+            let newer = sensorHistory[index - 1]
+            endDate = Date(timeIntervalSince1970: newer.date)
+        }
+        var interval = endDate.timeIntervalSince(currentStart)
+        if interval < 0 { interval = 0 } // guard against ordering glitches
+        let totalHours = Int(interval / 3600)
+        let days = totalHours / 24
+        let hours = totalHours % 24
+
+        // Color selection: ongoing sessions are blue; past sessions use thresholds
+        let color: UIColor
+        if isOngoing {
+            color = .systemBlue
+        } else {
+            switch totalHours {
+            case 228...: color = .systemGreen           // >= 9.5 dagar
+            case 120..<228: color = .systemOrange       // 5-10 dagar
+            default: color = .systemRed                 // < 5 dagar
+            }
+        }
+
+        let prefix = isOngoing ? " (Pågående: " : " (Sessionstid: "
+        var snippet = "\(prefix)\(days) d \(hours) tim)"
+        if !isOngoing && totalHours < 24 { snippet += " ⛔️" }
+        return (snippet, color)
     }
 
     // MARK: - Swipe to Edit/Delete
@@ -111,7 +221,7 @@ class SensorHistoryViewController: UITableViewController {
             completion(true)
         }
 
-        editAction.backgroundColor = .systemBlue
+        editAction.backgroundColor = UIColor.systemBlue
 
         let config = UISwipeActionsConfiguration(actions: [deleteAction, editAction])
         config.performsFirstActionWithFullSwipe = false
@@ -237,5 +347,113 @@ extension SensorHistoryViewController: UIDocumentPickerDelegate {
         } else {
             print("❌ Failed to access security-scoped resource for file: \(fileURL)")
         }
+    }
+}
+
+final class SensorSessionStatsViewController: UITableViewController {
+    private let buckets: SessionBuckets
+
+    init(buckets: SessionBuckets) {
+        self.buckets = buckets
+        super.init(style: .insetGrouped)
+    }
+
+    // Helper for formatting average hours as X d Y tim
+    private func avgText(count: Int, totalHours: Int) -> String {
+        guard count > 0 else { return "–" }
+        let avg = totalHours / count
+        let d = avg / 24
+        let h = avg % 24
+        return "\(d) d \(h) tim"
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Sessionstid sensorer"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .done,
+            target: self,
+            action: #selector(dismissSelf)
+        )
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+    }
+
+    @objc private func dismissSelf() { dismiss(animated: true) }
+
+    private enum Section: Int, CaseIterable { case counts, avgs }
+    private enum CountRow: Int, CaseIterable { case header, lt1, d1to5, d5to9_5, gt9_5 }
+    private enum AvgRow: Int, CaseIterable { case header, all, lt1, d1to5, d5to9_5, gt9_5 }
+
+    override func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        switch Section(rawValue: section)! {
+        case .counts: return CountRow.allCases.count
+        case .avgs:   return AvgRow.allCases.count
+        }
+    }
+
+    private func percent(_ count: Int) -> String {
+        let total = max(1, buckets.total)
+        let p = Double(count) * 100.0 / Double(total)
+        return String(format: "%.0f%%", p)
+    }
+
+    private func rightText(count: Int) -> String { "\(count) st (\(percent(count)))" }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: "cell")
+        cell.selectionStyle = .none
+        switch Section(rawValue: indexPath.section)! {
+        case .counts:
+            let row = CountRow(rawValue: indexPath.row)!
+            switch row {
+            case .header:
+                cell.textLabel?.text = "Sessionstid"
+                cell.detailTextLabel?.text = "Antal (Andel %)"
+                cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+                cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+            case .lt1:
+                cell.textLabel?.text = "< 1"
+                cell.detailTextLabel?.text = rightText(count: buckets.lt1d)
+            case .d1to5:
+                cell.textLabel?.text = "1 - 5"
+                cell.detailTextLabel?.text = rightText(count: buckets.d1to5)
+            case .d5to9_5:
+                cell.textLabel?.text = "5 - 9.5"
+                cell.detailTextLabel?.text = rightText(count: buckets.d5to9_5)
+            case .gt9_5:
+                cell.textLabel?.text = "> 9.5"
+                cell.detailTextLabel?.text = rightText(count: buckets.gt9_5)
+            }
+        case .avgs:
+            let row = AvgRow(rawValue: indexPath.row)!
+            switch row {
+            case .header:
+                cell.textLabel?.text = "Medelvärden Sensorer"
+                cell.detailTextLabel?.text = "Sessionstid"
+                cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+                cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+            case .all:
+                cell.textLabel?.text = "Alla"
+                cell.detailTextLabel?.text = avgText(count: buckets.total, totalHours: buckets.hrs_total)
+            case .lt1:
+                cell.textLabel?.text = "< 1"
+                cell.detailTextLabel?.text = avgText(count: buckets.lt1d, totalHours: buckets.hrs_lt1d)
+            case .d1to5:
+                cell.textLabel?.text = "1 - 5"
+                cell.detailTextLabel?.text = avgText(count: buckets.d1to5, totalHours: buckets.hrs_d1to5)
+            case .d5to9_5:
+                cell.textLabel?.text = "5 - 9.5"
+                cell.detailTextLabel?.text = avgText(count: buckets.d5to9_5, totalHours: buckets.hrs_d5to9_5)
+            case .gt9_5:
+                cell.textLabel?.text = "> 9.5"
+                cell.detailTextLabel?.text = avgText(count: buckets.gt9_5, totalHours: buckets.hrs_gt9_5)
+            }
+        }
+        return cell
     }
 }
