@@ -384,7 +384,7 @@ final class SensorSessionStatsViewController: UITableViewController {
     @objc private func dismissSelf() { dismiss(animated: true) }
 
     private enum Section: Int, CaseIterable { case counts, avgs }
-    private enum CountRow: Int, CaseIterable { case header, lt1, d1to5, d5to9_5, gt9_5 }
+    private enum CountRow: Int, CaseIterable { case header, all, lt1, d1to5, d5to9_5, gt9_5 }
     private enum AvgRow: Int, CaseIterable { case header, all, lt1, d1to5, d5to9_5, gt9_5 }
 
     override func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
@@ -412,10 +412,13 @@ final class SensorSessionStatsViewController: UITableViewController {
             let row = CountRow(rawValue: indexPath.row)!
             switch row {
             case .header:
-                cell.textLabel?.text = "Sessionstid"
-                cell.detailTextLabel?.text = "Antal (Andel %)"
+                cell.textLabel?.text = "Sessionstid dagar"
+                cell.detailTextLabel?.text = "Antal (Andel)"
                 cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
                 cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+            case .all:
+                cell.textLabel?.text = "Alla"
+                cell.detailTextLabel?.text = "\(buckets.total) st (100%)"
             case .lt1:
                 cell.textLabel?.text = "< 1"
                 cell.detailTextLabel?.text = rightText(count: buckets.lt1d)
@@ -433,8 +436,8 @@ final class SensorSessionStatsViewController: UITableViewController {
             let row = AvgRow(rawValue: indexPath.row)!
             switch row {
             case .header:
-                cell.textLabel?.text = "Medelvärden Sensorer"
-                cell.detailTextLabel?.text = "Sessionstid"
+                cell.textLabel?.text = "Sensorer"
+                cell.detailTextLabel?.text = "Medel sessionstid"
                 cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
                 cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
             case .all:
