@@ -138,18 +138,25 @@ class SensorHistoryViewController: UITableViewController {
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
         let formattedDate = dateFormatter.string(from: Date(timeIntervalSince1970: entry.date))
 
-        let baseText = "\(formattedDate)\n\(entry.note)"
-        let attributed = NSMutableAttributedString(string: baseText, attributes: [
+        // Build: "<date> <session-info>" (first line), then "<note>" (second line)
+        let baseAttrs: [NSAttributedString.Key: Any] = [
             .font: cell.textLabel?.font as Any,
             .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
-        ])
+        ]
         let append = sessionAppendInfo(for: indexPath.row)
-        let appendAttr = NSAttributedString(string: append.text, attributes: [
+        let sessionAttrs: [NSAttributedString.Key: Any] = [
             .font: cell.textLabel?.font as Any,
             .foregroundColor: append.color
-        ])
-        attributed.append(appendAttr)
-        cell.textLabel?.attributedText = attributed
+        ]
+
+        let composed = NSMutableAttributedString()
+        composed.append(NSAttributedString(string: formattedDate, attributes: baseAttrs))
+        composed.append(NSAttributedString(string: " ", attributes: baseAttrs))
+        composed.append(NSAttributedString(string: append.text, attributes: sessionAttrs))
+        composed.append(NSAttributedString(string: "\n", attributes: baseAttrs))
+        composed.append(NSAttributedString(string: entry.note, attributes: baseAttrs))
+
+        cell.textLabel?.attributedText = composed
         cell.textLabel?.numberOfLines = 0
         return cell
     }
@@ -412,54 +419,75 @@ final class SensorSessionStatsViewController: UITableViewController {
             let row = CountRow(rawValue: indexPath.row)!
             switch row {
             case .header:
-                cell.textLabel?.text = "Sessionstid dagar"
+                cell.textLabel?.text = "Sessionstid"
                 cell.detailTextLabel?.text = "Antal (Andel)"
                 cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
                 cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+                cell.detailTextLabel?.textColor = .label
             case .all:
-                cell.textLabel?.text = "Alla"
+                cell.textLabel?.text = "Alla sensorer"
                 cell.detailTextLabel?.text = "\(buckets.total) st (100%)"
+                cell.detailTextLabel?.textColor = .label
             case .lt1:
-                cell.textLabel?.text = "< 1"
+                cell.textLabel?.text = "< 1 dagar"
+                cell.textLabel?.textColor = .systemRed
                 cell.detailTextLabel?.text = rightText(count: buckets.lt1d)
+                cell.detailTextLabel?.textColor = .systemRed
             case .d1to5:
-                cell.textLabel?.text = "1 - 5"
+                cell.textLabel?.text = "1 - 5 dagar"
+                cell.textLabel?.textColor = .systemRed
                 cell.detailTextLabel?.text = rightText(count: buckets.d1to5)
+                cell.detailTextLabel?.textColor = .systemRed
             case .d5to9_5:
-                cell.textLabel?.text = "5 - 9.5"
+                cell.textLabel?.text = "5 - 9.5 dagar"
+                cell.textLabel?.textColor = .systemOrange
                 cell.detailTextLabel?.text = rightText(count: buckets.d5to9_5)
+                cell.detailTextLabel?.textColor = .systemOrange
             case .gt9_5:
-                cell.textLabel?.text = "> 9.5"
+                cell.textLabel?.text = "> 9.5 dagar"
+                cell.textLabel?.textColor = .systemGreen
                 cell.detailTextLabel?.text = rightText(count: buckets.gt9_5)
+                cell.detailTextLabel?.textColor = .systemGreen
             }
         case .avgs:
             let row = AvgRow(rawValue: indexPath.row)!
             switch row {
             case .header:
-                cell.textLabel?.text = "Sensorer"
-                cell.detailTextLabel?.text = "Medel sessionstid"
+                cell.textLabel?.text = "Sessionstid"
+                cell.detailTextLabel?.text = "Medelvärde"
                 cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
                 cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+                cell.detailTextLabel?.textColor = .label
             case .all:
-                cell.textLabel?.text = "Alla"
+                cell.textLabel?.text = "Alla sensorer"
                 cell.detailTextLabel?.text = avgText(count: buckets.total, totalHours: buckets.hrs_total)
+                cell.detailTextLabel?.textColor = .label
             case .allExclLt1:
                 cell.textLabel?.text = "Alla utom < 1"
                 let count = buckets.d1to5 + buckets.d5to9_5 + buckets.gt9_5
                 let hours = buckets.hrs_d1to5 + buckets.hrs_d5to9_5 + buckets.hrs_gt9_5
                 cell.detailTextLabel?.text = avgText(count: count, totalHours: hours)
+                cell.detailTextLabel?.textColor = .label
             case .lt1:
-                cell.textLabel?.text = "< 1"
+                cell.textLabel?.text = "< 1 dagar"
+                cell.textLabel?.textColor = .systemRed
                 cell.detailTextLabel?.text = avgText(count: buckets.lt1d, totalHours: buckets.hrs_lt1d)
+                cell.detailTextLabel?.textColor = .systemRed
             case .d1to5:
-                cell.textLabel?.text = "1 - 5"
+                cell.textLabel?.text = "1 - 5 dagar"
+                cell.textLabel?.textColor = .systemRed
                 cell.detailTextLabel?.text = avgText(count: buckets.d1to5, totalHours: buckets.hrs_d1to5)
+                cell.detailTextLabel?.textColor = .systemRed
             case .d5to9_5:
-                cell.textLabel?.text = "5 - 9.5"
+                cell.textLabel?.text = "5 - 9.5 dagar"
+                cell.textLabel?.textColor = .systemOrange
                 cell.detailTextLabel?.text = avgText(count: buckets.d5to9_5, totalHours: buckets.hrs_d5to9_5)
+                cell.detailTextLabel?.textColor = .systemOrange
             case .gt9_5:
-                cell.textLabel?.text = "> 9.5"
+                cell.textLabel?.text = "> 9.5 dagar"
+                cell.textLabel?.textColor = .systemGreen
                 cell.detailTextLabel?.text = avgText(count: buckets.gt9_5, totalHours: buckets.hrs_gt9_5)
+                cell.detailTextLabel?.textColor = .systemGreen
             }
         }
         return cell
