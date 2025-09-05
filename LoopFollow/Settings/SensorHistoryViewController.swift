@@ -385,7 +385,7 @@ final class SensorSessionStatsViewController: UITableViewController {
 
     private enum Section: Int, CaseIterable { case counts, avgs }
     private enum CountRow: Int, CaseIterable { case header, all, lt1, d1to5, d5to9_5, gt9_5 }
-    private enum AvgRow: Int, CaseIterable { case header, all, lt1, d1to5, d5to9_5, gt9_5 }
+    private enum AvgRow: Int, CaseIterable { case header, all, allExclLt1, lt1, d1to5, d5to9_5, gt9_5 }
 
     override func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
 
@@ -443,6 +443,11 @@ final class SensorSessionStatsViewController: UITableViewController {
             case .all:
                 cell.textLabel?.text = "Alla"
                 cell.detailTextLabel?.text = avgText(count: buckets.total, totalHours: buckets.hrs_total)
+            case .allExclLt1:
+                cell.textLabel?.text = "Alla utom < 1"
+                let count = buckets.d1to5 + buckets.d5to9_5 + buckets.gt9_5
+                let hours = buckets.hrs_d1to5 + buckets.hrs_d5to9_5 + buckets.hrs_gt9_5
+                cell.detailTextLabel?.text = avgText(count: count, totalHours: hours)
             case .lt1:
                 cell.textLabel?.text = "< 1"
                 cell.detailTextLabel?.text = avgText(count: buckets.lt1d, totalHours: buckets.hrs_lt1d)
