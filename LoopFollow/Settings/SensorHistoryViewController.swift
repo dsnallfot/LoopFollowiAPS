@@ -6,6 +6,7 @@
 //  Copyright © 2025 Jon Fawcett. All rights reserved.
 //
 import UIKit
+import Charts
 
 struct SessionBuckets {
     // Counts
@@ -87,7 +88,7 @@ class SensorHistoryViewController: UITableViewController {
 
     @objc private func showSessionStats() {
         let buckets = computeSessionBuckets()
-        let statsVC = SensorSessionStatsViewController(buckets: buckets)
+        let statsVC = SensorSessionStatsViewController(buckets: buckets, history: sensorHistory)
         let nav = UINavigationController(rootViewController: statsVC)
         present(nav, animated: true)
     }
@@ -359,9 +360,29 @@ extension SensorHistoryViewController: UIDocumentPickerDelegate {
 
 final class SensorSessionStatsViewController: UITableViewController {
     private let buckets: SessionBuckets
+    private let history: [SensorStartHistoryEntry]
+    private let chartView: ScatterChartView = {
+        let v = ScatterChartView()
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        // Interaction & zoom
+        v.pinchZoomEnabled = false      // avoid diagonal zoom; we'll zoom X only
+        v.doubleTapToZoomEnabled = true // double-tap zooms X
+        v.scaleXEnabled = true          // allow horizontal zoom
+        v.scaleYEnabled = false         // lock vertical scale (0–11 stays)
+        v.dragEnabled = true            // allow horizontal pan after zoom
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1_000_000
+        return v
+    }()
 
-    init(buckets: SessionBuckets) {
+    init(buckets: SessionBuckets, history: [SensorStartHistoryEntry]) {
         self.buckets = buckets
+        self.history = history
         super.init(style: .insetGrouped)
     }
 
@@ -386,6 +407,128 @@ final class SensorSessionStatsViewController: UITableViewController {
             action: #selector(dismissSelf)
         )
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        setupChartHeader()
+        loadChartData()
+    }
+
+    private func setupChartHeader() {
+        let container = UIView()
+        container.addSubview(chartView)
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 260)
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            chartView.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+        ])
+        tableView.tableHeaderView = container
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let header = tableView.tableHeaderView {
+            let targetSize = CGSize(width: tableView.bounds.width, height: 260)
+            if header.frame.size != targetSize {
+                header.frame.size = targetSize
+                tableView.tableHeaderView = header
+            }
+        }
+    }
+
+    private func monthStartsBetween(_ start: Date, _ end: Date) -> [Date] {
+        var dates: [Date] = []
+        let cal = Calendar(identifier: .gregorian)
+        let startComp = cal.dateComponents([.year, .month], from: start)
+        let first = cal.date(from: startComp) ?? start
+        var current = first
+        while current <= end {
+            dates.append(current)
+            current = cal.date(byAdding: .month, value: 1, to: current) ?? end.addingTimeInterval(1)
+        }
+        return dates
+    }
+
+    private func loadChartData() {
+        guard history.count > 1 else { return }
+        var entries: [ChartDataEntry] = []
+        var colors: [NSUIColor] = []
+        for i in stride(from: history.count - 1, through: 1, by: -1) {
+            let start = Date(timeIntervalSince1970: history[i].date)
+            let end = Date(timeIntervalSince1970: history[i - 1].date)
+            var interval = end.timeIntervalSince(start)
+            if interval < 0 { interval = 0 }
+            let hours = Int(interval / 3600)
+            let days = min(11.0, Double(hours) / 24.0)
+            // X = datum (starttid), Y = sessionslängd i dagar
+            entries.append(ChartDataEntry(x: start.timeIntervalSince1970, y: days))
+            if hours >= 228 {
+                colors.append(.systemGreen)
+            } else if hours >= 120 {
+                colors.append(.systemOrange)
+            } else {
+                colors.append(.systemRed)
+            }
+        }
+        let set = ScatterChartDataSet(entries: entries, label: "")
+        set.setColors(colors, alpha: 1)
+        set.setScatterShape(.circle)
+        set.scatterShapeSize = 10 // bigger points
+        set.drawValuesEnabled = false
+        // Disable per-datapoint highlighting
+        set.highlightEnabled = false
+        chartView.data = ScatterChartData(dataSet: set)
+        chartView.autoScaleMinMaxEnabled = false
+        chartView.notifyDataSetChanged()
+
+        // X-axel = datumintervall för avslutade sessioners starttider (utan pågående)
+        let oldestStart = Date(timeIntervalSince1970: history.last!.date)
+        let newestEnd = Date(timeIntervalSince1970: history[0].date)
+        let xAxis = chartView.xAxis
+        xAxis.axisMinimum = oldestStart.timeIntervalSince1970
+        xAxis.axisMaximum = newestEnd.timeIntervalSince1970
+        xAxis.labelPosition = .bottom
+        xAxis.granularity = 24 * 3600 // daglig
+        xAxis.granularityEnabled = true
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyMMdd"
+        xAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
+            return df.string(from: Date(timeIntervalSince1970: value))
+        })
+        // Keep X-axis labels readable: max ~6 labels regardless of zoom
+        xAxis.setLabelCount(6, force: false)
+        //xAxis.avoidFirstLastClippingEnabled = true
+
+        // Y-axel = sessionslängd i dagar (0–11) med diskreta heltalsetiketter
+        let yAxis = chartView.leftAxis
+        yAxis.axisMinimum = 0
+        yAxis.axisMaximum = 11
+        yAxis.granularity = 1
+        yAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
+            let iv = Int(round(value))
+            // Show only even ticks between 0 and 11 (2,4,6,8,10) and append "d"
+            if iv > 0 && iv < 11 && iv % 2 == 0 {
+                return "\(iv)d"
+            }
+            return ""
+        })
+        yAxis.granularityEnabled = true
+
+        // 🔹 Make X and Y grid lines dashed/dotted and more subtle
+        let gridLineColor = NSUIColor.lightGray.withAlphaComponent(0.5) // Faint gray
+
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5 // Thin grid lines
+        xAxis.gridLineDashLengths = [2, 2] // Dotted effect
+
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2] // Dotted effect
+
+        chartView.rightAxis.enabled = false // Hide right Y-axis (already set, ensure stays off)
+
+        chartView.setNeedsDisplay()
     }
 
     @objc private func dismissSelf() { dismiss(animated: true) }
