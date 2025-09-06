@@ -134,6 +134,10 @@ class SensorHistoryViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "SensorHistoryCell", for: indexPath)
         let entry = sensorHistory[indexPath.row]
+        let cleanedNote = entry.note
+            .replacingOccurrences(of: "+0000", with: "")
+            .replacingOccurrences(of: "  ", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
@@ -155,7 +159,7 @@ class SensorHistoryViewController: UITableViewController {
         composed.append(NSAttributedString(string: " ", attributes: baseAttrs))
         composed.append(NSAttributedString(string: append.text, attributes: sessionAttrs))
         composed.append(NSAttributedString(string: "\n", attributes: baseAttrs))
-        composed.append(NSAttributedString(string: entry.note, attributes: baseAttrs))
+        composed.append(NSAttributedString(string: cleanedNote, attributes: baseAttrs))
 
         cell.textLabel?.attributedText = composed
         cell.textLabel?.numberOfLines = 0

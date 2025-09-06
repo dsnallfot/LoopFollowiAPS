@@ -34,7 +34,8 @@ class AddManualSensorNoteViewController: UIViewController {
         let picker = UIDatePicker()
         picker.datePickerMode = .dateAndTime
         picker.preferredDatePickerStyle = .wheels
-        picker.maximumDate = Date() 
+        picker.maximumDate = Date()
+        picker.locale = Locale(identifier: "sv_SE")
         return picker
     }()
     
