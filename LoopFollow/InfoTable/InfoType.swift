@@ -29,7 +29,7 @@ enum InfoType: Int, CaseIterable {
         case .target: return "Målvärde"
         case .isf: return "ISF"
         case .carbRatio: return "CR"
-        case .updated: return "Info uppdaterad"
+        case .updated: return "Trio status"
         case .tdd: return "Total daglig dos"
         case .iage: return "Insulinålder"
         case .carbReq: return "Behov kh"
