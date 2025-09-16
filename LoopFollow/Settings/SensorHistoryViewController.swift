@@ -33,7 +33,7 @@ class SensorHistoryViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.title = "Sensorhistorik"
+        self.title = "G7 Logg"
         setupNavigationBar()
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "SensorHistoryCell")
         loadSensorHistory()
@@ -74,7 +74,7 @@ class SensorHistoryViewController: UITableViewController {
 
         let doneButton = UIBarButtonItem(
             title: "Klar",
-            style: .done,
+            style: .plain,
             target: self,
             action: #selector(doneButtonTapped)
         )
@@ -406,7 +406,7 @@ final class SensorSessionStatsViewController: UITableViewController {
         title = "Sessionstid sensorer"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
-            style: .done,
+            style: .plain,
             target: self,
             action: #selector(dismissSelf)
         )

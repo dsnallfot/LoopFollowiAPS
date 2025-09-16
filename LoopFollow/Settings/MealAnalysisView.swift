@@ -362,7 +362,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
-            style: .done,
+            style: .plain,
             target: self,
             action: #selector(dismissSelf)
         )

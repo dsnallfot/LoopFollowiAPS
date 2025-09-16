@@ -191,7 +191,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     private func setupNavigationBar() {
         let klarButton = UIBarButtonItem(
             title: "Klar",
-            style: .done,
+            style: .plain,
             target: self,
             action: #selector(doneButtonTapped)
         )
