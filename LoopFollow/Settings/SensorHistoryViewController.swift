@@ -26,15 +26,31 @@ struct SessionBuckets {
     var hrs_total: Int { hrs_lt1d + hrs_d1to5 + hrs_d5to9_5 + hrs_gt9_5 }
 }
 
-class SensorHistoryViewController: UITableViewController {
+class SensorHistoryViewController: UITableViewController, UISearchBarDelegate {
     
     private var sensorHistory: [SensorStartHistoryEntry] = []
+    private var filteredHistory: [SensorStartHistoryEntry] = []
+    private var isFiltering: Bool { !(searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) }
+    private let searchBar: UISearchBar = {
+        let sb = UISearchBar()
+        sb.placeholder = "Sök i sensorloggen"
+        sb.autocapitalizationType = .none
+        sb.autocorrectionType = .no
+        sb.searchBarStyle = .minimal
+        return sb
+    }()
     private let openedAt = Date() // snapshot when modal opened
+
+    private func currentHistory() -> [SensorStartHistoryEntry] {
+        return isFiltering ? filteredHistory : sensorHistory
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.title = "G7 Logg"
+        self.title = "Sensorlogg"
         setupNavigationBar()
+        setupSearchBarHeader()
+        searchBar.delegate = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "SensorHistoryCell")
         loadSensorHistory()
     }
@@ -42,31 +58,41 @@ class SensorHistoryViewController: UITableViewController {
     // MARK: - Navigation Bar Setup
     
     private func setupNavigationBar() {
-        let addButton = UIBarButtonItem(
-            image: UIImage(systemName: "plus.circle"),
-            style: .plain,
-            target: self,
-            action: #selector(addManualSensorNote)
-        )
+        // --- Left side: custom stack with controlled spacing and 4pt inset from the bubble edge ---
+        let addBtn = UIButton(type: .system)
+        addBtn.setImage(UIImage(systemName: "plus"), for: .normal)
+        addBtn.tintColor = .label
+        addBtn.addTarget(self, action: #selector(addManualSensorNote), for: .touchUpInside)
 
-        let shareButton = UIBarButtonItem(
-            image: UIImage(systemName: "square.and.arrow.up"), // Export/Share
-            style: .plain,
-            target: self,
-            action: #selector(exportSensorHistory)
-        )
+        let shareBtn = UIButton(type: .system)
+        shareBtn.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
+        shareBtn.tintColor = .label
+        shareBtn.addTarget(self, action: #selector(exportSensorHistory), for: .touchUpInside)
 
-        let importButton = UIBarButtonItem(
-            image: UIImage(systemName: "square.and.arrow.down"), // Import
-            style: .plain,
-            target: self,
-            action: #selector(importSensorHistory)
-        )
+        let importBtn = UIButton(type: .system)
+        importBtn.setImage(UIImage(systemName: "square.and.arrow.down"), for: .normal)
+        importBtn.tintColor = .label
+        importBtn.addTarget(self, action: #selector(importSensorHistory), for: .touchUpInside)
 
-        navigationItem.leftBarButtonItems = [addButton, shareButton, importButton]
+        // Tighten spacing between icons but keep 2pt leading margin from the nav bar's liquid glass edge
+        let leftStack = UIStackView(arrangedSubviews: [addBtn, shareBtn, importBtn])
+        leftStack.axis = .horizontal
+        leftStack.alignment = .center
+        leftStack.spacing = 9 // tighten icon-to-icon spacing
+        leftStack.isLayoutMarginsRelativeArrangement = true
+        leftStack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 2, bottom: 0, trailing: 0) // 2pt from edge
 
+        // Ensure tappable area is comfortable
+        [addBtn, shareBtn, importBtn].forEach { btn in
+            btn.contentEdgeInsets = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+        }
+
+        let leftItem = UIBarButtonItem(customView: leftStack)
+        navigationItem.leftBarButtonItems = [leftItem]
+
+        // --- Right side: info + done ---
         let infoButton = UIBarButtonItem(
-            image: UIImage(systemName: "info.circle"),
+            image: UIImage(systemName: "info"),
             style: .plain,
             target: self,
             action: #selector(showSessionStats)
@@ -80,6 +106,20 @@ class SensorHistoryViewController: UITableViewController {
         )
 
         navigationItem.rightBarButtonItems = [doneButton, infoButton]
+    }
+
+    private func setupSearchBarHeader() {
+        // Put the search field between the nav bar and the table content
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 52))
+        searchBar.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(searchBar)
+        NSLayoutConstraint.activate([
+            searchBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            searchBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            searchBar.topAnchor.constraint(equalTo: container.topAnchor, constant: 6),
+            searchBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -6)
+        ])
+        tableView.tableHeaderView = container
     }
     
     @objc private func doneButtonTapped() {
@@ -96,6 +136,22 @@ class SensorHistoryViewController: UITableViewController {
     private func loadSensorHistory() {
         sensorHistory = Storage.shared.sensorStartNotes
         sensorHistory.sort { $0.date > $1.date }
+        applyFilterAndReload()
+    }
+
+    private func applyFilterAndReload() {
+        let query = searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        if query.isEmpty {
+            filteredHistory = []
+        } else {
+            filteredHistory = sensorHistory.filter { entry in
+                let note = entry.note.replacingOccurrences(of: "+0000", with: "").lowercased()
+                let df = DateFormatter()
+                df.dateFormat = "yyyy-MM-dd HH:mm"
+                let dateStr = df.string(from: Date(timeIntervalSince1970: entry.date)).lowercased()
+                return note.contains(query) || dateStr.contains(query)
+            }
+        }
         tableView.reloadData()
     }
     
@@ -128,12 +184,12 @@ class SensorHistoryViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return sensorHistory.count
+        return currentHistory().count
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "SensorHistoryCell", for: indexPath)
-        let entry = sensorHistory[indexPath.row]
+        let entry = currentHistory()[indexPath.row]
         let cleanedNote = entry.note
             .replacingOccurrences(of: "+0000", with: "")
             .replacingOccurrences(of: "  ", with: " ")
@@ -148,7 +204,7 @@ class SensorHistoryViewController: UITableViewController {
             .font: cell.textLabel?.font as Any,
             .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
         ]
-        let append = sessionAppendInfo(for: indexPath.row)
+        let append = sessionAppendInfo(forEntry: entry)
         let sessionAttrs: [NSAttributedString.Key: Any] = [
             .font: cell.textLabel?.font as Any,
             .foregroundColor: append.color
@@ -166,7 +222,11 @@ class SensorHistoryViewController: UITableViewController {
         return cell
     }
 
-    private func sessionAppendInfo(for index: Int) -> (text: String, color: UIColor) {
+    private func sessionAppendInfo(forEntry entry: SensorStartHistoryEntry) -> (text: String, color: UIColor) {
+        // Compute using the full (unfiltered) timeline so values remain correct while filtering
+        guard let index = sensorHistory.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) else {
+            return ("", .label)
+        }
         let current = sensorHistory[index]
         let currentStart = Date(timeIntervalSince1970: current.date)
         let endDate: Date
@@ -205,7 +265,7 @@ class SensorHistoryViewController: UITableViewController {
     // MARK: - Swipe to Edit/Delete
     override func tableView(_ tableView: UITableView,
                             trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let entry = sensorHistory[indexPath.row]
+        let entry = currentHistory()[indexPath.row]
 
         let deleteAction = UIContextualAction(style: .destructive, title: "Radera") { [weak self] _, _, completion in
             guard let self = self else { completion(false); return }
@@ -214,9 +274,18 @@ class SensorHistoryViewController: UITableViewController {
             if let idx = stored.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) {
                 stored.remove(at: idx)
                 Storage.shared.sensorStartNotes = stored
-                // Update local datasource and table view
-                self.sensorHistory.remove(at: indexPath.row)
-                tableView.deleteRows(at: [indexPath], with: .automatic)
+                // Update local datasources
+                if let masterIdx = self.sensorHistory.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) {
+                    self.sensorHistory.remove(at: masterIdx)
+                }
+                if let filteredIdx = self.filteredHistory.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) {
+                    self.filteredHistory.remove(at: filteredIdx)
+                }
+                if self.isFiltering {
+                    tableView.deleteRows(at: [indexPath], with: .automatic)
+                } else {
+                    tableView.deleteRows(at: [indexPath], with: .automatic)
+                }
                 completion(true)
             } else {
                 completion(false)
@@ -638,5 +707,22 @@ final class SensorSessionStatsViewController: UITableViewController {
             }
         }
         return cell
+    }
+}
+
+// MARK: - UISearchBarDelegate
+extension SensorHistoryViewController {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        applyFilterAndReload()
+    }
+    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        applyFilterAndReload()
+    }
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
+    }
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.text = nil
+        applyFilterAndReload()
     }
 }
