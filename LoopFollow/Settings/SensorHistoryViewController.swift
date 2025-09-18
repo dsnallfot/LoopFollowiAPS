@@ -26,23 +26,19 @@ struct SessionBuckets {
     var hrs_total: Int { hrs_lt1d + hrs_d1to5 + hrs_d5to9_5 + hrs_gt9_5 }
 }
 
-class SensorHistoryViewController: UITableViewController, UISearchBarDelegate, UISearchResultsUpdating {
+class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITableViewDataSource, UITableViewDelegate {
     
     private var sensorHistory: [SensorStartHistoryEntry] = []
     private var filteredHistory: [SensorStartHistoryEntry] = []
     private var isFiltering: Bool { !(searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) }
-    private let searchController: UISearchController = {
-        let sc = UISearchController(searchResultsController: nil)
-        sc.obscuresBackgroundDuringPresentation = false
-        sc.searchBar.placeholder = "Sök i sensorloggen"
-        sc.searchBar.autocapitalizationType = .none
-        sc.searchBar.autocorrectionType = .no
-        sc.searchBar.searchBarStyle = .minimal
-        return sc
+    private let searchBar: UISearchBar = {
+        let sb = UISearchBar()
+        sb.placeholder = "Sök i sensorloggen"
+        sb.autocapitalizationType = .none
+        sb.autocorrectionType = .no
+        sb.searchBarStyle = .minimal
+        return sb
     }()
-
-    // Convenience to keep existing code paths using `searchBar`
-    private var searchBar: UISearchBar { searchController.searchBar }
 
     private let openedAt = Date() // snapshot when modal opened
 
@@ -53,6 +49,12 @@ class SensorHistoryViewController: UITableViewController, UISearchBarDelegate, U
         return v
     }()
 
+    private let tableView: UITableView = {
+        let tv = UITableView(frame: .zero, style: .insetGrouped)
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        return tv
+    }()
+
     private func currentHistory() -> [SensorStartHistoryEntry] {
         return isFiltering ? filteredHistory : sensorHistory
     }
@@ -61,10 +63,19 @@ class SensorHistoryViewController: UITableViewController, UISearchBarDelegate, U
         super.viewDidLoad()
         self.title = "Sensorlogg"
         setupNavigationBar()
-        definesPresentationContext = true
-        searchController.searchResultsUpdater = self
         searchBar.delegate = self
         installPinnedSearchBar()
+        view.addSubview(tableView)
+        let guide = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: topSearchContainer.bottomAnchor),
+            tableView.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: guide.bottomAnchor)
+        ])
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.keyboardDismissMode = .onDrag
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "SensorHistoryCell")
         loadSensorHistory()
     }
@@ -101,25 +112,12 @@ class SensorHistoryViewController: UITableViewController, UISearchBarDelegate, U
         ])
     }
 
-    private func updateTableInsetsForPinnedSearch() {
-        // Ensure table content starts below the pinned search area
-        topSearchContainer.layoutIfNeeded()
-        let h = topSearchContainer.bounds.height
-        var inset = tableView.contentInset
-        inset.top = h
-        tableView.contentInset = inset
-        tableView.verticalScrollIndicatorInsets.top = h
-    }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        updateTableInsetsForPinnedSearch()
-    }
+    // (Removed updateTableInsetsForPinnedSearch and viewDidLayoutSubviews)
     
     // MARK: - Navigation Bar Setup
     
     private func setupNavigationBar() {
-        // --- Left side: custom stack with controlled spacing and 4pt inset from the bubble edge ---
+        // --- Left side: custom stack with controlled spacing and 2pt inset from the bubble edge ---
         let addBtn = UIButton(type: .system)
         addBtn.setImage(UIImage(systemName: "plus"), for: .normal)
         addBtn.tintColor = .label
@@ -232,11 +230,11 @@ class SensorHistoryViewController: UITableViewController, UISearchBarDelegate, U
         return buckets
     }
 
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return currentHistory().count
     }
 
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "SensorHistoryCell", for: indexPath)
         let entry = currentHistory()[indexPath.row]
         let cleanedNote = entry.note
@@ -312,8 +310,8 @@ class SensorHistoryViewController: UITableViewController, UISearchBarDelegate, U
     }
 
     // MARK: - Swipe to Edit/Delete
-    override func tableView(_ tableView: UITableView,
-                            trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+    func tableView(_ tableView: UITableView,
+                   trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let entry = currentHistory()[indexPath.row]
 
         let deleteAction = UIContextualAction(style: .destructive, title: "Radera") { [weak self] _, _, completion in
@@ -776,9 +774,3 @@ extension SensorHistoryViewController {
     }
 }
 
-extension SensorHistoryViewController {
-    // UISearchResultsUpdating
-    func updateSearchResults(for searchController: UISearchController) {
-        applyFilterAndReload()
-    }
-}
