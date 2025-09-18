@@ -246,14 +246,20 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
         let formattedDate = dateFormatter.string(from: Date(timeIntervalSince1970: entry.date))
 
+        // Use a slightly smaller dynamic font than default body
+        let baseBody = UIFont.preferredFont(forTextStyle: .body)
+        let smallBody = UIFontMetrics(forTextStyle: .body).scaledFont(for: baseBody.withSize(baseBody.pointSize - 1))
+        cell.textLabel?.font = smallBody
+        cell.textLabel?.adjustsFontForContentSizeCategory = true
+
         // Build: "<date> <session-info>" (first line), then "<note>" (second line)
         let baseAttrs: [NSAttributedString.Key: Any] = [
-            .font: cell.textLabel?.font as Any,
+            .font: smallBody,
             .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
         ]
         let append = sessionAppendInfo(forEntry: entry)
         let sessionAttrs: [NSAttributedString.Key: Any] = [
-            .font: cell.textLabel?.font as Any,
+            .font: smallBody,
             .foregroundColor: append.color
         ]
 
@@ -303,8 +309,8 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
             }
         }
 
-        let prefix = isOngoing ? " (Pågående: " : " (Sessionstid: "
-        var snippet = "\(prefix)\(days) d \(hours) tim)"
+        let prefix = isOngoing ? " (Pågående: " : " (Session: "
+        var snippet = "\(prefix)\(days)d \(hours)h)"
         if !isOngoing && totalHours < 24 { snippet += " ⛔️" }
         return (snippet, color)
     }
