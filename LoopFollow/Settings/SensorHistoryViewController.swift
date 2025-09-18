@@ -26,20 +26,32 @@ struct SessionBuckets {
     var hrs_total: Int { hrs_lt1d + hrs_d1to5 + hrs_d5to9_5 + hrs_gt9_5 }
 }
 
-class SensorHistoryViewController: UITableViewController, UISearchBarDelegate {
+class SensorHistoryViewController: UITableViewController, UISearchBarDelegate, UISearchResultsUpdating {
     
     private var sensorHistory: [SensorStartHistoryEntry] = []
     private var filteredHistory: [SensorStartHistoryEntry] = []
     private var isFiltering: Bool { !(searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true) }
-    private let searchBar: UISearchBar = {
-        let sb = UISearchBar()
-        sb.placeholder = "Sök i sensorloggen"
-        sb.autocapitalizationType = .none
-        sb.autocorrectionType = .no
-        sb.searchBarStyle = .minimal
-        return sb
+    private let searchController: UISearchController = {
+        let sc = UISearchController(searchResultsController: nil)
+        sc.obscuresBackgroundDuringPresentation = false
+        sc.searchBar.placeholder = "Sök i sensorloggen"
+        sc.searchBar.autocapitalizationType = .none
+        sc.searchBar.autocorrectionType = .no
+        sc.searchBar.searchBarStyle = .minimal
+        return sc
     }()
+
+    // Convenience to keep existing code paths using `searchBar`
+    private var searchBar: UISearchBar { searchController.searchBar }
+
     private let openedAt = Date() // snapshot when modal opened
+
+    private let topSearchContainer: UIView = {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.backgroundColor = .clear
+        return v
+    }()
 
     private func currentHistory() -> [SensorStartHistoryEntry] {
         return isFiltering ? filteredHistory : sensorHistory
@@ -49,10 +61,59 @@ class SensorHistoryViewController: UITableViewController, UISearchBarDelegate {
         super.viewDidLoad()
         self.title = "Sensorlogg"
         setupNavigationBar()
-        setupSearchBarHeader()
+        definesPresentationContext = true
+        searchController.searchResultsUpdater = self
         searchBar.delegate = self
+        installPinnedSearchBar()
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "SensorHistoryCell")
         loadSensorHistory()
+    }
+
+    private func installPinnedSearchBar() {
+        // Add a non-scrolling container under the nav bar
+        view.addSubview(topSearchContainer)
+        let guide = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            topSearchContainer.topAnchor.constraint(equalTo: guide.topAnchor),
+            topSearchContainer.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
+            topSearchContainer.trailingAnchor.constraint(equalTo: guide.trailingAnchor)
+        ])
+
+        let sb = searchBar
+        sb.translatesAutoresizingMaskIntoConstraints = false
+        topSearchContainer.addSubview(sb)
+        NSLayoutConstraint.activate([
+            sb.leadingAnchor.constraint(equalTo: topSearchContainer.leadingAnchor, constant: 12),
+            sb.trailingAnchor.constraint(equalTo: topSearchContainer.trailingAnchor, constant: -12),
+            sb.topAnchor.constraint(equalTo: topSearchContainer.topAnchor, constant: 6),
+            sb.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor, constant: -6)
+        ])
+
+        let sep = UIView()
+        sep.translatesAutoresizingMaskIntoConstraints = false
+        sep.backgroundColor = UIColor.separator
+        topSearchContainer.addSubview(sep)
+        NSLayoutConstraint.activate([
+            sep.heightAnchor.constraint(equalToConstant: 0.5),
+            sep.leadingAnchor.constraint(equalTo: topSearchContainer.leadingAnchor),
+            sep.trailingAnchor.constraint(equalTo: topSearchContainer.trailingAnchor),
+            sep.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor)
+        ])
+    }
+
+    private func updateTableInsetsForPinnedSearch() {
+        // Ensure table content starts below the pinned search area
+        topSearchContainer.layoutIfNeeded()
+        let h = topSearchContainer.bounds.height
+        var inset = tableView.contentInset
+        inset.top = h
+        tableView.contentInset = inset
+        tableView.verticalScrollIndicatorInsets.top = h
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateTableInsetsForPinnedSearch()
     }
     
     // MARK: - Navigation Bar Setup
@@ -108,19 +169,7 @@ class SensorHistoryViewController: UITableViewController, UISearchBarDelegate {
         navigationItem.rightBarButtonItems = [doneButton, infoButton]
     }
 
-    private func setupSearchBarHeader() {
-        // Put the search field between the nav bar and the table content
-        let container = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 52))
-        searchBar.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(searchBar)
-        NSLayoutConstraint.activate([
-            searchBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
-            searchBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            searchBar.topAnchor.constraint(equalTo: container.topAnchor, constant: 6),
-            searchBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -6)
-        ])
-        tableView.tableHeaderView = container
-    }
+
     
     @objc private func doneButtonTapped() {
         dismiss(animated: true, completion: nil)
@@ -723,6 +772,13 @@ extension SensorHistoryViewController {
     }
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.text = nil
+        applyFilterAndReload()
+    }
+}
+
+extension SensorHistoryViewController {
+    // UISearchResultsUpdating
+    func updateSearchResults(for searchController: UISearchController) {
         applyFilterAndReload()
     }
 }
