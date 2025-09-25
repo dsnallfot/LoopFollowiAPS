@@ -452,7 +452,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             tableView.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
     

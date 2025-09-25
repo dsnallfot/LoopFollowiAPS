@@ -71,7 +71,7 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
             tableView.topAnchor.constraint(equalTo: topSearchContainer.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: guide.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         tableView.dataSource = self
         tableView.delegate = self
