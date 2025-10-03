@@ -577,8 +577,8 @@ final class SensorSessionStatsViewController: UITableViewController {
 
     private func loadChartData() {
         guard history.count > 1 else { return }
-        var entries: [ChartDataEntry] = []
-        var colors: [NSUIColor] = []
+        var histEntries: [ChartDataEntry] = []
+        var histColors: [NSUIColor] = []
         for i in stride(from: history.count - 1, through: 1, by: -1) {
             let start = Date(timeIntervalSince1970: history[i].date)
             let end = Date(timeIntervalSince1970: history[i - 1].date)
@@ -587,23 +587,41 @@ final class SensorSessionStatsViewController: UITableViewController {
             let hours = Int(interval / 3600)
             let days = min(11.0, Double(hours) / 24.0)
             // X = datum (starttid), Y = sessionslängd i dagar
-            entries.append(ChartDataEntry(x: start.timeIntervalSince1970, y: days))
+            histEntries.append(ChartDataEntry(x: start.timeIntervalSince1970, y: days))
             if hours >= 228 {
-                colors.append(.systemGreen)
+                histColors.append(.systemGreen)
             } else if hours >= 120 {
-                colors.append(.systemOrange)
+                histColors.append(.systemOrange)
             } else {
-                colors.append(.systemRed)
+                histColors.append(.systemRed)
             }
         }
-        let set = ScatterChartDataSet(entries: entries, label: "")
-        set.setColors(colors, alpha: 1)
-        set.setScatterShape(.circle)
-        set.scatterShapeSize = 10 // bigger points
-        set.drawValuesEnabled = false
-        // Disable per-datapoint highlighting
-        set.highlightEnabled = false
-        chartView.data = ScatterChartData(dataSet: set)
+        let histSet = ScatterChartDataSet(entries: histEntries, label: "")
+        histSet.setColors(histColors, alpha: 1)
+        histSet.setScatterShape(.circle)
+        histSet.scatterShapeSize = 10
+        histSet.drawValuesEnabled = false
+        histSet.highlightEnabled = false
+
+        // Add a single blue point for the ongoing session (index 0)
+        var dataSets: [ChartDataSetProtocol] = [histSet]
+        if let first = history.first {
+            let start = Date(timeIntervalSince1970: first.date)
+            var interval = Date().timeIntervalSince(start)
+            if interval < 0 { interval = 0 }
+            let hours = Int(interval / 3600)
+            let days = min(11.0, Double(hours) / 24.0)
+            let ongoingEntry = ChartDataEntry(x: start.timeIntervalSince1970, y: days)
+            let ongoingSet = ScatterChartDataSet(entries: [ongoingEntry], label: "")
+            ongoingSet.setColor(.systemBlue)
+            ongoingSet.setScatterShape(.circle)
+            ongoingSet.scatterShapeSize = 10
+            ongoingSet.drawValuesEnabled = false
+            ongoingSet.highlightEnabled = false
+            dataSets.append(ongoingSet)
+        }
+
+        chartView.data = ScatterChartData(dataSets: dataSets)
         chartView.autoScaleMinMaxEnabled = false
         chartView.notifyDataSetChanged()
 
@@ -612,7 +630,8 @@ final class SensorSessionStatsViewController: UITableViewController {
         let newestEnd = Date(timeIntervalSince1970: history[0].date)
         let xAxis = chartView.xAxis
         xAxis.axisMinimum = oldestStart.timeIntervalSince1970
-        xAxis.axisMaximum = newestEnd.timeIntervalSince1970
+        let rightPad: TimeInterval = 168 * 3600 // add seven days of padding so the last (blue) point isn't clipped
+        xAxis.axisMaximum = newestEnd.timeIntervalSince1970 + rightPad
         xAxis.labelPosition = .bottom
         xAxis.granularity = 24 * 3600 // daglig
         xAxis.granularityEnabled = true

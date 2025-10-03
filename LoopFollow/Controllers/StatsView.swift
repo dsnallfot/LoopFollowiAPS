@@ -30,18 +30,20 @@ extension MainViewController {
             
             let stats = StatsData(bgData: lastDayOfData)
             
-            statsLowPercent.text = String(format:"%.1f%", stats.percentLow) + "%"
-            statsInRangePercent.text = String(format:"%.1f%", stats.percentRange) + "%"
-            statsHighPercent.text = String(format:"%.1f%", stats.percentHigh) + "%"
-            statsAvgBG.text = Localizer.toDisplayUnits(String(format:"%.0f%", stats.avgBG)).replacingOccurrences(of: ",", with: ".")
+            statsLowPercent.text = String(format:"%.1f", stats.percentLow) + "%"
+            statsInRangePercent.text = String(format:"%.1f", stats.percentRange) + "%"
+            statsHighPercent.text = String(format:"%.1f", stats.percentHigh) + "%"
+
+            statsAvgBG.text = Localizer.toDisplayUnits(String(format:"%.0f", stats.avgBG)).replacingOccurrences(of: ",", with: ".")
+
             if UserDefaultsRepository.useIFCC.value {
-                statsEstA1C.text = String(format:"%.0f%", stats.a1C)
+                // Keep legacy UI behavior: still show % for A1C as before (even if IFCC might ideally be mmol/mol)
+                statsEstA1C.text = String(format:"%.0f", stats.a1C) + "%"
+            } else {
+                statsEstA1C.text = String(format:"%.1f", stats.a1C) + "%"
             }
-            else
-            {
-                statsEstA1C.text = String(format:"%.1f%", stats.a1C)
-            }
-            statsStdDev.text = String(format:"%.2f%", stats.stdDev)
+
+            statsStdDev.text = String(format:"%.2f", stats.stdDev)
             
             createStatsPie(pieData: stats.pie)
         }
