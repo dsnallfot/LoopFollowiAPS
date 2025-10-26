@@ -643,23 +643,61 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         }
 
         func nextChange(after date: Date) -> Date {
-            let comps = calendar.dateComponents([.year, .month, .day], from: date)
-            let base = calendar.date(from: comps)!
-            let secondsOfDay = calendar.dateComponents([.hour, .minute, .second], from: date)
-            let currentSec = secondsOfDay.hour! * 3600 + secondsOfDay.minute! * 60 + secondsOfDay.second!
-            // find next entry whose timeAsSeconds > currentSec
-            for entry in schedule {
-                if entry.timeAsSeconds > currentSec {
-                    return base.addingTimeInterval(TimeInterval(entry.timeAsSeconds))
+            let cal = Calendar.current
+            // Build DateComponents (hour,minute,second) for all schedule breakpoints
+            let breakpoints: [DateComponents] = schedule.map { entry in
+                let h = entry.timeAsSeconds / 3600
+                let m = (entry.timeAsSeconds % 3600) / 60
+                let s = entry.timeAsSeconds % 60
+                var dc = DateComponents()
+                dc.hour = h
+                dc.minute = m
+                dc.second = s
+                return dc
+            }
+            var candidate: Date? = nil
+            for dc in breakpoints {
+                // Find the next occurrence of this wall time strictly AFTER `date`.
+                // Use `.nextTime` + `.last` to pick the later occurrence on fall‑back days.
+                if let d = cal.nextDate(after: date,
+                                         matching: dc,
+                                         matchingPolicy: .nextTime,
+                                         repeatedTimePolicy: .last,
+                                         direction: .forward) {
+                    if d > date { // strictly after
+                        if candidate == nil || d < candidate! {
+                            candidate = d
+                        }
+                    }
                 }
             }
-            // next change is first entry of next day
-            return base.addingTimeInterval(24*3600 + TimeInterval(schedule[0].timeAsSeconds))
+            // If nothing found (shouldn’t happen), move 1 second forward to guarantee progress
+            return candidate ?? cal.date(byAdding: .second, value: 1, to: date)!
         }
 
         while current < end {
+            // Defensive: if for any reason `current` isn’t strictly advancing, push it by 1 second
+            // (should be redundant with the new nextChange(), but prevents hangs)
             let rate = basalRate(at: current)
             let next = min(end, nextChange(after: current))
+            // Ensure strict monotonicity across DST fall‑back;
+            // if next did not move forward, bump by 1 second
+            if next <= current {
+                let bumped = Calendar.current.date(byAdding: .second, value: 1, to: current)!
+                if bumped < end {
+                    // Recompute with the bumped time to keep accounting precise
+                    let strictNext = min(end, nextChange(after: bumped))
+                    if strictNext > current {
+                        // proceed with strictNext
+                        let hours = strictNext.timeIntervalSince(current) / 3600.0
+                        total += rate * hours
+                        current = strictNext
+                        continue
+                    }
+                }
+                // Fallback: break to avoid an infinite loop
+                break
+            }
             let hours = next.timeIntervalSince(current) / 3600.0
             total += rate * hours
             current = next
