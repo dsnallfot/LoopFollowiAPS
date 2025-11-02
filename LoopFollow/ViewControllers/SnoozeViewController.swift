@@ -494,8 +494,30 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         SnoozeButton.contentEdgeInsets = UIEdgeInsets(top: 10,left: 10,bottom: 10,right: 10)
         clockLabel.text = ""
         startClockTimer(time: 1)
+        
+        //Observe notifications from volume button snoozing and run the same actions and UI changes as when the snoozebutton in SNoozeVC is pressed
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleVolumeButtonAlarmStopped),
+            name: .volumeButtonAlarmStopped,
+            object: nil
+        )
     }
-
-
     
+    @objc private func handleVolumeButtonAlarmStopped() {
+        DispatchQueue.main.async {
+            self.loadViewIfNeeded() // säkerställ outlets
+            self.setSnoozeTime()
+            self.AlertLabel.isHidden = true
+            self.SnoozeButton.isHidden = true
+            self.clockLabel.isHidden = false
+            self.snoozeForMinuteStepper.isHidden = true
+            self.snoozeForMinuteLabel.isHidden = true
+        }
+        LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing alert with volume button done")
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: .volumeButtonAlarmStopped, object: nil)
+    }
 }

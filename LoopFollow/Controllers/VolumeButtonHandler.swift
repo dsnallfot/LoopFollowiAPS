@@ -6,6 +6,10 @@ import Combine
 import Foundation
 import UIKit
 
+extension Notification.Name {
+    static let volumeButtonAlarmStopped = Notification.Name("volumeButtonAlarmStopped")
+}
+
 class VolumeButtonHandler: NSObject {
     static let shared = VolumeButtonHandler()
 
@@ -106,6 +110,8 @@ class VolumeButtonHandler: NSObject {
 
     private func alarmStopped() {
         LogManager.shared.log(category: .volumeButtonSnooze, message: "Alarm stop detected")
+        //Create notification for SnoozeViewController to run the same snooze actions incl UI changes when snoozed with volume button as when the snooze button in the SnoozeVC is pressed
+        NotificationCenter.default.post(name: .volumeButtonAlarmStopped, object: nil)
 
         alarmStartTime = nil
         stopMonitoring()
