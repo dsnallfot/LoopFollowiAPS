@@ -98,7 +98,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         if let sharedCRDouble = Double(sharedCRValue) {
             CR = Decimal(sharedCRDouble)
         } else {
-            print("CR could not be fetched")
+            LogManager.shared.log(category: .remote, message: "CR could not be fetched", isDebug: true)
         }
         
         // Create a NumberFormatter instance
@@ -111,7 +111,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         
         // Set the text field with the formatted value of CR or "N/A" if formattedCR is "0.0"
         CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
-        print("CR: \(formattedCR) g/E")
+        LogManager.shared.log(category: .remote, message: "CR: \(formattedCR) g/E", isDebug: true)
         
         
         //print("Latest Autosens: \(sharedLatestSens)") // Just print for now. To use as info in bolusrecommendation later on
@@ -125,7 +125,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         //print("BG: \(sharedLatestBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
         //print("Direction: \(sharedLatestDirection)")// Just print for now. To use as info in bolusrecommendation later on
         //print("Delta: \(sharedLatestDelta) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
-        print("MinPredBG: \(sharedRawMinPredBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
+        //print("MinPredBG: \(sharedRawMinPredBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
+        LogManager.shared.log(category: .remote, message: "MinPredBG: \(sharedRawMinPredBG) mmol/L", isDebug: true)
         
         
         //MinPredBG & Low Threshold
@@ -138,8 +139,8 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
          
         // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinGuardG is "0.0"
         minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
-        print("Predicted Min BG: \(formattedMinPredBG) mmol/L")
-        print("Low threshold: \(formattedLowThreshold) mmol/L")
+        LogManager.shared.log(category: .remote, message: "Predicted Min BG: \(formattedMinPredBG) mmol/L", isDebug: true)
+        LogManager.shared.log(category: .remote, message: "Low threshold: \(formattedLowThreshold) mmol/L", isDebug: true)
         
         // Check if the value of minPredBG is less than lowThreshold
         if minPredBG < lowThreshold && minPredBG != 0 {
@@ -580,7 +581,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // BOLUS ENTRIES
         //Process bolus entries
         guard var bolusText = bolusUnits.text else {
-            print("Note: Bolus amount not entered")
+            LogManager.shared.log(category: .remote, message: "Note: Bolus amount not entered", isDebug: true)
             return
         }
         
@@ -593,7 +594,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             bolusValue = 0
         } else {
             guard let bolusDouble = Double(bolusText) else {
-                print("Error: Bolus amount conversion failed")
+                LogManager.shared.log(category: .remote, message: "Error: Bolus amount conversion failed")
                 // Play failure sound
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
@@ -622,7 +623,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         // CARBS & FPU ENTRIES
         
         guard var carbText = carbGrams.text else {
-            print("Note: Carb amount not entered")
+            LogManager.shared.log(category: .remote, message: "Note: Carb amount not entered", isDebug: true)
             return
         }
         
@@ -633,7 +634,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             carbsValue = 0
         } else {
             guard let carbsDouble = Double(carbText) else {
-                print("Error: Carb input value conversion failed")
+                LogManager.shared.log(category: .remote, message: "Error: Carb input value conversion failed")
                 // Play failure sound
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
@@ -647,7 +648,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         
         guard var fatText = fatGrams.text else {
-            print("Note: Fat amount not entered")
+            LogManager.shared.log(category: .remote, message: "Note: Fat amount not entered", isDebug: true)
             return
         }
         
@@ -658,7 +659,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             fatsValue = 0
         } else {
             guard let fatsDouble = Double(fatText) else {
-                print("Error: Fat input value conversion failed")
+                LogManager.shared.log(category: .remote, message: "Error: Fat input value conversion failed")
                 // Play failure sound
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
@@ -672,7 +673,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
         
         guard var proteinText = proteinGrams.text else {
-            print("Note: Protein amount not entered")
+            LogManager.shared.log(category: .remote, message: "Note: Protein amount not entered", isDebug: true)
             return
         }
         
@@ -683,7 +684,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             proteinsValue = 0
         } else {
             guard let proteinsDouble = Double(proteinText) else {
-                print("Error: Protein input value conversion failed")
+                LogManager.shared.log(category: .remote, message: "Error: Protein input value conversion failed")
                 // Play failure sound
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 // Display an alert
@@ -828,7 +829,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                         } else {
                             // Authentication failed
                             if let error = authenticationError {
-                                print("Authentication failed: \(error.localizedDescription)")
+                                LogManager.shared.log(category: .remote, message: "Authentication failed: \(error.localizedDescription)")
                             }
                             // Handle dismissal when authentication fails
                             self.handleAlertDismissal()
@@ -853,7 +854,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 } else {
                     // Authentication failed
                     if let error = error {
-                        print("Authentication failed: \(error.localizedDescription)")
+                        LogManager.shared.log(category: .remote, message: "Authentication failed: \(error.localizedDescription)")
                     }
                     // Handle dismissal when authentication fails
                     self.handleAlertDismissal()
@@ -877,7 +878,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         if method != "SMS API" {
             // URL encode combinedString
             guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode URL string")
+                LogManager.shared.log(category: .remote, message: "Failed to encode URL string")
                 return
             }
             
@@ -890,7 +891,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             guard let successEncoded = successCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let errorEncoded = errorCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let cancelEncoded = cancelCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode callback URLs")
+                LogManager.shared.log(category: .remote, message: "Failed to encode callback URLs")
                 return
             }
             
@@ -904,8 +905,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
                 if let url = URL(string: urlString) {
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
                 }
-                
-                print("Waiting for shortcut completion...")
+            LogManager.shared.log(category: .remote, message: "Waiting for shortcut completion...", isDebug: true)
             //dismiss(animated: true, completion: nil)
         } else {
             // If method is "SMS API", proceed with sending the request
@@ -936,7 +936,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     }
     
     @objc private func handleShortcutSuccess() {
-        print("Shortcut succeeded")
+        LogManager.shared.log(category: .remote, message: "Shortcut succeeded")
         
         // Play a success sound
         AudioServicesPlaySystemSound(SystemSoundID(1322))
@@ -948,7 +948,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     }
 
     @objc private func handleShortcutError() {
-        print("Shortcut failed, showing error alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut failed, showing error alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -959,7 +959,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     }
 
     @objc private func handleShortcutCancel() {
-        print("Shortcut was cancelled, showing cancellation alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled, showing cancellation alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -970,7 +970,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     }
     
     @objc private func handleShortcutPasscode() {
-        print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled due to wrong passcode, showing passcode alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -989,7 +989,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     }
     
     @IBAction func editingChanged(_ sender: Any) {
-        print("Value changed in bolus amount")
+        LogManager.shared.log(category: .remote, message: "Value changed in bolus amount", isDebug: true)
                 
         sendMealorMealandBolus()
         

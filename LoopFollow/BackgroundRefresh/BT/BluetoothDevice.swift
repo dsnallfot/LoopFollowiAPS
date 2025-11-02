@@ -187,7 +187,7 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        print("[BLE] didDiscover")
+        LogManager.shared.log(category: .bluetooth, message: "[BLE] didDiscover", isDebug: true)
 
         timeStampLastStatusUpdate = Date()
 

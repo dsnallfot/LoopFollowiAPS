@@ -31,6 +31,9 @@ class LogManager {
         case taskScheduler = "Task Scheduler"
         case dexcom = "Dexcom"
         case alarm = "Alarm"
+        case volumeButtonSnooze = "Volume Button Snooze"
+        case remote = "Remote"
+        case analysis = "Analysis"
         case calendar = "Calendar"
         case deviceStatus = "Device Status"
     }

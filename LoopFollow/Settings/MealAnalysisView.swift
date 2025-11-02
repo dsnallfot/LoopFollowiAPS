@@ -1239,7 +1239,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                                     to: Date())!
             let oldestWanted = cal.startOfDay(for: tempDate)
 
-            print("Cache ▸ loadCachedData: requesting from \(oldestWanted) to now")
+            LogManager.shared.log(category: .analysis, message: "Cache ▸ loadCachedData: requesting from \(oldestWanted) to now", isDebug: true)
 
             // Always load cached data up through the current moment
             let (sgvJSON, treatsJSON) = await NightscoutCache.loadWindow(
@@ -1247,7 +1247,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                 to: Date()
             )
 
-            print("Cache ▸ raw sgvJSON.count = \(sgvJSON.count), treatsJSON.count = \(treatsJSON.count)")
+            LogManager.shared.log(category: .analysis, message: "Cache ▸ raw sgvJSON.count = \(sgvJSON.count), treatsJSON.count = \(treatsJSON.count)", isDebug: true)
 
             // Convert SGVs → BGEntry, convert mg/dL → mmol/L (18.0182)
             let extraBG = sgvJSON.map {
@@ -1289,13 +1289,13 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
             // Merge without duplicates (by exact timestamp + type)
             DispatchQueue.main.async {
-                print("Cache ▸ existing bgEntries.count = \(self.bgEntries.count)")
-                print("Cache ▸ extraBG.count = \(extraBG.count)")
+                LogManager.shared.log(category: .analysis, message: "Cache ▸ existing bgEntries.count = \(self.bgEntries.count)", isDebug: true)
+                LogManager.shared.log(category: .analysis, message: "Cache ▸ extraBG.count = \(extraBG.count)", isDebug: true)
                 // BG merge
                 let existingBGTS = Set(self.bgEntries.map { $0.date.timeIntervalSince1970 })
                 self.bgEntries += extraBG.filter { !existingBGTS.contains($0.date.timeIntervalSince1970) }
                 self.bgEntries.sort { $0.date < $1.date }
-                print("Cache ▸ merged bgEntries.count = \(self.bgEntries.count)")
+                LogManager.shared.log(category: .analysis, message: "Cache ▸ merged bgEntries.count = \(self.bgEntries.count)", isDebug: true)
 
                 // Event merge
                 let existingKeys = Set(self.events.map { "\($0.date.timeIntervalSince1970)|\($0.eventType)" })
@@ -1303,7 +1303,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                     !existingKeys.contains("\($0.date.timeIntervalSince1970)|\($0.eventType)")
                 }
                 self.events.sort { $0.date < $1.date }
-                print("Cache ▸ extraEvents.count = \(extraEvents.count), merged events.count = \(self.events.count)")
+                LogManager.shared.log(category: .analysis, message: "Cache ▸ extraEvents.count = \(extraEvents.count), merged events.count = \(self.events.count)", isDebug: true)
 
                 // Broaden the picker’s lower bound to the earliest entry we now have
                 if let earliest = (self.events.map { $0.date } + self.bgEntries.map { $0.date }).min() {

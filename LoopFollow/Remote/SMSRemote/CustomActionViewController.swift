@@ -59,8 +59,8 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
          
         // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinPredBG is "0.0"
         minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
-        print("Predicted Min BG: \(formattedMinPredBG) mmol/L")
-        print("Low threshold: \(formattedLowThreshold) mmol/L")
+        LogManager.shared.log(category: .remote, message: "Predicted Min BG: \(formattedMinPredBG) mmol/L", isDebug: true)
+        LogManager.shared.log(category: .remote, message: "Low threshold: \(formattedLowThreshold) mmol/L", isDebug: true)
         
         // Check if the value of minPredBG is less than lowThreshold
         if minPredBG < lowThreshold {
@@ -97,7 +97,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedOverride property when an option is selected
         selectedCustomAction = customActionsOptions[row]
-        print("Custom Picker selected: \(selectedCustomAction!)")
+        LogManager.shared.log(category: .remote, message: "Custom Picker selected: \(selectedCustomAction!)", isDebug: true)
     }
     
     @IBAction func sendRemoteCustomActionPressed(_ sender: Any) {
@@ -109,7 +109,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                     return // If button is already disabled, return to prevent double registration
                 }
         guard let selectedCustomAction = selectedCustomAction else {
-            print("No custom action option selected")
+            LogManager.shared.log(category: .remote, message: "No custom action option selected", isDebug: true)
             return
         }
         
@@ -128,7 +128,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
         let combinedString = "Remote Custom Action\n\(selectedCustomAction)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
-        print("Combined string:", combinedString)
+        LogManager.shared.log(category: .remote, message: "Combined string: \(combinedString)", isDebug: true)
         
         // Confirmation alert before sending the request
         let confirmationAlert = UIAlertController(title: "Bekräfta förval", message: "Observera att flera av förvalen både registrerar en måltid och ger en bolus!\n\nVill du registrera \(selectedCustomAction)?", preferredStyle: .alert)
@@ -183,7 +183,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                         } else {
                             // Authentication failed
                             if let error = authenticationError {
-                                print("Authentication failed: \(error.localizedDescription)")
+                                LogManager.shared.log(category: .remote, message: "Authentication failed: \(error.localizedDescription)")
                             }
                             // Handle dismissal when authentication fails
                             self.handleAlertDismissal()
@@ -208,7 +208,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
                 } else {
                     // Authentication failed
                     if let error = error {
-                        print("Authentication failed: \(error.localizedDescription)")
+                        LogManager.shared.log(category: .remote, message: "Authentication failed: \(error.localizedDescription)")
                     }
                     // Handle dismissal when authentication fails
                     self.handleAlertDismissal()
@@ -226,7 +226,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
         if method != "SMS API" {
             // URL encode combinedString
             guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode URL string")
+                LogManager.shared.log(category: .remote, message: "Failed to encode URL string")
                 return
             }
             
@@ -240,7 +240,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
             guard let successEncoded = successCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let errorEncoded = errorCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let cancelEncoded = cancelCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode callback URLs")
+                LogManager.shared.log(category: .remote, message: "Failed to encode callback URLs")
                 return
             }
             
@@ -252,8 +252,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
             if let url = URL(string: urlString) {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
-            
-            print("Waiting for shortcut completion...")
+            LogManager.shared.log(category: .remote, message: "Waiting for shortcut completion...", isDebug: true)
             //dismiss(animated: true, completion: nil)
             
         } else {
@@ -285,7 +284,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
     }
     
     @objc private func handleShortcutSuccess() {
-        print("Shortcut succeeded")
+        LogManager.shared.log(category: .remote, message: "Shortcut succeeded", isDebug: true)
         
         // Play a success sound
         AudioServicesPlaySystemSound(SystemSoundID(1322))
@@ -297,7 +296,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
     }
 
     @objc private func handleShortcutError() {
-        print("Shortcut failed, showing error alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut failed, showing error alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -308,7 +307,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
     }
 
     @objc private func handleShortcutCancel() {
-        print("Shortcut was cancelled, showing cancellation alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled, showing cancellation alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -319,7 +318,7 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
     }
     
     @objc private func handleShortcutPasscode() {
-        print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled due to wrong passcode, showing passcode alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))

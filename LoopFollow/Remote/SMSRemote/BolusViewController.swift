@@ -56,8 +56,8 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
          
         // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinPredBG is "0.0"
         minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
-        print("Predicted Min BG: \(formattedMinPredBG) mmol/L")
-        print("Low threshold: \(formattedLowThreshold) mmol/L")
+        LogManager.shared.log(category: .remote, message: "Predicted Min BG: \(formattedMinPredBG) mmol/L", isDebug: true)
+        LogManager.shared.log(category: .remote, message: "Low threshold: \(formattedLowThreshold) mmol/L", isDebug: true)
         
         // Check if the value of minPredBG is less than lowThreshold
         if minPredBG < lowThreshold {
@@ -84,7 +84,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         let maxBolus = UserDefaultsRepository.maxBolus.value
         
         guard var bolusText = bolusAmount.text, !bolusText.isEmpty else {
-            print("Error: Bolus amount not entered")
+            LogManager.shared.log(category: .remote, message: "Error: Bolus amount not entered", isDebug: true)
             return
         }
         
@@ -92,7 +92,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         bolusText = bolusText.replacingOccurrences(of: ",", with: ".")
         
         guard let bolusValue = Double(bolusText) else {
-            print("Error: Bolus amount conversion failed")
+            LogManager.shared.log(category: .remote, message: "Error: Bolus amount conversion failed")
             // Play failure sound
             AudioServicesPlaySystemSound(SystemSoundID(1053))
             // Display an alert
@@ -164,7 +164,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                         } else {
                             // Authentication failed
                             if let error = authenticationError {
-                                print("Authentication failed: \(error.localizedDescription)")
+                                LogManager.shared.log(category: .remote, message: "Authentication failed: \(error.localizedDescription)", isDebug: true)
                             }
                             // Handle dismissal when authentication fails
                             self.handleAlertDismissal()
@@ -189,7 +189,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                 } else {
                     // Authentication failed
                     if let error = error {
-                        print("Authentication failed: \(error.localizedDescription)")
+                        LogManager.shared.log(category: .remote, message: "Authentication failed: \(error.localizedDescription)")
                     }
                     // Handle dismissal when authentication fails
                     self.handleAlertDismissal()
@@ -227,7 +227,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         let formattedTimestamp = formatDateToISO8601(currentTimestamp)
         
         let combinedString = "Remote Bolus\nInsulin: \(trimmedBolusValue)E\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
-        print("Combined string:", combinedString)
+        LogManager.shared.log(category: .remote, message: "Combined string: \(combinedString)", isDebug: true)
         
         // Retrieve the method value from UserDefaultsRepository
         let method = UserDefaultsRepository.method.value
@@ -236,7 +236,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         if method != "SMS API" {
             // URL encode combinedString
             guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode URL string")
+                LogManager.shared.log(category: .remote, message: "Failed to encode URL string")
                 return
             }
             
@@ -249,7 +249,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
             guard let successEncoded = successCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let errorEncoded = errorCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let cancelEncoded = cancelCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode callback URLs")
+                LogManager.shared.log(category: .remote, message: "Failed to encode callback URLs")
                 return
             }
             
@@ -262,7 +262,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
             
-            print("Waiting for shortcut completion...")
+            LogManager.shared.log(category: .remote, message: "Waiting for shortcut completion...", isDebug: true)
             //dismiss(animated: true, completion: nil)
         } else {
             // If method is "SMS API", proceed with sending the request
@@ -293,7 +293,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     }
     
     @objc private func handleShortcutSuccess() {
-        print("Shortcut succeeded")
+        LogManager.shared.log(category: .remote, message: "Shortcut succeeded", isDebug: true)
         
         // Play a success sound
         AudioServicesPlaySystemSound(SystemSoundID(1322))
@@ -305,7 +305,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     }
 
     @objc private func handleShortcutError() {
-        print("Shortcut failed, showing error alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut failed, showing error alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -316,7 +316,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     }
 
     @objc private func handleShortcutCancel() {
-        print("Shortcut was cancelled, showing cancellation alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled, showing cancellation alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -327,7 +327,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     }
     
     @objc private func handleShortcutPasscode() {
-        print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled due to wrong passcode, showing passcode alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -346,7 +346,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     }
     
     @IBAction func editingChanged(_ sender: Any) {
-        print("Value changed in bolus amount")
+        LogManager.shared.log(category: .remote, message: "Value changed in bolus amount", isDebug: true)
         
         let attributes: [NSAttributedString.Key: Any] = [
             .font: UIFont(name: "HelveticaNeue-Medium", size: 20.0)!,

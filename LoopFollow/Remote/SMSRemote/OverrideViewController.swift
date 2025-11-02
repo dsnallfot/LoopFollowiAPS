@@ -62,7 +62,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedOverride property when an option is selected
         selectedOverride = overrideOptions[row]
-        print("Override Picker selected: \(selectedOverride!)")
+        LogManager.shared.log(category: .remote, message: "Override Picker selected: \(selectedOverride!)", isDebug: true)
     }
     
     // Function to format date to ISO 8601 without seconds and milliseconds
@@ -81,7 +81,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
             return // If button is already disabled, return to prevent double registration
         }
         guard let selectedOverride = selectedOverride else {
-            print("No override option selected")
+            LogManager.shared.log(category: .remote, message: "No override option selected", isDebug: true)
             return
         }
         
@@ -93,7 +93,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
         let combinedString = "Remote Override\n\(selectedOverride)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
-        print("Combined string:", combinedString)
+        LogManager.shared.log(category: .remote, message: "Combined string: \(combinedString)", isDebug: true)
         
         // Confirmation alert before sending the request
         let confirmationAlert = UIAlertController(title: "Bekräfta override", message: "Vill du aktivera \(selectedOverride)?", preferredStyle: .alert)
@@ -128,7 +128,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         if method != "SMS API" {
             // URL encode combinedString
             guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode URL string")
+                LogManager.shared.log(category: .remote, message: "Failed to encode URL string")
                 return
             }
             
@@ -141,7 +141,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
             guard let successEncoded = successCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let errorEncoded = errorCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let cancelEncoded = cancelCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode callback URLs")
+                LogManager.shared.log(category: .remote, message: "Failed to encode callback URLs")
                 return
             }
             /*let urlString = "shortcuts://run-shortcut?name=Remote%20Override&input=text&text=\(encodedString)"
@@ -153,7 +153,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
             
-            print("Waiting for shortcut completion...")
+            LogManager.shared.log(category: .remote, message: "Waiting for shortcut completion...", isDebug: true)
             //dismiss(animated: true, completion: nil)
         } else {
             // If method is "SMS API", proceed with sending the request
@@ -185,7 +185,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     
     
     @objc private func handleShortcutSuccess() {
-        print("Shortcut succeeded")
+        LogManager.shared.log(category: .remote, message: "Shortcut succeeded", isDebug: true)
         
         // Play a success sound
         AudioServicesPlaySystemSound(SystemSoundID(1322))
@@ -197,7 +197,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     }
 
     @objc private func handleShortcutError() {
-        print("Shortcut failed, showing error alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut failed, showing error alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -208,7 +208,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     }
 
     @objc private func handleShortcutCancel() {
-        print("Shortcut was cancelled, showing cancellation alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled, showing cancellation alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -219,7 +219,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     }
     
     @objc private func handleShortcutPasscode() {
-        print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled due to wrong passcode, showing passcode alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))

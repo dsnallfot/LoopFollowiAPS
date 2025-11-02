@@ -199,7 +199,7 @@ class PushNotificationManager {
     }
 
     private func sendPushNotification(message: PushMessage, completion: @escaping (Bool, String?) -> Void) {
-        print("Push message to send: \(message)")
+        LogManager.shared.log(category: .remote, message: "Push message to send: \(message)", isDebug: true)
 
         var missingFields = [String]()
         if sharedSecret.isEmpty { missingFields.append("sharedSecret") }
@@ -268,24 +268,23 @@ class PushNotificationManager {
                 }
 
                 if let httpResponse = response as? HTTPURLResponse {
-                    print("Push notification sent.")
-                    print("Status code: \(httpResponse.statusCode)")
-
-                    print("Response headers:")
+                    LogManager.shared.log(category: .remote, message: "Push notification sent.", isDebug: true)
+                    LogManager.shared.log(category: .remote, message: "Status code: \(httpResponse.statusCode)", isDebug: true)
+                    LogManager.shared.log(category: .apns, message: "Response headers:", isDebug: true)
                     for (key, value) in httpResponse.allHeaderFields {
-                        print("\(key): \(value)")
+                        LogManager.shared.log(category: .apns, message: "\(key): \(value)", isDebug: true)
                     }
 
                     var responseBodyMessage = ""
                     if let data = data, let responseBody = String(data: data, encoding: .utf8) {
-                        print("Response body: \(responseBody)")
+                        LogManager.shared.log(category: .apns, message: "Response body: \(responseBody)", isDebug: true)
 
                             if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                            let reason = json["reason"] as? String {
                             responseBodyMessage = reason
                         }
                     } else {
-                        print("No response body")
+                        LogManager.shared.log(category: .apns, message: "No response body", isDebug: true)
                     }
 
                     switch httpResponse.statusCode {
@@ -320,7 +319,7 @@ class PushNotificationManager {
 
         } catch {
             let errorMessage = "Failed to encode push message: \(error.localizedDescription)"
-            print(errorMessage)
+            LogManager.shared.log(category: .apns, message: "\(errorMessage)", isDebug: true)
             completion(false, errorMessage)
         }
     }
@@ -354,7 +353,7 @@ class PushNotificationManager {
 
             return signedJWT
         } catch {
-            print("Failed to sign JWT: \(error.localizedDescription)")
+            LogManager.shared.log(category: .apns, message: "Failed to sign JWT: \(error.localizedDescription)", isDebug: true)
             return nil
         }
     }

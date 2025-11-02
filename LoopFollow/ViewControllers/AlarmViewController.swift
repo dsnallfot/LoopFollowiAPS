@@ -253,7 +253,7 @@ class AlarmViewController: FormViewController {
         }.onCellSelection { (row, arg)  in
             self.dismiss(animated: true, completion: nil)
         }
-        +++ Section("Select Alert")
+        +++ Section("Välj larm att ställa in")
         <<< SegmentedRow<String>("bgAlerts"){ row in
             row.title = ""
             row.options = ["Urgent Low", "Low", "High", "Urgent High"]
@@ -493,7 +493,7 @@ class AlarmViewController: FormViewController {
 
     func buildSnoozeAll(){
         form
-        +++ Section(header: "Snooze & Mute Options", footer: "Snooze and Mute All Sounds: Snooze All turns everything off, Mute All turns off phone sounds but leaves vibration and iOS notifications on")
+        +++ Section(header: "Snooze & Mute alternativ", footer: "Snooze and Mute All Sounds: Snooze All turns everything off, Mute All turns off phone sounds but leaves vibration and iOS notifications on")
         <<< DateTimeInlineRow("alertSnoozeAllTime") { row in
             row.title = "Snooze All Until"
 
@@ -3349,7 +3349,7 @@ class AlarmViewController: FormViewController {
 
     func buildAlarmSettings() {
         form
-        +++ Section(header: "Alarm Settings", footer: "")
+        +++ Section(header: "Alarminställningar", footer: "")
 
         <<< SwitchRow("overrideSystemOutputVolume"){ row in
             row.title = "Override System Volume"
@@ -3394,8 +3394,15 @@ class AlarmViewController: FormViewController {
             guard let value = row.value else { return }
             UserDefaultsRepository.alertAutoSnoozeCGMStart.value = value
         }
+        <<< SwitchRow("enableVolumeButtonSnooze"){ row in
+            row.title = "Enable Volume Button Snooze"
+            row.value = UserDefaultsRepository.enableVolumeButtonSnooze.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.enableVolumeButtonSnooze.value = value
+        }
 
-        +++ Section(header: "Night Time Settings", footer: "Night time hours are used to differ how alerts are managed during the day and at night.  For instance, automatically snooze, at night time, non-critical alerts that you do not wish to be awakened for such as a sensor change pre-alert.")  { row in
+        +++ Section(header: "Nattinställningar", footer: "Night time hours are used to differ how alerts are managed during the day and at night.  For instance, automatically snooze, at night time, non-critical alerts that you do not wish to be awakened for such as a sensor change pre-alert.")  { row in
             row.tag = "quietHourSection"
         }
         <<< TimeInlineRow("quietHourStart") { row in

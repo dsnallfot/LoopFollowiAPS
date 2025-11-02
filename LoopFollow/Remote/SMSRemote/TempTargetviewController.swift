@@ -62,7 +62,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         // Update the selectedTempTarget property when an option is selected
         selectedTempTarget = tempTargetsOptions[row]
-        print("Temp Target Picker selected: \(selectedTempTarget!)")
+        LogManager.shared.log(category: .remote, message: "Temp Target Picker selected: \(selectedTempTarget!)", isDebug: true)
     }
     
     @IBAction func sendRemoteTempTargetPressed(_ sender: Any) {
@@ -74,7 +74,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
             return // If button is already disabled, return to prevent double registration
         }
         guard let selectedTempTarget = selectedTempTarget else {
-            print("No temp target option selected")
+            LogManager.shared.log(category: .remote, message: "No temp target option selected", isDebug: true)
             return
         }
         
@@ -93,7 +93,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         let name = UserDefaultsRepository.caregiverName.value
         let secret = UserDefaultsRepository.remoteSecretCode.value
         let combinedString = "Remote Temp Target\n\(selectedTempTarget)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
-        print("Combined string:", combinedString)
+        LogManager.shared.log(category: .remote, message: "Combined string: \(combinedString)", isDebug: true)
         
         // Confirmation alert before sending the request
         let confirmationAlert = UIAlertController(title: "Bekräfta tillfälligt mål", message: "Vill du aktivera \(selectedTempTarget)?", preferredStyle: .alert)
@@ -127,7 +127,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         if method != "SMS API" {
                 // URL encode combinedString
                 guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                    print("Failed to encode URL string")
+                    LogManager.shared.log(category: .remote, message: "Failed to encode URL string")
                     return
                 }
             
@@ -140,7 +140,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
             guard let successEncoded = successCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let errorEncoded = errorCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let cancelEncoded = cancelCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode callback URLs")
+                LogManager.shared.log(category: .remote, message: "Failed to encode callback URLs")
                 return
             }
                 /*let urlString = "shortcuts://run-shortcut?name=Remote%20Temp%20Target&input=text&text=\(encodedString)"
@@ -151,8 +151,8 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
             if let url = URL(string: urlString) {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
-            
-            print("Waiting for shortcut completion...")
+
+            LogManager.shared.log(category: .remote, message: "Waiting for shortcut completion...", isDebug: true)
             //dismiss(animated: true, completion: nil)
         } else {
             // If method is "SMS API", proceed with sending the request
@@ -183,7 +183,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     }
     
     @objc private func handleShortcutSuccess() {
-        print("Shortcut succeeded")
+        LogManager.shared.log(category: .remote, message: "Shortcut succeeded", isDebug: true)
         
         // Play a success sound
         AudioServicesPlaySystemSound(SystemSoundID(1322))
@@ -195,7 +195,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     }
 
     @objc private func handleShortcutError() {
-        print("Shortcut failed, showing error alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut failed, showing error alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -206,7 +206,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     }
 
     @objc private func handleShortcutCancel() {
-        print("Shortcut was cancelled, showing cancellation alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled, showing cancellation alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))
@@ -217,7 +217,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
     }
     
     @objc private func handleShortcutPasscode() {
-        print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
+        LogManager.shared.log(category: .remote, message: "Shortcut was cancelled due to wrong passcode, showing passcode alert...")
         
         // Play a error sound
         AudioServicesPlaySystemSound(SystemSoundID(1053))

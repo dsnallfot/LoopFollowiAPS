@@ -84,7 +84,7 @@ class RemoteViewController: UIViewController {
             // Load SMSRemoteViewController
             let storyboard = UIStoryboard(name: "Main", bundle: nil) // Replace "Main" with your storyboard name
             guard let smsRemoteVC = storyboard.instantiateViewController(withIdentifier: "SMSRemoteViewController") as? SMSRemoteViewController else {
-                print("Error: SMSRemoteViewController could not be instantiated.")
+                LogManager.shared.log(category: .remote, message: "Error: SMSRemoteViewController could not be instantiated.", isDebug: true)
                 return
             }
 

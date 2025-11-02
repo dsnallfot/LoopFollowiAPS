@@ -47,6 +47,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ = ViewControllerManager.shared
 
         _ = BLEManager.shared
+        
+        // Ensure VolumeButtonHandler is initialized so it can receive alarm notifications
+        _ = VolumeButtonHandler.shared
 
         return true
     }
