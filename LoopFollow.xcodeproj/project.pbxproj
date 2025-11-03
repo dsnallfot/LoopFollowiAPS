@@ -17,6 +17,7 @@
 		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
 		6578DBD12EB7739A00AF4942 /* VolumeButtonHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6578DBD02EB7738900AF4942 /* VolumeButtonHandler.swift */; };
+		6578DBD32EB8DD4B00AF4942 /* SnoozeStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */; };
 		659AC6832D7C594D0069FC7C /* TreatmentsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
 		65B3E5CD2D3FFB3000622194 /* TempTargetviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5CA2D3FFB3000622194 /* TempTargetviewController.swift */; };
@@ -310,6 +311,7 @@
 		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
 		6578DBD02EB7738900AF4942 /* VolumeButtonHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeButtonHandler.swift; sourceTree = "<group>"; };
+		6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeStatusView.swift; sourceTree = "<group>"; };
 		659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreatmentsTableView.swift; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
 		65B3E5C62D3FFB3000622194 /* SMSRemoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSRemoteViewController.swift; sourceTree = "<group>"; };
@@ -629,6 +631,7 @@
 		65BB9A402D43CA9C00FCFCA8 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */,
 				65CDBDCE2DBD1A8900587289 /* NightscoutCache.swift */,
 				6540979D2DB79FF600983772 /* MealAnalysisView.swift */,
 				65BFAF1D2DA6E8FB00947A66 /* SyncNewSensorView.swift */,
@@ -1529,6 +1532,7 @@
 				FC1BDD3224A2585C001B652C /* DataStructs.swift in Sources */,
 				DDF6999E2C5AAA640058A8D9 /* ErrorMessageView.swift in Sources */,
 				FCC6886524898EEE00A0279D /* UserDefaults.swift in Sources */,
+				6578DBD32EB8DD4B00AF4942 /* SnoozeStatusView.swift in Sources */,
 				DD4878152C7B75230048F05C /* MealView.swift in Sources */,
 				FC16A97F249969E2003D6245 /* Graphs.swift in Sources */,
 				FC8589BF252B54F500C8FC73 /* Mobileprovision.swift in Sources */,

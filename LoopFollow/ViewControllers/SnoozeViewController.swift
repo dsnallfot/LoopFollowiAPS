@@ -8,6 +8,7 @@
 
 import UIKit
 import UserNotifications
+import SwiftUI
 
 
 class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
@@ -29,6 +30,8 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     @IBOutlet weak var snoozeForMinuteLabel: UILabel!
     @IBOutlet weak var snoozeForMinuteStepper: UIStepper!
     @IBOutlet weak var debugTextView: UITextView!
+    
+    @IBOutlet weak var InfoButton: UIButton!
     
     @IBAction func SnoozeButton(_ sender: Any) {
         AlarmSound.stop()
@@ -54,6 +57,15 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     
     @IBAction func snoozeForMinuteValChanged(_ sender: UIStepper) {
         snoozeForMinuteLabel.text = Int(sender.value).description
+    }
+    
+    @IBAction func InfoButtonTapped(_ sender: Any) {
+        let vc = UIHostingController(rootView: SnoozeStatusView())
+        vc.modalPresentationStyle = .pageSheet
+        if let sheet = vc.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+        }
+        self.present(vc, animated: true)
     }
     
     // Update Time
