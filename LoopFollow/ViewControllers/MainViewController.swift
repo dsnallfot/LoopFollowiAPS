@@ -274,6 +274,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             circleView.centerXAnchor.constraint(equalTo: historyStack.centerXAnchor),
             circleView.centerYAnchor.constraint(equalTo: historyStack.centerYAnchor)
         ])
+        
+        setupSwipeUpToStatus()
     }
     
     deinit {
@@ -329,6 +331,43 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             }
         }
     }
+    
+    private func setupSwipeUpToStatus() {
+        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUpToTreatmentLog(_:)))
+        swipeUp.direction = .up
+        swipeUp.numberOfTouchesRequired = 1
+        swipeUp.cancelsTouchesInView = false // don't steal taps from buttons/steppers
+        view.addGestureRecognizer(swipeUp)
+    }
+
+    @objc private func handleSwipeUpToTreatmentLog(_ gesture: UISwipeGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        // Require swipe to start in the lower quarter to minimize accidental triggers
+        let startPoint = gesture.location(in: view)
+        let lowerThreshold = view.bounds.height * 0.75
+        guard startPoint.y >= lowerThreshold else { return }
+
+        // Avoid double-presenting
+        guard presentedViewController == nil else { return }
+
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+
+        // Instantiate your TreatmentsTableView.
+        let treatmentsVC = TreatmentsTableView()
+        
+        // Wrap it in a UINavigationController for the navigation bar and Klar button.
+        let navController = UINavigationController(rootViewController: treatmentsVC)
+        navController.modalPresentationStyle = .formSheet
+        
+        if UserDefaultsRepository.forceDarkMode.value {
+            navController.overrideUserInterfaceStyle = .dark
+        }
+        
+        present(navController, animated: true, completion: nil)
+    }
+
     
     override func viewWillAppear(_ animated: Bool) {
         // set screen lock
