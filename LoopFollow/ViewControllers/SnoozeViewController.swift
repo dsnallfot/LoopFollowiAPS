@@ -504,6 +504,11 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         }
         SnoozeButton.layer.cornerRadius = 5
         SnoozeButton.contentEdgeInsets = UIEdgeInsets(top: 10,left: 10,bottom: 10,right: 10)
+        // Thin white border around InfoButton
+        InfoButton.layer.borderWidth = 0.5
+        InfoButton.layer.borderColor = UIColor.systemGray.cgColor
+        InfoButton.layer.masksToBounds = true
+        applyButtonBordersIfNeeded()
         clockLabel.text = ""
         startClockTimer(time: 1)
         
@@ -514,6 +519,28 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             name: .volumeButtonAlarmStopped,
             object: nil
         )
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        applyButtonBordersIfNeeded()
+    }
+
+    private func applyButtonBordersIfNeeded() {
+        // Keep InfoButton border consistent
+        InfoButton.layer.borderWidth = 0.5
+        InfoButton.layer.borderColor = UIColor.systemGray.cgColor
+        InfoButton.layer.masksToBounds = true
+
+        // Apply SnoozeButton border only when visible
+        if !SnoozeButton.isHidden {
+            SnoozeButton.layer.borderWidth = 0.5
+            SnoozeButton.layer.borderColor = UIColor.systemGray.cgColor
+            SnoozeButton.layer.masksToBounds = true
+        } else {
+            // Remove border when hidden to avoid odd states when it reappears
+            SnoozeButton.layer.borderWidth = 0
+        }
     }
     
     @objc private func handleVolumeButtonAlarmStopped() {
