@@ -34,6 +34,9 @@ class VolumeButtonHandler: NSObject {
     private var lastSignificantVolumeChange: Date?
     private var volumeChangePattern: [TimeInterval] = []
 
+    // Tracks whether the upcoming stop was triggered by our own volume-button snooze
+    private var didSnoozeViaVolumeButton = false
+
     private var cancellables = Set<AnyCancellable>()
 
     override private init() {
@@ -46,7 +49,13 @@ class VolumeButtonHandler: NSObject {
                 if alarmSoundPlaying {
                     self.alarmStarted()
                 } else {
-                    self.alarmStopped()
+                    let wasVolumeSnooze = self.didSnoozeViaVolumeButton
+                    self.didSnoozeViaVolumeButton = false
+                    if wasVolumeSnooze {
+                        self.alarmStopped() // volume-button initiated
+                    } else {
+                        self.alarmEndedNaturally() // playback ended or stopped elsewhere
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -87,6 +96,7 @@ class VolumeButtonHandler: NSObject {
         LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing alarm")
 
         lastVolumeButtonPressTime = Date()
+        didSnoozeViaVolumeButton = true
         AlarmSound.stop()
         //AlarmManager.shared.performSnooze()
 
@@ -116,6 +126,15 @@ class VolumeButtonHandler: NSObject {
         alarmStartTime = nil
         stopMonitoring()
 
+        recentVolumeChanges.removeAll()
+        lastSignificantVolumeChange = nil
+        volumeChangePattern.removeAll()
+    }
+
+    private func alarmEndedNaturally() {
+        LogManager.shared.log(category: .volumeButtonSnooze, message: "Alarm ended naturally")
+        alarmStartTime = nil
+        stopMonitoring()
         recentVolumeChanges.removeAll()
         lastSignificantVolumeChange = nil
         volumeChangePattern.removeAll()
@@ -169,6 +188,7 @@ class VolumeButtonHandler: NSObject {
 
                     if self.isLikelyVolumeButtonPress(volumeDifference: volumeDifference, timestamp: now) {
                         self.snoozeActiveAlarm()
+                        LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing active alarm due to likely volume button press")
                     }
                 }
             }
