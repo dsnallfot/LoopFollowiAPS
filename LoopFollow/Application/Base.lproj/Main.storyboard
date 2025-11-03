@@ -483,16 +483,16 @@
                                     </view>
                                 </subviews>
                             </stackView>
-                            <button opaque="NO" contentMode="scaleAspectFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="kxm-9n-j3N">
-                                <rect key="frame" x="357" y="59" width="37" height="41"/>
+                            <button opaque="NO" contentMode="scaleAspectFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="kxm-9n-j3N">
+                                <rect key="frame" x="354" y="55" width="40" height="40"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="37" id="VUu-Vc-RZd"/>
-                                    <constraint firstAttribute="height" constant="41" id="hPw-Mk-Chb"/>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="40" id="VUu-Vc-RZd"/>
+                                    <constraint firstAttribute="height" constant="40" id="hPw-Mk-Chb"/>
                                 </constraints>
-                                <color key="tintColor" systemColor="labelColor"/>
+                                <color key="tintColor" systemColor="systemOrangeColor"/>
                                 <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="plain">
-                                    <imageReference key="image" image="clock.badge" catalog="system" symbolScale="large"/>
+                                <buttonConfiguration key="configuration" style="filled" cornerStyle="capsule">
+                                    <imageReference key="image" image="moon.zzz.fill" catalog="system" symbolScale="large"/>
                                     <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage" scale="large"/>
                                 </buttonConfiguration>
                                 <connections>
@@ -510,7 +510,7 @@
                             <constraint firstItem="Dt4-CR-Iqb" firstAttribute="bottom" secondItem="ZaU-Ss-piB" secondAttribute="bottom" constant="8" id="WgA-wX-qtd"/>
                             <constraint firstItem="Dt4-CR-Iqb" firstAttribute="bottom" secondItem="xzZ-jc-k2v" secondAttribute="bottom" constant="8" id="bY3-br-SWl"/>
                             <constraint firstItem="ZaU-Ss-piB" firstAttribute="top" secondItem="Dt4-CR-Iqb" secondAttribute="top" constant="50" id="cD1-U9-tJJ"/>
-                            <constraint firstItem="kxm-9n-j3N" firstAttribute="top" secondItem="oqe-Oz-Hai" secondAttribute="top" constant="59" id="mom-Pg-rz4"/>
+                            <constraint firstItem="kxm-9n-j3N" firstAttribute="top" secondItem="oqe-Oz-Hai" secondAttribute="top" constant="55" id="mom-Pg-rz4"/>
                         </constraints>
                     </view>
                     <tabBarItem key="tabBarItem" title="Snoozer" image="zzz" catalog="system" id="TdI-rW-rdW"/>
@@ -2000,7 +2000,6 @@
     <resources>
         <image name="antenna.radiowaves.left.and.right" catalog="system" width="128" height="111"/>
         <image name="appletvremote.gen1" catalog="system" width="80" height="128"/>
-        <image name="clock.badge" catalog="system" width="128" height="128"/>
         <image name="drop.fill" catalog="system" width="96" height="128"/>
         <image name="exclamationmark.triangle" catalog="system" width="128" height="109"/>
         <image name="fork.knife" catalog="system" width="94" height="128"/>
@@ -2010,6 +2009,7 @@
         <image name="house" catalog="system" width="128" height="104"/>
         <image name="info.circle" catalog="system" width="128" height="123"/>
         <image name="list.bullet.clipboard" catalog="system" width="98" height="128"/>
+        <image name="moon.zzz.fill" catalog="system" width="117" height="128"/>
         <image name="person.fill" catalog="system" width="128" height="120"/>
         <image name="plus.app" catalog="system" width="128" height="114"/>
         <image name="safari" catalog="system" width="128" height="123"/>
@@ -2050,6 +2050,9 @@
         </systemColor>
         <systemColor name="systemGreenColor">
             <color red="0.20392156859999999" green="0.78039215689999997" blue="0.34901960780000002" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+        <systemColor name="systemOrangeColor">
+            <color red="1" green="0.58431372550000005" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
             <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

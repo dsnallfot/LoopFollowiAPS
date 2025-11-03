@@ -28,26 +28,26 @@ enum SnoozeKey: CaseIterable, Identifiable {
 
     var displayTitle: String {
         switch self {
-        case .all: return "🔇 Snooza alla larm"
-        case .muteAll: return "🔇 Mute alla larm"
+        case .all: return "⏱️ Snooza alla larm"
+        case .muteAll: return "🔇 Tysta alla larm"
         case .urgentLow: return "🆘 Akut lågt socker!"
-        case .low: return "Lågt blodsocker"
-        case .high: return "Högt blodsocker"
+        case .low: return "🔴 Lågt blodsocker"
+        case .high: return "🟣 Högt blodsocker"
         case .urgentHigh: return "⚠️ Akut högt socker!"
-        case .fastDrop: return "Sjunker snabbt"
-        case .fastRise: return "Stiger snabbt"
+        case .fastDrop: return "⏬ Sjunker snabbt"
+        case .fastRise: return "⏫ Stiger snabbt"
         case .missedReading: return "⚠️ Inga värden"
         case .sage: return "⏰ Påminnelse sensorbyte"
         case .cage: return "⏰ Påminnelse pumpbyte"
         case .notLooping: return "❌ Loop ej aktiv!"
-        case .missedBolus: return "Missad måltidsbolus"
-        case .pump: return "Låg insulinnivå"
-        case .iob: return "IOB Varning"
-        case .cob: return "COB Varning"
+        case .missedBolus: return "⚠️ Missad måltidsbolus"
+        case .pump: return "⚠️ Låg insulinnivå"
+        case .iob: return "💉 IOB Varning"
+        case .cob: return "🥨 COB Varning"
         case .battery: return "🪫 Låg batterinivå"
-        case .recBolus: return "Rek. Bolus"
-        case .tempTargetStart: return "Temp Target Start"
-        case .tempTargetEnd: return "Temp Target End"
+        case .recBolus: return "👉 Rek. Bolus"
+        case .tempTargetStart: return "▶️ Temp Target Start"
+        case .tempTargetEnd: return "⏹️ Temp Target End"
         }
     }
 
@@ -392,7 +392,7 @@ struct SnoozeStatusView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.title)
                                 .font(.headline)
-                            Text("Larm snoozat till kl: \(viewModel.formatted(item.time))")
+                            Text("\((item.key == .muteAll) ? "Alla larm tystade till kl:" : (item.key == .all) ? "Alla larm snoozade till kl:" : "Larm snoozat till kl:") \(viewModel.formatted(item.time))")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -431,10 +431,16 @@ struct SnoozeStatusView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.orange)
                     .contextMenu {
-                        Button("30 min") { setGlobalSnooze(minutes: 30) }
-                        Button("1 h") { setGlobalSnooze(minutes: 60) }
+                        Text("Snooza alla larm")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .disabled(true)
+                        Divider()
                         Button("2 h") { setGlobalSnooze(minutes: 120) }
                         Button("4 h") { setGlobalSnooze(minutes: 240) }
+                        Button("8 h") { setGlobalSnooze(minutes: 480) }
+                        Button("10 h") { setGlobalSnooze(minutes: 600) }
+                        Button("12 h") { setGlobalSnooze(minutes: 720) }
                     }
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -447,10 +453,16 @@ struct SnoozeStatusView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(.gray)
                     .contextMenu {
-                        Button("30 min") { setGlobalMute(minutes: 30) }
-                        Button("1 h") { setGlobalMute(minutes: 60) }
+                        Text("Tysta alla larm")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .disabled(true)
+                        Divider()
                         Button("2 h") { setGlobalMute(minutes: 120) }
                         Button("4 h") { setGlobalMute(minutes: 240) }
+                        Button("8 h") { setGlobalMute(minutes: 480) }
+                        Button("10 h") { setGlobalMute(minutes: 600) }
+                        Button("12 h") { setGlobalMute(minutes: 720) }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -464,6 +476,7 @@ struct SnoozeStatusView: View {
                             DatePicker("Tid", selection: $editingTime)
                                 .datePickerStyle(.compact)
                                 .labelsHidden()
+                                .environment(\.locale, Locale(identifier: "sv_SE"))
                             HStack(spacing: 12) {
                                 Button {
                                     editingTime = Calendar.current.date(byAdding: .minute, value: -15, to: editingTime) ?? editingTime
