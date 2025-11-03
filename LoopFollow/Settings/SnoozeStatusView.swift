@@ -11,7 +11,7 @@ import Combine
 // MARK: - Model
 
 enum SnoozeKey: CaseIterable, Identifiable {
-    case all,
+    case all, muteAll,
          urgentLow, low, high, urgentHigh,
          fastDrop, fastRise,
          missedReading,
@@ -29,6 +29,7 @@ enum SnoozeKey: CaseIterable, Identifiable {
     var displayTitle: String {
         switch self {
         case .all: return "🔇 Snooza alla larm"
+        case .muteAll: return "🔇 Mute alla larm"
         case .urgentLow: return "🆘 Akut lågt socker!"
         case .low: return "Lågt blodsocker"
         case .high: return "Högt blodsocker"
@@ -54,6 +55,7 @@ enum SnoozeKey: CaseIterable, Identifiable {
     var isSnoozed: Bool {
         switch self {
         case .all: return UserDefaultsRepository.alertSnoozeAllIsSnoozed.value
+        case .muteAll: return UserDefaultsRepository.alertMuteAllIsMuted.value
         case .urgentLow: return UserDefaultsRepository.alertUrgentLowIsSnoozed.value
         case .low: return UserDefaultsRepository.alertLowIsSnoozed.value
         case .high: return UserDefaultsRepository.alertHighIsSnoozed.value
@@ -78,6 +80,7 @@ enum SnoozeKey: CaseIterable, Identifiable {
     var snoozedTime: Date? {
         switch self {
         case .all: return UserDefaultsRepository.alertSnoozeAllTime.value
+        case .muteAll: return UserDefaultsRepository.alertMuteAllTime.value
         case .urgentLow: return UserDefaultsRepository.alertUrgentLowSnoozedTime.value
         case .low: return UserDefaultsRepository.alertLowSnoozedTime.value
         case .high: return UserDefaultsRepository.alertHighSnoozedTime.value
@@ -103,6 +106,7 @@ enum SnoozeKey: CaseIterable, Identifiable {
     var isKeyString: String {
         switch self {
         case .all: return "alertSnoozeAllIsSnoozed"
+        case .muteAll: return "alertMuteAllIsMuted"
         case .urgentLow: return "alertUrgentLowIsSnoozed"
         case .low: return "alertLowIsSnoozed"
         case .high: return "alertHighIsSnoozed"
@@ -127,6 +131,7 @@ enum SnoozeKey: CaseIterable, Identifiable {
     var timeKeyString: String {
         switch self {
         case .all: return "alertSnoozeAllTime"
+        case .muteAll: return "alertMuteAllTime"
         case .urgentLow: return "alertUrgentLowSnoozedTime"
         case .low: return "alertLowSnoozedTime"
         case .high: return "alertHighSnoozedTime"
@@ -186,12 +191,12 @@ final class SnoozeStatusViewModel: ObservableObject {
 
     func refresh() {
         var list: [SnoozedAlarmItem] = []
-
-        // Lägg till ALLA längst upp om aktiv
         if SnoozeKey.all.isSnoozed {
             list.append(.init(key: .all, title: SnoozeKey.all.displayTitle, time: SnoozeKey.all.snoozedTime))
         }
-
+        if SnoozeKey.muteAll.isSnoozed {
+            list.append(.init(key: .muteAll, title: SnoozeKey.muteAll.displayTitle, time: SnoozeKey.muteAll.snoozedTime))
+        }
         // Övriga, i samma mapping som setSnoozeTime()
         let order: [SnoozeKey] = [
             .urgentLow, .low, .high, .urgentHigh,
@@ -206,14 +211,12 @@ final class SnoozeStatusViewModel: ObservableObject {
             .recBolus,
             .tempTargetStart, .tempTargetEnd
         ]
-
-        for key in order where key.isSnoozed {
-            list.append(.init(key: key, title: key.displayTitle, time: key.snoozedTime))
+        // Sortera efter tid (okända sist), men behåll globalerna i topp om de fanns
+        let headCount = list.count
+        let tailSource = order.compactMap { key in
+            key.isSnoozed ? SnoozedAlarmItem(key: key, title: key.displayTitle, time: key.snoozedTime) : nil
         }
-
-        // Sortera efter tid (okända sist), men behåll "alla" i topp om den fanns
-        let head = list.first?.key == .all ? [list.removeFirst()] : []
-        let tail = list.sorted { a, b in
+        let tail = tailSource.sorted { a, b in
             switch (a.time, b.time) {
             case let (t1?, t2?): return t1 < t2
             case (_?, nil): return true
@@ -221,7 +224,7 @@ final class SnoozeStatusViewModel: ObservableObject {
             default: return a.title < b.title
             }
         }
-        items = head + tail
+        items = Array(list.prefix(headCount)) + tail
     }
 
     // MARK: Mutations
@@ -231,6 +234,9 @@ final class SnoozeStatusViewModel: ObservableObject {
         switch key {
         case .all:
             UserDefaultsRepository.alertSnoozeAllIsSnoozed.value = on
+            alarms?.reloadIsSnoozed(key: key.isKeyString, value: on)
+        case .muteAll:
+            UserDefaultsRepository.alertMuteAllIsMuted.value = on
             alarms?.reloadIsSnoozed(key: key.isKeyString, value: on)
         case .urgentLow:
             UserDefaultsRepository.alertUrgentLowIsSnoozed.value = on
@@ -294,43 +300,65 @@ final class SnoozeStatusViewModel: ObservableObject {
         let setNil = (date == nil)
         switch key {
         case .all:
-            UserDefaultsRepository.alertSnoozeAllTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertSnoozeAllTime.value = date }
+        case .muteAll:
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertMuteAllTime.value = date }
         case .urgentLow:
-            UserDefaultsRepository.alertUrgentLowSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertUrgentLowSnoozedTime.value = date }
         case .low:
-            UserDefaultsRepository.alertLowSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertLowSnoozedTime.value = date }
         case .high:
-            UserDefaultsRepository.alertHighSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertHighSnoozedTime.value = date }
         case .urgentHigh:
-            UserDefaultsRepository.alertUrgentHighSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertUrgentHighSnoozedTime.value = date }
         case .fastDrop:
-            UserDefaultsRepository.alertFastDropSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertFastDropSnoozedTime.value = date }
         case .fastRise:
-            UserDefaultsRepository.alertFastRiseSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertFastRiseSnoozedTime.value = date }
         case .missedReading:
-            UserDefaultsRepository.alertMissedReadingSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertMissedReadingSnoozedTime.value = date }
         case .sage:
-            UserDefaultsRepository.alertSAGESnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertSAGESnoozedTime.value = date }
         case .cage:
-            UserDefaultsRepository.alertCAGESnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertCAGESnoozedTime.value = date }
         case .notLooping:
-            UserDefaultsRepository.alertNotLoopingSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertNotLoopingSnoozedTime.value = date }
         case .missedBolus:
-            UserDefaultsRepository.alertMissedBolusSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertMissedBolusSnoozedTime.value = date }
         case .pump:
-            UserDefaultsRepository.alertPumpSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertPumpSnoozedTime.value = date }
         case .iob:
-            UserDefaultsRepository.alertIOBSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertIOBSnoozedTime.value = date }
         case .cob:
-            UserDefaultsRepository.alertCOBSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertCOBSnoozedTime.value = date }
         case .battery:
-            UserDefaultsRepository.alertBatterySnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertBatterySnoozedTime.value = date }
         case .recBolus:
-            UserDefaultsRepository.alertRecBolusSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertRecBolusSnoozedTime.value = date }
         case .tempTargetStart:
-            UserDefaultsRepository.alertTempTargetStartSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertTempTargetStartSnoozedTime.value = date }
         case .tempTargetEnd:
-            UserDefaultsRepository.alertTempTargetEndSnoozedTime.value = date
+            if setNil { UserDefaults.standard.removeObject(forKey: key.timeKeyString) }
+            else { UserDefaultsRepository.alertTempTargetEndSnoozedTime.value = date }
         }
         alarms?.reloadSnoozeTime(key: key.timeKeyString, setNil: setNil, value: (date ?? Date()))
     }
@@ -393,6 +421,38 @@ struct SnoozeStatusView: View {
             }
             .navigationBarTitle("Snoozade larm", displayMode: .inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        setGlobalSnooze(minutes: 60)
+                    } label: {
+                        Image(systemName: "clock.badge")
+                            .foregroundColor(.white)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .contextMenu {
+                        Button("30 min") { setGlobalSnooze(minutes: 30) }
+                        Button("1 h") { setGlobalSnooze(minutes: 60) }
+                        Button("2 h") { setGlobalSnooze(minutes: 120) }
+                        Button("4 h") { setGlobalSnooze(minutes: 240) }
+                    }
+                }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        setGlobalMute(minutes: 60)
+                    } label: {
+                        Image(systemName: "speaker.slash")
+                            .foregroundColor(.white)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.gray)
+                    .contextMenu {
+                        Button("30 min") { setGlobalMute(minutes: 30) }
+                        Button("1 h") { setGlobalMute(minutes: 60) }
+                        Button("2 h") { setGlobalMute(minutes: 120) }
+                        Button("4 h") { setGlobalMute(minutes: 240) }
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") { presentationMode.wrappedValue.dismiss() }
                 }
@@ -451,5 +511,18 @@ struct SnoozeStatusView: View {
                 }
             }
         }
+    }
+    private func setGlobalSnooze(minutes: Int) {
+        let target = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        viewModel.setSnoozed(true, for: .all)
+        viewModel.setTime(target, for: .all)
+        viewModel.refresh()
+    }
+
+    private func setGlobalMute(minutes: Int) {
+        let target = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        viewModel.setSnoozed(true, for: .muteAll)
+        viewModel.setTime(target, for: .muteAll)
+        viewModel.refresh()
     }
 }
