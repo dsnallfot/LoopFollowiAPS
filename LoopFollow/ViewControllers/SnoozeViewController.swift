@@ -519,6 +519,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             name: .volumeButtonAlarmStopped,
             object: nil
         )
+        setupSwipeUpToStatus()
     }
 
     override func viewDidLayoutSubviews() {
@@ -556,6 +557,37 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing alert with volume button done")
     }
     
+    private func setupSwipeUpToStatus() {
+        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUpToStatus(_:)))
+        swipeUp.direction = .up
+        swipeUp.numberOfTouchesRequired = 1
+        swipeUp.cancelsTouchesInView = false // don't steal taps from buttons/steppers
+        view.addGestureRecognizer(swipeUp)
+    }
+
+    @objc private func handleSwipeUpToStatus(_ gesture: UISwipeGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        // Require swipe to start in the lower quarter to minimize accidental triggers
+        let startPoint = gesture.location(in: view)
+        let lowerThreshold = view.bounds.height * 0.75
+        guard startPoint.y >= lowerThreshold else { return }
+
+        // Avoid double-presenting
+        guard presentedViewController == nil else { return }
+
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+
+        // Present SnoozeStatusView (same as InfoButtonTapped)
+        let vc = UIHostingController(rootView: SnoozeStatusView())
+        vc.modalPresentationStyle = .pageSheet
+        if let sheet = vc.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+        }
+        self.present(vc, animated: true)
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self, name: .volumeButtonAlarmStopped, object: nil)
     }
