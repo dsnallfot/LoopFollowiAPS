@@ -554,7 +554,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             self.snoozeForMinuteStepper.isHidden = true
             self.snoozeForMinuteLabel.isHidden = true
         }
-        LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing alert with volume button done")
+        LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing alarm with volume button done and Snoozer UI updated")
     }
     
     private func setupSwipeUpToStatus() {

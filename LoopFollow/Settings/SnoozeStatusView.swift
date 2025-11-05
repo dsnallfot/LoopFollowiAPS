@@ -385,7 +385,7 @@ struct SnoozeStatusView: View {
         NavigationView {
             List {
                 if viewModel.items.isEmpty {
-                    Text("Inga aktiva snoozade larm")
+                    Text("Inga snoozade larm just nu")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(viewModel.items) { item in
