@@ -837,6 +837,10 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     }
     
     @objc func showHistoryFromStack() {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         // Instantiate your TreatmentsTableView.
         let treatmentsVC = TreatmentsTableView()
         

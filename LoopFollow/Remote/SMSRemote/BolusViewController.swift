@@ -75,6 +75,10 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
     @IBAction func sendRemoteBolusPressed(_ sender: Any) {
         // Disable the button to prevent multiple taps
         if !isButtonDisabled {
+            // Light haptic for feedback
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            
             isButtonDisabled = true
             sendBolusButton.isEnabled = false
         } else {

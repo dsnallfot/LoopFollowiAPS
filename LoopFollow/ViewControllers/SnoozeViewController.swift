@@ -60,6 +60,10 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     }
     
     @IBAction func InfoButtonTapped(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         let vc = UIHostingController(rootView: SnoozeStatusView())
         vc.modalPresentationStyle = .pageSheet
         if let sheet = vc.sheetPresentationController {

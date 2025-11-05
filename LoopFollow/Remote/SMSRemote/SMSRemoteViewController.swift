@@ -57,31 +57,55 @@ class SMSRemoteViewController: UIViewController, RemoteSettingsDelegate {
         }
     
     @IBAction func customActionButtonPressed(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
             let customActionViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomAction") as! CustomActionViewController
             self.present(customActionViewController, animated: true, completion: nil)
     }
     
     @IBAction func mealButtonPressed(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         let mealViewController = storyboard!.instantiateViewController(withIdentifier: "remoteMeal") as! MealViewController
         self.present(mealViewController, animated: true, completion: nil)
     }
     
     @IBAction func bolusButtonPressed(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         let bolusViewController = storyboard!.instantiateViewController(withIdentifier: "remoteBolus") as! BolusViewController
         self.present(bolusViewController, animated: true, completion: nil)
     }
     
     @IBAction func overrideButtonPressed(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         let overrideViewController = storyboard!.instantiateViewController(withIdentifier: "remoteOverride") as! OverrideViewController
         self.present(overrideViewController, animated: true, completion: nil)
     }
     
     @IBAction func tempTargetButtonPressed(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         let tempTargetViewController = storyboard!.instantiateViewController(withIdentifier: "remoteTempTarget") as! TempTargetViewController
         self.present(tempTargetViewController, animated: true, completion: nil)
     }
     
     @IBAction func remoteSettingsButtonTapped(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
             let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
             // Set self as the delegate
             remoteSettingsViewController.delegate = self
@@ -89,6 +113,10 @@ class SMSRemoteViewController: UIViewController, RemoteSettingsDelegate {
         }
     
     @IBAction func methodButtonTapped(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
         // Set self as the delegate
         remoteSettingsViewController.delegate = self
@@ -96,6 +124,10 @@ class SMSRemoteViewController: UIViewController, RemoteSettingsDelegate {
     }
     
     @IBAction func calendarButtonTapped(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        
         let urlString = "shortcuts://run-shortcut?name=Hälsologgning"
         if let url = URL(string: urlString) {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
