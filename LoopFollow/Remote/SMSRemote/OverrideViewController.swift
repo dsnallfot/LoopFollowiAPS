@@ -75,10 +75,6 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
     @IBAction func sendRemoteOverridePressed(_ sender: Any) {
         // Disable the button to prevent multiple taps
         if !isButtonDisabled {
-            // Light haptic for feedback
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
-            
             isButtonDisabled = true
             sendOverrideButton.isEnabled = false
         } else {
