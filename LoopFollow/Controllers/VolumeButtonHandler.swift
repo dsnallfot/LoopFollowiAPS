@@ -14,7 +14,7 @@ class VolumeButtonHandler: NSObject {
     static let shared = VolumeButtonHandler()
 
     // Volume button snoozer activation delay in seconds
-    private let volumeButtonActivationDelay: TimeInterval = 0.9
+    private let volumeButtonActivationDelay: TimeInterval = 0.5//0.9
 
     // Volume button detection parameters
     private let volumeButtonPressThreshold: Float = 0.02
@@ -79,17 +79,40 @@ class VolumeButtonHandler: NSObject {
     }
 
     private func isLikelyVolumeButtonPress(volumeDifference: Float, timestamp: Date) -> Bool {
-        let isReasonableChange = volumeDifference >= 0.03 && volumeDifference <= 0.12
+        let isReasonableChange = volumeDifference >= 0.02 && volumeDifference <= 0.20
         let isDiscreteChange = recentVolumeChanges.count <= 2
-        let hasConsistentTiming = volumeChangePattern.isEmpty || volumeChangePattern.last! >= 0.15
-        let isNotRapidSequence = recentVolumeChanges.count < 3 ||
-            (recentVolumeChanges.count >= 3 &&
-                recentVolumeChanges.suffix(3).map { $0.timestamp.timeIntervalSinceReferenceDate }.enumerated().dropFirst().allSatisfy { index, timestamp in
-                    let previousTimestamp = recentVolumeChanges.suffix(3).map { $0.timestamp.timeIntervalSinceReferenceDate }[index - 1]
-                    return timestamp - previousTimestamp > 0.08
-                })
+        let hasConsistentTiming: Bool = {
+            if let last = volumeChangePattern.last {
+                return last >= 0.15
+            } else {
+                return true
+            }
+        }()
+        let isNotRapidSequence: Bool = {
+            if recentVolumeChanges.count < 3 { return true }
+            let lastThree = recentVolumeChanges.suffix(3).map { $0.timestamp.timeIntervalSinceReferenceDate }
+            return lastThree.enumerated().dropFirst().allSatisfy { index, ts in
+                let prev = lastThree[index - 1]
+                return ts - prev > 0.08
+            }
+        }()
 
-        return isReasonableChange && isDiscreteChange && hasConsistentTiming && isNotRapidSequence
+        let decision = isReasonableChange && isDiscreteChange && hasConsistentTiming && isNotRapidSequence
+
+        if !decision {
+            let lastIntervalStr = volumeChangePattern.last.map { String(format: "%.3f", $0) } ?? "nil"
+            LogManager.shared.log(
+                category: .volumeButtonSnooze,
+                message:
+                    "Reject press: Δ=\(String(format: "%.4f", volumeDifference)); " +
+                    "isReasonableChange=\(isReasonableChange) [0.03…0.12]; " +
+                    "isDiscreteChange=\(isDiscreteChange) [recent=\(recentVolumeChanges.count)]; " +
+                    "hasConsistentTiming=\(hasConsistentTiming) [lastInterval=\(lastIntervalStr) ≥ 0.15]; " +
+                    "isNotRapidSequence=\(isNotRapidSequence) [minGap>0.08s]"
+            )
+        }
+
+        return decision
     }
 
     private func snoozeActiveAlarm() {
@@ -129,6 +152,10 @@ class VolumeButtonHandler: NSObject {
         recentVolumeChanges.removeAll()
         lastSignificantVolumeChange = nil
         volumeChangePattern.removeAll()
+        
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
     }
 
     private func alarmEndedNaturally() {
@@ -139,7 +166,124 @@ class VolumeButtonHandler: NSObject {
         lastSignificantVolumeChange = nil
         volumeChangePattern.removeAll()
     }
+    
+    func startMonitoring() {
+        guard !isMonitoring else { return }
+        isMonitoring = true
 
+        let session = AVAudioSession.sharedInstance()
+
+        // 1) Seed:a baseline omedelbart
+        var seededVolume = session.outputVolume
+        self.lastVolume = max(seededVolume, 0.0001)
+        LogManager.shared.log(category: .volumeButtonSnooze, message: "startMonitoring(): seeded baseline lastVolume=\(self.lastVolume)")
+
+        // 2) Läs ev. tvingad volym (override)
+        let overrideEnabled = UserDefaultsRepository.overrideSystemOutputVolume.value
+        let expectedForcedVolume = overrideEnabled ? UserDefaultsRepository.forcedOutputVolume.value : nil
+        if let expected = expectedForcedVolume {
+            // Aligna baseline till den volym vi vet kommer att sättas av vår override
+            self.lastVolume = max(expected, 0.0001)
+            LogManager.shared.log(category: .volumeButtonSnooze, message: "startMonitoring(): baseline aligned to expected forced volume \(expected)")
+        }
+
+        // 3) Kort arming-delay + separat fönster för att ignorera "forced volume"-bekräftelsen
+        let observerStartTime = Date()
+        let armingDelay: TimeInterval = 0.10   // skydd mot spurious direkt vid attach
+        let forcedVolumeWindow: TimeInterval = 1.20 // tidigt efter start brukar override:en slå till
+
+        volumeObserver = session.observe(\.outputVolume, options: [.new]) { [weak self] session, _ in
+            guard let self = self, let alarmStartTime = self.alarmStartTime else { return }
+
+            let currentVolume = session.outputVolume
+            let now = Date()
+
+            // Ignorera enbart event som kommer precis när observern startas (spurious sync från iOS)
+            if now.timeIntervalSince(observerStartTime) < armingDelay {
+                self.lastVolume = currentVolume
+                return
+            }
+
+            // Om vi kör override: ignorera första bekräftelsen på den tvingade nivån inom ett kort fönster
+            if let expected = expectedForcedVolume,
+               now.timeIntervalSince(observerStartTime) < forcedVolumeWindow,
+               abs(currentVolume - expected) <= 0.02 {
+                LogManager.shared.log(
+                    category: .volumeButtonSnooze,
+                    message: "Ignore: forced system volume applied (current=\(String(format: "%.3f", currentVolume)), expected=\(String(format: "%.3f", expected)))"
+                )
+                self.lastVolume = currentVolume
+                return
+            }
+
+            // Vanlig knappdetektering
+            let volumeDifference = abs(currentVolume - self.lastVolume)
+            if volumeDifference <= self.volumeButtonPressThreshold {
+                LogManager.shared.log(
+                    category: .volumeButtonSnooze,
+                    message: "Ignore: Δ=\(String(format: "%.4f", volumeDifference)) ≤ threshold \(self.volumeButtonPressThreshold)"
+                )
+            }
+
+            if volumeDifference > self.volumeButtonPressThreshold {
+                let timeSinceAlarmStart = now.timeIntervalSince(alarmStartTime)
+
+                // Ignorera larmets egen volym-ramp i början
+                if timeSinceAlarmStart < 2.0, currentVolume > self.lastVolume {
+                    if volumeDifference <= 0.15, timeSinceAlarmStart < 1.5 {
+                        LogManager.shared.log(
+                            category: .volumeButtonSnooze,
+                            message: "Ignore: ramp-up guard (sinceStart=\(String(format: "%.3f", timeSinceAlarmStart))s, Δ=\(String(format: "%.4f", volumeDifference)) ≤ 0.15, rising)"
+                        )
+                        self.lastVolume = currentVolume
+                        return
+                    }
+                }
+
+                // Viktigt för heuristiken & felsökning
+                self.recordVolumeChange(currentVolume: currentVolume, timestamp: now)
+
+                // Respektera aktiveringsfördröjning
+                if timeSinceAlarmStart > self.volumeButtonActivationDelay {
+                    // Cooldown mellan godkända tryck
+                    if let lastPress = self.lastVolumeButtonPressTime {
+                        let timeSinceLastPress = now.timeIntervalSince(lastPress)
+                        if timeSinceLastPress < self.volumeButtonCooldown {
+                            LogManager.shared.log(
+                                category: .volumeButtonSnooze,
+                                message: "Ignore: cooldown (Δt=\(String(format: "%.3f", timeSinceLastPress))s < \(self.volumeButtonCooldown)s)"
+                            )
+                            self.lastVolume = currentVolume
+                            return
+                        }
+                    }
+
+                    // Heuristik: ser detta ut som en riktig volymknapp?
+                    if self.isLikelyVolumeButtonPress(volumeDifference: volumeDifference, timestamp: now) {
+                        self.snoozeActiveAlarm()
+                        LogManager.shared.log(
+                            category: .volumeButtonSnooze,
+                            message: "Snoozing active alarm due to likely volume button press (Δ=\(String(format: "%.4f", volumeDifference)))"
+                        )
+                    } else {
+                        LogManager.shared.log(
+                            category: .volumeButtonSnooze,
+                            message: "Heuristics rejected press candidate (Δ=\(String(format: "%.4f", volumeDifference)); recent=\(self.recentVolumeChanges.count))"
+                        )
+                    }
+                } else {
+                    LogManager.shared.log(
+                        category: .volumeButtonSnooze,
+                        message: "Ignore: activationDelay not met (sinceStart=\(String(format: "%.3f", timeSinceAlarmStart))s < \(self.volumeButtonActivationDelay)s)"
+                    )
+                }
+            }
+
+            // Uppdatera baseline för nästa event
+            self.lastVolume = currentVolume
+        }
+    }
+/* ORIGINAL KOD NEDAN IFALL DEN NYA INTE FUNKAR SOM TÄNKT
     func startMonitoring() {
         guard !isMonitoring else { return }
 
@@ -195,7 +339,7 @@ class VolumeButtonHandler: NSObject {
             self.lastVolume = currentVolume
         }
     }
-
+*/
     func stopMonitoring() {
         guard isMonitoring else { return }
 

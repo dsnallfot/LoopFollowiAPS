@@ -399,8 +399,8 @@ struct SnoozeStatusView: View {
                         .padding(.vertical, 4)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                viewModel.setSnoozed(false, for: item.key)
                                 viewModel.setTime(nil, for: item.key)
+                                viewModel.setSnoozed(false, for: item.key)
                                 viewModel.refresh()
                             } label: {
                                 Label("Ta bort", systemImage: "trash.fill")
