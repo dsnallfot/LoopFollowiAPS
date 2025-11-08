@@ -542,12 +542,8 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
 
         // Always present modally as a sheet that takes the full screen height
         let nav = UINavigationController(rootViewController: alarmVC)
-        nav.modalPresentationStyle = .pageSheet
-        if let sheet = nav.sheetPresentationController {
-            sheet.detents = [.large()] // full-height sheet; no medium detent
-            sheet.prefersScrollingExpandsWhenScrolledToEdge = true
-        }
-        self.present(nav, animated: true)
+        self.present(nav, animated: true, completion: nil)
+        
     }
 
     override func viewDidLayoutSubviews() {

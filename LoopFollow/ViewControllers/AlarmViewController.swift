@@ -245,15 +245,9 @@ class AlarmViewController: FormViewController {
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
-
-
+        
         form
-        /*+++ ButtonRow() {
-            $0.title = "Klar"
-        }.onCellSelection { (row, arg)  in
-            self.dismiss(animated: true, completion: nil)
-        }*/
-        +++ Section("Välj larm att ställa in")
+        +++ Section(header: "Välj larm att ställa in", footer: "")
         <<< SegmentedRow<String>("bgAlerts"){ row in
             row.title = ""
             row.options = ["Urgent Low", "Low", "High", "Urgent High"]

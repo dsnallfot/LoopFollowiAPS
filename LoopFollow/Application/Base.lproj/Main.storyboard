@@ -484,7 +484,7 @@
                                 </subviews>
                             </stackView>
                             <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="2YK-SO-lWc">
-                                <rect key="frame" x="308.66666666666669" y="88" width="85.333333333333314" height="34.333333333333343"/>
+                                <rect key="frame" x="316.66666666666669" y="88" width="85.333333333333314" height="34.333333333333343"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="mMr-u7-oTH" userLabel="Alarms">
                                         <rect key="frame" x="0.0" y="0.0" width="51" height="34.333333333333336"/>
@@ -516,6 +516,9 @@
                                         </connections>
                                     </button>
                                 </subviews>
+                                <constraints>
+                                    <constraint firstItem="kxm-9n-j3N" firstAttribute="leading" secondItem="mMr-u7-oTH" secondAttribute="trailing" constant="4" id="pad-gJ-EtN"/>
+                                </constraints>
                             </stackView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Dt4-CR-Iqb"/>
@@ -527,7 +530,7 @@
                             <constraint firstItem="Dt4-CR-Iqb" firstAttribute="bottom" secondItem="ZaU-Ss-piB" secondAttribute="bottom" constant="8" id="WgA-wX-qtd"/>
                             <constraint firstItem="Dt4-CR-Iqb" firstAttribute="bottom" secondItem="xzZ-jc-k2v" secondAttribute="bottom" constant="8" id="bY3-br-SWl"/>
                             <constraint firstItem="ZaU-Ss-piB" firstAttribute="top" secondItem="Dt4-CR-Iqb" secondAttribute="top" constant="50" id="cD1-U9-tJJ"/>
-                            <constraint firstAttribute="trailing" secondItem="2YK-SO-lWc" secondAttribute="trailing" constant="20" id="yp2-59-QZd"/>
+                            <constraint firstAttribute="trailing" secondItem="2YK-SO-lWc" secondAttribute="trailing" constant="12" id="yp2-59-QZd"/>
                         </constraints>
                     </view>
                     <tabBarItem key="tabBarItem" title="Snoozer" image="zzz" catalog="system" id="TdI-rW-rdW"/>
@@ -772,26 +775,10 @@
                                 </constraints>
                             </stackView>
                             <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="b3T-o4-ESN">
-                                <rect key="frame" x="303.66666666666669" y="87.666666666666671" width="98.333333333333314" height="34.333333333333329"/>
+                                <rect key="frame" x="316.66666666666669" y="87.666666666666671" width="85.333333333333314" height="34.333333333333329"/>
                                 <subviews>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Cs-mt-7ke" userLabel="NoteNS">
-                                        <rect key="frame" x="0.0" y="0.0" width="47.333333333333336" height="34.333333333333336"/>
-                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                        <state key="normal" title="Button">
-                                            <attributedString key="attributedTitle"/>
-                                            <color key="titleColor" systemColor="systemGrayColor"/>
-                                            <imageReference key="image" image="gearshape.fill" catalog="system" symbolScale="large"/>
-                                        </state>
-                                        <buttonConfiguration key="configuration" style="plain" title="" subtitle="">
-                                            <imageReference key="image" image="list.bullet.clipboard" catalog="system" symbolScale="large"/>
-                                            <color key="baseForegroundColor" red="0.50980395079999996" green="0.50980395079999996" blue="0.51372551919999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                                        </buttonConfiguration>
-                                        <connections>
-                                            <action selector="calendarButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="JFn-f7-KEp"/>
-                                        </connections>
-                                    </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AuC-IH-cun" userLabel="Settings">
-                                        <rect key="frame" x="47.333333333333314" y="0.0" width="51" height="34.333333333333336"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="51" height="34.333333333333336"/>
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                         <state key="normal" title="Button">
                                             <attributedString key="attributedTitle"/>
@@ -804,6 +791,23 @@
                                         </buttonConfiguration>
                                         <connections>
                                             <action selector="remoteSettingsButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="3d2-Ep-Zn3"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Cs-mt-7ke" userLabel="NoteNS">
+                                        <rect key="frame" x="51" y="0.0" width="34.333333333333343" height="34.333333333333336"/>
+                                        <color key="backgroundColor" red="0.509765625" green="0.509765625" blue="0.5131835938" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                        <state key="normal" title="Button">
+                                            <attributedString key="attributedTitle"/>
+                                            <color key="titleColor" systemColor="systemGrayColor"/>
+                                            <imageReference key="image" image="gearshape.fill" catalog="system" symbolScale="large"/>
+                                        </state>
+                                        <buttonConfiguration key="configuration" style="plain" title="" subtitle="" cornerStyle="capsule">
+                                            <imageReference key="image" image="list.bullet.clipboard" catalog="system" symbolScale="large"/>
+                                            <color key="baseForegroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        </buttonConfiguration>
+                                        <connections>
+                                            <action selector="calendarButtonTapped:" destination="4ie-sJ-hfo" eventType="touchUpInside" id="JFn-f7-KEp"/>
                                         </connections>
                                     </button>
                                 </subviews>
