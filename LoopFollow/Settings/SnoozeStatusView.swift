@@ -383,40 +383,52 @@ struct SnoozeStatusView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                if viewModel.items.isEmpty {
-                    Text("Inga snoozade larm just nu")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(viewModel.items) { item in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.title)
-                                .font(.headline)
-                            Text("\((item.key == .muteAll) ? "Alla larm tystade till kl:" : (item.key == .all) ? "Alla larm snoozade till kl:" : "Larm snoozat till kl:") \(viewModel.formatted(item.time))")
-                                .font(.subheadline)
+            ZStack {
+                // Force a consistent system background (works well in dark mode)
+                Color(uiColor: .secondarySystemBackground)
+                    .ignoresSafeArea()
+                if #available(iOS 16.0, *) {
+                    List {
+                        if viewModel.items.isEmpty {
+                            Text("Inga snoozade larm just nu")
                                 .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 4)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                viewModel.setTime(nil, for: item.key)
-                                viewModel.setSnoozed(false, for: item.key)
-                                viewModel.refresh()
-                            } label: {
-                                Label("Ta bort", systemImage: "trash.fill")
+                        } else {
+                            ForEach(viewModel.items) { item in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.title)
+                                        .font(.headline)
+                                    Text("\((item.key == .muteAll) ? "Alla larm tystade till kl:" : (item.key == .all) ? "Alla larm snoozade till kl:" : "Larm snoozat till kl:") \(viewModel.formatted(item.time))")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 4)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        viewModel.setTime(nil, for: item.key)
+                                        viewModel.setSnoozed(false, for: item.key)
+                                        viewModel.refresh()
+                                    } label: {
+                                        Label("Ta bort", systemImage: "trash.fill")
+                                    }
+                                    .tint(.red)
+                                    
+                                    Button {
+                                        editingKey = item.key
+                                        editingTime = item.time ?? Date()
+                                        showingEditor = true
+                                    } label: {
+                                        Label("Ändra tid", systemImage: "clock.badge")
+                                    }
+                                    .tint(.blue)
+                                }
                             }
-                            .tint(.red)
-
-                            Button {
-                                editingKey = item.key
-                                editingTime = item.time ?? Date()
-                                showingEditor = true
-                            } label: {
-                                Label("Ändra tid", systemImage: "clock.badge")
-                            }
-                            .tint(.blue)
                         }
                     }
+                    // Hide the default list background so our ZStack color shows through
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                } else {
+                    // Fallback on earlier versions
                 }
             }
             .navigationBarTitle("Snoozade larm", displayMode: .inline)
@@ -472,34 +484,39 @@ struct SnoozeStatusView: View {
             .sheet(isPresented: $showingEditor) {
                 if #available(iOS 16.0, *) {
                     NavigationView {
-                        VStack(spacing: 16) {
-                            DatePicker("Tid", selection: $editingTime)
-                                .datePickerStyle(.compact)
-                                .labelsHidden()
-                                .environment(\.locale, Locale(identifier: "sv_SE"))
-                            HStack(spacing: 12) {
-                                Button {
-                                    editingTime = Calendar.current.date(byAdding: .minute, value: -15, to: editingTime) ?? editingTime
-                                } label: {
-                                    Image(systemName: "minus.circle.fill")
-                                        .font(.system(size: 36))
-                                }
+                        ZStack {
+                            // Force a consistent sheet background (dark-mode friendly)
+                            Color(uiColor: .secondarySystemBackground)
+                                .ignoresSafeArea()
+                            VStack(spacing: 16) {
+                                DatePicker("Tid", selection: $editingTime)
+                                    .datePickerStyle(.compact)
+                                    .labelsHidden()
+                                    .environment(\.locale, Locale(identifier: "sv_SE"))
+                                HStack(spacing: 12) {
+                                    Button {
+                                        editingTime = Calendar.current.date(byAdding: .minute, value: -15, to: editingTime) ?? editingTime
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .font(.system(size: 36))
+                                    }
 
-                                Text("15 minuter")
-                                    .font(.body)
-                                    .foregroundStyle(.secondary)
+                                    Text("15 minuter")
+                                        .font(.body)
+                                        .foregroundStyle(.secondary)
 
-                                Button {
-                                    editingTime = Calendar.current.date(byAdding: .minute, value: 15, to: editingTime) ?? editingTime
-                                } label: {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 36))
+                                    Button {
+                                        editingTime = Calendar.current.date(byAdding: .minute, value: 15, to: editingTime) ?? editingTime
+                                    } label: {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.system(size: 36))
+                                    }
                                 }
+                                .padding(.top, 8)
+                                Spacer()
                             }
-                            .padding(.top, 8)
-                            Spacer()
+                            .padding()
                         }
-                        .padding()
                         .navigationTitle("Ändra snooze-tid")
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
@@ -518,7 +535,10 @@ struct SnoozeStatusView: View {
                             }
                         }
                     }
+                    // Medium/large detents but with enforced background
                     .presentationDetents([.medium, .large])
+                    // Prefer a strong background; iOS 17+ supports explicit presentationBackground
+                    .modifier(_SheetBackgroundCompat())
                 } else {
                     // Fallback on earlier versions
                 }
@@ -527,15 +547,27 @@ struct SnoozeStatusView: View {
     }
     private func setGlobalSnooze(minutes: Int) {
         let target = Date().addingTimeInterval(TimeInterval(minutes * 60))
-        viewModel.setSnoozed(true, for: .all)
         viewModel.setTime(target, for: .all)
+        viewModel.setSnoozed(true, for: .all)
         viewModel.refresh()
     }
 
     private func setGlobalMute(minutes: Int) {
         let target = Date().addingTimeInterval(TimeInterval(minutes * 60))
-        viewModel.setSnoozed(true, for: .muteAll)
         viewModel.setTime(target, for: .muteAll)
+        viewModel.setSnoozed(true, for: .muteAll)
         viewModel.refresh()
+    }
+}
+
+// MARK: - Sheet background compatibility
+private struct _SheetBackgroundCompat: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content
+                .presentationBackground(Color(uiColor: .secondarySystemBackground))
+        } else {
+            content
+        }
     }
 }

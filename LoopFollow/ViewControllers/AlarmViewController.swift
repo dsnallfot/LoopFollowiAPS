@@ -248,11 +248,11 @@ class AlarmViewController: FormViewController {
 
 
         form
-        +++ ButtonRow() {
+        /*+++ ButtonRow() {
             $0.title = "Klar"
         }.onCellSelection { (row, arg)  in
             self.dismiss(animated: true, completion: nil)
-        }
+        }*/
         +++ Section("Välj larm att ställa in")
         <<< SegmentedRow<String>("bgAlerts"){ row in
             row.title = ""
@@ -3420,6 +3420,11 @@ class AlarmViewController: FormViewController {
         }.onChange { [weak self] row in
             guard let value = row.value else { return }
             UserDefaultsRepository.quietHourEnd.value = value
+        }
+        +++ ButtonRow() {
+            $0.title = "Klar"
+        }.onCellSelection { (row, arg)  in
+            self.dismiss(animated: true, completion: nil)
         }
     }
 

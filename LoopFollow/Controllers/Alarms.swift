@@ -79,7 +79,7 @@ extension MainViewController {
             if bolusCount >= UserDefaultsRepository.alertIOBNumber.value ||
                 totalBoluses >= Double(UserDefaultsRepository.alertIOBMaxBoluses.value) ||
                 (latestIOB?.value ?? 0) >= Double(UserDefaultsRepository.alertIOBMaxBoluses.value) {
-                AlarmSound.whichAlarm = "IOB Varning"
+                AlarmSound.whichAlarm = "💉 IOB Varning"
                 //determine if it is day or night and what should happen
                 if UserDefaultsRepository.nightTime.value {
                     if UserDefaultsRepository.alertIOBNightTime.value { numLoops = -1 }
@@ -97,7 +97,7 @@ extension MainViewController {
         if UserDefaultsRepository.alertCOB.value && !UserDefaultsRepository.alertCOBIsSnoozed.value {
             let alertAt = Double(UserDefaultsRepository.alertCOBAt.value)
             if (latestCOB?.value ?? 0) >= alertAt {
-                AlarmSound.whichAlarm = "COB Varning"
+                AlarmSound.whichAlarm = "🥨 COB Varning"
                 //determine if it is day or night and what should happen
                 if UserDefaultsRepository.nightTime.value {
                     if UserDefaultsRepository.alertCOBNightTime.value { numLoops = -1 }
@@ -121,7 +121,7 @@ extension MainViewController {
                 if UserDefaultsRepository.alertTemporaryBelow.value {
                     if Float(currentBG) < UserDefaultsRepository.alertTemporaryBG.value {
                         UserDefaultsRepository.alertTemporaryActive.value = false
-                        AlarmSound.whichAlarm = "Tillfällig varning"
+                        AlarmSound.whichAlarm = "1️⃣ Tillfällig varning"
                         if UserDefaultsRepository.alertTemporaryBGRepeat.value { numLoops = -1 }
                         triggerAlarm(sound: UserDefaultsRepository.alertTemporarySound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, latestIOB: iobString, latestCOB: cobString)
                         return
@@ -129,7 +129,7 @@ extension MainViewController {
                 } else{
                     if Float(currentBG) > UserDefaultsRepository.alertTemporaryBG.value {
                         tabBarController?.selectedIndex = 2
-                        AlarmSound.whichAlarm = "Tillfällig varning"
+                        AlarmSound.whichAlarm = "1️⃣ Tillfällig varning"
                         if UserDefaultsRepository.alertTemporaryBGRepeat.value { numLoops = -1 }
                         triggerAlarm(sound: UserDefaultsRepository.alertTemporarySound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, latestIOB: iobString, latestCOB: cobString)
                         return
@@ -192,7 +192,7 @@ extension MainViewController {
                  {
                 
                
-                AlarmSound.whichAlarm = "Lågt blodsocker"
+                AlarmSound.whichAlarm = "🔴 Lågt blodsocker"
               
                 
   
@@ -241,7 +241,7 @@ extension MainViewController {
                 Float(currentBG) >= UserDefaultsRepository.alertHighBG.value &&
                 Float(persistentHighBG) >= UserDefaultsRepository.alertHighBG.value &&
                 !UserDefaultsRepository.alertHighIsSnoozed.value {
-                AlarmSound.whichAlarm = "Högt blodsocker"
+                AlarmSound.whichAlarm = "🟣 Högt blodsocker"
                 //determine if it is day or night and what should happen
                 if UserDefaultsRepository.nightTime.value {
                     if UserDefaultsRepository.alertHighNightTime.value { numLoops = -1 }
@@ -268,7 +268,7 @@ extension MainViewController {
                     if (UserDefaultsRepository.alertFastDropReadings.value == 2 && Float(deltas[0]) <= compare)
                         || (UserDefaultsRepository.alertFastDropReadings.value == 3 && Float(deltas[0]) <= compare && Float(deltas[1]) <= compare)
                         || (UserDefaultsRepository.alertFastDropReadings.value == 4 && Float(deltas[0]) <= compare && Float(deltas[1]) <= compare && Float(deltas[2]) <= compare) {
-                        AlarmSound.whichAlarm = "Sjunker snabbt"
+                        AlarmSound.whichAlarm = "⏬ Sjunker snabbt"
                         //determine if it is day or night and what should happen
                         if UserDefaultsRepository.nightTime.value {
                             if UserDefaultsRepository.alertFastDropNightTime.value { numLoops = -1 }
@@ -293,7 +293,7 @@ extension MainViewController {
                     if (UserDefaultsRepository.alertFastRiseReadings.value == 2 && Float(deltas[0]) >= compare)
                         || (UserDefaultsRepository.alertFastRiseReadings.value == 3 && Float(deltas[0]) >= compare && Float(deltas[1]) >= compare)
                         || (UserDefaultsRepository.alertFastRiseReadings.value == 4 && Float(deltas[0]) >= compare && Float(deltas[1]) >= compare && Float(deltas[2]) >= compare) {
-                        AlarmSound.whichAlarm = "Stiger snabbt"
+                        AlarmSound.whichAlarm = "⏫ Stiger snabbt"
                         //determine if it is day or night and what should happen
                         if UserDefaultsRepository.nightTime.value {
                             if UserDefaultsRepository.alertFastRiseNightTime.value { numLoops = -1 }
@@ -396,7 +396,7 @@ extension MainViewController {
                     
                     // There is a current carb but no boluses data at all
                     if bolusData.count < 1 {
-                        AlarmSound.whichAlarm = "Missad måltidsbolus"
+                        AlarmSound.whichAlarm = "⚠️ Missad måltidsbolus"
                         //determine if it is day or night and what should happen
                         if UserDefaultsRepository.nightTime.value {
                             if UserDefaultsRepository.alertMissedBolusNightTime.value { numLoops = -1 }
@@ -425,7 +425,7 @@ extension MainViewController {
                     
                     // This will trigger is no boluses were set above
                     if (lastBolus == 0.0) {
-                        AlarmSound.whichAlarm = "Missad måltidsbolus"
+                        AlarmSound.whichAlarm = "⚠️ Missad måltidsbolus"
                         //determine if it is day or night and what should happen
                         if UserDefaultsRepository.nightTime.value {
                             if UserDefaultsRepository.alertMissedBolusNightTime.value { numLoops = -1 }
@@ -488,7 +488,7 @@ extension MainViewController {
             if UserDefaultsRepository.alertPump.value && !UserDefaultsRepository.alertPumpIsSnoozed.value {
                 let alertAt = Double(UserDefaultsRepository.alertPumpAt.value)
                 if latestPumpVolume <= alertAt {
-                    AlarmSound.whichAlarm = "Låg insulinnivå"
+                    AlarmSound.whichAlarm = "⚠️ Låg insulinnivå"
                     //determine if it is day or night and what should happen
                     if UserDefaultsRepository.nightTime.value {
                         if UserDefaultsRepository.alertPumpNightTime.value { numLoops = -1 }
@@ -521,7 +521,7 @@ extension MainViewController {
             let alertAtRecBolus = Double(UserDefaultsRepository.alertRecBolusLevel.value)
 
             if currentRecBolus >= alertAtRecBolus {
-                AlarmSound.whichAlarm = "Rek. Bolus"
+                AlarmSound.whichAlarm = "👉 Rek. Bolus"
 
                 if UserDefaultsRepository.alertRecBolusRepeat.value { numLoops = -1 }
                 triggerAlarm(sound: UserDefaultsRepository.alertRecBolusSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertRecBolusSnooze.value, snoozeIncrement: 5, audio: true, latestIOB: iobString, latestCOB: cobString)
@@ -618,7 +618,7 @@ extension MainViewController {
 
         // Check Temp Target Start Alarm
         if UserDefaultsRepository.alertTempTargetStart.value && !UserDefaultsRepository.alertTempTargetStartIsSnoozed.value && triggerStart {
-            AlarmSound.whichAlarm = "Temp Target Started"
+            AlarmSound.whichAlarm = "▶️ Temp Target Started"
             // Determine if it is day or night and what should happen
             if UserDefaultsRepository.nightTime.value {
                 if UserDefaultsRepository.alertTempTargetStartNightTime.value { numLoops = -1 }
@@ -634,7 +634,7 @@ extension MainViewController {
 
         // Check Temp Target End Alarm
         else if UserDefaultsRepository.alertTempTargetEnd.value && !UserDefaultsRepository.alertTempTargetEndIsSnoozed.value && triggerEnd {
-            AlarmSound.whichAlarm = "Temp Target Ended"
+            AlarmSound.whichAlarm = "⏹️ Temp Target Ended"
             // Determine if it is day or night and what should happen
             if UserDefaultsRepository.nightTime.value {
                 if UserDefaultsRepository.alertTempTargetEndNightTime.value { numLoops = -1 }

@@ -33,6 +33,8 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     
     @IBOutlet weak var InfoButton: UIButton!
     
+    @IBOutlet weak var AlarmsButton: UIButton!
+    
     @IBAction func SnoozeButton(_ sender: Any) {
         AlarmSound.stop()
         
@@ -524,6 +526,28 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             object: nil
         )
         setupSwipeUpToStatus()
+        // Wire up Alarms button to open AlarmViewController
+        AlarmsButton.addTarget(self, action: #selector(alarmsButtonTapped), for: .touchUpInside)
+    }
+
+    @IBAction func alarmsButtonTapped(_ sender: Any) {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+
+        guard let alarmVC = ViewControllerManager.shared.alarmViewController else {
+            LogManager.shared.log(category: .alarm, message: "AlarmViewController not available when tapping AlarmsButton")
+            return
+        }
+
+        // Always present modally as a sheet that takes the full screen height
+        let nav = UINavigationController(rootViewController: alarmVC)
+        nav.modalPresentationStyle = .pageSheet
+        if let sheet = nav.sheetPresentationController {
+            sheet.detents = [.large()] // full-height sheet; no medium detent
+            sheet.prefersScrollingExpandsWhenScrolledToEdge = true
+        }
+        self.present(nav, animated: true)
     }
 
     override func viewDidLayoutSubviews() {
