@@ -392,13 +392,13 @@ extension MainViewController {
             let bgValue = Double(cleanedBGTextStr)
             let deltaBGValue = Double(cleanedSnoozerDelta)
             // Log cleaned and converted values
-            print("Cleaned bgValue: \(bgValue ?? 0.0)")
-            print("Cleaned deltaBGValue: \(deltaBGValue ?? 0.0)")
+            LogManager.shared.log(category: .contact, message: "Cleaned bgValue: \(bgValue ?? 0.0)", isDebug: true)
+            LogManager.shared.log(category: .contact, message: "Cleaned deltaBGValue: \(deltaBGValue ?? 0.0)", isDebug: true)
             // Perform calculation
             let fifteenMin = ((bgValue ?? 0.0) + (deltaBGValue ?? 0.0) * 2.5)
-            print("Raw fifteenMin calculation: \(fifteenMin)")
             // Format the calculated value to a string
             let fifteenMinString = String(format: "%.1f", fifteenMin)
+            LogManager.shared.log(category: .contact, message: "fifteenMin calculation: \(fifteenMinString)", isDebug: true)
             // Convert back to Double for conditional checks
             let fifteenMinValue = Double(fifteenMinString) ?? 0.0
             // Use the calculated 'fifteenMinValue' to build the color-coded string
@@ -412,12 +412,6 @@ extension MainViewController {
             } else {
                 fifteenMinColorString = " ✅ "
             }
-            /*
-             var cob = "N/A g"
-             if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
-             cob = latestCOB
-             }
-             print("cob: \(cob)")*/
             
             var cob = "N/A g"
             if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
@@ -428,7 +422,7 @@ extension MainViewController {
                     cob = latestCOB // Fallback to original if parsing fails
                 }
             }
-            print("cob: \(cob)")
+            LogManager.shared.log(category: .contact, message: "COB: \(cob)", isDebug: true)
             
             var iob = "N/A E"
             if let latestIOB = self.latestIOB?.description, !latestIOB.isEmpty {
@@ -439,7 +433,7 @@ extension MainViewController {
                     iob = latestIOB // Fallback to original if parsing fails
                 }
             }
-            print("iob: \(iob)")
+            LogManager.shared.log(category: .contact, message: "IOB: \(iob)", isDebug: true)
             
             // Update contact
             if ObservableUserDefaults.shared.contactEnabled.value {
