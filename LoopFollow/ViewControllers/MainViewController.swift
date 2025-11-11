@@ -753,7 +753,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 do {
                     try self.store.remove(i, span: EKSpan.thisEvent, commit: true)
                 } catch let error {
-                    print(error)
+                    LogManager.shared.log(category: .calendar, message: "\(error)", isDebug: true)
                 }
             }
         }

@@ -72,7 +72,7 @@ extension MainViewController {
             } else if let createdAt = entry["created_at"] as? String {
                 carbDate = createdAt
             } else {
-                print("Skipping entry with no timestamp or created_at")
+                LogManager.shared.log(category: .nightscout, message: "Skipping carbs entry with no timestamp or created_at", isDebug: true)
                 continue
             }
             
@@ -84,7 +84,7 @@ extension MainViewController {
                 if let carbs = entry["carbs"] as? Double {
                     totalCarbs += carbs
                 } else {
-                    print("Carbs not found for entry")
+                    LogManager.shared.log(category: .nightscout, message: "Carbs not found for entry", isDebug: true)
                 }
             }
         }

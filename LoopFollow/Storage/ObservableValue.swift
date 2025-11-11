@@ -19,7 +19,7 @@ class ObservableValue<T>: ObservableObject {
     }
 
     func set(_ newValue: T) {
-        print("Setting new value: \(newValue)")
+        LogManager.shared.log(category: .general, message: "Setting new observable value: \(newValue)", isDebug: true)
         DispatchQueue.main.async {
             self.value = newValue
         }

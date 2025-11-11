@@ -35,7 +35,7 @@ extension MainViewController {
                     pumpChangeGraphData.append(dot)
                 }
             } else {
-                print("Failed to parse date")
+                LogManager.shared.log(category: .nightscout, message: "Failed to parse date for site change", isDebug: true)
             }
         }
         if UserDefaultsRepository.graphOtherTreatments.value {

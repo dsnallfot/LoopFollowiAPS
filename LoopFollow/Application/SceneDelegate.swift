@@ -122,31 +122,31 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let urlContext = URLContexts.first else { return }
         
         let url = urlContext.url
-        print("Received URL in SceneDelegate: \(url.absoluteString)")
+        LogManager.shared.log(category: .remote, message: "Received URL in SceneDelegate: \(url.absoluteString)", isDebug: true)
         
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let host = components.host else {
-            print("Invalid URL or missing host")
+            LogManager.shared.log(category: .remote, message: "Invalid URL or missing host", isDebug: true)
             return
         }
 
-        print("URL Host: \(host)")
+        LogManager.shared.log(category: .remote, message: "URL Host: \(host)", isDebug: true)
 
         switch host {
         case "success":
             NotificationCenter.default.post(name: NSNotification.Name("ShortcutSuccess"), object: nil)
-            print("Posted success notification")
+            LogManager.shared.log(category: .remote, message: "Posted success notification", isDebug: true)
         case "error":
             NotificationCenter.default.post(name: NSNotification.Name("ShortcutError"), object: nil)
-            print("Posted error notification")
+            LogManager.shared.log(category: .remote, message: "Posted error notification", isDebug: true)
         case "cancel":
             NotificationCenter.default.post(name: NSNotification.Name("ShortcutCancel"), object: nil)
-            print("Posted cancel notification")
+            LogManager.shared.log(category: .remote, message: "Posted cancel notification", isDebug: true)
         case "passcode":
             NotificationCenter.default.post(name: NSNotification.Name("ShortcutPasscode"), object: nil)
-            print("Posted passcode notification")
+            LogManager.shared.log(category: .remote, message: "Posted passcode notification", isDebug: true)
         default:
-            print("Unhandled URL scheme host: \(host)")
+            LogManager.shared.log(category: .remote, message: "Unhandled URL scheme host: \(host)", isDebug: true)
         }
     }
 

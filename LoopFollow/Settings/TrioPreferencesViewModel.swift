@@ -35,7 +35,8 @@ class TrioPreferencesViewModel: ObservableObject {
                         self.preferences = []
                     }
                 case .failure(let error):
-                    print("Error fetching profile: \(error)")
+                    LogManager.shared.log(category: .trio, message: "Error fetching profile: \(error)", isDebug: true)
+
                     self.preferences = []
                 }
             }

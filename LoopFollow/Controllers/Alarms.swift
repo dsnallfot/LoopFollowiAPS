@@ -200,7 +200,7 @@ extension MainViewController {
                 if UserDefaultsRepository.nightTime.value {
                     if UserDefaultsRepository.alertLowNightTime.value { numLoops = -1 }
                     if !UserDefaultsRepository.alertLowNightTimeAudible.value { playSound = false }
-                    print ("It is NightTime and playSound = ", playSound)
+                    LogManager.shared.log(category: .alarm, message: "It is NightTime and playSound = , \(playSound)", isDebug: true)
                 } else {
                     if UserDefaultsRepository.alertLowDayTime.value { numLoops = -1 }
                     if !UserDefaultsRepository.alertLowDayTimeAudible.value { playSound = false }
@@ -246,7 +246,8 @@ extension MainViewController {
                 if UserDefaultsRepository.nightTime.value {
                     if UserDefaultsRepository.alertHighNightTime.value { numLoops = -1 }
                     if !UserDefaultsRepository.alertHighNightTimeAudible.value { playSound = false }
-                    print ("It is NightTime and playSound = ", playSound)
+                    LogManager.shared.log(category: .alarm, message: "It is NightTime and playSound = , \(playSound)", isDebug: true)
+
                 } else {
                     if UserDefaultsRepository.alertHighDayTime.value { numLoops = -1 }
                     if !UserDefaultsRepository.alertHighDayTimeAudible.value { playSound = false }

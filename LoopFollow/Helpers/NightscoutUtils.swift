@@ -258,7 +258,7 @@ class NightscoutUtils {
 
         let result = dateFormatter.date(from: mutableDate)
         if result == nil {
-            print("Unable to parse string: '\(mutableDate)'")
+            LogManager.shared.log(category: .nightscout, message: "Unable to parse string: '\(mutableDate)'", isDebug: true)
         }
         return result
     }
@@ -373,7 +373,7 @@ class NightscoutUtils {
             }
         }
         
-        print("DELETE Request URL: \(request.url?.absoluteString ?? "nil")")
+        LogManager.shared.log(category: .nightscout, message: "DELETE Request URL: \(request.url?.absoluteString ?? "nil")", isDebug: true)
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {
@@ -385,9 +385,9 @@ class NightscoutUtils {
             
             // Print raw response for debugging.
             if let responseString = String(data: data, encoding: .utf8) {
-                print("DELETE Response: \(responseString)")
+                LogManager.shared.log(category: .nightscout, message: "DELETE Response: \(responseString)", isDebug: true)
             } else {
-                print("DELETE Response: (Unable to convert data to string)")
+                LogManager.shared.log(category: .nightscout, message: "DELETE Response: (Unable to convert data to string)", isDebug: true)
             }
             
             // Attempt to decode the response JSON.
@@ -450,7 +450,7 @@ class NightscoutUtils {
             return
         }
         
-        print("🔹 Final URL: \(url.absoluteString)")
+        LogManager.shared.log(category: .nightscout, message: "🔹 Final URL: \(url.absoluteString)", isDebug: true)
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -464,7 +464,7 @@ class NightscoutUtils {
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code:", httpResponse.statusCode)
+                LogManager.shared.log(category: .nightscout, message: "HTTP Status Code: \(httpResponse.statusCode)", isDebug: true)
             }
             
             guard let data = data, error == nil else {
@@ -508,23 +508,23 @@ class NightscoutUtils {
                 // Extract and format deliverAt. Expected JSON format: "2025-03-17T02:12:10.963Z"
                 var deliverAtString = ""
                 if let deliverAtRaw = suggested["deliverAt"] as? String {
-                    print("deliverAtRaw:", deliverAtRaw)
+                    LogManager.shared.log(category: .nightscout, message: "deliverAtRaw: \(deliverAtRaw)", isDebug: true)
                     // Create a local ISO8601DateFormatter to parse the deliverAt string.
                     let localISOFormatter = ISO8601DateFormatter()
                     localISOFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
                     if let deliverAtDate = localISOFormatter.date(from: deliverAtRaw) {
-                        print("Parsed deliverAtDate:", deliverAtDate)
+                        LogManager.shared.log(category: .nightscout, message: "Parsed deliverAtDate: \(deliverAtDate)", isDebug: true)
                         // Format deliverAt as HH:mm:ss
                         let timeFormatter = DateFormatter()
                         timeFormatter.dateFormat = "HH:mm:ss"
                         timeFormatter.timeZone = TimeZone.current  // Use local time zone
                         deliverAtString = timeFormatter.string(from: deliverAtDate)
-                        print("Formatted deliverAtString:", deliverAtString)
+                        LogManager.shared.log(category: .nightscout, message: "Formatted deliverAtString: \(deliverAtString)", isDebug: true)
                     } else {
-                        print("⚠️ Could not parse deliverAtRaw")
+                        LogManager.shared.log(category: .nightscout, message: "⚠️ Could not parse deliverAtRaw", isDebug: true)
                     }
                 } else {
-                    print("⚠️ deliverAt not found in JSON")
+                    LogManager.shared.log(category: .nightscout, message: "⚠️ deliverAt not found in JSON", isDebug: true)
                 }
                 
                 // Prepend status time, BG and IOB to the reason string.
@@ -541,7 +541,7 @@ class NightscoutUtils {
                     completion(.success(finalReason))
                 }
             } catch {
-                print("⚠️ JSON Parsing Error:", error)
+                LogManager.shared.log(category: .nightscout, message: "⚠️ JSON Parsing Error: \(error)", isDebug: true)
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }

@@ -28,14 +28,14 @@ class TrioOrefViewModel: ObservableObject {
                 switch result {
                 case .success(let statusList):
                     guard let firstStatus = statusList.first else {
-                        print("✅ Successfully fetched device status, but status list is empty.")
+                        LogManager.shared.log(category: .trio, message: "✅ Successfully fetched device status, but status list is empty.", isDebug: true)
                         self.orefEntries = []
                         self.formattedTitle = "Oref status"
                         return
                     }
 
                     guard let oref2 = firstStatus.oref2 else {
-                        print("✅ Fetched device status, but oref2 field is missing.")
+                        LogManager.shared.log(category: .trio, message: "✅ Fetched device status, but oref2 field is missing.", isDebug: true)
                         self.orefEntries = []
                         self.formattedTitle = "Oref status"
                         return
@@ -57,14 +57,14 @@ class TrioOrefViewModel: ObservableObject {
                         formatter.timeZone = .current
                         let localTime = formatter.string(from: parsedDate)
                         self.formattedTitle = "Oref status: \(localTime)"
-                        print("✅ Parsed and displayed local date: \(localTime)")
+                        LogManager.shared.log(category: .trio, message: "✅ Parsed and displayed local date: \(localTime)", isDebug: true)
                     } else {
-                        print("⚠️ Could not parse oref2.date: \(oref2.date)")
+                        LogManager.shared.log(category: .trio, message: "⚠️ Could not parse oref2.date: \(oref2.date)", isDebug: true)
                         self.formattedTitle = "Oref status"
                     }
 
                 case .failure(let error):
-                    print("❌ Failed to fetch oref2:", error)
+                    LogManager.shared.log(category: .trio, message: "❌ Failed to fetch oref2: \(error)", isDebug: true)
                     self.orefEntries = []
                     self.formattedTitle = "Oref status"
                 }

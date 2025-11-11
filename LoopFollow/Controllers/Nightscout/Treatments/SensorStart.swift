@@ -48,7 +48,7 @@ extension MainViewController {
                     }
                 }
             } else {
-                print("Failed to parse date")
+                LogManager.shared.log(category: .nightscout, message: "Failed to parse date for sensor start", isDebug: true)
             }
         }
 

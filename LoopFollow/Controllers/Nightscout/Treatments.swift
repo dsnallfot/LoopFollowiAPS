@@ -101,7 +101,7 @@ extension MainViewController {
                     insulinCartridge.append(newEntry)
                 }
             default:
-                print("No Match: \(String(describing: entry))")
+                LogManager.shared.log(category: .nightscout, message: "No treatment match: \(String(describing: entry))", isDebug: true)
             }
         }
         

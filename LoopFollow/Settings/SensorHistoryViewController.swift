@@ -379,7 +379,7 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
                 let jsonData = try JSONEncoder().encode(self.sensorHistory)
                 
                 if let jsonString = String(data: jsonData, encoding: .utf8) {
-                    print("📤 Exporting JSON: \(jsonString)")
+                    LogManager.shared.log(category: .dexcom, message: "📤 Exporting JSON: \(jsonString)", isDebug: true)
                 }
 
                 // ✅ Save in the Documents Directory instead of tmp
@@ -394,12 +394,12 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
                         let activityVC = UIActivityViewController(activityItems: [exportURL], applicationActivities: nil)
                         self.present(activityVC, animated: true)
                     } else {
-                        print("❌ JSON file does not exist at \(exportURL.path)")
+                        LogManager.shared.log(category: .dexcom, message: "❌ JSON file does not exist at \(exportURL.path)", isDebug: true)
                     }
                 }
             } catch {
                 DispatchQueue.main.async {
-                    print("❌ Failed to export sensor history: \(error)")
+                    LogManager.shared.log(category: .dexcom, message: "❌ Failed to export sensor history: \(error)", isDebug: true)
                 }
             }
         }
@@ -473,13 +473,13 @@ extension SensorHistoryViewController: UIDocumentPickerDelegate {
                     Storage.shared.sensorStartNotes = storedHistory
                     self.loadSensorHistory() // Reload UI
                     
-                    print("✅ Successfully imported sensor history from local copy")
+                    LogManager.shared.log(category: .dexcom, message: "✅ Successfully imported sensor history from local copy", isDebug: true)
                 }
             } catch {
-                print("❌ Failed to copy or import sensor history: \(error)")
+                LogManager.shared.log(category: .dexcom, message: "❌ Failed to copy or import sensor history: \(error)", isDebug: true)
             }
         } else {
-            print("❌ Failed to access security-scoped resource for file: \(fileURL)")
+            LogManager.shared.log(category: .dexcom, message: "❌ Failed to access security-scoped resource for file: \(fileURL)", isDebug: true)
         }
     }
 }

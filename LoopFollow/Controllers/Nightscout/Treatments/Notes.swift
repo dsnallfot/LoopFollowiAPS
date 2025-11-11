@@ -40,7 +40,7 @@ extension MainViewController {
                     noteGraphData.append(dot)
                 }
             } else {
-                print("Failed to parse date")
+                LogManager.shared.log(category: .nightscout, message: "Failed to parse date for notes", isDebug: true)
             }
         }
         

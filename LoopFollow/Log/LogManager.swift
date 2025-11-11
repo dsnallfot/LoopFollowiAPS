@@ -23,19 +23,22 @@ class LogManager {
     let logUpdateSubject = PassthroughSubject<Void, Never>() // Notify when logs are updated
 
     enum Category: String, CaseIterable {
-        case bluetooth = "Bluetooth"
-        case nightscout = "Nightscout"
-        case apns = "APNS"
-        case general = "General"
-        case contact = "Contact"
-        case taskScheduler = "Task Scheduler"
-        case dexcom = "Dexcom"
         case alarm = "Alarm"
-        case volumeButtonSnooze = "Volume Button Snooze"
-        case remote = "Remote"
         case analysis = "Analysis"
+        case apns = "APNS"
+        case bluetooth = "Bluetooth"
         case calendar = "Calendar"
+        case contact = "Contact"
+        case dexcom = "Dexcom"
         case deviceStatus = "Device Status"
+        case general = "General"
+        case nightscout = "Nightscout"
+        case remote = "Remote"
+        case taskScheduler = "Task Scheduler"
+        case temporaryDebug = "Temporary Debug"
+        case treatments = "Treatments"
+        case trio = "Trio"
+        case volumeButtonSnooze = "Volume Button Snooze"
     }
 
     init() {

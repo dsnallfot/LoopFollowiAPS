@@ -90,7 +90,7 @@ class ProfileSchedulesViewModel: ObservableObject {
                     )
 
                 case .failure(let error):
-                    print("Error fetching preferences: \(error)")
+                    LogManager.shared.log(category: .trio, message: "Error fetching preferences: \(error)", isDebug: true)
                 }
 
                 completion()

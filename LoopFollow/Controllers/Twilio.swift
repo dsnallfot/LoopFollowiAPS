@@ -25,7 +25,7 @@ extension TwilioRequestable {
         // Build the request
         let urlString = "https://\(twilioSID):\(twilioSecret)@api.twilio.com/2010-04-01/Accounts/\(twilioSID)/Messages"
         guard let url = URL(string: urlString) else {
-            print("Invalid URL")
+            LogManager.shared.log(category: .remote, message: "Invalid Twilio URL", isDebug: true)
             completion(.failure(NetworkError.invalidURL))
             return
         }

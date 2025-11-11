@@ -885,7 +885,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                 failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                                 self.present(failureAlert, animated: true, completion: nil)
                             }
-                            print("Failed to delete treatment: \(error.localizedDescription)")
+                            LogManager.shared.log(category: .treatments, message: "Failed to delete treatment: \(error.localizedDescription)", isDebug: true)
                         }
                         completionHandler(true)
                     }
@@ -1001,7 +1001,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         if method != "SMS API" {
             // Use the Shortcuts URL scheme.
             guard let encodedString = combinedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode URL string")
+                LogManager.shared.log(category: .treatments, message: "Failed to encode URL string", isDebug: true)
                 return
             }
             // Define callback URLs.
@@ -1012,7 +1012,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             guard let successEncoded = successCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let errorEncoded = errorCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let cancelEncoded = cancelCallback.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-                print("Failed to encode callback URLs")
+                LogManager.shared.log(category: .treatments, message: "Failed to encode callback URLs", isDebug: true)
                 return
             }
             
@@ -1020,7 +1020,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             if let url = URL(string: urlString) {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
-            print("Waiting for shortcut completion...")
+            LogManager.shared.log(category: .treatments, message: "Waiting for shortcut completion...", isDebug: true)
         } else {
             // For SMS API, first show a confirmation alert with authentication.
             showRemoteDeleteConfirmationAlert(combinedString: combinedString)
@@ -1084,7 +1084,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                            error.code == LAError.biometryNotEnrolled.rawValue {
                             self.authenticateWithPasscode(completion: completion)
                         } else {
-                            print("Authentication failed: \(authenticationError?.localizedDescription ?? "unknown error")")
+                            LogManager.shared.log(category: .treatments, message: "Authentication failed: \(authenticationError?.localizedDescription ?? "unknown error")", isDebug: true)
                             self.handleAlertDismissal()
                         }
                     }
@@ -1103,7 +1103,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 if success {
                     completion()
                 } else {
-                    print("Authentication failed: \(error?.localizedDescription ?? "unknown error")")
+                    LogManager.shared.log(category: .treatments, message: "Authentication failed: \(error?.localizedDescription ?? "unknown error")", isDebug: true)
                     self.handleAlertDismissal()
                 }
             }
@@ -1114,7 +1114,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Shortcut Callback Handlers (without dismissing the view)
 
     @objc private func handleShortcutSuccess() {
-        print("Shortcut succeeded")
+        LogManager.shared.log(category: .treatments, message: "Shortcut succeeded", isDebug: true)
         AudioServicesPlaySystemSound(SystemSoundID(1322))
         showAlert(title: NSLocalizedString("Lyckades", comment: "Lyckades"),
                   message: NSLocalizedString("\nMeddelandet levererades", comment: "Meddelandet levererades"),
@@ -1122,7 +1122,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
 
     @objc private func handleShortcutError() {
-        print("Shortcut failed, showing error alert...")
+        LogManager.shared.log(category: .treatments, message: "Shortcut failed, showing error alert...", isDebug: true)
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Misslyckades", comment: "Misslyckades"),
                   message: NSLocalizedString("\nEtt fel uppstod när genvägen skulle köras. Du kan försöka igen.", comment: "Ett fel uppstod när genvägen skulle köras. Du kan försöka igen."),
@@ -1130,7 +1130,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
 
     @objc private func handleShortcutCancel() {
-        print("Shortcut was cancelled, showing cancellation alert...")
+        LogManager.shared.log(category: .treatments, message: "Shortcut was cancelled, showing cancellation alert...", isDebug: true)
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Avbröts", comment: "Avbröts"),
                   message: NSLocalizedString("\nGenvägen avbröts innan den körts färdigt. Du kan försöka igen.", comment: "Genvägen avbröts innan den körts färdigt. Du kan försöka igen."),
@@ -1138,7 +1138,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     }
 
     @objc private func handleShortcutPasscode() {
-        print("Shortcut was cancelled due to wrong passcode, showing passcode alert...")
+        LogManager.shared.log(category: .treatments, message: "Shortcut was cancelled due to wrong passcode, showing passcode alert...", isDebug: true)
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Fel lösenkod", comment: "Fel lösenkod"),
                   message: NSLocalizedString("\nGenvägen avbröts pga fel lösenkod. Du kan försöka igen.", comment: "Genvägen avbröts pga fel lösenkod. Du kan försöka igen."),
@@ -1156,8 +1156,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
 
     /// Called when an alert is dismissed (e.g. after cancellation or authentication failure).
     private func handleAlertDismissal() {
-        // For example, re-enable any disabled buttons; here we simply print.
-        print("Alert dismissed, re-enabling controls if needed.")
+        // For example, re-enable any disabled buttons; here we simply log.
+        LogManager.shared.log(category: .treatments, message: "Alert dismissed, re-enabling controls if needed.", isDebug: true)
     }
 
     

@@ -2010,7 +2010,8 @@ extension MainViewController {
         guard let chartData = BGChart.lineData,
               chartData.dataSets.count > dataIndex,
               let mainChartDataSet = chartData.dataSets[dataIndex] as? LineChartDataSet else {
-            print("Error: Could not retrieve temp target datasets.")
+            LogManager.shared.log(category: .general, message: "Error: Could not retrieve temp target datasets.", isDebug: true)
+
             return
         }
 

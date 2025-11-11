@@ -180,12 +180,12 @@ extension MainViewController {
                 isfString = String(format: "%.1f → %.1f", profileISFValue, enactedISFValue)
             }
             infoManager.updateInfoData(type: .isf, value: isfString, unit: "mmol/L/E")
-            print("ISF updated: \(isfString)")
+            LogManager.shared.log(category: .deviceStatus, message: "ISF updated: \(isfString)", isDebug: true)
         } else if let profileISF = profileISF {
             let profileISFValue = profileISF.doubleValue(for: displayUnit)
             let isfString = String(format: "%.1f", profileISFValue)
             infoManager.updateInfoData(type: .isf, value: isfString, unit: "mmol/L/E")
-            print("ISF updated: \(isfString)")
+            LogManager.shared.log(category: .deviceStatus, message: "ISF updated: \(isfString)", isDebug: true)
         }
             
             // MinPredBG
@@ -199,12 +199,12 @@ extension MainViewController {
                         let formattedMinPredBGString = String(format: "%.1f", minPredBG)
                         sharedMinPredBG = minPredBG
                         sharedRawMinPredBG = formattedMinPredBGString
-                        print("Extracted MinPredBG from reason: \(formattedMinPredBGString)")
+                        LogManager.shared.log(category: .deviceStatus, message: "Extracted MinPredBG from reason: \(formattedMinPredBGString)", isDebug: true)
                     } else {
-                        print("Failed to convert extracted MinPredBG to Double: \(minPredBGString)")
+                        LogManager.shared.log(category: .deviceStatus, message: "Failed to convert extracted MinPredBG to Double: \(minPredBGString)", isDebug: true)
                     }
                 } else {
-                    print("MinPredBG not found in reason string.")
+                    LogManager.shared.log(category: .deviceStatus, message: "MinPredBG not found in reason string.", isDebug: true)
                 }
             } else {
                 // Fallback: Use UserDefaultsRepository.lowLine (already in correct units)
@@ -212,7 +212,7 @@ extension MainViewController {
                 let formattedFallbackMinPredBG = String(format: "%.1f", fallbackMinPredBG)
                 sharedMinPredBG = fallbackMinPredBG
                 sharedRawMinPredBG = formattedFallbackMinPredBG
-                print("Reason string not available, using fallback MinPredBG: \(formattedFallbackMinPredBG)")
+                LogManager.shared.log(category: .deviceStatus, message: "Reason string not available, using fallback MinPredBG: \(formattedFallbackMinPredBG)", isDebug: true)
             }
 
             // Carb Ratio (CR)
@@ -262,13 +262,13 @@ extension MainViewController {
                             infoManager.updateInfoData(type: .cob, value: fallbackCobMetric, unit: "g")
                             latestCOB = fallbackCobMetric
                         } else {
-                            print("Failed to create CarbMetric from extracted COB value: \(cobValue)")
+                            LogManager.shared.log(category: .deviceStatus, message: "Failed to create CarbMetric from extracted COB value: \(cobValue)", isDebug: true)
                         }
                     } else {
-                        print("Invalid COB value extracted from reason string: \(cobValueString)")
+                        LogManager.shared.log(category: .deviceStatus, message: "Invalid COB value extracted from reason string: \(cobValueString)", isDebug: true)
                     }
                 } else {
-                    print("COB pattern not found in reason string.")
+                    LogManager.shared.log(category: .deviceStatus, message: "COB pattern not found in reason string.", isDebug: true)
                 }
             }
         
@@ -286,12 +286,12 @@ extension MainViewController {
                     let bgiString = "\(formattedBGI)"
                     
                     infoManager.updateInfoData(type: .bgi, value: bgiString, unit: "mmol/L")
-                    print("Extracted BGI: \(bgiString)")
+                    LogManager.shared.log(category: .deviceStatus, message: "Extracted BGI: \(bgiString)", isDebug: true)
                 } else {
-                    print("Failed to convert BGI value to Double.")
+                    LogManager.shared.log(category: .deviceStatus, message: "Failed to convert BGI value to Double.", isDebug: true)
                 }
             } else {
-                print("BGI pattern not found in reason string.")
+                LogManager.shared.log(category: .deviceStatus, message: "BGI pattern not found in reason string.", isDebug: true)
             }
         }
 
@@ -309,12 +309,12 @@ extension MainViewController {
                     let devString = "\(formattedDev)"
 
                     infoManager.updateInfoData(type: .dev, value: devString, unit: "mmol/L")
-                    print("Extracted Dev: \(devString)")
+                    LogManager.shared.log(category: .deviceStatus, message: "Extracted Dev: \(devString)", isDebug: true)
                 } else {
-                    print("Failed to convert Dev value to Double.")
+                    LogManager.shared.log(category: .deviceStatus, message: "Failed to convert Dev value to Double.", isDebug: true)
                 }
             } else {
-                print("Dev pattern not found in reason string.")
+                LogManager.shared.log(category: .deviceStatus, message: "Dev pattern not found in reason string.", isDebug: true)
             }
         }
         
@@ -329,12 +329,12 @@ extension MainViewController {
                 
                 if let afValue = Double(afValueString) {
                     infoManager.updateInfoDataForAF(value: afValue)
-                    print("Extracted AF: \(afValue)")
+                    LogManager.shared.log(category: .deviceStatus, message: "Extracted AF: \(afValue)", isDebug: true)
                 } else {
-                    print("Invalid AF value extracted from reason string: \(afValueString)")
+                    LogManager.shared.log(category: .deviceStatus, message: "Invalid AF value extracted from reason string: \(afValueString)", isDebug: true)
                 }
             } else {
-                print("AF pattern not found in reason string.")
+                LogManager.shared.log(category: .deviceStatus, message: "AF pattern not found in reason string.", isDebug: true)
             }
         }
         
@@ -349,13 +349,13 @@ extension MainViewController {
                 
                 if let smbRatioValue = Double(smbRatioValueString) {
                     infoManager.updateInfoDataForSMBRatio(value: smbRatioValue)
-                    print("Extracted SMB Ratio: \(smbRatioValue)")
+                    LogManager.shared.log(category: .deviceStatus, message: "Extracted SMB Ratio: \(smbRatioValue)", isDebug: true)
                 } else {
-                    print("Invalid SMB Ratio value extracted from reason string: \(smbRatioValueString)")
+                    LogManager.shared.log(category: .deviceStatus, message: "Invalid SMB Ratio value extracted from reason string: \(smbRatioValueString)", isDebug: true)
                     infoManager.updateInfoDataForSMBRatio(value: 0.50) // Default to 0.50 if parsing fails
                 }
             } else {
-                print("SMB Ratio pattern not found in reason string. Using default value: 0.50")
+                LogManager.shared.log(category: .deviceStatus, message: "SMB Ratio pattern not found in reason string. Using default value: 0.50", isDebug: true)
                 infoManager.updateInfoDataForSMBRatio(value: 0.50) // Default to 0.50 if pattern is not found
             }
         }
@@ -379,9 +379,9 @@ extension MainViewController {
                         value: formattedValue,
                         unit: unitForInfo
                     )
-                    print("Extracted MaxSMB: \(formattedValue) \(unitForInfo)")
+                    LogManager.shared.log(category: .deviceStatus, message: "Extracted MaxSMB: \(formattedValue) \(unitForInfo)", isDebug: true)
                 } else {
-                    print("Invalid MaxSMB value extracted: \(maxSmbValueString), defaulting to N/A")
+                    LogManager.shared.log(category: .deviceStatus, message: "Invalid MaxSMB value extracted: \(maxSmbValueString), defaulting to N/A", isDebug: true)
                     infoManager.updateInfoData(
                         type: .maxSMB,
                         value: "N/A",
@@ -389,7 +389,7 @@ extension MainViewController {
                     )
                 }
             } else {
-                print("MaxSMB pattern not found. Using default 0.00")
+                LogManager.shared.log(category: .deviceStatus, message: "MaxSMB pattern not found. Using default 0.00", isDebug: true)
                 infoManager.updateInfoData(
                     type: .maxSMB,
                     value: "0.00",
@@ -411,7 +411,7 @@ extension MainViewController {
                 
                 infoManager.updateInfoData(type: .smbStatus, value: smbStatusString)
                 
-                print("SMB Status Updated: \(smbStatusString)")
+                LogManager.shared.log(category: .deviceStatus, message: "SMB Status Updated: \(smbStatusString)", isDebug: true)
             }
         }
         
@@ -433,46 +433,46 @@ extension MainViewController {
             infoManager.updateInfoData(type: .carbReq, value: latestCarbReq, unit: unitForInfo)
             sharedLatestCarbReq = "\(latestCarbReq) g"
             
-            print("Carbs Required updated: \(latestCarbReq)")
+            LogManager.shared.log(category: .deviceStatus, message: "Carbs Required updated: \(latestCarbReq)", isDebug: true)
         } else {
             let defaultCarbReq = "0"
             infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq, unit: "g")
             sharedLatestCarbReq = "\(defaultCarbReq) g"
             
-            print("Carbs Required not available, using default: \(defaultCarbReq)")
+            LogManager.shared.log(category: .deviceStatus, message: "Carbs Required not available, using default: \(defaultCarbReq)", isDebug: true)
         }
         
         // Autosens
         if let sens = enactedOrSuggested["sensitivityRatio"] as? Double {
             let formattedSens = String(format: "%.0f", sens * 100.0) + " %"
             sharedLatestSens = formattedSens
- 
+
             var formattedSensLimit: String?
- 
+
             if let reasonString = enactedOrSuggested["reason"] as? String {
                 let sensLimitPattern = "Autosens limit: ([0-9]+(?:\\.[0-9]{1,2})?) \\(([0-9]+(?:\\.[0-9]{1,2})?)\\)"
                 if let regex = try? NSRegularExpression(pattern: sensLimitPattern),
                    let match = regex.firstMatch(in: reasonString, range: NSRange(location: 0, length: reasonString.utf16.count)) {
-                    
+
                     let nsReasonString = reasonString as NSString
                     let xString = nsReasonString.substring(with: match.range(at: 1))
                     let yString = nsReasonString.substring(with: match.range(at: 2))
- 
+
                     if let xValue = Double(xString), let yValue = Double(yString) {
                         formattedSensLimit = String(format: "%.0f% % ⇥ %.0f% %", yValue * 100.0, xValue * 100.0)
                     }
                 }
             }
- 
+
             if let formattedSensLimit = formattedSensLimit {
                 infoManager.updateInfoData(type: .autosens, value: formattedSensLimit)
-                print("Sensitivity Ratio (limit) updated: \(formattedSensLimit)")
+                LogManager.shared.log(category: .deviceStatus, message: "Sensitivity Ratio (limit) updated: \(formattedSensLimit)", isDebug: true)
             } else {
                 infoManager.updateInfoData(type: .autosens, value: formattedSens)
-                print("Sensitivity Ratio updated: \(formattedSens)")
+                LogManager.shared.log(category: .deviceStatus, message: "Sensitivity Ratio updated: \(formattedSens)", isDebug: true)
             }
         } else {
-            print("Missing or invalid sensitivityRatio in enactedOrSuggested.")
+            LogManager.shared.log(category: .deviceStatus, message: "Missing or invalid sensitivityRatio in enactedOrSuggested.", isDebug: true)
         }
         
         var predictionColor = UIColor.systemGray
@@ -579,10 +579,10 @@ extension MainViewController {
                     basePredictionTime = deliverAtDate.timeIntervalSince1970
                     //print("✅ Successfully parsed deliverAt: \(deliverAtString), converted to \(basePredictionTime)")
                 } else {
-                    print("❌ Failed to parse deliverAt: \(deliverAtString), falling back to alertLastLoopTime: \(basePredictionTime)")
+                    LogManager.shared.log(category: .deviceStatus, message: "❌ Failed to parse deliverAt: \(deliverAtString), falling back to alertLastLoopTime: \(basePredictionTime)", isDebug: true)
                 }
             } else {
-                print("⚠️ No deliverAt found in enactedOrSuggested, using alertLastLoopTime: \(basePredictionTime)")
+                LogManager.shared.log(category: .deviceStatus, message: "⚠️ No deliverAt found in enactedOrSuggested, using alertLastLoopTime: \(basePredictionTime)", isDebug: true)
             }
             
             for (type, colorName, dataIndex) in predictionTypes {

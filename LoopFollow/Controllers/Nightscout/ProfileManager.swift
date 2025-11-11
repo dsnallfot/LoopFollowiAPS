@@ -96,7 +96,7 @@ final class ProfileManager {
             self.trioOverrides = trioOverrides.map { entry in
                 let targetQuantity = entry.target != nil ? HKQuantity(unit: .milligramsPerDeciliter, doubleValue: entry.target!) : nil
                 let smbIsOffString = entry.smbIsOff?.description ?? "nil"
-                print("TrioOverride name: \(entry.name), duration: \(entry.duration ?? 0), percentage: \(entry.percentage ?? 0), target: \(entry.target ?? 0), smbMinutes: \(entry.smbMinutes ?? 0), uamMinutes: \(entry.uamMinutes ?? 0), smbIsOff: \(smbIsOffString)")
+                LogManager.shared.log(category: .trio, message: "TrioOverride name: \(entry.name), duration: \(entry.duration ?? 0), percentage: \(entry.percentage ?? 0), target: \(entry.target ?? 0), smbMinutes: \(entry.smbMinutes ?? 0), uamMinutes: \(entry.uamMinutes ?? 0), smbIsOff: \(smbIsOffString)", isDebug: true)
                 return TrioOverride(
                     name: entry.name,
                     duration: entry.duration,
@@ -109,7 +109,7 @@ final class ProfileManager {
             }
         } else {
             self.trioOverrides = []
-            print("No trioOverrides found.")
+            LogManager.shared.log(category: .trio, message: "No trioOverrides found.", isDebug: true)
         }
         
         // Store Trio Expiration Date (Raw String)
