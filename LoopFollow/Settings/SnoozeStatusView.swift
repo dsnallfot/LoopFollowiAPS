@@ -163,7 +163,7 @@ struct SnoozedAlarmItem: Identifiable {
 
 // MARK: - ViewModel
 
-final class SnoozeStatusViewModel: ObservableObject {
+@MainActor final class SnoozeStatusViewModel: ObservableObject {
     @Published var items: [SnoozedAlarmItem] = []
 
     private var timer: AnyCancellable?
@@ -369,6 +369,22 @@ final class SnoozeStatusViewModel: ObservableObject {
             setTime(next, for: key)
         }
     }
+
+    /// Clears snooze for a key in a strictly defined order
+    func clearSnooze(for key: SnoozeKey) async {
+        // Ensure time is removed first, then flag, then refresh UI/state
+        setTime(nil, for: key)
+        setSnoozed(false, for: key)
+        refresh()
+    }
+
+    /// Applies snooze for a key in a strictly defined order
+    func applySnooze(_ date: Date, for key: SnoozeKey) async {
+        // Ensure time is set first, then flag, then refresh UI/state
+        setTime(date, for: key)
+        setSnoozed(true, for: key)
+        refresh()
+    }
 }
 
 // MARK: - View
@@ -404,9 +420,7 @@ struct SnoozeStatusView: View {
                                 .padding(.vertical, 4)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
-                                        viewModel.setTime(nil, for: item.key)
-                                        viewModel.setSnoozed(false, for: item.key)
-                                        viewModel.refresh()
+                                        Task { await viewModel.clearSnooze(for: item.key) }
                                     } label: {
                                         Label("Ta bort", systemImage: "trash.fill")
                                     }
@@ -525,12 +539,12 @@ struct SnoozeStatusView: View {
                             }
                             ToolbarItem(placement: .confirmationAction) {
                                 Button("Spara") {
-                                    if let key = editingKey {
-                                        viewModel.setSnoozed(true, for: key)
-                                        viewModel.setTime(editingTime, for: key)
-                                        viewModel.refresh()
+                                    Task {
+                                        if let key = editingKey {
+                                            await viewModel.applySnooze(editingTime, for: key)
+                                        }
+                                        showingEditor = false
                                     }
-                                    showingEditor = false
                                 }
                             }
                         }
@@ -547,16 +561,12 @@ struct SnoozeStatusView: View {
     }
     private func setGlobalSnooze(minutes: Int) {
         let target = Date().addingTimeInterval(TimeInterval(minutes * 60))
-        viewModel.setTime(target, for: .all)
-        viewModel.setSnoozed(true, for: .all)
-        viewModel.refresh()
+        Task { await viewModel.applySnooze(target, for: .all) }
     }
 
     private func setGlobalMute(minutes: Int) {
         let target = Date().addingTimeInterval(TimeInterval(minutes * 60))
-        viewModel.setTime(target, for: .muteAll)
-        viewModel.setSnoozed(true, for: .muteAll)
-        viewModel.refresh()
+        Task { await viewModel.applySnooze(target, for: .muteAll) }
     }
 }
 
