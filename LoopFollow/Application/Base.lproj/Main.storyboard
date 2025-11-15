@@ -1375,9 +1375,9 @@
                                 </constraints>
                             </stackView>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2mm-PR-C91">
-                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="70.000000000000057"/>
+                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="60.000000000000057"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="70" id="9uo-Pv-QIT"/>
+                                    <constraint firstAttribute="height" constant="60" id="9uo-Pv-QIT"/>
                                 </constraints>
                                 <color key="tintColor" red="0.89019608500000003" green="0.73725497719999999" blue="0.27450981740000002" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
@@ -1616,9 +1616,9 @@
                                 </constraints>
                             </stackView>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="omd-J4-dQH">
-                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="70.000000000000057"/>
+                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="60.000000000000057"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="70" id="3N4-yk-D95"/>
+                                    <constraint firstAttribute="height" constant="60" id="3N4-yk-D95"/>
                                 </constraints>
                                 <color key="tintColor" red="0.270588249" green="0.55686277149999996" blue="0.91764706370000004" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
@@ -1706,9 +1706,9 @@
                                 </constraints>
                             </stackView>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bbd-yY-tzY">
-                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="70.000000000000057"/>
+                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="60.000000000000057"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="70" id="edq-xu-cV5"/>
+                                    <constraint firstAttribute="height" constant="60" id="edq-xu-cV5"/>
                                 </constraints>
                                 <color key="tintColor" red="0.62745100259999997" green="0.33333334329999997" blue="0.82745099070000006" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
@@ -1828,9 +1828,9 @@
                                 </constraints>
                             </stackView>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Rra-PP-alB">
-                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="70.000000000000057"/>
+                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="60.000000000000057"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="70" id="Efw-r6-zM4"/>
+                                    <constraint firstAttribute="height" constant="60" id="Efw-r6-zM4"/>
                                 </constraints>
                                 <color key="tintColor" red="0.30196079609999998" green="0.65882354970000001" blue="0.63921570780000003" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>
@@ -1974,9 +1974,9 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="QD5-23-9lU">
-                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="70.000000000000057"/>
+                                <rect key="frame" x="12" y="455.66666666666669" width="390" height="60.000000000000057"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="70" id="pal-mn-Nmq"/>
+                                    <constraint firstAttribute="height" constant="60" id="pal-mn-Nmq"/>
                                 </constraints>
                                 <color key="tintColor" red="0.90196079019999997" green="0.58431375029999999" blue="0.78431367870000002" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <state key="normal" title="Button"/>

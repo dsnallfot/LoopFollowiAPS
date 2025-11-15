@@ -185,7 +185,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
             // Create a new UIView for the popup
             let popupView = UIView()
             popupView.backgroundColor = UIColor.secondarySystemBackground.withAlphaComponent(1.0)
-            popupView.layer.cornerRadius = 10
+            popupView.layer.cornerRadius = 30
             popupView.translatesAutoresizingMaskIntoConstraints = false
             
             // Add the popup view to the main view
@@ -312,15 +312,14 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         }
     
     func setupInputAccessoryView() {
-            let toolbar = UIToolbar()
+        let toolbar = PassThroughToolbar()
             toolbar.sizeToFit()
-            
-            let nextButton = UIBarButtonItem(title: "Nästa", style: .plain, target: self, action: #selector(nextTapped))
-            let doneButton = UIBarButtonItem(title: "Klar", style: .plain, target: self, action: #selector(doneTapped))
+
+        let nextButton = UIBarButtonItem(barButtonSystemItem: .fastForward, target: self, action: #selector(nextTapped))
+            let doneButton = UIBarButtonItem(barButtonSystemItem: .done,  target: self, action: #selector(doneTapped))
             let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-            
-            //toolbar.setItems([flexSpace, nextButton, doneButton], animated: false)
-            toolbar.setItems([nextButton, flexSpace, doneButton], animated: false)
+
+            toolbar.setItems([flexSpace, nextButton, doneButton], animated: false)
             
             carbsEntryField.inputAccessoryView = toolbar
             fatEntryField.inputAccessoryView = toolbar
@@ -1034,5 +1033,44 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
     
     @IBAction func doneButtonTapped(_ sender: Any) {
         dismiss(animated: true, completion: nil)
+    }
+}
+
+final class PassThroughToolbar: UIToolbar {
+    /// Extra transparent, non-interactive space at the **bottom** of the toolbar
+    /// to create visual separation from the keyboard while preserving passthrough.
+    /// Default is 4pt.
+    var bottomPassThroughPadding: CGFloat = 4 {
+        didSet {
+            invalidateIntrinsicContentSize()
+            setNeedsLayout()
+        }
+    }
+
+    // MARK: - Sizing with extra bottom padding
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        let s = super.sizeThatFits(size)
+        return CGSize(width: s.width, height: s.height + bottomPassThroughPadding)
+    }
+
+    override var intrinsicContentSize: CGSize {
+        var s = super.intrinsicContentSize
+        // Defensive default height if super returns invalid height
+        if s.height <= 0 { s.height = 44 }
+        s.height += bottomPassThroughPadding
+        return s
+    }
+
+    // MARK: - Touch handling passthrough
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        // If the touch is inside the transparent padding area at the very bottom,
+        // let it fall through completely (return nil)
+        let paddingTopY = bounds.height - bottomPassThroughPadding
+        if point.y >= paddingTopY { return nil }
+
+        // Otherwise, use normal hit-testing. Only keep hits on UIControls (buttons etc.)
+        let hit = super.hitTest(point, with: event)
+        if let v = hit, v is UIControl { return v }
+        return nil
     }
 }
