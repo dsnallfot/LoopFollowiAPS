@@ -242,6 +242,7 @@ extension MainViewController {
         case meal
         case bgCheck
         case pumpChange
+        case sensorChange
     }
 
     /// Bygger ett minimalt events-array för MealAnalysisView baserat på de
@@ -348,13 +349,15 @@ extension MainViewController {
         let title: String
         switch source {
         case .bolus:
-            title = "Utv. efter Bolus"
+            title = "Utfall efter Bolus"
         case .meal:
-            title = "Utv. efter Måltid"
+            title = "Utfall efter Måltid"
         case .bgCheck:
-            title = "Utv. efter Stick"
+            title = "Utfall efter Stick"
         case .pumpChange:
-            title = "Utv. efter Pumpbyte"
+            title = "Utfall efter Pumpbyte"
+        case .sensorChange:
+            title = "Utfall efter Sensorbyte"
         }
 
         let analysisVC = MealAnalysisView(
@@ -401,6 +404,12 @@ extension MainViewController {
         // Pumpbyte (updatePumpChange använder line1: "Pumpbyte")
         if dataString.contains("Pumpbyte") {
             presentMealAnalysis(for: analysisStart, source: .pumpChange)
+            return
+        }
+        
+        // Sensorbyte (updatePumpChange använder line1: "Pumpbyte")
+        if dataString.contains("Sensorbyte") {
+            presentMealAnalysis(for: analysisStart, source: .sensorChange)
             return
         }
 

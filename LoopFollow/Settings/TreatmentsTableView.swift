@@ -980,7 +980,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         // Edit actions for updating duration on Exercise (Override) treatments
-        // and editing note text for Note treatments.
+        // and editing note text for Note treatments, and editing glucose for BG Check.
         var actions: [UIContextualAction] = []
 
         if treatment.eventType == "Exercise" {
@@ -1203,6 +1203,124 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             editNoteAction.backgroundColor = .systemBlue
 
             actions = [deleteAction, editNoteAction]
+
+        } else if treatment.eventType == "BG Check" {
+            let editBGAction = UIContextualAction(style: .normal, title: nil) { (action, view, completionHandler) in
+                // Current glucose value
+                let currentGlucose = (treatment.rawData["glucose"] as? Double) ?? 0.0
+
+                let alert = UIAlertController(
+                    title: "Ändra fingerstick-värde i Nightscout",
+                    message: "\nAnge nytt blodsockervärde (mmol/L)\n\n(OBS! Detta ändrar INTE något i Trio)",
+                    preferredStyle: .alert
+                )
+
+                alert.addTextField { textField in
+                    textField.keyboardType = .decimalPad
+                    if currentGlucose > 0 {
+                        textField.text = String(format: "%.1f", currentGlucose)
+                    }
+                }
+
+                alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
+                    completionHandler(false)
+                }))
+
+                alert.addAction(UIAlertAction(title: "Spara ändring", style: .default, handler: { _ in
+                    guard let text = alert.textFields?.first?.text?
+                            .trimmingCharacters(in: .whitespacesAndNewlines),
+                          !text.isEmpty else {
+                        completionHandler(false)
+                        return
+                    }
+
+                    // Tillåt både komma och punkt som decimalavskiljare
+                    let normalized = text.replacingOccurrences(of: ",", with: ".")
+                    guard let newGlucose = Double(normalized), newGlucose > 0 else {
+                        completionHandler(false)
+                        return
+                    }
+
+                    guard let treatmentId = treatment.documentId else {
+                        self.showAlert(title: "Fel", message: "Saknar dokument-ID för behandlingen") { }
+                        completionHandler(false)
+                        return
+                    }
+
+                    // 1) Hämta aktuellt Nightscout-dokument
+                    NightscoutUtils.fetchTreatmentById(treatmentId) { result in
+                        switch result {
+                        case .failure(let error):
+                            self.showAlert(title: "Fel", message: error.localizedDescription) { }
+                            completionHandler(false)
+                        case .success(var doc):
+                            // Ta bort _id så att Nightscout/MongoDB själv får skapa ett nytt ObjectId
+                            doc.removeValue(forKey: "_id")
+
+                            // Uppdatera glucose i dokumentet (i mmol/L)
+                            doc["glucose"] = newGlucose
+
+                            // 2) Radera befintlig post
+                            NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { deleteResult in
+                                switch deleteResult {
+                                case .failure(let error):
+                                    self.showAlert(title: "Kunde inte radera", message: error.localizedDescription) { }
+                                    completionHandler(false)
+                                case .success(_):
+                                    // 3) Posta om samma treatment med uppdaterat fingerstickvärde (utan _id)
+                                    Task {
+                                        do {
+                                            let createdDoc = try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: doc)
+
+                                            DispatchQueue.main.async {
+                                                // Ta bort den gamla raden lokalt
+                                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                                    let removed = self.treatments.remove(at: index)
+                                                    self.removeTreatmentFromCache(removed)
+
+                                                    // Lägg in den nya raden direkt om vi fick tillbaka dokumentet
+                                                    if let createdDoc = createdDoc,
+                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                        self.treatments.insert(newTreatment, at: index)
+                                                    }
+                                                } else {
+                                                    // Om vi inte hittade den, lägg den nya överst som fallback
+                                                    if let createdDoc = createdDoc,
+                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                        self.treatments.insert(newTreatment, at: 0)
+                                                    }
+                                                }
+
+                                                self.tableView.reloadData()
+                                                self.updateDuplicateIndicator()
+                                                completionHandler(true)
+                                            }
+                                        } catch {
+                                            // Om uppladdningen misslyckas, lägg dokumentet i pending-kön för retry
+                                            NightscoutUtils.addPendingUploadDocument(doc)
+
+                                            DispatchQueue.main.async {
+                                                self.showAlert(
+                                                    title: "Kunde inte spara",
+                                                    message: "\nFingerstick-värdet kunde inte laddas upp just nu. Det kommer att laddas upp automatiskt nästa gång Behandlingslogg öppnas."
+                                                ) { }
+                                                completionHandler(false)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }))
+
+                self.present(alert, animated: true, completion: nil)
+            }
+
+            editBGAction.image = UIImage(systemName: "pencil")
+            editBGAction.backgroundColor = .systemBlue
+
+            actions = [deleteAction, editBGAction]
 
         } else {
             actions = [deleteAction]
@@ -1474,7 +1592,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             alert.addAction(UIAlertAction(title: "Analysera Sensorbyte", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Sensorbyte")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utfall efter Sensorbyte")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -1495,7 +1613,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             alert.addAction(UIAlertAction(title: "Analysera Pumpbyte", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Pumpbyte")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utfall efter Pumpbyte")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -1519,7 +1637,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 alert.addAction(UIAlertAction(title: "Analysera Fingerstick", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Fingerstick")
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utfall efter Fingerstick")
                     let nav = UINavigationController(rootViewController: analysisVC)
                     nav.modalPresentationStyle = .formSheet
                     self.present(nav, animated: true)
@@ -1552,7 +1670,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 alert.addAction(UIAlertAction(title: "Analysera Override", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Override")
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utfall efter Override")
                     let nav = UINavigationController(rootViewController: analysisVC)
                     nav.modalPresentationStyle = .formSheet
                     self.present(nav, animated: true)
@@ -1583,7 +1701,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             alert.addAction(UIAlertAction(title: "Analysera Måltid", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Måltid")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utfall efter Måltid")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
