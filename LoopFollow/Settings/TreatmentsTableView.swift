@@ -182,6 +182,14 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
+        Task {
+            await NightscoutUtils.retryPendingOverrides()
+        }
+    }
+    
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -667,6 +675,15 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         let treatment = filteredTreatments[indexPath.row]
+        // Check if this override is pending upload
+        var isPendingOverride = false
+        if treatment.eventType == "Exercise" {
+            let pending = NightscoutUtils.loadPendingOverrideDocuments()
+            if let notes = treatment.overrideNotes,
+               pending.contains(where: { ($0["notes"] as? String) == notes }) {
+                isPendingOverride = true
+            }
+        }
         
         // Determine display event type with special handling for Carb Correction.
         let displayEventType: String = {
@@ -697,16 +714,26 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         } else if treatment.eventType == "Temporary Override" ||
                     treatment.eventType == "Exercise" ||
                     treatment.eventType == "Override" {
+            var baseText: String
             if let notes = treatment.overrideNotes {
                 let preview = previewOverrideText(for: notes)
                 if let duration = treatment.overrideDuration {
-                    cell.textLabel?.text = duration > 1439 ? "\(preview) • Tillsvidare" : "\(preview) • \(Int(duration)) m"
+                    baseText = duration > 1439 ? "\(preview) • Tillsvidare" : "\(preview) • \(Int(duration)) m"
                 } else {
-                    cell.textLabel?.text = preview
+                    baseText = preview
                 }
             } else {
-                cell.textLabel?.text = displayEventType
+                baseText = displayEventType
             }
+
+            if isPendingOverride {
+                // Orange cloud/arrow symbol for pending upload
+                let symbol = "🔂 "
+                cell.textLabel?.text = symbol + baseText
+            } else {
+                cell.textLabel?.text = baseText
+            }
+
             cell.accessoryType = .none
             
         } else if treatment.eventType == "Carb Correction" {
@@ -1014,19 +1041,26 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                     // 3) Posta om samma treatment med uppdaterad duration (utan _id)
                                     Task {
                                         do {
-                                            try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: doc)
+                                            // Försök posta om overriden och få tillbaka det skapade dokumentet (med nytt _id).
+                                            let createdDoc = try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: doc)
 
                                             DispatchQueue.main.async {
                                                 // Ta bort den gamla raden lokalt; den nya raden kommer ha ett nytt _id
                                                 if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
                                                     let removed = self.treatments.remove(at: index)
-
-                                                    // Rensa den gamla posten ur cachen så den inte återkommer
                                                     self.removeTreatmentFromCache(removed)
+
+                                                    // Om Nightscout svarade med det nya dokumentet, lägg in det direkt i listan.
+                                                    if let createdDoc = createdDoc,
+                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                        self.treatments.insert(newTreatment, at: index)
+                                                    }
                                                 } else {
-                                                    // Om vi mot förmodan inte hittar den i treatments,
-                                                    // rensa i alla fall filtrerade + cache på objektet vi har
-                                                    self.removeTreatmentFromCache(treatment)
+                                                    // Hittade inte den gamla raden, försök ändå lägga in den nya överst.
+                                                    if let createdDoc = createdDoc,
+                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                        self.treatments.insert(newTreatment, at: 0)
+                                                    }
                                                 }
 
                                                 self.tableView.reloadData()
@@ -1034,8 +1068,14 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                                 completionHandler(true)
                                             }
                                         } catch {
+                                            // Om uppladdningen misslyckas, lägg dokumentet i pending-kön för retry
+                                            NightscoutUtils.addPendingOverrideDocument(doc)
+
                                             DispatchQueue.main.async {
-                                                self.showAlert(title: "Kunde inte spara", message: error.localizedDescription) { }
+                                                self.showAlert(
+                                                    title: "Kunde inte spara",
+                                                    message: "\nOverride kunde inte laddas upp just nu. Den kommer att laddas upp automatiskt nästa gång Behandlingslogg öppnas."
+                                                ) { }
                                                 completionHandler(false)
                                             }
                                         }

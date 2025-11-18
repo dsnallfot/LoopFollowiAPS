@@ -348,8 +348,8 @@ class NightscoutUtils {
         let t: Int
     }
 
-    // Generic POST helper that does not decode the response body, used e.g. when re-posting treatments
-    static func executePostRequestRaw(eventType: EventType, body: [String: Any]) async throws {
+    // Generic POST helper that optionally returns the created document (if Nightscout responds with JSON).
+    static func executePostRequestRaw(eventType: EventType, body: [String: Any]) async throws -> [String: Any]? {
         let jwtToken = try await retrieveJWTToken()
         let baseURL = ObservableUserDefaults.shared.url.value
 
@@ -370,11 +370,28 @@ class NightscoutUtils {
         sessionConfig.networkServiceType = .responsiveData
         let session = URLSession(configuration: sessionConfig)
 
-        let (_, response) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
             throw NightscoutError.networkError
+        }
+
+        // Om Nightscout returnerar JSON för det skapade treatmentet, försök parsa det.
+        guard !data.isEmpty else { return nil }
+
+        do {
+            let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+            if let array = jsonObject as? [[String: Any]], let first = array.first {
+                return first
+            } else if let dict = jsonObject as? [String: Any] {
+                return dict
+            } else {
+                return nil
+            }
+        } catch {
+            LogManager.shared.log(category: .nightscout, message: "⚠️ POST parse error: \(error)", isDebug: true)
+            return nil
         }
     }
 
@@ -410,6 +427,66 @@ class NightscoutUtils {
                     }
                 }
             }
+        }
+    }
+    
+    // MARK: - Pending override retry support
+
+    private static let pendingOverrideKey = "PendingOverrideTreatments"
+
+    static func addPendingOverrideDocument(_ doc: [String: Any]) {
+        var current = loadPendingOverrideDocuments()
+        current.append(doc)
+        savePendingOverrideDocuments(current)
+    }
+
+    static func loadPendingOverrideDocuments() -> [[String: Any]] {
+        guard let data = UserDefaults.standard.data(forKey: pendingOverrideKey) else {
+            return []
+        }
+        do {
+            let any = try JSONSerialization.jsonObject(with: data, options: [])
+            return any as? [[String: Any]] ?? []
+        } catch {
+            LogManager.shared.log(category: .nightscout, message: "⚠️ Failed to load pending overrides: \(error)", isDebug: true)
+            return []
+        }
+    }
+
+    private static func savePendingOverrideDocuments(_ docs: [[String: Any]]) {
+        do {
+            let data = try JSONSerialization.data(withJSONObject: docs, options: [])
+            UserDefaults.standard.set(data, forKey: pendingOverrideKey)
+        } catch {
+            LogManager.shared.log(category: .nightscout, message: "⚠️ Failed to save pending overrides: \(error)", isDebug: true)
+        }
+    }
+
+    static func clearPendingOverrideDocuments() {
+        UserDefaults.standard.removeObject(forKey: pendingOverrideKey)
+    }
+
+    /// Retry any pending override documents that previously failed to upload.
+    /// Call this e.g. from viewDidAppear in TreatmentsTableView.
+    static func retryPendingOverrides() async {
+        let docs = loadPendingOverrideDocuments()
+        guard !docs.isEmpty else { return }
+
+        var remaining: [[String: Any]] = []
+
+        for doc in docs {
+            do {
+                _ = try await executePostRequestRaw(eventType: .treatments, body: doc)
+            } catch {
+                remaining.append(doc)
+                LogManager.shared.log(category: .nightscout, message: "⚠️ Retry override failed: \(error)", isDebug: true)
+            }
+        }
+
+        if remaining.isEmpty {
+            clearPendingOverrideDocuments()
+        } else {
+            savePendingOverrideDocuments(remaining)
         }
     }
 
