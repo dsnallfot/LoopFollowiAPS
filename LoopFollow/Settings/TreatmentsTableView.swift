@@ -952,11 +952,116 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             }
         }
         
+        // Edit action for updating duration on Exercise (Override) treatments
+        var actions: [UIContextualAction] = []
+
+        if treatment.eventType == "Exercise" {
+            let editAction = UIContextualAction(style: .normal, title: nil) { (action, view, completionHandler) in
+                // Current duration in minutes (integer)
+                let currentDuration = Int(treatment.overrideDuration ?? 0)
+
+                let alert = UIAlertController(
+                    title: "Ändra override-varaktighet i Nightscout",
+                    message: "\nAnge ny längd i minuter\n\n(OBS! Detta ändrar INTE något i Trio)",
+                    preferredStyle: .alert
+                )
+
+                alert.addTextField { textField in
+                    textField.keyboardType = .numberPad
+                    if currentDuration > 0 {
+                        textField.text = String(currentDuration)
+                    }
+                }
+
+                alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
+                    completionHandler(false)
+                }))
+
+                alert.addAction(UIAlertAction(title: "Spara ändring", style: .default, handler: { _ in
+                    guard let text = alert.textFields?.first?.text,
+                          let newDurationInt = Int(text),
+                          newDurationInt > 0 else {
+                        completionHandler(false)
+                        return
+                    }
+
+                    guard let treatmentId = treatment.documentId else {
+                        self.showAlert(title: "Fel", message: "Saknar dokument-ID för behandlingen") { }
+                        completionHandler(false)
+                        return
+                    }
+
+                    // 1) Hämta aktuellt Nightscout-dokument
+                    NightscoutUtils.fetchTreatmentById(treatmentId) { result in
+                        switch result {
+                        case .failure(let error):
+                            self.showAlert(title: "Fel", message: error.localizedDescription) { }
+                            completionHandler(false)
+                        case .success(var doc):
+                            // Ta bort _id så att Nightscout/MongoDB själv får skapa ett nytt ObjectId
+                            doc.removeValue(forKey: "_id")
+
+                            // Uppdatera duration i dokumentet
+                            doc["duration"] = newDurationInt
+
+                            // 2) Radera befintlig post
+                            NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { deleteResult in
+                                switch deleteResult {
+                                case .failure(let error):
+                                    self.showAlert(title: "Kunde inte radera", message: error.localizedDescription) { }
+                                    completionHandler(false)
+                                case .success(_):
+                                    // 3) Posta om samma treatment med uppdaterad duration (utan _id)
+                                    Task {
+                                        do {
+                                            try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: doc)
+
+                                            DispatchQueue.main.async {
+                                                // Ta bort den gamla raden lokalt; den nya raden kommer ha ett nytt _id
+                                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                                    let removed = self.treatments.remove(at: index)
+
+                                                    // Rensa den gamla posten ur cachen så den inte återkommer
+                                                    self.removeTreatmentFromCache(removed)
+                                                } else {
+                                                    // Om vi mot förmodan inte hittar den i treatments,
+                                                    // rensa i alla fall filtrerade + cache på objektet vi har
+                                                    self.removeTreatmentFromCache(treatment)
+                                                }
+
+                                                self.tableView.reloadData()
+                                                self.updateDuplicateIndicator()
+                                                completionHandler(true)
+                                            }
+                                        } catch {
+                                            DispatchQueue.main.async {
+                                                self.showAlert(title: "Kunde inte spara", message: error.localizedDescription) { }
+                                                completionHandler(false)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }))
+
+                self.present(alert, animated: true, completion: nil)
+            }
+
+            editAction.image = UIImage(systemName: "pencil")
+            editAction.backgroundColor = .systemBlue
+
+            actions = [deleteAction, editAction]
+        } else {
+            actions = [deleteAction]
+        }
+
         // Set the trashcan SF Symbol and customize appearance.
         deleteAction.image = UIImage(systemName: "trash")
         deleteAction.backgroundColor = .red
-        
-        let configuration = UISwipeActionsConfiguration(actions: [deleteAction])
+
+        let configuration = UISwipeActionsConfiguration(actions: actions)
         configuration.performsFirstActionWithFullSwipe = false
         return configuration
     }

@@ -348,6 +348,71 @@ class NightscoutUtils {
         let t: Int
     }
 
+    // Generic POST helper that does not decode the response body, used e.g. when re-posting treatments
+    static func executePostRequestRaw(eventType: EventType, body: [String: Any]) async throws {
+        let jwtToken = try await retrieveJWTToken()
+        let baseURL = ObservableUserDefaults.shared.url.value
+
+        guard let url = URL(string: "\(baseURL)\(eventType.endpoint)") else {
+            throw NightscoutError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(jwtToken)", forHTTPHeaderField: "Authorization")
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
+
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.waitsForConnectivity = true
+        sessionConfig.networkServiceType = .responsiveData
+        let session = URLSession(configuration: sessionConfig)
+
+        let (_, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw NightscoutError.networkError
+        }
+    }
+
+    /// Fetch a single treatment document by its Nightscout _id.
+    static func fetchTreatmentById(_ treatmentId: String, completion: @escaping (Result<[String: Any], Error>) -> Void) {
+        let parameters: [String: String] = [
+            "find[_id]": treatmentId
+        ]
+
+        LogManager.shared.log(category: .nightscout,
+                              message: "🔹 Fetch treatment by id (dynamic) for _id: \(treatmentId)",
+                              isDebug: true)
+
+        executeDynamicRequest(eventType: .treatments, parameters: parameters) { result in
+            switch result {
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+            case .success(let payload):
+                // We expect either an array of dictionaries or a single dictionary.
+                if let array = payload as? [[String: Any]], let first = array.first {
+                    DispatchQueue.main.async {
+                        completion(.success(first))
+                    }
+                } else if let dict = payload as? [String: Any] {
+                    DispatchQueue.main.async {
+                        completion(.success(dict))
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        completion(.failure(NightscoutError.unknown))
+                    }
+                }
+            }
+        }
+    }
+
     static func executeDeleteRequest(treatmentId: String, completion: @escaping (Result<Any, Error>) -> Void) {
         let baseURL = ObservableUserDefaults.shared.url.value
         let token = UserDefaultsRepository.token.value
