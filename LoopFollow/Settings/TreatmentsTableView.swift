@@ -1051,16 +1051,19 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                                     let removed = self.treatments.remove(at: index)
                                                     self.removeTreatmentFromCache(removed)
 
-                                                    // Om Nightscout svarade med det nya dokumentet, lägg in det direkt i listan.
+                                                    // Om Nightscout svarade med det nya dokumentet, lägg in det direkt i listan
+                                                    // och uppdatera cache-filen för rätt dag.
                                                     if let createdDoc = createdDoc,
                                                        let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
                                                         self.treatments.insert(newTreatment, at: index)
+                                                        NightscoutCache.upsertTreatment(from: createdDoc)
                                                     }
                                                 } else {
                                                     // Hittade inte den gamla raden, försök ändå lägga in den nya överst.
                                                     if let createdDoc = createdDoc,
                                                        let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
                                                         self.treatments.insert(newTreatment, at: 0)
+                                                        NightscoutCache.upsertTreatment(from: createdDoc)
                                                     }
                                                 }
 
@@ -1160,17 +1163,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                                     let removed = self.treatments.remove(at: index)
                                                     self.removeTreatmentFromCache(removed)
 
-                                                    // Lägg in den nya raden direkt om vi fick tillbaka dokumentet
-                                                    if let createdDoc = createdDoc,
-                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
-                                                        self.treatments.insert(newTreatment, at: index)
-                                                    }
+                                                // Lägg in den nya raden direkt om vi fick tillbaka dokumentet
+                                                // och uppdatera cache-filen för rätt dag.
+                                                if let createdDoc = createdDoc,
+                                                   let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                    self.treatments.insert(newTreatment, at: index)
+                                                    NightscoutCache.upsertTreatment(from: createdDoc)
+                                                }
                                                 } else {
-                                                    // Om vi inte hittade den, lägg den nya överst som fallback
-                                                    if let createdDoc = createdDoc,
-                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
-                                                        self.treatments.insert(newTreatment, at: 0)
-                                                    }
+                                                // Om vi inte hittade den, lägg den nya överst som fallback
+                                                if let createdDoc = createdDoc,
+                                                   let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                    self.treatments.insert(newTreatment, at: 0)
+                                                    NightscoutCache.upsertTreatment(from: createdDoc)
+                                                }
                                                 }
 
                                                 self.tableView.reloadData()
@@ -1278,17 +1284,20 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                                     let removed = self.treatments.remove(at: index)
                                                     self.removeTreatmentFromCache(removed)
 
-                                                    // Lägg in den nya raden direkt om vi fick tillbaka dokumentet
-                                                    if let createdDoc = createdDoc,
-                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
-                                                        self.treatments.insert(newTreatment, at: index)
-                                                    }
+                                                // Lägg in den nya raden direkt om vi fick tillbaka dokumentet
+                                                // och uppdatera cache-filen för rätt dag.
+                                                if let createdDoc = createdDoc,
+                                                   let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                    self.treatments.insert(newTreatment, at: index)
+                                                    NightscoutCache.upsertTreatment(from: createdDoc)
+                                                }
                                                 } else {
-                                                    // Om vi inte hittade den, lägg den nya överst som fallback
-                                                    if let createdDoc = createdDoc,
-                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
-                                                        self.treatments.insert(newTreatment, at: 0)
-                                                    }
+                                                // Om vi inte hittade den, lägg den nya överst som fallback
+                                                if let createdDoc = createdDoc,
+                                                   let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                    self.treatments.insert(newTreatment, at: 0)
+                                                    NightscoutCache.upsertTreatment(from: createdDoc)
+                                                }
                                                 }
 
                                                 self.tableView.reloadData()

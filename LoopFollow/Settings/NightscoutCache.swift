@@ -168,5 +168,27 @@ final class NightscoutCache {
         let data = try Data(contentsOf: url)
         return try JSONDecoder().decode(DayPayload.self, from: data)
     }
+    
+    /// Insert or replace a single treatment in the cache based on its Nightscout dictionary.
+    /// If the day file exists, the treatment with the same _id is replaced; otherwise a new day file is created.
+    static func upsertTreatment(from dict: [String: Any]) {
+        guard let tjson = TreatmentJSON(dict: dict) else { return }
+        let day = Calendar.current.startOfDay(for: tjson.created_at)
+
+        do {
+            var payload: DayPayload
+            if let existing = try? readDay(day) {
+                payload = existing
+                // Remove any previous treatment with the same _id
+                payload.treatments.removeAll { $0._id == tjson._id }
+                payload.treatments.append(tjson)
+            } else {
+                payload = DayPayload(sgv: [], treatments: [tjson])
+            }
+            try writeDay(date: day, sgv: payload.sgv, treatments: payload.treatments)
+        } catch {
+            // Silently ignore cache write errors; cache is best-effort only.
+        }
+    }
 }
 
