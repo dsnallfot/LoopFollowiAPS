@@ -26,6 +26,7 @@ class LogManager {
         case alarm = "Alarm"
         case analysis = "Analysis"
         case apns = "APNS"
+        case backgroundAlerts = "Background Alerts"
         case bluetooth = "Bluetooth"
         case calendar = "Calendar"
         case contact = "Contact"

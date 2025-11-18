@@ -20,7 +20,10 @@ extension MainViewController {
         let currentBG = bgs[bgs.count - 1].sgv
         
         let iobString = latestIOB?.formattedValue() ?? "N/A"
+        let latestIOBValue = latestIOB?.value ?? 0.0
         let cobString = latestCOB?.formattedValue() ?? "N/A"
+        
+        let compressionLowDropMultiplier: Float = 2.0
 
         var skipZero = false
         if UserDefaultsRepository.alertIgnoreZero.value && currentBG == 0 {
@@ -47,6 +50,36 @@ extension MainViewController {
             deltas.append(0)
             deltas.append(0)
             deltas.append(0)
+        }
+
+        // Heuristic to detect a suspected compression low (sensor being pressed)
+        var isSuspectedCompressionLow = false
+        if !skipZero {
+            // 1) Current BG is low (at or below the configured low alert threshold)
+            let lowThreshold = UserDefaultsRepository.alertLowBG.value
+            if Float(currentBG) <= lowThreshold {
+                // 2) Latest drop is clearly steeper (>= 100% larger in magnitude) than the previous drops
+                let lastDelta = Float(deltas[0])
+                let previousDelta1 = Float(deltas[1])
+                let previousDelta2 = Float(deltas[2])
+                let previousMaxMagnitude = max(abs(previousDelta1), abs(previousDelta2))
+
+                // Only consider the pattern if we really have a drop now
+                if lastDelta < 0,
+                   previousMaxMagnitude > 0,
+                   abs(lastDelta) >= previousMaxMagnitude * compressionLowDropMultiplier {
+
+                    // 3) IOB is low
+                    if latestIOBValue < 0.3 {
+                        isSuspectedCompressionLow = true
+                        LogManager.shared.log(
+                            category: .alarm,
+                            message: "Suspected compression low. currentBG: \(currentBG), lastDelta: \(lastDelta), prevDeltas: [\(previousDelta1), \(previousDelta2)], IOB: \(latestIOBValue)",
+                            isDebug: true
+                        )
+                    }
+                }
+            }
         }
         
         
@@ -112,6 +145,8 @@ extension MainViewController {
         }
         
         
+        let compressionSuffix = isSuspectedCompressionLow ? " (Comp. low?)" : ""
+
         // BG Based Alarms
         // Check to make sure it is a current reading and has not already triggered alarm from this reading
         if now - currentBGTime <= (5*60) && currentBGTime > UserDefaultsRepository.snoozedBGReadingTime.value as! TimeInterval {
@@ -157,9 +192,9 @@ extension MainViewController {
                 if !UserDefaultsRepository.alertUrgentLowIsSnoozed.value {
                     
                     if predictiveTrigger {
-                        AlarmSound.whichAlarm = "⚠️ Snart akut låg!"
+                        AlarmSound.whichAlarm = "⚠️ Snart akut låg!" + compressionSuffix
                     } else {
-                        AlarmSound.whichAlarm = "🆘 Akut lågt socker!"
+                        AlarmSound.whichAlarm = "🆘 Akut lågt!" + compressionSuffix
                     }
                     
                     //determine if it is day or night and what should happen
@@ -190,12 +225,9 @@ extension MainViewController {
                  (Float(persistentLowBG) <= UserDefaultsRepository.alertLowBG.value || Float(currentBG) <= persistentLowTriggerImmediatelyBG)
                 )
                  {
-                
-               
-                AlarmSound.whichAlarm = "🔴 Lågt blodsocker"
-              
-                
-  
+
+                AlarmSound.whichAlarm = "🔴 Lågt socker" + compressionSuffix
+
                 //determine if it is day or night and what should happen
                 if UserDefaultsRepository.nightTime.value {
                     if UserDefaultsRepository.alertLowNightTime.value { numLoops = -1 }
@@ -206,7 +238,7 @@ extension MainViewController {
                     if !UserDefaultsRepository.alertLowDayTimeAudible.value { playSound = false }
                     //print ("It is DayTime and playSound = ", playSound)
                 }
-                
+
                 triggerAlarm(sound: UserDefaultsRepository.alertLowSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertLowSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
                 return
             }
@@ -216,7 +248,7 @@ extension MainViewController {
                 Float(currentBG) >= UserDefaultsRepository.alertUrgentHighBG.value {
                 // Separating this makes it so the high or rise alerts won't trigger if they already snoozed the urgent high
                 if !UserDefaultsRepository.alertUrgentHighIsSnoozed.value {
-                    AlarmSound.whichAlarm = "⚠️ Akut högt socker!"
+                    AlarmSound.whichAlarm = "⚠️ Akut högt!"
                     //determine if it is day or night and what should happen
                     if UserDefaultsRepository.nightTime.value {
                         if UserDefaultsRepository.alertUrgentHighNightTime.value { numLoops = -1 }
@@ -241,7 +273,7 @@ extension MainViewController {
                 Float(currentBG) >= UserDefaultsRepository.alertHighBG.value &&
                 Float(persistentHighBG) >= UserDefaultsRepository.alertHighBG.value &&
                 !UserDefaultsRepository.alertHighIsSnoozed.value {
-                AlarmSound.whichAlarm = "🟣 Högt blodsocker"
+                AlarmSound.whichAlarm = "🟣 Högt socker"
                 //determine if it is day or night and what should happen
                 if UserDefaultsRepository.nightTime.value {
                     if UserDefaultsRepository.alertHighNightTime.value { numLoops = -1 }

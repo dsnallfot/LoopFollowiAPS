@@ -39,6 +39,7 @@ class BackgroundAlertManager {
     
     /// Start scheduling background alerts.
     func startBackgroundAlert() {
+        LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: startBackgroundAlert called. isAlertScheduled was \(isAlertScheduled)", isDebug: true)
         isAlertScheduled = true
         // Force execution to bypass throttle when starting
         scheduleBackgroundAlert(force: true)
@@ -46,6 +47,7 @@ class BackgroundAlertManager {
     
     /// Stop all scheduled background alerts.
     func stopBackgroundAlert() {
+        LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: stopBackgroundAlert called. Cancelling alerts and removing notifications.", isDebug: true)
         isAlertScheduled = false
         removeDeliveredNotifications()
         cancelBackgroundAlerts()
@@ -54,25 +56,40 @@ class BackgroundAlertManager {
     /// (Re)schedule all background alerts based on predefined durations.
     /// - Parameter force: When true, the scheduling is executed regardless of throttle constraints.
     func scheduleBackgroundAlert(force: Bool = false) {
-        
-        guard isAlertScheduled, Storage.shared.backgroundRefreshType.value != .none else { return }
-        
-        // Throttle execution if not forced: only run once every 10 seconds.
-                 if !force {
-                     let now = Date()
-                     if let lastDate = lastScheduleDate, now.timeIntervalSince(lastDate) < 0.5 { //< 10 {
-                         return
-                     }
-                     lastScheduleDate = now
-                 }
+        LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: scheduleBackgroundAlert called. force=\(force), isAlertScheduled=\(isAlertScheduled), backgroundRefreshType=\(Storage.shared.backgroundRefreshType.value)", isDebug: true)
 
-                 removeDeliveredNotifications()
-        
+        guard isAlertScheduled, Storage.shared.backgroundRefreshType.value != .none else {
+            LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: scheduleBackgroundAlert aborted. isAlertScheduled=\(isAlertScheduled), backgroundRefreshType=\(Storage.shared.backgroundRefreshType.value)", isDebug: true)
+            return
+        }
+
+        // Throttle execution if not forced: only run once every 10 seconds (to avoid rapid duplicate scheduling).
+        if !force {
+            let now = Date()
+            if let lastDate = lastScheduleDate {
+                let delta = now.timeIntervalSince(lastDate)
+                if delta < 10 {
+                    LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: scheduleBackgroundAlert throttled (delta=\(delta) < 10s)", isDebug: true)
+                    return
+                }
+            }
+            lastScheduleDate = now
+        } else {
+            lastScheduleDate = Date()
+        }
+
+        LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: proceeding with scheduling. lastScheduleDate=\(String(describing: lastScheduleDate))", isDebug: true)
+
+        // IMPORTANT: cancel any previously scheduled background alerts so that we only have one set active at a time.
+        cancelBackgroundAlerts()
+
+        // Remove any previously delivered notifications for these identifiers.
         removeDeliveredNotifications()
-        
+
         let isBluetoothActive = Storage.shared.backgroundRefreshType.value.isBluetooth
         let expectedHeartbeat = BLEManager.shared.expectedHeartbeatInterval()
-        
+        LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: isBluetoothActive=\(isBluetoothActive), expectedHeartbeat=\(expectedHeartbeat != nil ? String(expectedHeartbeat!) : "nil")", isDebug: true)
+
         // Define alerts
         let alerts: [BackgroundAlert] = [
             BackgroundAlert(
@@ -99,18 +116,25 @@ class BackgroundAlertManager {
         ]
 
         for alert in alerts {
-            // Skip if the expected heartbeat interval matches or exceeds 1.2x the alert time interval
-            if let heartbeat = expectedHeartbeat, heartbeat * 1.2 >= alert.timeInterval {
-                continue
+            if let heartbeat = expectedHeartbeat {
+                let threshold = heartbeat * 1.2
+                if threshold >= alert.timeInterval {
+                    LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: skipping alert id=\(alert.identifier) because threshold=\(threshold) >= timeInterval=\(alert.timeInterval)", isDebug: true)
+                    continue
+                }
             }
 
             let content = createNotificationContent(for: notificationTitlePrefix, body: alert.body)
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: alert.timeInterval, repeats: false)
             let request = UNNotificationRequest(identifier: alert.identifier, content: content, trigger: trigger)
 
+            LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: scheduling alert id=\(alert.identifier) in \(alert.timeInterval) seconds (\(alert.timeInterval / 60) minutes). body=\(alert.body)", isDebug: true)
+
             UNUserNotificationCenter.current().add(request) { error in
                 if let error = error {
-                    LogManager.shared.log(category: .general, message: "Error scheduling \(alert.timeInterval / 60)-minute background alert: \(error)")
+                    LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: error scheduling background alert id=\(alert.identifier) (\(alert.timeInterval / 60) minutes): \(error)", isDebug: true)
+                } else {
+                    LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: successfully scheduled background alert id=\(alert.identifier) (\(alert.timeInterval / 60) minutes)", isDebug: true)
                 }
             }
         }
@@ -133,12 +157,14 @@ class BackgroundAlertManager {
     /// Cancel all scheduled background alerts.
     private func cancelBackgroundAlerts() {
         let identifiers = BackgroundAlertIdentifier.allCases.map { $0.rawValue }
+        LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: cancelBackgroundAlerts removing pending requests for identifiers: \(identifiers.joined(separator: ", "))", isDebug: true)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 
     /// Remove all delivered notifications
     private func removeDeliveredNotifications() {
         let identifiers = BackgroundAlertIdentifier.allCases.map { $0.rawValue }
+        LogManager.shared.log(category: .backgroundAlerts, message: "BackgroundAlertManager: removeDeliveredNotifications removing delivered notifications for identifiers: \(identifiers.joined(separator: ", "))", isDebug: true)
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
     }
 }
