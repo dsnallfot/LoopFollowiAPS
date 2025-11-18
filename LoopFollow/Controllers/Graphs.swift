@@ -235,21 +235,186 @@ extension MainViewController {
         
     }*/
     
+    // MARK: - Meal Analysis helpers for graph taps
+
+    private enum MealAnalysisSource {
+        case bolus
+        case meal
+        case bgCheck
+        case pumpChange
+    }
+
+    /// Bygger ett minimalt events-array för MealAnalysisView baserat på de
+    /// inlästa graf-dataseten (SMB, Bolus, Kolhydrater, BG Check + Temp Basal).
+    private func buildEventsForMealAnalysis() -> [Event] {
+        var events: [Event] = []
+
+        // SMB events (auto micro-boluser)
+        for smb in smbData {
+            let date = Date(timeIntervalSince1970: Double(smb.date))
+            let amount = smb.value
+            events.append(
+                Event(
+                    date: date,
+                    eventType: "SMB",
+                    amount: amount,
+                    foodType: nil
+                )
+            )
+        }
+
+        // Manuella boluser
+        for bolus in bolusData {
+            let date = Date(timeIntervalSince1970: Double(bolus.date))
+            let amount = bolus.value
+            events.append(
+                Event(
+                    date: date,
+                    eventType: "Bolus",
+                    amount: amount,
+                    foodType: nil
+                )
+            )
+        }
+
+        // Kolhydrater / måltider – vi mappar till samma eventType som i TreatmentsTableView
+        for carb in carbData {
+            let date = Date(timeIntervalSince1970: Double(carb.date))
+            let amount = carb.value
+
+            let rawFood = carb.foodType ?? ""
+            let foodType = rawFood.isEmpty ? nil : rawFood
+
+            events.append(
+                Event(
+                    date: date,
+                    eventType: "Carb Correction",
+                    amount: amount,
+                    foodType: foodType
+                )
+            )
+        }
+
+        // BG Check (fingerstick). Approximerar mmol baserat på användarens enheter.
+        for check in bgCheckData {
+            let date = Date(timeIntervalSince1970: Double(check.date))
+            let raw = Double(check.sgv)
+            let mmol: Double
+            if UserDefaultsRepository.units.value == "mmol/L" {
+                // I mmol-läge antar vi att sgv redan är mmol.
+                mmol = raw
+            } else {
+                // I mg/dL-läge: konvertera till mmol.
+                mmol = raw / 18.0
+            }
+
+            events.append(
+                Event(
+                    date: date,
+                    eventType: "BG Check",
+                    amount: mmol,
+                    foodType: nil
+                )
+            )
+        }
+
+        // Temp Basal → använd samma källa som du använder för temp basal-pulserna.
+        // Byt `tempBasalGraphData` och fälten nedan till dina faktiska namn
+        // (t.ex. `tempBasalData`, `tempBasalPulses`, `rate`/`absolute` etc).
+        for temp in basalData {
+            let date = Date(timeIntervalSince1970: Double(temp.date))
+
+            let rate = temp.basalRate
+
+            events.append(
+                Event(
+                    date: date,
+                    eventType: "Temp Basal",
+                    amount: rate,
+                    foodType: nil
+                )
+            )
+        }
+
+        // Sortera kronologiskt för säkerhets skull
+        events.sort { $0.date < $1.date }
+        return events
+    }
+
+    /// Öppnar MealAnalysisView i en formSheet med given starttid och källa.
+    private func presentMealAnalysis(for start: Date, source: MealAnalysisSource) {
+        let events = buildEventsForMealAnalysis()
+
+        let title: String
+        switch source {
+        case .bolus:
+            title = "Utv. efter Bolus"
+        case .meal:
+            title = "Utv. efter Måltid"
+        case .bgCheck:
+            title = "Utv. efter Stick"
+        case .pumpChange:
+            title = "Utv. efter Pumpbyte"
+        }
+
+        let analysisVC = MealAnalysisView(
+            events: events,
+            initialStart: start,
+            modalWithTimestamp: true,
+            modalTitleString: title
+        )
+        let nav = UINavigationController(rootViewController: analysisVC)
+        nav.modalPresentationStyle = .formSheet
+        present(nav, animated: true, completion: nil)
+    }
+    
     func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
         // 1. Om man klickar i fullskärmsgrafen → skrolla den lilla grafen till samma X
         if chartView == BGChartFull {
             BGChart.moveViewToX(entry.x)
         }
-        
+
         // 2. "hide"-punkter används bara för att rensa highlight, inget popup-fönster här.
         if let dataString = entry.data as? String, dataString == "hide" {
             BGChart.highlightValue(nil, callDelegate: false)
             return
         }
-        
-        // 3. Om en riktig BG-punkt i huvudgrafen markeras → visa Trio-beslutsreason
+
+        // 3. BG-linjen i huvudgrafen → Trio-besluts-popup (som du redan hade)
         if chartView == BGChart, highlight.dataSetIndex == 0 {
             showTrioDecisionAlert(for: entry.x)
+            return
+        }
+
+        // 4. För övriga punkter (bolus/kolhydrater/fingerstick/pumpbyte) vill vi öppna MealAnalysisView.
+        guard chartView == BGChart || chartView == BGChartFull else { return }
+        guard let dataString = entry.data as? String else { return }
+
+        let analysisStart = Date(timeIntervalSince1970: entry.x)
+
+        // Fingerstick / BG Check (updateBGCheckGraph använder "Fingerstick\n...")
+        if dataString.contains("Fingerstick") {
+            presentMealAnalysis(for: analysisStart, source: .bgCheck)
+            return
+        }
+
+        // Pumpbyte (updatePumpChange använder line1: "Pumpbyte")
+        if dataString.contains("Pumpbyte") {
+            presentMealAnalysis(for: analysisStart, source: .pumpChange)
+            return
+        }
+
+        // Måltid / kolhydrater – uppfångas via texten vi satte i updateCarbGraph
+        // ("Kolhydrater ...", eller "Fett/Protein ...").
+        if dataString.contains("Kolhydrater") || dataString.contains("Fett/Protein") {
+            presentMealAnalysis(for: analysisStart, source: .meal)
+            return
+        }
+
+        // Bolus – undvik SMB (som har egen graf och egen text)
+        if dataString.contains("Bolus") && !dataString.contains("SMB") {
+            presentMealAnalysis(for: analysisStart, source: .bolus)
+            return
         }
     }
     

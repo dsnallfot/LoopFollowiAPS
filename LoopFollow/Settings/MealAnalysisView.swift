@@ -153,7 +153,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         if modalWithTimestamp {
-            //title = "Utveckling efter måltid"
+            //title = "Utv. efter måltid"
             title = modalTitleString
         } else {
             title = "Utveckling under vald tid"

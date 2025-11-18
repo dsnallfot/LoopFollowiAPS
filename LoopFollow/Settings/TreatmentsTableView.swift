@@ -1218,7 +1218,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             alert.addAction(UIAlertAction(title: "Analysera Sensorbyte", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Sensorbyte")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Sensorbyte")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -1239,7 +1239,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             alert.addAction(UIAlertAction(title: "Analysera Pumpbyte", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Pumpbyte")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Pumpbyte")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -1263,7 +1263,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 alert.addAction(UIAlertAction(title: "Analysera Fingerstick", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Fingerstick")
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Fingerstick")
                     let nav = UINavigationController(rootViewController: analysisVC)
                     nav.modalPresentationStyle = .formSheet
                     self.present(nav, animated: true)
@@ -1296,7 +1296,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 alert.addAction(UIAlertAction(title: "Analysera Override", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Override")
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Override")
                     let nav = UINavigationController(rootViewController: analysisVC)
                     nav.modalPresentationStyle = .formSheet
                     self.present(nav, animated: true)
@@ -1327,7 +1327,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             alert.addAction(UIAlertAction(title: "Analysera Måltid", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utveckling efter Måltid")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Måltid")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
