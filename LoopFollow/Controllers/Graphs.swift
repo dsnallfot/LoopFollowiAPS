@@ -1070,8 +1070,8 @@ extension MainViewController {
     private func showTrioDecisionAlert(for timestamp: TimeInterval) {
         // `timestamp` kommer från entry.x och är sekunder sedan 1970 (TimeInterval)
         let bgDate = Date(timeIntervalSince1970: timestamp)
-        // Samma +30s-offset som i TreatmentsTableView för SMB/Temp Basal
-        let adjustedTimestamp = bgDate.addingTimeInterval(30)
+        // +180s-offset pga eftersläpning device status vs bg-värden
+        let adjustedTimestamp = bgDate.addingTimeInterval(180)
 
         NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: adjustedTimestamp) { [weak self] result in
             guard let self = self else { return }
