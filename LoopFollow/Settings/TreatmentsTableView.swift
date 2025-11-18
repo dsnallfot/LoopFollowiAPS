@@ -186,7 +186,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         super.viewDidAppear(animated)
 
         Task {
-            await NightscoutUtils.retryPendingOverrides()
+            await NightscoutUtils.retryPendingUploads()
         }
     }
     
@@ -676,12 +676,12 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         
         let treatment = filteredTreatments[indexPath.row]
         // Check if this override is pending upload
-        var isPendingOverride = false
+        var isPendingUpload = false
         if treatment.eventType == "Exercise" {
-            let pending = NightscoutUtils.loadPendingOverrideDocuments()
+            let pending = NightscoutUtils.loadPendingUploadDocuments()
             if let notes = treatment.overrideNotes,
                pending.contains(where: { ($0["notes"] as? String) == notes }) {
-                isPendingOverride = true
+                isPendingUpload = true
             }
         }
         
@@ -726,7 +726,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 baseText = displayEventType
             }
 
-            if isPendingOverride {
+            if isPendingUpload {
                 // Orange cloud/arrow symbol for pending upload
                 let symbol = "🔂 "
                 cell.textLabel?.text = symbol + baseText
@@ -979,7 +979,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             }
         }
         
-        // Edit action for updating duration on Exercise (Override) treatments
+        // Edit actions for updating duration on Exercise (Override) treatments
+        // and editing note text for Note treatments.
         var actions: [UIContextualAction] = []
 
         if treatment.eventType == "Exercise" {
@@ -1069,7 +1070,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                                             }
                                         } catch {
                                             // Om uppladdningen misslyckas, lägg dokumentet i pending-kön för retry
-                                            NightscoutUtils.addPendingOverrideDocument(doc)
+                                            NightscoutUtils.addPendingUploadDocument(doc)
 
                                             DispatchQueue.main.async {
                                                 self.showAlert(
@@ -1093,6 +1094,116 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             editAction.backgroundColor = .systemBlue
 
             actions = [deleteAction, editAction]
+
+        } else if treatment.eventType == "Note" {
+            let editNoteAction = UIContextualAction(style: .normal, title: nil) { (action, view, completionHandler) in
+                // Current notes text
+                let currentNotes = (treatment.rawData["notes"] as? String) ?? ""
+
+                let alert = UIAlertController(
+                    title: "Ändra noteringstext i Nightscout",
+                    message: "\nRedigera texten nedan\n\n(OBS! Detta ändrar INTE något i Trio)",
+                    preferredStyle: .alert
+                )
+
+                alert.addTextField { textField in
+                    textField.keyboardType = .default
+                    textField.autocapitalizationType = .sentences
+                    textField.text = currentNotes
+                }
+
+                alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
+                    completionHandler(false)
+                }))
+
+                alert.addAction(UIAlertAction(title: "Spara ändring", style: .default, handler: { _ in
+                    guard let text = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+                          !text.isEmpty else {
+                        completionHandler(false)
+                        return
+                    }
+
+                    guard let treatmentId = treatment.documentId else {
+                        self.showAlert(title: "Fel", message: "Saknar dokument-ID för behandlingen") { }
+                        completionHandler(false)
+                        return
+                    }
+
+                    // 1) Hämta aktuellt Nightscout-dokument
+                    NightscoutUtils.fetchTreatmentById(treatmentId) { result in
+                        switch result {
+                        case .failure(let error):
+                            self.showAlert(title: "Fel", message: error.localizedDescription) { }
+                            completionHandler(false)
+                        case .success(var doc):
+                            // Ta bort _id så att Nightscout/MongoDB själv får skapa ett nytt ObjectId
+                            doc.removeValue(forKey: "_id")
+
+                            // Uppdatera notes i dokumentet
+                            doc["notes"] = text
+
+                            // 2) Radera befintlig post
+                            NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { deleteResult in
+                                switch deleteResult {
+                                case .failure(let error):
+                                    self.showAlert(title: "Kunde inte radera", message: error.localizedDescription) { }
+                                    completionHandler(false)
+                                case .success(_):
+                                    // 3) Posta om samma treatment med uppdaterad notes (utan _id)
+                                    Task {
+                                        do {
+                                            let createdDoc = try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: doc)
+
+                                            DispatchQueue.main.async {
+                                                // Ta bort den gamla raden lokalt
+                                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                                    let removed = self.treatments.remove(at: index)
+                                                    self.removeTreatmentFromCache(removed)
+
+                                                    // Lägg in den nya raden direkt om vi fick tillbaka dokumentet
+                                                    if let createdDoc = createdDoc,
+                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                        self.treatments.insert(newTreatment, at: index)
+                                                    }
+                                                } else {
+                                                    // Om vi inte hittade den, lägg den nya överst som fallback
+                                                    if let createdDoc = createdDoc,
+                                                       let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
+                                                        self.treatments.insert(newTreatment, at: 0)
+                                                    }
+                                                }
+
+                                                self.tableView.reloadData()
+                                                self.updateDuplicateIndicator()
+                                                completionHandler(true)
+                                            }
+                                        } catch {
+                                            // Om uppladdningen misslyckas, lägg dokumentet i pending-kön för retry
+                                            NightscoutUtils.addPendingUploadDocument(doc)
+
+                                            DispatchQueue.main.async {
+                                                self.showAlert(
+                                                    title: "Kunde inte spara",
+                                                    message: "\nNoteringen kunde inte laddas upp just nu. Den kommer att laddas upp automatiskt nästa gång Behandlingslogg öppnas."
+                                                ) { }
+                                                completionHandler(false)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }))
+
+                self.present(alert, animated: true, completion: nil)
+            }
+
+            editNoteAction.image = UIImage(systemName: "pencil")
+            editNoteAction.backgroundColor = .systemBlue
+
+            actions = [deleteAction, editNoteAction]
+
         } else {
             actions = [deleteAction]
         }

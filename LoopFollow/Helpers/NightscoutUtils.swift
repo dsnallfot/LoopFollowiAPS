@@ -430,46 +430,46 @@ class NightscoutUtils {
         }
     }
     
-    // MARK: - Pending override retry support
+    // MARK: - Pending entry retry support
 
-    private static let pendingOverrideKey = "PendingOverrideTreatments"
+    private static let pendingUploadKey = "PendingUploadTreatments"
 
-    static func addPendingOverrideDocument(_ doc: [String: Any]) {
-        var current = loadPendingOverrideDocuments()
+    static func addPendingUploadDocument(_ doc: [String: Any]) {
+        var current = loadPendingUploadDocuments()
         current.append(doc)
-        savePendingOverrideDocuments(current)
+        savePendingUploadDocuments(current)
     }
 
-    static func loadPendingOverrideDocuments() -> [[String: Any]] {
-        guard let data = UserDefaults.standard.data(forKey: pendingOverrideKey) else {
+    static func loadPendingUploadDocuments() -> [[String: Any]] {
+        guard let data = UserDefaults.standard.data(forKey: pendingUploadKey) else {
             return []
         }
         do {
             let any = try JSONSerialization.jsonObject(with: data, options: [])
             return any as? [[String: Any]] ?? []
         } catch {
-            LogManager.shared.log(category: .nightscout, message: "⚠️ Failed to load pending overrides: \(error)", isDebug: true)
+            LogManager.shared.log(category: .nightscout, message: "⚠️ Failed to load pending treatment: \(error)", isDebug: true)
             return []
         }
     }
 
-    private static func savePendingOverrideDocuments(_ docs: [[String: Any]]) {
+    private static func savePendingUploadDocuments(_ docs: [[String: Any]]) {
         do {
             let data = try JSONSerialization.data(withJSONObject: docs, options: [])
-            UserDefaults.standard.set(data, forKey: pendingOverrideKey)
+            UserDefaults.standard.set(data, forKey: pendingUploadKey)
         } catch {
-            LogManager.shared.log(category: .nightscout, message: "⚠️ Failed to save pending overrides: \(error)", isDebug: true)
+            LogManager.shared.log(category: .nightscout, message: "⚠️ Failed to save pending treatment: \(error)", isDebug: true)
         }
     }
 
-    static func clearPendingOverrideDocuments() {
-        UserDefaults.standard.removeObject(forKey: pendingOverrideKey)
+    static func clearPendingUploadDocuments() {
+        UserDefaults.standard.removeObject(forKey: pendingUploadKey)
     }
 
-    /// Retry any pending override documents that previously failed to upload.
+    /// Retry any pending treatment documents that previously failed to upload.
     /// Call this e.g. from viewDidAppear in TreatmentsTableView.
-    static func retryPendingOverrides() async {
-        let docs = loadPendingOverrideDocuments()
+    static func retryPendingUploads() async {
+        let docs = loadPendingUploadDocuments()
         guard !docs.isEmpty else { return }
 
         var remaining: [[String: Any]] = []
@@ -479,14 +479,14 @@ class NightscoutUtils {
                 _ = try await executePostRequestRaw(eventType: .treatments, body: doc)
             } catch {
                 remaining.append(doc)
-                LogManager.shared.log(category: .nightscout, message: "⚠️ Retry override failed: \(error)", isDebug: true)
+                LogManager.shared.log(category: .nightscout, message: "⚠️ Retry upload failed: \(error)", isDebug: true)
             }
         }
 
         if remaining.isEmpty {
-            clearPendingOverrideDocuments()
+            clearPendingUploadDocuments()
         } else {
-            savePendingOverrideDocuments(remaining)
+            savePendingUploadDocuments(remaining)
         }
     }
 
