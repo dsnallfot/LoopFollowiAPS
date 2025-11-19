@@ -14,13 +14,14 @@ class LogViewModel: ObservableObject {
     @Published var filteredLogEntries: [LogEntry] = []
     @Published var selectedCategory: LogManager.Category? = nil
     @Published var searchText: String = ""
+    @Published var searchResultsIsHighlighted: Bool = false
 
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        Publishers.CombineLatest($selectedCategory, $searchText)
-            .sink { [weak self] category, search in
-                self?.filterLogs(category: category, searchText: search)
+        Publishers.CombineLatest3($selectedCategory, $searchText, $searchResultsIsHighlighted)
+            .sink { [weak self] category, search, isHighlighted in
+                self?.filterLogs(category: category, searchText: search, searchResultsIsHighlighted: isHighlighted)
             }
             .store(in: &cancellables)
         
@@ -69,7 +70,7 @@ class LogViewModel: ObservableObject {
 
                 DispatchQueue.main.async {
                     self.allLogEntries = uniqueLogEntries
-                    self.filterLogs(category: self.selectedCategory, searchText: self.searchText)
+                    self.filterLogs(category: self.selectedCategory, searchText: self.searchText, searchResultsIsHighlighted: self.searchResultsIsHighlighted)
                 }
             } catch {
                 print("Error reading log file: \(error)")
@@ -81,7 +82,7 @@ class LogViewModel: ObservableObject {
         }
     }
 
-    private func filterLogs(category: LogManager.Category?, searchText: String) {
+    private func filterLogs(category: LogManager.Category?, searchText: String, searchResultsIsHighlighted: Bool) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             var filtered = self.allLogEntries
@@ -99,8 +100,8 @@ class LogViewModel: ObservableObject {
                     }
             }
 
-            // Filter by search text
-            if !searchText.isEmpty {
+            // Filter by search text only when not in highlight mode
+            if !searchText.isEmpty && !searchResultsIsHighlighted {
                 filtered = filtered.filter { $0.text.localizedCaseInsensitiveContains(searchText) }
             }
 

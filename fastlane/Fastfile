@@ -66,7 +66,7 @@ platform :ios do
     update_code_signing_settings(
       path: "#{GITHUB_WORKSPACE}/LoopFollow.xcodeproj",
       profile_name: mapping["com.#{TEAMID}.LoopFollow"],
-      code_sign_identity: "iPhone Distribution",
+      code_sign_identity: "Apple Distribution",
       targets: ["LoopFollow"]
     )
 

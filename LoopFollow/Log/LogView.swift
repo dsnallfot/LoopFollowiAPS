@@ -23,8 +23,11 @@ struct LogView: View {
                 }
                 .pickerStyle(MenuPickerStyle())
 
-                SearchBar(text: $viewModel.searchText)
-                    .padding([.leading, .trailing])
+                SearchBar(
+                    text: $viewModel.searchText,
+                    placeholder: viewModel.searchResultsIsHighlighted ? "Highlighta i loggen" : "Sök i loggen"
+                )
+                .padding([.leading, .trailing])
 
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 2) {
@@ -33,6 +36,13 @@ struct LogView: View {
                                 .font(.system(size: 12, design: .monospaced))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, 0)
+                                .foregroundColor(
+                                    viewModel.searchResultsIsHighlighted &&
+                                    !viewModel.searchText.isEmpty &&
+                                    entry.text.localizedCaseInsensitiveContains(viewModel.searchText)
+                                    ? .blue
+                                    : .primary
+                                )
                         }
                     }
                     .padding(.horizontal)
@@ -40,6 +50,16 @@ struct LogView: View {
             }
             .navigationBarTitle("Dagens logg", displayMode: .inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        viewModel.searchResultsIsHighlighted.toggle()
+                    }) {
+                        Image(systemName: viewModel.searchResultsIsHighlighted
+                              ? "line.3.horizontal.decrease.circle.fill"
+                              : "line.3.horizontal.decrease.circle")
+                            .foregroundColor(viewModel.searchResultsIsHighlighted ? .blue : .primary)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {
                         presentationMode.wrappedValue.dismiss()
