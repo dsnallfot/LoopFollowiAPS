@@ -48,6 +48,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         _ = BLEManager.shared
         
+        if Storage.shared.backgroundRefreshType.value != .none {
+            LogManager.shared.log(category: .backgroundAlerts,
+                                  message: "AppDelegate: starting BackgroundAlertManager on launch")
+            BackgroundAlertManager.shared.startBackgroundAlert()
+        }
+        
         // Ensure VolumeButtonHandler is initialized so it can receive alarm notifications
         _ = VolumeButtonHandler.shared
 

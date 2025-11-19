@@ -206,6 +206,16 @@ extension BLEManager: BluetoothDeviceDelegate {
         
         guard let device = activeDevice else { return }
         
+        // Ensure background alerts are armed on every heartbeat when background refresh is active.
+        if Storage.shared.backgroundRefreshType.value != .none {
+            LogManager.shared.log(
+                category: .backgroundAlerts,
+                message: "BLEManager.heartBeat: arming BackgroundAlertManager via startBackgroundAlert()",
+                isDebug: true
+            )
+            BackgroundAlertManager.shared.startBackgroundAlert()
+        }
+        
         if let rlDevice = device as? RileyLinkHeartbeatBluetoothDevice {
             LogManager.shared.log(category: .bluetooth, message: "🔋 Latest Battery Level: \(rlDevice.batteryPercentage ?? 0)%", isDebug: true)
             findAndUpdateDevice(with: rlDevice.deviceAddress) { device in
