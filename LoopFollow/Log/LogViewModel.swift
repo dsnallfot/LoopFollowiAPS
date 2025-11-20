@@ -16,11 +16,48 @@ class LogViewModel: ObservableObject {
     @Published var searchText: String = ""
     @Published var searchResultsIsHighlighted: Bool = false
 
+    private enum DefaultsKeys {
+        static let selectedCategory = "LogView_SelectedCategory"
+        static let searchText = "LogView_SearchText"
+        static let searchResultsIsHighlighted = "LogView_SearchResultsIsHighlighted"
+    }
+
     private var cancellables = Set<AnyCancellable>()
 
     init() {
+        let defaults = UserDefaults.standard
+
+        // Restore selected category from UserDefaults, if any
+        if let rawCategory = defaults.string(forKey: DefaultsKeys.selectedCategory),
+           let restoredCategory = LogManager.Category(rawValue: rawCategory) {
+            selectedCategory = restoredCategory
+        }
+
+        // Restore search text
+        if let restoredSearchText = defaults.string(forKey: DefaultsKeys.searchText) {
+            searchText = restoredSearchText
+        }
+
+        // Restore highlight mode (defaults to false if key missing)
+        searchResultsIsHighlighted = defaults.bool(forKey: DefaultsKeys.searchResultsIsHighlighted)
+
         Publishers.CombineLatest3($selectedCategory, $searchText, $searchResultsIsHighlighted)
             .sink { [weak self] category, search, isHighlighted in
+                let defaults = UserDefaults.standard
+
+                // Persist selected category (or clear if nil)
+                if let category = category {
+                    defaults.set(category.rawValue, forKey: DefaultsKeys.selectedCategory)
+                } else {
+                    defaults.removeObject(forKey: DefaultsKeys.selectedCategory)
+                }
+
+                // Persist search text (empty string is allowed)
+                defaults.set(search, forKey: DefaultsKeys.searchText)
+
+                // Persist highlight mode
+                defaults.set(isHighlighted, forKey: DefaultsKeys.searchResultsIsHighlighted)
+
                 self?.filterLogs(category: category, searchText: search, searchResultsIsHighlighted: isHighlighted)
             }
             .store(in: &cancellables)
