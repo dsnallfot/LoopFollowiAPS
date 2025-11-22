@@ -64,7 +64,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         l.textColor = .secondaryLabel
         l.textAlignment = .right
         l.numberOfLines = 1
-        l.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        l.setContentHuggingPriority(.required, for: .horizontal)
         l.setContentCompressionResistancePriority(.required, for: .horizontal)
         return l
     }()
@@ -291,7 +291,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         NSLayoutConstraint.activate([
             headerStack.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
             headerStack.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
-            headerStack.trailingAnchor.constraint(lessThanOrEqualTo: safe.trailingAnchor, constant: -8),
+            headerStack.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
 
             tableView.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
@@ -372,7 +372,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         let cal = Calendar.current
         let start = cal.startOfDay(for: selectedDate)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else {
-            statsLabel.text = " CGM avläsningar: –"
+            statsLabel.text = " CGM-värden: –"
             return
         }
 
@@ -390,7 +390,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         }
 
         let pct = expectedCount > 0 ? Int(round(Double(actualCount) / Double(expectedCount) * 100.0)) : 0
-        statsLabel.text = " CGM avläsningar:  \(actualCount)/\(expectedCount)  \(pct)%"
+        statsLabel.text = " CGM-värden:  \(actualCount)/\(expectedCount)  \(pct)%"
     }
 
     @objc private func dateChanged(_ sender: UIDatePicker) {
