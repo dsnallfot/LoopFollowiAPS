@@ -238,7 +238,7 @@ extension MainViewController {
     // MARK: - Meal Analysis helpers for graph taps
 
     private enum MealAnalysisSource {
-        case bolus
+        case override
         case meal
         case bgCheck
         case pumpChange
@@ -348,8 +348,8 @@ extension MainViewController {
 
         let title: String
         switch source {
-        case .bolus:
-            title = "Utfall efter Bolus"
+        case .override:
+            title = "Utfall efter Override"
         case .meal:
             title = "Utfall efter Måltid"
         case .bgCheck:
@@ -420,9 +420,9 @@ extension MainViewController {
             return
         }
 
-        // Bolus – undvik SMB (som har egen graf och egen text)
-        if dataString.contains("Bolus") && !dataString.contains("SMB") {
-            presentMealAnalysis(for: analysisStart, source: .bolus)
+        // Override
+        if dataString.contains("Varaktighet") {
+            presentMealAnalysis(for: analysisStart, source: .override)
             return
         }
     }
