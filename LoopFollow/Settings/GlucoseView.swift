@@ -372,7 +372,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         let cal = Calendar.current
         let start = cal.startOfDay(for: selectedDate)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else {
-            statsLabel.text = " CGM-värden: –"
+            statsLabel.text = "CGM-värden: –"
             return
         }
 
@@ -390,7 +390,13 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         }
 
         let pct = expectedCount > 0 ? Int(round(Double(actualCount) / Double(expectedCount) * 100.0)) : 0
-        statsLabel.text = " CGM-värden:  \(actualCount)/\(expectedCount)  \(pct)%"
+        var emoji = " 🔴"
+        if pct > 95 {
+            emoji = " 🟢"
+        } else if pct > 90 {
+            emoji = " 🟡"
+        }
+        statsLabel.text = "CGM-värden:  \(actualCount)/\(expectedCount)  \(pct)%" + emoji
     }
 
     @objc private func dateChanged(_ sender: UIDatePicker) {
