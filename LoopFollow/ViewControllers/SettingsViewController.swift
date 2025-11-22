@@ -70,6 +70,16 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
+                $0.title = "Glukoslogg"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let glucoseVC = GlucoseView()
+                        return UINavigationController(rootViewController: glucoseVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        <<< ButtonRow() {
                 $0.title = "Sensorhistorik"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
