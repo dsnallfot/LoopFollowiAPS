@@ -277,19 +277,34 @@ extension MainViewController {
             let latestBGEntry = entries[latestEntryIndex]
             let latestBG = latestBGEntry.sgv
             let lastBGTime = latestBGEntry.date
-            
+
             var priorBGEntry: ShareGlucoseData?
             var priorBG: Int?
             var deltaBG: Int?
-            
+            var deltaWasInterpolated: Bool = false
+
             // Daniel: Find a valid prior entry that is at least 4 minutes apart
             for i in (0..<latestEntryIndex).reversed() {
                 let candidateEntry = entries[i]
-                let timeDifference = (latestBGEntry.date - candidateEntry.date) / 60
-                if timeDifference >= 4 {
+                let timeDifferenceSec = latestBGEntry.date - candidateEntry.date
+                let timeDifferenceMin = timeDifferenceSec / 60
+
+                // Guard against near-duplicates (<4 min apart)
+                if timeDifferenceMin >= 4 {
                     priorBGEntry = candidateEntry
                     priorBG = candidateEntry.sgv
-                    deltaBG = latestBG - priorBG!
+
+                    let rawDelta = Double(latestBG - priorBG!)
+
+                    // If more than 6 minutes apart, interpolate to a 5‑minute equivalent delta.
+                    if timeDifferenceSec > 6 * 60 {
+                        let scale = 300.0 / Double(timeDifferenceSec)  // 5 min / actual gap
+                        let interpolated = rawDelta * scale
+                        deltaBG = Int(round(interpolated))
+                        deltaWasInterpolated = true
+                    } else {
+                        deltaBG = Int(rawDelta)
+                    }
                     break
                 }
             }
@@ -332,15 +347,18 @@ extension MainViewController {
             if let deltaBG = deltaBG {
                 if deltaBG < 0 {
                     self.latestDeltaString = Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                    //Daniel: Added for visualization in remote meal info popup
-                    sharedLatestDelta = Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 } else {
                     self.latestDeltaString = "+" + Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
-                    //Daniel: Added for visualization in remote meal info popup
-                    sharedLatestDelta = "+" + Localizer.toDisplayUnits(String(deltaBG)).replacingOccurrences(of: ",", with: ".")
                 }
-                self.DeltaText.text = self.latestDeltaString.replacingOccurrences(of: ",", with: ".")
-                snoozerDelta = self.latestDeltaString.replacingOccurrences(of: ",", with: ".")
+
+                var formattedDelta = self.latestDeltaString.replacingOccurrences(of: ",", with: ".")
+                if deltaWasInterpolated { formattedDelta += "*" }
+
+                // Daniel: Added for visualization in remote meal info popup
+                sharedLatestDelta = formattedDelta
+
+                self.DeltaText.text = formattedDelta
+                snoozerDelta = formattedDelta
             } else {
                 self.DeltaText.text = "N/A"
                 sharedLatestDelta = "N/A"
