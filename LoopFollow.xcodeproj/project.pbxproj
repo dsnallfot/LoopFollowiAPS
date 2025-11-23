@@ -8,6 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */; };
+		65304F7E2ED3A2F200B457AC /* SnoozeMuteIntentHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F7D2ED3A2EB00B457AC /* SnoozeMuteIntentHelper.swift */; };
+		65304F812ED3A35A00B457AC /* EnableSnoozeAllIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F802ED3A34F00B457AC /* EnableSnoozeAllIntent.swift */; };
+		65304F832ED3A37A00B457AC /* DisableSnoozeAllIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F822ED3A36E00B457AC /* DisableSnoozeAllIntent.swift */; };
+		65304F852ED3A39A00B457AC /* EnableMuteAllIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F842ED3A38D00B457AC /* EnableMuteAllIntent.swift */; };
+		65304F872ED3A3B800B457AC /* DisableMuteAllIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F862ED3A3B500B457AC /* DisableMuteAllIntent.swift */; };
+		65304F892ED3A3D200B457AC /* LoopFollowShortcutsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F882ED3A3D000B457AC /* LoopFollowShortcutsProvider.swift */; };
 		6540979E2DB79FF800983772 /* MealAnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6540979D2DB79FF600983772 /* MealAnalysisView.swift */; };
 		6540EF942D7DCDD6008BC98D /* SensorHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6540EF932D7DCDD4008BC98D /* SensorHistoryViewController.swift */; };
 		6540EF962D7DD4C7008BC98D /* AddManualSensorNoteViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6540EF952D7DD4C5008BC98D /* AddManualSensorNoteViewController.swift */; };
@@ -303,6 +309,12 @@
 
 /* Begin PBXFileReference section */
 		059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.release.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.release.xcconfig"; sourceTree = "<group>"; };
+		65304F7D2ED3A2EB00B457AC /* SnoozeMuteIntentHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeMuteIntentHelper.swift; sourceTree = "<group>"; };
+		65304F802ED3A34F00B457AC /* EnableSnoozeAllIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnableSnoozeAllIntent.swift; sourceTree = "<group>"; };
+		65304F822ED3A36E00B457AC /* DisableSnoozeAllIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisableSnoozeAllIntent.swift; sourceTree = "<group>"; };
+		65304F842ED3A38D00B457AC /* EnableMuteAllIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnableMuteAllIntent.swift; sourceTree = "<group>"; };
+		65304F862ED3A3B500B457AC /* DisableMuteAllIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisableMuteAllIntent.swift; sourceTree = "<group>"; };
+		65304F882ED3A3D000B457AC /* LoopFollowShortcutsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopFollowShortcutsProvider.swift; sourceTree = "<group>"; };
 		6540979D2DB79FF600983772 /* MealAnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealAnalysisView.swift; sourceTree = "<group>"; };
 		6540EF932D7DCDD4008BC98D /* SensorHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorHistoryViewController.swift; sourceTree = "<group>"; };
 		6540EF952D7DD4C5008BC98D /* AddManualSensorNoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddManualSensorNoteViewController.swift; sourceTree = "<group>"; };
@@ -616,6 +628,27 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		65304F7C2ED3A0D800B457AC /* Shortcuts */ = {
+			isa = PBXGroup;
+			children = (
+				65304F882ED3A3D000B457AC /* LoopFollowShortcutsProvider.swift */,
+				65304F7F2ED3A33100B457AC /* Intents */,
+				65304F7D2ED3A2EB00B457AC /* SnoozeMuteIntentHelper.swift */,
+			);
+			path = Shortcuts;
+			sourceTree = "<group>";
+		};
+		65304F7F2ED3A33100B457AC /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				65304F862ED3A3B500B457AC /* DisableMuteAllIntent.swift */,
+				65304F842ED3A38D00B457AC /* EnableMuteAllIntent.swift */,
+				65304F822ED3A36E00B457AC /* DisableSnoozeAllIntent.swift */,
+				65304F802ED3A34F00B457AC /* EnableSnoozeAllIntent.swift */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
 		65B3E5C52D3FFAAD00622194 /* SMSRemote */ = {
 			isa = PBXGroup;
 			children = (
@@ -1085,6 +1118,7 @@
 		FC8DEEE32485D1680075863F /* LoopFollow */ = {
 			isa = PBXGroup;
 			children = (
+				65304F7C2ED3A0D800B457AC /* Shortcuts */,
 				DD2C2E522D3C36A8006413A5 /* Dexcom */,
 				DD2C2E4D2D3B8ACF006413A5 /* Nightscout */,
 				DD9ED0C62D355225000D2A63 /* Log */,
@@ -1509,6 +1543,7 @@
 				FC16A97B249966A3003D6245 /* AlarmSound.swift in Sources */,
 				DDBE3ABD2CB5A961006B37DC /* OverrideView.swift in Sources */,
 				DDB0AF522BB1A8BE00AFA48B /* BuildDetails.swift in Sources */,
+				65304F892ED3A3D200B457AC /* LoopFollowShortcutsProvider.swift in Sources */,
 				DD0C0C622C4175FD00DBADDF /* NSProfile.swift in Sources */,
 				DD58171E2D299FCA0041FB98 /* BluetoothDeviceDelegate.swift in Sources */,
 				DDE69ED22C7256260013EAEC /* RemoteType.swift in Sources */,
@@ -1518,6 +1553,7 @@
 				DD48780E2C7B74A40048F05C /* TrioRemoteControlViewModel.swift in Sources */,
 				DDEF503A2D31615000999A5D /* LogManager.swift in Sources */,
 				DD4878172C7B75350048F05C /* BolusView.swift in Sources */,
+				65304F812ED3A35A00B457AC /* EnableSnoozeAllIntent.swift in Sources */,
 				DD493AE72ACF23CF009A6922 /* DeviceStatus.swift in Sources */,
 				FCFEECA2248857A600402A7F /* SettingsViewController.swift in Sources */,
 				65CDBDCF2DBD1A8F00587289 /* NightscoutCache.swift in Sources */,
@@ -1563,6 +1599,7 @@
 				FCC0FAC224922A22003E610E /* DictionaryKeyPath.swift in Sources */,
 				DD493AD72ACF2139009A6922 /* SuspendPump.swift in Sources */,
 				FC9788182485969B00A7906C /* AppDelegate.swift in Sources */,
+				65304F7E2ED3A2F200B457AC /* SnoozeMuteIntentHelper.swift in Sources */,
 				DDD10F072C529DE800D76A8E /* Observable.swift in Sources */,
 				6540EF942D7DCDD6008BC98D /* SensorHistoryViewController.swift in Sources */,
 				DDFF3D852D14279B00BF9D9E /* BackgroundRefreshSettingsView.swift in Sources */,
@@ -1607,8 +1644,10 @@
 				DD0C0C642C45A59400DBADDF /* HKUnit+Extensions.swift in Sources */,
 				DDCF979A24C14DB4002C9752 /* WatchSettingsViewController.swift in Sources */,
 				DD493AE52ACF2383009A6922 /* Treatments.swift in Sources */,
+				65304F852ED3A39A00B457AC /* EnableMuteAllIntent.swift in Sources */,
 				DD50C7552D0862770057AE6F /* ContactImageUpdater.swift in Sources */,
 				DDD10F012C510C6B00D76A8E /* ObservableUserDefaults.swift in Sources */,
+				65304F832ED3A37A00B457AC /* DisableSnoozeAllIntent.swift in Sources */,
 				654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */,
 				DD16AF0D2C98485400FB655A /* SecureStorageValue.swift in Sources */,
 				DD2C2E4F2D3B8AF1006413A5 /* NightscoutSettingsView.swift in Sources */,
@@ -1617,6 +1656,7 @@
 				DD9ED0C82D355244000D2A63 /* LogViewModel.swift in Sources */,
 				DDFF3D892D1429AB00BF9D9E /* BackgroundRefreshType.swift in Sources */,
 				DD493AE32ACF2358009A6922 /* CAge.swift in Sources */,
+				65304F872ED3A3B800B457AC /* DisableMuteAllIntent.swift in Sources */,
 				DD493ADD2ACF21E0009A6922 /* Basals.swift in Sources */,
 				FC16A98124996C07003D6245 /* DateTime.swift in Sources */,
 				6582C4B72ED23B4F0047658C /* GlucoseView.swift in Sources */,
