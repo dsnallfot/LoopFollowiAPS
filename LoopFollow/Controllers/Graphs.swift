@@ -1886,7 +1886,7 @@ extension MainViewController {
         linePrediction.drawCirclesEnabled = false
         //line2.setDrawHighlightIndicators(false)
         linePrediction.setColor(NSUIColor.systemPurple)
-        linePrediction.highlightEnabled = true
+        linePrediction.highlightEnabled = false
         linePrediction.drawHorizontalHighlightIndicatorEnabled = false
         linePrediction.drawVerticalHighlightIndicatorEnabled = false
         linePrediction.highlightColor = NSUIColor.label
@@ -1976,7 +1976,7 @@ extension MainViewController {
         lineOverride.fillAlpha = 0.6
         lineOverride.drawCirclesEnabled = false
         lineOverride.axisDependency = YAxis.AxisDependency.right
-        lineOverride.highlightEnabled = true
+        lineOverride.highlightEnabled = false
         lineOverride.drawValuesEnabled = false
         
         // BG Check
@@ -2074,7 +2074,7 @@ extension MainViewController {
         let COBlinePrediction = LineChartDataSet(entries:COBpredictionChartEntry, label: "")
         COBlinePrediction.drawCirclesEnabled = false
         COBlinePrediction.setColor(NSUIColor.systemPurple)
-        COBlinePrediction.highlightEnabled = true
+        COBlinePrediction.highlightEnabled = false
         COBlinePrediction.drawHorizontalHighlightIndicatorEnabled = false
         COBlinePrediction.drawVerticalHighlightIndicatorEnabled = false
         COBlinePrediction.highlightColor = NSUIColor.label
@@ -2087,7 +2087,7 @@ extension MainViewController {
         let IOBlinePrediction = LineChartDataSet(entries:IOBpredictionChartEntry, label: "")
         IOBlinePrediction.drawCirclesEnabled = false
         IOBlinePrediction.setColor(NSUIColor.systemPurple)
-        IOBlinePrediction.highlightEnabled = true
+        IOBlinePrediction.highlightEnabled = false
         IOBlinePrediction.drawHorizontalHighlightIndicatorEnabled = false
         IOBlinePrediction.drawVerticalHighlightIndicatorEnabled = false
         IOBlinePrediction.highlightColor = NSUIColor.label
@@ -2100,7 +2100,7 @@ extension MainViewController {
         let UAMlinePrediction = LineChartDataSet(entries:UAMpredictionChartEntry, label: "")
         UAMlinePrediction.drawCirclesEnabled = false
         UAMlinePrediction.setColor(NSUIColor.systemPurple)
-        UAMlinePrediction.highlightEnabled = true
+        UAMlinePrediction.highlightEnabled = false
         UAMlinePrediction.drawHorizontalHighlightIndicatorEnabled = false
         UAMlinePrediction.drawVerticalHighlightIndicatorEnabled = false
         UAMlinePrediction.highlightColor = NSUIColor.label
@@ -2113,7 +2113,7 @@ extension MainViewController {
         let ZTlinePrediction = LineChartDataSet(entries:ZTpredictionChartEntry, label: "")
         ZTlinePrediction.drawCirclesEnabled = false
         ZTlinePrediction.setColor(NSUIColor.systemPurple)
-        ZTlinePrediction.highlightEnabled = true
+        ZTlinePrediction.highlightEnabled = false
         ZTlinePrediction.drawHorizontalHighlightIndicatorEnabled = false
         ZTlinePrediction.drawVerticalHighlightIndicatorEnabled = false
         ZTlinePrediction.highlightColor = NSUIColor.label
@@ -2150,7 +2150,7 @@ extension MainViewController {
         lineTempTarget.fillAlpha = 0.6
         lineTempTarget.drawCirclesEnabled = false
         lineTempTarget.axisDependency = YAxis.AxisDependency.right
-        lineTempTarget.highlightEnabled = true
+        lineTempTarget.highlightEnabled = false
         lineTempTarget.drawValuesEnabled = false
 
         // Setup the chart data of all lines
