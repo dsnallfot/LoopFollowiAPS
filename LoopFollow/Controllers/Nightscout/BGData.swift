@@ -413,7 +413,7 @@ extension MainViewController {
             LogManager.shared.log(category: .contact, message: "Cleaned bgValue: \(bgValue ?? 0.0)", isDebug: true)
             LogManager.shared.log(category: .contact, message: "Cleaned deltaBGValue: \(deltaBGValue ?? 0.0)", isDebug: true)
             // Perform calculation
-            let fifteenMin = ((bgValue ?? 0.0) + (deltaBGValue ?? 0.0) * 2.5)
+            let fifteenMin = ((bgValue ?? 0.0) + (deltaBGValue ?? 0.0) * 2)
             // Format the calculated value to a string
             let fifteenMinString = String(format: "%.1f", fifteenMin)
             LogManager.shared.log(category: .contact, message: "fifteenMin calculation: \(fifteenMinString)", isDebug: true)

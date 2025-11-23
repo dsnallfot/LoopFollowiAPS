@@ -52,7 +52,7 @@ struct ContactSettingsView: View {
                                     viewModel.contactTrend = false
                                 }
                             }
-                        Toggle("Visa också 15m delta", isOn: $viewModel.contactFifteenMinutes)
+                        Toggle("Visa också 10m delta", isOn: $viewModel.contactFifteenMinutes)
                             .toggleStyle(SwitchToggleStyle())
                     }
                 }
