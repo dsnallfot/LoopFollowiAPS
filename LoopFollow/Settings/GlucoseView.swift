@@ -397,11 +397,18 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
             expectedCount = 288
         }
         // Hantera lägen där inga värden missats ännu, och de sekunder mellan att ett cgm-värde kommit in och 5 min indelningen av dygnets timmar ger en diff (ex cgm värden kommer minut:sekund 02:30, 07:30, 12:30 osv. expectedCOunt utgår från 05:00, 10:00, 15:00. Det gör at cgm % blir högre än 100% mellan minut:sekund 02:30-05:00, 07:30-10:00, 12:30-15:00 osv utan denna expectedCOuntAdjusted-fix
-        let expectedCountAdjusted: Int
+        var expectedCountAdjusted: Int
         if actualCount > expectedCount {
             expectedCountAdjusted = actualCount
         } else {
             expectedCountAdjusted = expectedCount
+        }
+
+        // If there is at least one missing reading for the day, make sure we never show 100% coverage
+        // during the current 5‑min window while expectedCount has not yet “caught up”.
+        let missingCount = dayRowsIncludingMissing.filter { $0.isMissing }.count
+        if missingCount > 0 && expectedCountAdjusted == expectedCount {
+            expectedCountAdjusted += 1
         }
 
         let pct = expectedCountAdjusted > 0 ? Int(round(Double(actualCount) / Double(expectedCountAdjusted) * 100.0)) : 0
