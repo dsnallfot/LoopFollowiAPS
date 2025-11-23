@@ -375,12 +375,12 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
             statsLabel.text = "CGM-värden: –"
             return
         }
-
+        
         let now = Date()
         let isToday = cal.isDate(selectedDate, inSameDayAs: now)
-
+        
         let actualCount = bgEntries.filter { $0.date >= start && $0.date < end }.count
-
+        
         let expectedCount: Int
         if isToday {
             let secondsSinceStart = now.timeIntervalSince(start)
@@ -388,8 +388,15 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         } else {
             expectedCount = 288
         }
+        // Hantera lägen där inga värden missats ännu, och de sekunder mellan att ett cgm-värde kommit in och 5 min indelningen av dygnets timmar ger en diff (ex cgm värden kommer minut:sekund 02:30, 07:30, 12:30 osv. expectedCOunt utgår från 05:00, 10:00, 15:00. Det gör at cgm % blir högre än 100% mellan minut:sekund 02:30-05:00, 07:30-10:00, 12:30-15:00 osv utan denna expectedCOuntAdjusted-fix
+        let expectedCountAdjusted: Int
+        if actualCount > expectedCount {
+            expectedCountAdjusted = actualCount
+        } else {
+            expectedCountAdjusted = expectedCount
+        }
 
-        let pct = expectedCount > 0 ? Int(round(Double(actualCount) / Double(expectedCount) * 100.0)) : 0
+        let pct = expectedCountAdjusted > 0 ? Int(round(Double(actualCount) / Double(expectedCountAdjusted) * 100.0)) : 0
         var emoji = " 🔴"
         if pct > 95 {
             emoji = " 🟢"
