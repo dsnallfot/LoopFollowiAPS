@@ -147,7 +147,15 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     private var filteredRows: [GlucoseRow] {
         let rows = dayRowsIncludingMissing
         if showOnlyMissingGlucose {
-            return rows.filter { $0.isMissing }
+            let missing = rows.filter { $0.isMissing }
+            if missing.isEmpty {
+                // Insert a synthetic placeholder missing row at noon
+                let cal = Calendar.current
+                let start = cal.startOfDay(for: selectedDate)
+                let placeholderDate = cal.date(byAdding: .hour, value: 12, to: start) ?? start
+                return [.missing(placeholderDate)]
+            }
+            return missing
         }
         return rows
     }
@@ -433,14 +441,23 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
             cell.contentView.backgroundColor = .clear
 
         case .missing(let date):
-            cell.textLabel?.text = "[Saknas]"
-            cell.textLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
-            cell.detailTextLabel?.text = timeFormatter.string(from: date)
-
-            // Red‑tinted background to stand out
-            let tint = UIColor.systemRed.withAlphaComponent(0.12)
-            cell.backgroundColor = tint
-            cell.contentView.backgroundColor = tint
+            // Detect placeholder: no actual missing rows and showOnlyMissingGlucose = true
+            let isPlaceholder = showOnlyMissingGlucose && dayRowsIncludingMissing.filter { $0.isMissing }.isEmpty
+            if isPlaceholder {
+                cell.textLabel?.text = "Inga saknade värden denna dag 👍"
+                cell.detailTextLabel?.text = ""
+                cell.textLabel?.font = .systemFont(ofSize: 17)
+                let tint = UIColor.systemGreen.withAlphaComponent(0.12)
+                cell.backgroundColor = tint
+                cell.contentView.backgroundColor = tint
+            } else {
+                cell.textLabel?.text = "[Saknas]"
+                cell.textLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+                cell.detailTextLabel?.text = timeFormatter.string(from: date)
+                let tint = UIColor.systemRed.withAlphaComponent(0.12)
+                cell.backgroundColor = tint
+                cell.contentView.backgroundColor = tint
+            }
         }
 
         cell.accessoryType = .none
