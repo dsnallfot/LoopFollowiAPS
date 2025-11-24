@@ -59,6 +59,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         return true
     }
+    
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        // Get root tab bar controller
+        if let tabBar = window?.rootViewController as? UITabBarController,
+           let mainVC = tabBar.viewControllers?.first as? MainViewController {
+
+            // Immediate refresh of MinAgo
+            mainVC.minAgoTaskAction()
+
+            // Restore high-frequency updates
+            TaskScheduler.shared.rescheduleTask(
+                id: .minAgoUpdate,
+                to: Date().addingTimeInterval(1)
+            )
+        }
+    }
 
     func applicationWillTerminate(_ application: UIApplication) {
         if UserDefaultsRepository.alertAppInactive.value {

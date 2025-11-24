@@ -55,15 +55,16 @@ class TaskScheduler {
             guard var existingTask = self.tasks[id] else { return }
             existingTask.nextRun = newRunDate
             self.tasks[id] = existingTask
-            self.checkTasksNow()
+            // IMPORTANT: rescheduleTask is called by frequent timers (e.g. minAgoUpdate).
+            // Don't fire overdue tasks here; only update the scheduler timer.
+            self.rescheduleTimer()
         }
     }
 
     func checkTasksNow() {
-        queue.async {
-            self.fireOverdueTasks()
-            self.rescheduleTimer()
-        }
+        // Public "poke" to run due tasks now (used by heartbeats).
+        fireOverdueTasks()
+        rescheduleTimer()
     }
 
     // MARK: - Private
@@ -92,9 +93,8 @@ class TaskScheduler {
     }
     
     private func fireOverdueTasks() {
-        BackgroundAlertManager.shared.scheduleBackgroundAlert()
-        
         let now = Date()
+        var didExecuteAnyTask = false
         let tasksToSkipAlarmCheck: Set<TaskID> = [.deviceStatus, .treatments, .fetchBG]
         
         for taskID in TaskID.allCases {
@@ -121,10 +121,15 @@ class TaskScheduler {
             tasks[taskID] = updatedTask
 
             LogManager.shared.log(category: .taskScheduler, message: "Executing task \(taskID)", isDebug: true)
+            didExecuteAnyTask = true
 
             DispatchQueue.main.async {
                 task.action()
             }
+        }
+        // Only reschedule background alerts if we actually executed something.
+        if didExecuteAnyTask {
+            BackgroundAlertManager.shared.scheduleBackgroundAlert()
         }
     }
 
