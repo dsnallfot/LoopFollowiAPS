@@ -488,6 +488,10 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         }
 
         TaskScheduler.shared.checkTasksNow()
+        // Kick MinAgo immediately when returning to foreground
+        minAgoTaskAction()
+        TaskScheduler.shared.rescheduleTask(id: .minAgoUpdate,
+                                            to: Date().addingTimeInterval(1))
         
         checkAndNotifyVersionStatus()
         checkAppExpirationStatus()

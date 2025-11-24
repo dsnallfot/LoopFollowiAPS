@@ -21,7 +21,7 @@ extension MainViewController {
     func minAgoTaskAction() {
         // MinAgo is UI-only. Avoid frequent work when backgrounded.
         let appState = UIApplication.shared.applicationState
-        if appState != .active {
+        if appState == .background {
             // Slow cadence while backgrounded (5 min).
             TaskScheduler.shared.rescheduleTask(id: .minAgoUpdate,
                                                 to: Date().addingTimeInterval(300))
