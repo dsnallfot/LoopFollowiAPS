@@ -405,7 +405,8 @@ extension MainViewController {
             let cleanedBGTextStr = bgTextStr.replacingOccurrences(of: ",", with: ".")
             let cleanedSnoozerDelta = snoozerDelta
                 .replacingOccurrences(of: ",", with: ".")
-                .replacingOccurrences(of: "+", with: "") // Remove leading plus sign if present
+                .replacingOccurrences(of: "+", with: "")// Remove leading plus sign if present
+                .replacingOccurrences(of: "*", with: "")// Remove * sign if present
             // Convert to Double
             let bgValue = Double(cleanedBGTextStr)
             let deltaBGValue = Double(cleanedSnoozerDelta)
