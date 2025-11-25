@@ -9,7 +9,7 @@ struct GRIView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("GRI (Glukos Riskindex)")
+                Text("GRI (Glykemiskt Riskindex)")
                     .font(.callout)
                     .fontWeight(.medium)
                     .foregroundColor(.secondary)
@@ -69,7 +69,7 @@ struct GRIView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(Color(.systemGray5))
-        .cornerRadius(12)
+        .cornerRadius(20)
     }
 
     private func griColor(_ gri: Double) -> Color {

@@ -31,32 +31,36 @@ struct TIRView: View {
                             .frame(height: 250)
                             .allowsHitTesting(false)
                             .clipped()
-
+                        
+                        // Threshold values depending on TIR/TITR mode
+                        let highThreshold = viewModel.showTITR ? 7.8 : 10.0   // upper range for "Inom mål"
+                        let high = viewModel.showTITR ? 7.9 : 10.1           // lower range for "Högt"
+                        
                         VStack(alignment: .leading, spacing: 8) {
                             if let average = viewModel.tirData.first(where: { $0.period == .average }) {
                                 TIRLegendItem(
                                     color: .purple,
-                                    label: "Akut högt",
+                                    label: "Akut högt  (> 13.9 mmol/L)",
                                     percentage: average.veryHigh
                                 )
                                 TIRLegendItem(
                                     color: .blue,
-                                    label: "Högt",
+                                    label: String(format: "Högt  (%.1f - 13.9 mmol/L)", high),
                                     percentage: average.high
                                 )
                                 TIRLegendItem(
                                     color: .green,
-                                    label: "Inom mål",
+                                    label: String(format: "Inom mål  (3.9 - %.1f mmol/L)", highThreshold),
                                     percentage: average.inRange
                                 )
                                 TIRLegendItem(
                                     color: .orange,
-                                    label: "Lågt",
+                                    label: "Lågt  (3.1 - 3.8 mmol/L)",
                                     percentage: average.low
                                 )
                                 TIRLegendItem(
                                     color: .red,
-                                    label: "Akut lågt",
+                                    label: "Akut lågt  (< 3.1 mmol/L)",
                                     percentage: average.veryLow
                                 )
                             }
@@ -78,7 +82,7 @@ struct TIRView: View {
                     .padding(8)
             }
             .background(Color(.systemGray5))
-            .cornerRadius(12)
+            .cornerRadius(20)
         }
         .buttonStyle(PlainButtonStyle())
     }

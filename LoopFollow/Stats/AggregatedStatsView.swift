@@ -133,7 +133,7 @@ struct StatCard: View {
             }
         }
         .background(Color(.systemGray5))
-        .cornerRadius(12)
+        .cornerRadius(20)
     }
 }
 
