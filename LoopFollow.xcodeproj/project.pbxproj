@@ -8,6 +8,26 @@
 
 /* Begin PBXBuildFile section */
 		3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */; };
+		651C9D242ED5D1DA0077D40A /* AggregatedStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D232ED5D1D00077D40A /* AggregatedStatsView.swift */; };
+		651C9D262ED5D2140077D40A /* AggregatedStatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D252ED5D2100077D40A /* AggregatedStatsViewModel.swift */; };
+		651C9D282ED5D22E0077D40A /* ChartContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D272ED5D22C0077D40A /* ChartContainerView.swift */; };
+		651C9D2A2ED5D2460077D40A /* SimpleStatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D292ED5D23E0077D40A /* SimpleStatsViewModel.swift */; };
+		651C9D2C2ED5D25A0077D40A /* StatsDataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D2B2ED5D2560077D40A /* StatsDataFetcher.swift */; };
+		651C9D2E2ED5D2710077D40A /* StatsDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D2D2ED5D2680077D40A /* StatsDataService.swift */; };
+		651C9D312ED5D29C0077D40A /* TIRCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D302ED5D28C0077D40A /* TIRCalculator.swift */; };
+		651C9D332ED5D2B10077D40A /* TIRDataPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D322ED5D2AB0077D40A /* TIRDataPoint.swift */; };
+		651C9D352ED5D2C30077D40A /* TIRGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D342ED5D2C00077D40A /* TIRGraphView.swift */; };
+		651C9D372ED5D2D40077D40A /* TIRView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D362ED5D2D10077D40A /* TIRView.swift */; };
+		651C9D392ED5D2E70077D40A /* TIRViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D382ED5D2E50077D40A /* TIRViewModel.swift */; };
+		651C9D3C2ED5D3090077D40A /* GRICalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D3B2ED5D3000077D40A /* GRICalculator.swift */; };
+		651C9D3E2ED5D3180077D40A /* GRIRiskGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D3D2ED5D30F0077D40A /* GRIRiskGridView.swift */; };
+		651C9D402ED5D32A0077D40A /* GRIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D3F2ED5D3210077D40A /* GRIView.swift */; };
+		651C9D422ED5D33B0077D40A /* GRIViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D412ED5D3380077D40A /* GRIViewModel.swift */; };
+		651C9D462ED5D3850077D40A /* AGPCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D452ED5D3670077D40A /* AGPCalculator.swift */; };
+		651C9D482ED5D3960077D40A /* AGPDataPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D472ED5D38C0077D40A /* AGPDataPoint.swift */; };
+		651C9D4A2ED5D3A50077D40A /* AGPGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D492ED5D3A10077D40A /* AGPGraphView.swift */; };
+		651C9D4C2ED5D3B70077D40A /* AGPView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D4B2ED5D3AF0077D40A /* AGPView.swift */; };
+		651C9D4E2ED5D3C90077D40A /* AGPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D4D2ED5D3BF0077D40A /* AGPViewModel.swift */; };
 		65304F7E2ED3A2F200B457AC /* SnoozeMuteIntentHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F7D2ED3A2EB00B457AC /* SnoozeMuteIntentHelper.swift */; };
 		65304F812ED3A35A00B457AC /* EnableSnoozeAllIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F802ED3A34F00B457AC /* EnableSnoozeAllIntent.swift */; };
 		65304F832ED3A37A00B457AC /* DisableSnoozeAllIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F822ED3A36E00B457AC /* DisableSnoozeAllIntent.swift */; };
@@ -309,6 +329,26 @@
 
 /* Begin PBXFileReference section */
 		059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.release.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.release.xcconfig"; sourceTree = "<group>"; };
+		651C9D232ED5D1D00077D40A /* AggregatedStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AggregatedStatsView.swift; sourceTree = "<group>"; };
+		651C9D252ED5D2100077D40A /* AggregatedStatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AggregatedStatsViewModel.swift; sourceTree = "<group>"; };
+		651C9D272ED5D22C0077D40A /* ChartContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartContainerView.swift; sourceTree = "<group>"; };
+		651C9D292ED5D23E0077D40A /* SimpleStatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleStatsViewModel.swift; sourceTree = "<group>"; };
+		651C9D2B2ED5D2560077D40A /* StatsDataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDataFetcher.swift; sourceTree = "<group>"; };
+		651C9D2D2ED5D2680077D40A /* StatsDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDataService.swift; sourceTree = "<group>"; };
+		651C9D302ED5D28C0077D40A /* TIRCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TIRCalculator.swift; sourceTree = "<group>"; };
+		651C9D322ED5D2AB0077D40A /* TIRDataPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TIRDataPoint.swift; sourceTree = "<group>"; };
+		651C9D342ED5D2C00077D40A /* TIRGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TIRGraphView.swift; sourceTree = "<group>"; };
+		651C9D362ED5D2D10077D40A /* TIRView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TIRView.swift; sourceTree = "<group>"; };
+		651C9D382ED5D2E50077D40A /* TIRViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TIRViewModel.swift; sourceTree = "<group>"; };
+		651C9D3B2ED5D3000077D40A /* GRICalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GRICalculator.swift; sourceTree = "<group>"; };
+		651C9D3D2ED5D30F0077D40A /* GRIRiskGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GRIRiskGridView.swift; sourceTree = "<group>"; };
+		651C9D3F2ED5D3210077D40A /* GRIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GRIView.swift; sourceTree = "<group>"; };
+		651C9D412ED5D3380077D40A /* GRIViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GRIViewModel.swift; sourceTree = "<group>"; };
+		651C9D452ED5D3670077D40A /* AGPCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AGPCalculator.swift; sourceTree = "<group>"; };
+		651C9D472ED5D38C0077D40A /* AGPDataPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AGPDataPoint.swift; sourceTree = "<group>"; };
+		651C9D492ED5D3A10077D40A /* AGPGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AGPGraphView.swift; sourceTree = "<group>"; };
+		651C9D4B2ED5D3AF0077D40A /* AGPView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AGPView.swift; sourceTree = "<group>"; };
+		651C9D4D2ED5D3BF0077D40A /* AGPViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AGPViewModel.swift; sourceTree = "<group>"; };
 		65304F7D2ED3A2EB00B457AC /* SnoozeMuteIntentHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeMuteIntentHelper.swift; sourceTree = "<group>"; };
 		65304F802ED3A34F00B457AC /* EnableSnoozeAllIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnableSnoozeAllIntent.swift; sourceTree = "<group>"; };
 		65304F822ED3A36E00B457AC /* DisableSnoozeAllIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisableSnoozeAllIntent.swift; sourceTree = "<group>"; };
@@ -628,6 +668,57 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		651C9D222ED5D1CA0077D40A /* Stats */ = {
+			isa = PBXGroup;
+			children = (
+				651C9D442ED5D35D0077D40A /* AGP */,
+				651C9D3A2ED5D2F90077D40A /* GRI */,
+				651C9D2F2ED5D2850077D40A /* TIR */,
+				651C9D2D2ED5D2680077D40A /* StatsDataService.swift */,
+				651C9D2B2ED5D2560077D40A /* StatsDataFetcher.swift */,
+				651C9D292ED5D23E0077D40A /* SimpleStatsViewModel.swift */,
+				651C9D272ED5D22C0077D40A /* ChartContainerView.swift */,
+				651C9D252ED5D2100077D40A /* AggregatedStatsViewModel.swift */,
+				651C9D232ED5D1D00077D40A /* AggregatedStatsView.swift */,
+			);
+			path = Stats;
+			sourceTree = "<group>";
+		};
+		651C9D2F2ED5D2850077D40A /* TIR */ = {
+			isa = PBXGroup;
+			children = (
+				651C9D382ED5D2E50077D40A /* TIRViewModel.swift */,
+				651C9D362ED5D2D10077D40A /* TIRView.swift */,
+				651C9D342ED5D2C00077D40A /* TIRGraphView.swift */,
+				651C9D322ED5D2AB0077D40A /* TIRDataPoint.swift */,
+				651C9D302ED5D28C0077D40A /* TIRCalculator.swift */,
+			);
+			path = TIR;
+			sourceTree = "<group>";
+		};
+		651C9D3A2ED5D2F90077D40A /* GRI */ = {
+			isa = PBXGroup;
+			children = (
+				651C9D412ED5D3380077D40A /* GRIViewModel.swift */,
+				651C9D3F2ED5D3210077D40A /* GRIView.swift */,
+				651C9D3D2ED5D30F0077D40A /* GRIRiskGridView.swift */,
+				651C9D3B2ED5D3000077D40A /* GRICalculator.swift */,
+			);
+			path = GRI;
+			sourceTree = "<group>";
+		};
+		651C9D442ED5D35D0077D40A /* AGP */ = {
+			isa = PBXGroup;
+			children = (
+				651C9D4D2ED5D3BF0077D40A /* AGPViewModel.swift */,
+				651C9D4B2ED5D3AF0077D40A /* AGPView.swift */,
+				651C9D492ED5D3A10077D40A /* AGPGraphView.swift */,
+				651C9D472ED5D38C0077D40A /* AGPDataPoint.swift */,
+				651C9D452ED5D3670077D40A /* AGPCalculator.swift */,
+			);
+			path = AGP;
+			sourceTree = "<group>";
+		};
 		65304F7C2ED3A0D800B457AC /* Shortcuts */ = {
 			isa = PBXGroup;
 			children = (
@@ -1118,6 +1209,7 @@
 		FC8DEEE32485D1680075863F /* LoopFollow */ = {
 			isa = PBXGroup;
 			children = (
+				651C9D222ED5D1CA0077D40A /* Stats */,
 				65304F7C2ED3A0D800B457AC /* Shortcuts */,
 				DD2C2E522D3C36A8006413A5 /* Dexcom */,
 				DD2C2E4D2D3B8ACF006413A5 /* Nightscout */,
@@ -1503,14 +1595,17 @@
 				65EBBB512DA5520B00212D5C /* TrioOrefViewModel.swift in Sources */,
 				DDF6999B2C5AA32E0058A8D9 /* TempTargetPreset.swift in Sources */,
 				DD9ACA0E2D340BFF00415D8A /* AlarmTask.swift in Sources */,
+				651C9D282ED5D22E0077D40A /* ChartContainerView.swift in Sources */,
 				DD7FFAFD2A72953000C3A304 /* EKEventStore+Extensions.swift in Sources */,
 				65BFAF1E2DA6E8FE00947A66 /* SyncNewSensorView.swift in Sources */,
 				FCC6886724898F8000A0279D /* UserDefaultsValue.swift in Sources */,
+				651C9D4E2ED5D3C90077D40A /* AGPViewModel.swift in Sources */,
 				DDF699942C555B310058A8D9 /* ViewControllerManager.swift in Sources */,
 				6540EF962D7DD4C7008BC98D /* AddManualSensorNoteViewController.swift in Sources */,
 				DDCF979E24C2382A002C9752 /* AppStateController.swift in Sources */,
 				DDEF503F2D32754F00999A5D /* ProfileTask.swift in Sources */,
 				DD5334212C60EBEE00062F9D /* InsulinCartridgeChange.swift in Sources */,
+				651C9D2C2ED5D25A0077D40A /* StatsDataFetcher.swift in Sources */,
 				FC97881E2485969B00A7906C /* NightScoutViewController.swift in Sources */,
 				DD608A0A2C23593900F91132 /* SMB.swift in Sources */,
 				DDCF979824C1489C002C9752 /* GraphSettingsViewController.swift in Sources */,
@@ -1540,17 +1635,20 @@
 				DDFD5C532CB167DA00D3FD68 /* TRCCommandType.swift in Sources */,
 				DD16AF112C997B4600FB655A /* LoadingButtonView.swift in Sources */,
 				DD5817172D2710E90041FB98 /* BLEDeviceSelectionView.swift in Sources */,
+				651C9D392ED5D2E70077D40A /* TIRViewModel.swift in Sources */,
 				FC16A97B249966A3003D6245 /* AlarmSound.swift in Sources */,
 				DDBE3ABD2CB5A961006B37DC /* OverrideView.swift in Sources */,
 				DDB0AF522BB1A8BE00AFA48B /* BuildDetails.swift in Sources */,
 				65304F892ED3A3D200B457AC /* LoopFollowShortcutsProvider.swift in Sources */,
 				DD0C0C622C4175FD00DBADDF /* NSProfile.swift in Sources */,
+				651C9D3C2ED5D3090077D40A /* GRICalculator.swift in Sources */,
 				DD58171E2D299FCA0041FB98 /* BluetoothDeviceDelegate.swift in Sources */,
 				DDE69ED22C7256260013EAEC /* RemoteType.swift in Sources */,
 				DDD10F032C518A6500D76A8E /* TreatmentResponse.swift in Sources */,
 				DDD10F0B2C54192A00D76A8E /* TemporaryTarget.swift in Sources */,
 				DD5334272C61668800062F9D /* InfoDisplaySettingsViewModel.swift in Sources */,
 				DD48780E2C7B74A40048F05C /* TrioRemoteControlViewModel.swift in Sources */,
+				651C9D262ED5D2140077D40A /* AggregatedStatsViewModel.swift in Sources */,
 				DDEF503A2D31615000999A5D /* LogManager.swift in Sources */,
 				DD4878172C7B75350048F05C /* BolusView.swift in Sources */,
 				65304F812ED3A35A00B457AC /* EnableSnoozeAllIntent.swift in Sources */,
@@ -1574,11 +1672,14 @@
 				6578DBD32EB8DD4B00AF4942 /* SnoozeStatusView.swift in Sources */,
 				DD4878152C7B75230048F05C /* MealView.swift in Sources */,
 				FC16A97F249969E2003D6245 /* Graphs.swift in Sources */,
+				651C9D422ED5D33B0077D40A /* GRIViewModel.swift in Sources */,
 				FC8589BF252B54F500C8FC73 /* Mobileprovision.swift in Sources */,
 				DD4878052C7B2C970048F05C /* Storage.swift in Sources */,
+				651C9D352ED5D2C30077D40A /* TIRGraphView.swift in Sources */,
 				DD493AE12ACF22FE009A6922 /* Profile.swift in Sources */,
 				DD493ADF2ACF22BB009A6922 /* SAge.swift in Sources */,
 				DDF699992C5AA3060058A8D9 /* TempTargetPresetManager.swift in Sources */,
+				651C9D482ED5D3960077D40A /* AGPDataPoint.swift in Sources */,
 				DD0C0C722C4B000800DBADDF /* TrioNightscoutRemoteView.swift in Sources */,
 				DD493ADB2ACF21A3009A6922 /* Bolus.swift in Sources */,
 				DDF9676E2AD08C6E00C5EB95 /* SiteChange.swift in Sources */,
@@ -1588,6 +1689,7 @@
 				DD9ED0CC2D35526E000D2A63 /* SearchBar.swift in Sources */,
 				DDD10EFF2C510C3C00D76A8E /* ObservableUserDefaultsValue.swift in Sources */,
 				DD58171A2D299EF80041FB98 /* DexcomHeartbeatBluetoothDevice.swift in Sources */,
+				651C9D372ED5D2D40077D40A /* TIRView.swift in Sources */,
 				659AC6832D7C594D0069FC7C /* TreatmentsTableView.swift in Sources */,
 				DDFF3D872D14280500BF9D9E /* BackgroundRefreshSettingsViewModel.swift in Sources */,
 				DD50C7502D0828800057AE6F /* ContactSettingsViewModel.swift in Sources */,
@@ -1603,9 +1705,11 @@
 				DDD10F072C529DE800D76A8E /* Observable.swift in Sources */,
 				6540EF942D7DCDD6008BC98D /* SensorHistoryViewController.swift in Sources */,
 				DDFF3D852D14279B00BF9D9E /* BackgroundRefreshSettingsView.swift in Sources */,
+				651C9D332ED5D2B10077D40A /* TIRDataPoint.swift in Sources */,
 				6545DD2B2D6F03A0007B0D70 /* LineChartWrapper.swift in Sources */,
 				DD608A0C2C27415C00F91132 /* BackgroundAlertManager.swift in Sources */,
 				DD50C7532D0828D10057AE6F /* ContactSettingsView.swift in Sources */,
+				651C9D242ED5D1DA0077D40A /* AggregatedStatsView.swift in Sources */,
 				DD4878082C7B30BF0048F05C /* RemoteSettingsView.swift in Sources */,
 				DDEF503C2D31BE2D00999A5D /* TaskScheduler.swift in Sources */,
 				DD0C0C6B2C48562000DBADDF /* InsulinMetric.swift in Sources */,
@@ -1617,14 +1721,17 @@
 				DD98F54424BCEFEE0007425A /* ShareClientExtension.swift in Sources */,
 				DD9ED0CE2D35587A000D2A63 /* LogEntry.swift in Sources */,
 				DD0C0C602C415B9D00DBADDF /* ProfileManager.swift in Sources */,
+				651C9D4C2ED5D3B70077D40A /* AGPView.swift in Sources */,
 				65BB9A442D43CB0300FCFCA8 /* AdvancedSettingsView.swift in Sources */,
 				DDF699962C5582290058A8D9 /* TextFieldWithToolBar.swift in Sources */,
 				DD91E4DD2BDEC3F8002D9E97 /* GlucoseConversion.swift in Sources */,
 				DD4878132C7B750D0048F05C /* TempTargetView.swift in Sources */,
 				DD0C0C682C48529400DBADDF /* Metric.swift in Sources */,
 				FCC6886D2489909D00A0279D /* AnyConvertible.swift in Sources */,
+				651C9D3E2ED5D3180077D40A /* GRIRiskGridView.swift in Sources */,
 				6540979E2DB79FF800983772 /* MealAnalysisView.swift in Sources */,
 				FC97881A2485969B00A7906C /* SceneDelegate.swift in Sources */,
+				651C9D2A2ED5D2460077D40A /* SimpleStatsViewModel.swift in Sources */,
 				DD0C0C662C46E54C00DBADDF /* InfoDataSeparator.swift in Sources */,
 				DD58171C2D299F940041FB98 /* BluetoothDevice.swift in Sources */,
 				DD7E198A2ACDA62600DBD158 /* SensorStart.swift in Sources */,
@@ -1636,7 +1743,9 @@
 				DDD10F052C529DA200D76A8E /* ObservableValue.swift in Sources */,
 				FC1BDD2D24A23204001B652C /* StatsView.swift in Sources */,
 				DD4878102C7B74BF0048F05C /* TrioRemoteControlView.swift in Sources */,
+				651C9D402ED5D32A0077D40A /* GRIView.swift in Sources */,
 				654454D32D6E8ADB0015BC5E /* ProfileSchedulesViewModel.swift in Sources */,
+				651C9D462ED5D3850077D40A /* AGPCalculator.swift in Sources */,
 				DD2C2E542D3C37DC006413A5 /* DexcomSettingsViewModel.swift in Sources */,
 				FCE537BC249A4D7D00F80BF8 /* carbBolusArrays.swift in Sources */,
 				DD5334232C60ED3600062F9D /* IAge.swift in Sources */,
@@ -1651,17 +1760,20 @@
 				654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */,
 				DD16AF0D2C98485400FB655A /* SecureStorageValue.swift in Sources */,
 				DD2C2E4F2D3B8AF1006413A5 /* NightscoutSettingsView.swift in Sources */,
+				651C9D4A2ED5D3A50077D40A /* AGPGraphView.swift in Sources */,
 				FCA2DDE62501095000254A8C /* Timers.swift in Sources */,
 				DD2C2E512D3B8B0C006413A5 /* NightscoutSettingsViewModel.swift in Sources */,
 				DD9ED0C82D355244000D2A63 /* LogViewModel.swift in Sources */,
 				DDFF3D892D1429AB00BF9D9E /* BackgroundRefreshType.swift in Sources */,
 				DD493AE32ACF2358009A6922 /* CAge.swift in Sources */,
+				651C9D312ED5D29C0077D40A /* TIRCalculator.swift in Sources */,
 				65304F872ED3A3B800B457AC /* DisableMuteAllIntent.swift in Sources */,
 				DD493ADD2ACF21E0009A6922 /* Basals.swift in Sources */,
 				FC16A98124996C07003D6245 /* DateTime.swift in Sources */,
 				6582C4B72ED23B4F0047658C /* GlucoseView.swift in Sources */,
 				FC3CAB022493B6220068A152 /* BackgroundTaskAudio.swift in Sources */,
 				65CDBDD12DBD296800587289 /* NSCacheTask.swift in Sources */,
+				651C9D2E2ED5D2710077D40A /* StatsDataService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

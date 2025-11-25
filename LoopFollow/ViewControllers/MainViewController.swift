@@ -131,6 +131,13 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var lastTempTargetAlarm: TimeInterval = 0
     var lastTempTargetStartTime: TimeInterval = 0
     var lastTempTargetEndTime: TimeInterval = 0
+    
+    // Stats-specific data storage (can hold up to 30 days)
+        var statsBGData: [ShareGlucoseData] = []
+        var statsBolusData: [bolusGraphStruct] = []
+        var statsSMBData: [bolusGraphStruct] = []
+        var statsCarbData: [carbGraphStruct] = []
+        var statsBasalData: [basalGraphStruct] = []
 
     // share
     var bgDataShare: [ShareGlucoseData] = []

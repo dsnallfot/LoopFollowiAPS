@@ -135,6 +135,17 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         
+        +++ Section("Statistik")
+        <<< ButtonRow() {
+            $0.title = "Statistik"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    self.presentStatsView()
+                    return UIViewController()
+                }), onDismiss: nil)
+            
+        }
+        
         +++ Section(header: "Datainställningar", footer: "")
         <<< SegmentedRow<String>("units") { row in
             row.title = "Enhet"
@@ -478,6 +489,73 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
 
             present(hostingController, animated: true, completion: nil)
         }
+    
+    func presentStatsView() {
+        // Try to locate MainViewController from various places so stats have access to data
+        var mainVC: MainViewController?
+
+        // 1) If we're embedded in a navigation stack, search upwards in that stack
+        if let nav = navigationController {
+            if let found = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                mainVC = found
+            }
+        }
+
+        // 2) If we still haven't found it, walk up the presenting chain
+        if mainVC == nil {
+            var parentVC = presentingViewController
+            while parentVC != nil, mainVC == nil {
+                if let found = parentVC as? MainViewController {
+                    mainVC = found
+                    break
+                }
+                if let nav = parentVC as? UINavigationController,
+                   let found = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = found
+                    break
+                }
+                parentVC = parentVC?.presentingViewController
+            }
+        }
+
+        // 3) As a final fallback, search all tabs and their navigation stacks
+        if mainVC == nil, let tabBar = tabBarController {
+            for vc in tabBar.viewControllers ?? [] {
+                if let main = vc as? MainViewController {
+                    mainVC = main
+                    break
+                }
+
+                if let nav = vc as? UINavigationController,
+                   let found = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = found
+                    break
+                }
+            }
+        }
+
+        if mainVC == nil {
+            LogManager.shared.log(
+                category: .general,
+                message: "SettingsViewController - could not find MainViewController for AggregatedStatsViewModel, falling back to nil",
+                isDebug: true
+            )
+        }
+
+        let viewModel = AggregatedStatsViewModel(mainViewController: mainVC)
+        let statsRootView = NavigationView {
+            AggregatedStatsView(viewModel: viewModel)
+        }
+
+        let hostingController = UIHostingController(rootView: statsRootView)
+        hostingController.modalPresentationStyle = .formSheet
+
+        if UserDefaultsRepository.forceDarkMode.value {
+            hostingController.overrideUserInterfaceStyle = .dark
+        }
+
+        present(hostingController, animated: true, completion: nil)
+    }
 
     private func shareLogs() {
         let logFilesToShare = LogManager.shared.logFilesForTodayAndYesterday()

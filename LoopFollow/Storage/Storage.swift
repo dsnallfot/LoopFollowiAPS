@@ -39,7 +39,11 @@ class Storage {
     
     var sensorScheduleOffset = StorageValue<Double?>(key: "sensorScheduleOffset", defaultValue: nil)
 
-
+    // Statistics display preferences
+    var showGMI = StorageValue<Bool>(key: "showGMI", defaultValue: true)
+    var showStdDev = StorageValue<Bool>(key: "showStdDev", defaultValue: true)
+    var showTITR = StorageValue<Bool>(key: "showTITR", defaultValue: true)
+    
     static let shared = Storage()
 
     private init() { }

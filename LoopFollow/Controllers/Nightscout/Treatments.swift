@@ -18,10 +18,15 @@ extension MainViewController {
         isTreatmentsFetchInProgress = true
         
         let startTimeString = dateTimeUtils.getDateTimeString(addingDays: -1 * UserDefaultsRepository.downloadDays.value)
-        let currentTimeString = dateTimeUtils.getDateTimeString(addingHours: 6)
+        
+        //let currentTimeString = dateTimeUtils.getDateTimeString(addingHours: 6)
+        let currentTimeString = dateTimeUtils.getDateTimeString() //TEST
+        let estimatedCount = max(UserDefaultsRepository.downloadDays.value * 100, 5000)//TEST
+        
         let parameters: [String: String] = [
             "find[created_at][$gte]": startTimeString,
-            "find[created_at][$lte]": currentTimeString
+            "find[created_at][$lte]": currentTimeString,
+            "count": "\(estimatedCount)",//TEST
         ]
         NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: parameters) { (result: Result<Any, Error>) in
             switch result {
