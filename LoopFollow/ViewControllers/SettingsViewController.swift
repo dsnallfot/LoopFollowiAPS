@@ -490,49 +490,44 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             present(hostingController, animated: true, completion: nil)
         }
     
-    func presentStatsView() {
-        // Try to locate MainViewController from various places so stats have access to data
-        var mainVC: MainViewController?
-
+    private func resolveMainViewController() -> MainViewController? {
         // 1) If we're embedded in a navigation stack, search upwards in that stack
-        if let nav = navigationController {
-            if let found = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
-                mainVC = found
-            }
+        if let nav = navigationController,
+           let found = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+            return found
         }
 
-        // 2) If we still haven't found it, walk up the presenting chain
-        if mainVC == nil {
-            var parentVC = presentingViewController
-            while parentVC != nil, mainVC == nil {
-                if let found = parentVC as? MainViewController {
-                    mainVC = found
-                    break
-                }
-                if let nav = parentVC as? UINavigationController,
-                   let found = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
-                    mainVC = found
-                    break
-                }
-                parentVC = parentVC?.presentingViewController
+        // 2) Walk up the presenting chain
+        var parentVC = presentingViewController
+        while let current = parentVC {
+            if let main = current as? MainViewController {
+                return main
             }
+            if let nav = current as? UINavigationController,
+               let found = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                return found
+            }
+            parentVC = current.presentingViewController
         }
 
         // 3) As a final fallback, search all tabs and their navigation stacks
-        if mainVC == nil, let tabBar = tabBarController {
+        if let tabBar = tabBarController {
             for vc in tabBar.viewControllers ?? [] {
                 if let main = vc as? MainViewController {
-                    mainVC = main
-                    break
+                    return main
                 }
-
                 if let nav = vc as? UINavigationController,
                    let found = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
-                    mainVC = found
-                    break
+                    return found
                 }
             }
         }
+
+        return nil
+    }
+
+    func presentStatsView() {
+        let mainVC = resolveMainViewController()
 
         if mainVC == nil {
             LogManager.shared.log(

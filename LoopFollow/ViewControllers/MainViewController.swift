@@ -13,6 +13,7 @@ import ShareClient
 import UserNotifications
 import AVFAudio
 import CoreBluetooth
+import SwiftUI
 
 func IsNightscoutEnabled() -> Bool {
     return !ObservableUserDefaults.shared.url.value.isEmpty
@@ -340,14 +341,14 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     }
     
     private func setupSwipeUpToStatus() {
-        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUpToTreatmentLog(_:)))
+        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUpToStatsView(_:)))
         swipeUp.direction = .up
         swipeUp.numberOfTouchesRequired = 1
         swipeUp.cancelsTouchesInView = false // don't steal taps from buttons/steppers
         view.addGestureRecognizer(swipeUp)
     }
 
-    @objc private func handleSwipeUpToTreatmentLog(_ gesture: UISwipeGestureRecognizer) {
+    @objc private func handleSwipeUpToStatsView(_ gesture: UISwipeGestureRecognizer) {
         guard gesture.state == .ended else { return }
         // Require swipe to start in the lower quarter to minimize accidental triggers
         let startPoint = gesture.location(in: view)
@@ -361,18 +362,20 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
 
-        // Instantiate your TreatmentsTableView.
-        let treatmentsVC = TreatmentsTableView()
-        
-        // Wrap it in a UINavigationController for the navigation bar and Klar button.
-        let navController = UINavigationController(rootViewController: treatmentsVC)
-        navController.modalPresentationStyle = .formSheet
-        
-        if UserDefaultsRepository.forceDarkMode.value {
-            navController.overrideUserInterfaceStyle = .dark
+        // Build AggregatedStatsView with this MainViewController as context
+        let viewModel = AggregatedStatsViewModel(mainViewController: self)
+        let statsRootView = NavigationView {
+            AggregatedStatsView(viewModel: viewModel)
         }
-        
-        present(navController, animated: true, completion: nil)
+
+        let hostingController = UIHostingController(rootView: statsRootView)
+        hostingController.modalPresentationStyle = .formSheet
+
+        if UserDefaultsRepository.forceDarkMode.value {
+            hostingController.overrideUserInterfaceStyle = .dark
+        }
+
+        present(hostingController, animated: true, completion: nil)
     }
 
     
