@@ -42,11 +42,11 @@ struct GRIView: View {
                 .allowsHitTesting(false)
                 .clipped()
                 HStack {
-                    Text("Hypoglykemikomponent (%)")
+                    Text("Hyperglykemi >10 mmol/L (%)")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("Hyperglykemikomponent (%)")
+                    Text("Hypoglykemi <3.9 mmol/L (%)")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }

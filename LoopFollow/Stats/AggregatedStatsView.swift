@@ -19,58 +19,65 @@ struct AggregatedStatsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                VStack(spacing: 8) {
-                    Text("Statistik")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-
-                    Picker("Period", selection: $selectedPeriod) {
-                        Text("1 dag").tag(1)
-                        Text("14 dagar").tag(14)
-                        Text("30 dagar").tag(30)
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .onChange(of: selectedPeriod) { newValue in
-                        isLoadingData = true
-                        viewModel.updatePeriod(newValue) {
-                            isLoadingData = false
-                        }
-                    }
+        VStack(spacing: 0) {
+            // Fixed segment picker header
+            VStack(spacing: 8) {
+                Picker("Period", selection: $selectedPeriod) {
+                    Text("1 dag").tag(1)
+                    Text("14 dagar").tag(14)
+                    Text("30 dagar").tag(30)
                 }
-                .padding(.top)
-
-                if isLoadingData {
-                    ProgressView("Laddar data...")
-                        .padding()
-                }
-
-                StatsGridView(
-                    simpleStats: viewModel.simpleStats,
-                    showGMI: $showGMI,
-                    showStdDev: $showStdDev
-                )
+                .pickerStyle(.segmented)
                 .padding(.horizontal)
-
-                AGPView(viewModel: viewModel.agpStats)
-                    .padding(.horizontal)
-
-                TIRView(viewModel: viewModel.tirStats)
-                    .padding(.horizontal)
-
-                GRIView(viewModel: viewModel.griStats)
-                    .padding(.horizontal)
+                .padding(.top, 8)
+                .onChange(of: selectedPeriod) { newValue in
+                    isLoadingData = true
+                    viewModel.updatePeriod(newValue) {
+                        isLoadingData = false
+                    }
+                }
             }
-            .padding(.bottom)
-            .frame(maxWidth: .infinity)
+            .background(Color(.systemBackground))
+            .zIndex(1)
+
+            ScrollView {
+                VStack(spacing: 20) {
+                    if isLoadingData {
+                        ProgressView("Laddar data...")
+                            .padding()
+                    }
+
+                    StatsGridView(
+                        simpleStats: viewModel.simpleStats,
+                        showGMI: $showGMI,
+                        showStdDev: $showStdDev
+                    )
+                    .padding(.horizontal)
+
+                    AGPView(viewModel: viewModel.agpStats)
+                        .padding(.horizontal)
+
+                    TIRView(viewModel: viewModel.tirStats)
+                        .padding(.horizontal)
+
+                    GRIView(viewModel: viewModel.griStats)
+                        .padding(.horizontal)
+                }
+                .padding(.bottom)
+                .frame(maxWidth: .infinity)
+            }
         }
+        .navigationTitle("Statistik")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Ladda om") {
                     viewModel.calculateStats()
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Klar") {
+                    dismiss()
                 }
             }
         }
@@ -132,75 +139,32 @@ struct BasalComparisonCard: View {
     let actual: Double?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Basaljämförelse")
-                .font(.callout)
-                .fontWeight(.medium)
-                .foregroundColor(.secondary)
-
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Profilbasal")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    
-
-                    Text("Levererad basal")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-
-                HStack {
-                    VStack(spacing: 2) {
-                        Text(formatBasal(programmed))
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.secondary)
-                        Text("E")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    
-                    VStack(spacing: 2) {
-                        Text(formatBasal(actual))
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        Text("E")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                }
-
-                if let prog = programmed, let act = actual, prog > 0 {
-                    let diff = act - prog
-                    let percentDiff = (diff / prog) * 100
-                    HStack {
-                        Spacer()
-                        Text(String(format: "%.2f E (%.1f%%)", diff, percentDiff))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                    .padding(.top, 4)
+        VStack(alignment: .leading) {
+            
+            HStack(spacing: 16) {
+                StatCard(
+                    title: "Profilbasal",
+                    value: formatBasal(programmed),
+                    unit: "E",
+                    color: .secondary
+                )
+            
+            StatCard(
+                title: "Levererad basal",
+                value: formatBasal(actual),
+                unit: "E",
+                color: .blue
+            )
+        }
+ 
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-    }
 
     private func formatBasal(_ value: Double?) -> String {
         guard let value = value else { return "---" }
         return String(format: "%.2f", value)
     }
-}
 
 struct StatsGridView: View {
     @ObservedObject var simpleStats: SimpleStatsViewModel
@@ -356,4 +320,3 @@ struct StatsGridView: View {
         return String(format: "%.1f", value)
     }
 }
-
