@@ -98,8 +98,9 @@ class AlarmSound {
         do {
             self.audioPlayer = try AVAudioPlayer(contentsOf: self.soundURL)
             self.audioPlayer!.delegate = self.audioPlayerDelegate
-            
-            try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))
+            /*
+            try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))*/
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
             try AVAudioSession.sharedInstance().setActive(true)
             
             self.audioPlayer?.numberOfLoops = 0
@@ -134,8 +135,8 @@ class AlarmSound {
         do {
             self.audioPlayer = try AVAudioPlayer(contentsOf: self.soundURL)
             self.audioPlayer!.delegate = self.audioPlayerDelegate
-            
-            try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
+            /*try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))*/
             try AVAudioSession.sharedInstance().setActive(true)
             
             // Play endless loops
@@ -235,8 +236,10 @@ class AlarmSound {
 
     fileprivate static func enableAudio() {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
+            /*try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)*/
             try AVAudioSession.sharedInstance().setActive(true)
+            LogManager.shared.log(category: .alarm, message: "Audio session configured for alarm playback")
         } catch {
             LogManager.shared.log(category: .general, message: "Enable audio error: \(error)")
         }

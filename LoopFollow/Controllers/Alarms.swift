@@ -156,7 +156,7 @@ extension MainViewController {
                 if UserDefaultsRepository.alertTemporaryBelow.value {
                     if Float(currentBG) < UserDefaultsRepository.alertTemporaryBG.value {
                         UserDefaultsRepository.alertTemporaryActive.value = false
-                        AlarmSound.whichAlarm = "1️⃣ Tillfällig varning"
+                        AlarmSound.whichAlarm = "⚠️ Tillfällig varning"
                         if UserDefaultsRepository.alertTemporaryBGRepeat.value { numLoops = -1 }
                         triggerAlarm(sound: UserDefaultsRepository.alertTemporarySound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, latestIOB: iobString, latestCOB: cobString)
                         return
@@ -164,7 +164,7 @@ extension MainViewController {
                 } else{
                     if Float(currentBG) > UserDefaultsRepository.alertTemporaryBG.value {
                         tabBarController?.selectedIndex = 2
-                        AlarmSound.whichAlarm = "1️⃣ Tillfällig varning"
+                        AlarmSound.whichAlarm = "⚠️ Tillfällig varning"
                         if UserDefaultsRepository.alertTemporaryBGRepeat.value { numLoops = -1 }
                         triggerAlarm(sound: UserDefaultsRepository.alertTemporarySound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, latestIOB: iobString, latestCOB: cobString)
                         return
