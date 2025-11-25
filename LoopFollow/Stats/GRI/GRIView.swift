@@ -10,7 +10,8 @@ struct GRIView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("GRI (Glukos Riskindex)")
-                    .font(.caption)
+                    .font(.callout)
+                    .fontWeight(.medium)
                     .foregroundColor(.secondary)
                 Spacer()
                 if let gri = viewModel.gri {
@@ -50,12 +51,12 @@ struct GRIView: View {
                         .foregroundColor(.secondary)
                 }
 
-                HStack(spacing: 12) {
-                    ZoneLegendItem(color: .green, label: "A (0-20)")
-                    ZoneLegendItem(color: .yellow, label: "B (21-40)")
-                    ZoneLegendItem(color: .orange, label: "C (41-60)")
-                    ZoneLegendItem(color: .red, label: "D (61-80)")
-                    ZoneLegendItem(color: .red.opacity(0.8), label: "E (81-100)")
+                HStack(spacing: 8) {
+                    ZoneLegendItem(color: .green, label: "A 0-20")
+                    ZoneLegendItem(color: .yellow, label: "B 21-40")
+                    ZoneLegendItem(color: .orange, label: "C 41-60")
+                    ZoneLegendItem(color: .red.opacity(0.7), label: "D 61-80")
+                    ZoneLegendItem(color: .red, label: "E 81-100")
                 }
                 .font(.caption2)
             } else {

@@ -76,7 +76,7 @@ struct AGPGraphView: UIViewRepresentable {
         p5DataSet.drawCirclesEnabled = false
         p5DataSet.drawValuesEnabled = false
         p5DataSet.drawFilledEnabled = false
-        p5DataSet.mode = .linear
+        p5DataSet.mode = .cubicBezier
 
         let p25DataSet = LineChartDataSet(entries: sortedP25, label: "25th")
         p25DataSet.colors = [NSUIColor.systemBlue.withAlphaComponent(0.7)]
@@ -84,7 +84,7 @@ struct AGPGraphView: UIViewRepresentable {
         p25DataSet.drawCirclesEnabled = false
         p25DataSet.drawValuesEnabled = false
         p25DataSet.drawFilledEnabled = false
-        p25DataSet.mode = .linear
+        p25DataSet.mode = .cubicBezier
 
         let p50DataSet = LineChartDataSet(entries: sortedP50, label: "Median")
         p50DataSet.colors = [NSUIColor.systemBlue]
@@ -92,7 +92,7 @@ struct AGPGraphView: UIViewRepresentable {
         p50DataSet.drawCirclesEnabled = false
         p50DataSet.drawValuesEnabled = false
         p50DataSet.drawFilledEnabled = false
-        p50DataSet.mode = .linear
+        p50DataSet.mode = .cubicBezier
 
         let p75DataSet = LineChartDataSet(entries: sortedP75, label: "75th")
         p75DataSet.colors = [NSUIColor.systemBlue.withAlphaComponent(0.7)]
@@ -100,7 +100,7 @@ struct AGPGraphView: UIViewRepresentable {
         p75DataSet.drawCirclesEnabled = false
         p75DataSet.drawValuesEnabled = false
         p75DataSet.drawFilledEnabled = false
-        p75DataSet.mode = .linear
+        p75DataSet.mode = .cubicBezier
 
         let p95DataSet = LineChartDataSet(entries: sortedP95, label: "95th")
         p95DataSet.colors = [NSUIColor.systemGray.withAlphaComponent(0.6)]
@@ -108,7 +108,7 @@ struct AGPGraphView: UIViewRepresentable {
         p95DataSet.drawCirclesEnabled = false
         p95DataSet.drawValuesEnabled = false
         p95DataSet.drawFilledEnabled = false
-        p95DataSet.mode = .linear
+        p95DataSet.mode = .cubicBezier
         let maxY = max(sortedP95.map { $0.y }.max() ?? 300, 300) + 10
         let hourMinY = min(sortedP5.map { $0.y }.min() ?? 0, 0) - 10
 
@@ -137,7 +137,7 @@ struct AGPGraphView: UIViewRepresentable {
         }
 
         let hourLinesDataSet = LineChartDataSet(entries: hourLines, label: "Hours")
-        hourLinesDataSet.colors = [NSUIColor.label.withAlphaComponent(0.3)]
+        hourLinesDataSet.colors = [NSUIColor.label.withAlphaComponent(0.15)]
         hourLinesDataSet.lineWidth = 0.5
         hourLinesDataSet.drawCirclesEnabled = false
         hourLinesDataSet.drawValuesEnabled = false

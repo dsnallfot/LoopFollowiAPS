@@ -132,9 +132,10 @@ struct BasalComparisonCard: View {
     let actual: Double?
 
     var body: some View {
-        VStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Basaljämförelse")
-                .font(.subheadline)
+                .font(.callout)
+                .fontWeight(.medium)
                 .foregroundColor(.secondary)
 
             VStack(spacing: 8) {
@@ -147,7 +148,7 @@ struct BasalComparisonCard: View {
 
                     Text("Levererad basal")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.blue)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
 

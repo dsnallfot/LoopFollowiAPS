@@ -10,7 +10,8 @@ struct AGPView: View {
         if !viewModel.agpData.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Ambulatorisk Glukosprofil (AGP)")
-                    .font(.caption)
+                    .font(.callout)
+                    .fontWeight(.medium)
                     .foregroundColor(.secondary)
 
                 AGPGraphView(agpData: viewModel.agpData)

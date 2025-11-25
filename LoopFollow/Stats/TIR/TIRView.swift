@@ -14,12 +14,14 @@ struct TIRView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text(viewModel.showTITR ? "Tid inom tight målområde" : "Tid inom målområde")
-                            .font(.caption)
+                            .font(.callout)
+                            .fontWeight(.medium)
                             .foregroundColor(.secondary)
                         Spacer()
                         if let inRangeValue = viewModel.tirData.first(where: { $0.period == .average })?.inRange {
                             Text(formatRange(inRangeValue))
-                                .font(.caption)
+                                .font(.callout)
+                                .fontWeight(.medium)
                                 .foregroundColor(.secondary)
                         }
                     }
