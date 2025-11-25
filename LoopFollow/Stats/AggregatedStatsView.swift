@@ -263,6 +263,7 @@ struct StatsGridView: View {
                 )
             }
         }
+        .padding(.top, 12)
     }
 
     private func formatGMI(_ value: Double?) -> String {
