@@ -23,7 +23,8 @@ struct AggregatedStatsView: View {
             // Fixed segment picker header
             VStack(spacing: 8) {
                 Picker("Period", selection: $selectedPeriod) {
-                    Text("1 dag").tag(1)
+                    Text("Idag").tag(0)
+                    Text("24 h").tag(1)
                     Text("14 dagar").tag(14)
                     Text("30 dagar").tag(30)
                 }
@@ -145,14 +146,14 @@ struct BasalComparisonCard: View {
                 StatCard(
                     title: "Profilbasal",
                     value: formatBasal(programmed),
-                    unit: "E",
+                    unit: "E/dag",
                     color: .secondary
                 )
             
             StatCard(
                 title: "Levererad basal",
                 value: formatBasal(actual),
-                unit: "E",
+                unit: "E/dag",
                 color: .blue
             )
         }

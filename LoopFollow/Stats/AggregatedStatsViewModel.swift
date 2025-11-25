@@ -28,7 +28,15 @@ class AggregatedStatsViewModel: ObservableObject {
     }
 
     func updatePeriod(_ days: Int, completion: @escaping () -> Void = {}) {
-        dataService.daysToAnalyze = days
+        if days == 0 {
+            // "Idag" – use only data from midnight to now, but fetch 1 dag bakåt om det behövs
+            dataService.isTodayOnly = true
+            dataService.daysToAnalyze = 1
+        } else {
+            dataService.isTodayOnly = false
+            dataService.daysToAnalyze = days
+        }
+
         dataService.ensureDataAvailable(
             onProgress: {},
             completion: {

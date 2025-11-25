@@ -7,6 +7,7 @@ class StatsDataService {
     weak var mainViewController: MainViewController?
 
     var daysToAnalyze: Int = 14
+    var isTodayOnly: Bool = false
     private let dataFetcher: StatsDataFetcher
 
     init(mainViewController: MainViewController?) {
@@ -20,8 +21,14 @@ class StatsDataService {
             return
         }
 
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
-        let now = Date().timeIntervalSince1970
+        let nowDate = Date()
+        let now = nowDate.timeIntervalSince1970
+        let cutoffTime: TimeInterval
+        if isTodayOnly {
+            cutoffTime = Calendar.current.startOfDay(for: nowDate).timeIntervalSince1970
+        } else {
+            cutoffTime = now - (Double(daysToAnalyze) * 24 * 60 * 60)
+        }
 
         let oldestBG = mainVC.statsBGData.filter { $0.date >= cutoffTime && $0.date <= now }.min(by: { $0.date < $1.date })?.date
         let oldestBolus = mainVC.statsBolusData.filter { $0.date >= cutoffTime && $0.date <= now }.min(by: { $0.date < $1.date })?.date
@@ -72,32 +79,62 @@ class StatsDataService {
 
     func getBGData() -> [ShareGlucoseData] {
         guard let mainVC = mainViewController else { return [] }
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
+        let nowDate = Date()
+        let cutoffTime: TimeInterval
+        if isTodayOnly {
+            cutoffTime = Calendar.current.startOfDay(for: nowDate).timeIntervalSince1970
+        } else {
+            cutoffTime = nowDate.timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
+        }
         return mainVC.statsBGData.filter { $0.date >= cutoffTime }
     }
 
     func getBolusData() -> [MainViewController.bolusGraphStruct] {
         guard let mainVC = mainViewController else { return [] }
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
+        let nowDate = Date()
+        let cutoffTime: TimeInterval
+        if isTodayOnly {
+            cutoffTime = Calendar.current.startOfDay(for: nowDate).timeIntervalSince1970
+        } else {
+            cutoffTime = nowDate.timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
+        }
         return mainVC.statsBolusData.filter { $0.date >= cutoffTime }
     }
 
     func getSMBData() -> [MainViewController.bolusGraphStruct] {
         guard let mainVC = mainViewController else { return [] }
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
+        let nowDate = Date()
+        let cutoffTime: TimeInterval
+        if isTodayOnly {
+            cutoffTime = Calendar.current.startOfDay(for: nowDate).timeIntervalSince1970
+        } else {
+            cutoffTime = nowDate.timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
+        }
         return mainVC.statsSMBData.filter { $0.date >= cutoffTime }
     }
 
     func getCarbData() -> [MainViewController.carbGraphStruct] {
         guard let mainVC = mainViewController else { return [] }
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
-        let now = Date().timeIntervalSince1970
+        let nowDate = Date()
+        let now = nowDate.timeIntervalSince1970
+        let cutoffTime: TimeInterval
+        if isTodayOnly {
+            cutoffTime = Calendar.current.startOfDay(for: nowDate).timeIntervalSince1970
+        } else {
+            cutoffTime = now - (Double(daysToAnalyze) * 24 * 60 * 60)
+        }
         return mainVC.statsCarbData.filter { $0.date >= cutoffTime && $0.date <= now }
     }
 
     func getBasalData() -> [MainViewController.basalGraphStruct] {
         guard let mainVC = mainViewController else { return [] }
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
+        let nowDate = Date()
+        let cutoffTime: TimeInterval
+        if isTodayOnly {
+            cutoffTime = Calendar.current.startOfDay(for: nowDate).timeIntervalSince1970
+        } else {
+            cutoffTime = nowDate.timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
+        }
         return mainVC.statsBasalData.filter { $0.date >= cutoffTime }
     }
 
