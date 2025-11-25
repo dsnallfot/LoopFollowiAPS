@@ -25,12 +25,14 @@ struct AggregatedStatsView: View {
                 Picker("Period", selection: $selectedPeriod) {
                     Text("Idag").tag(0)
                     Text("24 h").tag(1)
+                    Text("7 dagar").tag(7)
                     Text("14 dagar").tag(14)
                     Text("30 dagar").tag(30)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
                 .padding(.top, 8)
+                .padding(.bottom, 8)
                 .onChange(of: selectedPeriod) { newValue in
                     isLoadingData = true
                     viewModel.updatePeriod(newValue) {
