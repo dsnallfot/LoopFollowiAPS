@@ -68,7 +68,7 @@ struct GRIView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color(.systemGray5))
         .cornerRadius(12)
     }
 
