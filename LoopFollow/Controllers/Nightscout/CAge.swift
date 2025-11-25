@@ -8,9 +8,14 @@
 
 import Foundation
 
+fileprivate var isCageFetchInProgress = false
+
 extension MainViewController {
     // NS Cage Web Call
     func webLoadNSCage() {
+        if isCageFetchInProgress { return }
+        isCageFetchInProgress = true
+
         let currentTimeString = dateTimeUtils.getDateTimeString()
 
         let parameters: [String: String] = [
@@ -23,8 +28,10 @@ extension MainViewController {
             switch result {
             case .success(let data):
                 self.updateCage(data: data)
+                isCageFetchInProgress = false
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "webLoadNSCage, error: \(error.localizedDescription)")
+                isCageFetchInProgress = false
             }
         }
     }

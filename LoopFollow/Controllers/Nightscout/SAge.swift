@@ -1,8 +1,13 @@
 import Foundation
 
+fileprivate var isSageFetchInProgress = false
+
 extension MainViewController {
     // NS Sage Web Call
     func webLoadNSSage() {
+        if isSageFetchInProgress { return }
+        isSageFetchInProgress = true
+
         let lastDateString = dateTimeUtils.getDateTimeString(addingDays: -60)
         let currentTimeString = dateTimeUtils.getDateTimeString()
 
@@ -19,8 +24,10 @@ extension MainViewController {
                 DispatchQueue.main.async {
                     self.updateSage(data: data)
                 }
+                isSageFetchInProgress = false
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "webLoadNSSage, failed to fetch data: \(error.localizedDescription)")
+                isSageFetchInProgress = false
             }
         }
     }

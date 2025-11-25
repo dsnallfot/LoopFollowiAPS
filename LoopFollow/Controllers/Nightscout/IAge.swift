@@ -7,9 +7,13 @@
 //
 
 import Foundation
+fileprivate var isIageFetchInProgress = false
 extension MainViewController {
     // NS Iage Web Call
     func webLoadNSIage() {
+        if isIageFetchInProgress { return }
+        isIageFetchInProgress = true
+
         let lastDateString = dateTimeUtils.getDateTimeString(addingDays: -60)
         let currentTimeString = dateTimeUtils.getDateTimeString()
 
@@ -26,8 +30,10 @@ extension MainViewController {
                 DispatchQueue.main.async {
                     self.updateIage(data: data)
                 }
+                isIageFetchInProgress = false
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "webLoadNSIage, failed to fetch data: \(error.localizedDescription)")
+                isIageFetchInProgress = false
             }
         }
     }

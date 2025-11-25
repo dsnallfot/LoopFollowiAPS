@@ -61,7 +61,85 @@ class NightscoutUtils {
             }
         }
     }
+    
+    static func executeRequest<T: Decodable>(
+        eventType: EventType,
+        parameters: [String: String],
+        completion: @escaping (Result<T, Error>) -> Void
+    ) {
+        let baseURL = ObservableUserDefaults.shared.url.value
+        let token = UserDefaultsRepository.token.value
 
+        guard let url = NightscoutUtils.constructURL(baseURL: baseURL,
+                                                     token: token,
+                                                     endpoint: eventType.endpoint,
+                                                     parameters: parameters) else {
+            DispatchQueue.main.async {
+                completion(.failure(NightscoutError.invalidURL))
+            }
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+
+        // 👇 Viktigt: snällare nätbeteende i dålig täckning
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true             // vänta in nät istället för att faila direkt
+        config.networkServiceType = .responsiveData    // normal bakgrundsdata
+        let session = URLSession(configuration: config)
+
+        let task = session.dataTask(with: request) { data, response, error in
+            if let error = error {
+                // Explicit log for network-related failures
+                if let urlError = error as? URLError {
+                    LogManager.shared.log(
+                        category: .nightscout,
+                        message: "🌐 Nightscout executeRequest network error (\(urlError.code)): \(urlError.localizedDescription)",
+                        limitIdentifier: "Nightscout executeRequest network error"
+                    )
+                } else {
+                    LogManager.shared.log(
+                        category: .nightscout,
+                        message: "🌐 Nightscout executeRequest error: \(error.localizedDescription)",
+                        limitIdentifier: "Nightscout executeRequest generic error"
+                    )
+                }
+
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+                return
+            }
+
+            guard let data = data else {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "🌐 Nightscout executeRequest failed: no data received (possible network issue)",
+                    limitIdentifier: "Nightscout executeRequest no data"
+                )
+                DispatchQueue.main.async {
+                    completion(.failure(NightscoutError.networkError))
+                }
+                return
+            }
+
+            let decoder = JSONDecoder()
+            do {
+                let decodedObject = try decoder.decode(T.self, from: data)
+                DispatchQueue.main.async {
+                    completion(.success(decodedObject))
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+            }
+        }
+        task.resume()
+    }
+    
+/* SPARAR GAMMAL KOD NEDANFÖR UNDER TEST AV NY KOD
     static func executeRequest<T: Decodable>(eventType: EventType, parameters: [String: String], completion: @escaping (Result<T, Error>) -> Void) {
         let baseURL = ObservableUserDefaults.shared.url.value
         let token = UserDefaultsRepository.token.value
@@ -92,40 +170,74 @@ class NightscoutUtils {
         }
         task.resume()
     }
-
+*/
 
     static func executeDynamicRequest(eventType: EventType, parameters: [String: String], completion: @escaping (Result<Any, Error>) -> Void) {
         let baseURL = ObservableUserDefaults.shared.url.value
         let token = UserDefaultsRepository.token.value
 
-        guard let url = NightscoutUtils.constructURL(baseURL: baseURL, token: token, endpoint: eventType.endpoint, parameters: parameters) else {
-            completion(.failure(NSError(domain: "NightscoutUtils", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to construct URL"])))
+        guard let url = NightscoutUtils.constructURL(baseURL: baseURL,
+                                                     token: token,
+                                                     endpoint: eventType.endpoint,
+                                                     parameters: parameters) else {
+            DispatchQueue.main.async {
+                completion(.failure(NightscoutError.invalidURL))
+            }
             return
         }
 
         var request = URLRequest(url: url)
-        request.cachePolicy = URLRequest.CachePolicy.reloadIgnoringLocalCacheData
+        request.cachePolicy = .reloadIgnoringLocalCacheData
 
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data, error == nil else {
-                completion(.failure(error!))
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true
+        config.networkServiceType = .responsiveData
+        let session = URLSession(configuration: config)
+
+        let task = session.dataTask(with: request) { data, response, error in
+            if let error = error {
+                // Explicit log for network-related failures
+                if let urlError = error as? URLError {
+                    LogManager.shared.log(
+                        category: .nightscout,
+                        message: "🌐 Nightscout executeDynamicRequest network error (\(urlError.code)): \(urlError.localizedDescription)",
+                        limitIdentifier: "Nightscout executeDynamicRequest network error"
+                    )
+                } else {
+                    LogManager.shared.log(
+                        category: .nightscout,
+                        message: "🌐 Nightscout executeDynamicRequest error: \(error.localizedDescription)",
+                        limitIdentifier: "Nightscout executeDynamicRequest generic error"
+                    )
+                }
+
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+                return
+            }
+
+            guard let data = data else {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "🌐 Nightscout executeDynamicRequest failed: no data received (possible network issue)",
+                    limitIdentifier: "Nightscout executeDynamicRequest no data"
+                )
+                DispatchQueue.main.async {
+                    completion(.failure(NightscoutError.networkError))
+                }
                 return
             }
 
             do {
-                if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                    DispatchQueue.main.async {
-                        completion(.success(jsonObject))
-                    }
-                } else if let jsonArray = try JSONSerialization.jsonObject(with: data, options: []) as? [Any] {
-                    DispatchQueue.main.async {
-                        completion(.success(jsonArray))
-                    }
-                } else {
-                    completion(.failure(NSError(domain: "NightscoutUtils", code: -2, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON Structure"])))
+                let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+                DispatchQueue.main.async {
+                    completion(.success(jsonObject))
                 }
             } catch {
-                completion(.failure(error))
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
             }
         }
         task.resume()

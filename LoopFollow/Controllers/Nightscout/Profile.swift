@@ -7,15 +7,21 @@
 //
 
 import Foundation
+fileprivate var isProfileFetchInProgress = false
 extension MainViewController {
     // NS Profile Web Call
     func webLoadNSProfile() {
+        if isProfileFetchInProgress { return }
+        isProfileFetchInProgress = true
+
         NightscoutUtils.executeRequest(eventType: .profile, parameters: [:]) { (result: Result<NSProfile, Error>) in
             switch result {
             case .success(let profileData):
                 self.updateProfile(profileData: profileData)
+                isProfileFetchInProgress = false
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "webLoadNSProfile, error fetching profile data: \(error.localizedDescription)")
+                isProfileFetchInProgress = false
             }
         }
     }

@@ -9,6 +9,8 @@
 import Foundation
 import UIKit
 
+fileprivate var isBGFetchInProgress = false
+
 var sharedLatestBG: String = ""
 var sharedLatestDirection: String = ""
 var sharedLatestDelta: String = ""
@@ -16,6 +18,8 @@ var sharedLatestDelta: String = ""
 extension MainViewController {
     // Dex Share Web Call
     func webLoadDexShare() {
+        if isBGFetchInProgress { return }
+        isBGFetchInProgress = true
         // Dexcom Share only returns 24 hrs of data as of now
         // Requesting more just for consistency with NS
         let graphHours = 24 * UserDefaultsRepository.downloadDays.value
@@ -24,13 +28,13 @@ extension MainViewController {
             
             if let error = err {
                 LogManager.shared.log(category: .dexcom, message: "Error fetching Dexcom data: \(error.localizedDescription)", limitIdentifier: "Error fetching Dexcom data")
-                self.webLoadNSBGData()
+                self.webLoadNSBGData(fromDexFallback: true)
                 return
             }
             
             guard let data = result else {
                 LogManager.shared.log(category: .dexcom, message: "Received nil data from Dexcom", limitIdentifier: "Received nil data from Dexcom")
-                self.webLoadNSBGData()
+                self.webLoadNSBGData(fromDexFallback: true)
                 return
             }
             
@@ -39,23 +43,34 @@ extension MainViewController {
             let now = dateTimeUtils.getNowTimeIntervalUTC()
             if (latestDate + 330) < now && IsNightscoutEnabled() {
                 LogManager.shared.log(category: .dexcom, message: "Dexcom data is old, loading from NS instead", limitIdentifier: "Dexcom data is old, loading from NS instead")
-                self.webLoadNSBGData()
+                self.webLoadNSBGData(fromDexFallback: true)
                 return
             }
             
             // Dexcom only returns 24 hrs of data. If we need more, call NS.
             if graphHours > 24 && IsNightscoutEnabled() {
-                self.webLoadNSBGData(dexData: data)
+                self.webLoadNSBGData(dexData: data, fromDexFallback: true)
             } else {
+                // Dex-only success: clear in-progress flag here.
+                isBGFetchInProgress = false
                 self.ProcessDexBGData(data: data, sourceName: "Dexcom")
             }
         }
     }
     
     // NS BG Data Web call
-    func webLoadNSBGData(dexData: [ShareGlucoseData] = []) {
+    func webLoadNSBGData(dexData: [ShareGlucoseData] = [], fromDexFallback: Bool = false) {
         // This kicks it out in the instance where dexcom fails but they aren't using NS &&
+        if !fromDexFallback {
+            if isBGFetchInProgress { return }
+            isBGFetchInProgress = true
+        }
+
         if !IsNightscoutEnabled() {
+            // If we arrived here as a Dexcom fallback, release the in-progress flag
+            if fromDexFallback {
+                isBGFetchInProgress = false
+            }
             return
         }
         
@@ -103,9 +118,47 @@ extension MainViewController {
                         sourceName = "Dexcom"
                     }
                     // trigger the processor for the data after downloading.
+                    isBGFetchInProgress = false
                     self.ProcessDexBGData(data: nsData2, sourceName: sourceName)
                 }
             case .failure(let error):
+                LogManager.shared.log(category: .nightscout,
+                                      message: "Failed to fetch bg data: \(error)",
+                                      limitIdentifier: "Failed to fetch bg data")
+
+                // Bestäm retry-delay baserat på felet
+                let retryDelay: TimeInterval
+                if let urlError = error as? URLError {
+                    switch urlError.code {
+                    case .notConnectedToInternet,
+                         .networkConnectionLost,
+                         .timedOut:
+                        // Tydligt “tunnel-läge” / inget nät → ta det lugnt
+                        retryDelay = 60    // eller t.o.m. 120 om du vill vara ännu snällare
+                    default:
+                        // Annat fel (serverfel etc) → lite mer aggressiv retry är ok
+                        retryDelay = 15
+                    }
+                } else {
+                    retryDelay = 15
+                }
+
+                DispatchQueue.main.async {
+                    TaskScheduler.shared.rescheduleTask(
+                        id: .fetchBG,
+                        to: Date().addingTimeInterval(retryDelay)
+                    )
+                }
+
+                // om vi har Dexcom-data, använd den tills vidare
+                if !dexData.isEmpty {
+                    self.ProcessDexBGData(data: dexData, sourceName: "Dexcom")
+                }
+
+                isBGFetchInProgress = false
+                return
+            /* SPARAR GAMMAL KOD UNDER TEST NY KOD
+             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "Failed to fetch bg data: \(error)", limitIdentifier: "Failed to fetch bg data")
                 DispatchQueue.main.async {
                     TaskScheduler.shared.rescheduleTask(
@@ -117,7 +170,7 @@ extension MainViewController {
                 if !dexData.isEmpty {
                     self.ProcessDexBGData(data: dexData, sourceName: "Dexcom")
                 }
-                return
+                return*/
             }
         }
     }

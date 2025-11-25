@@ -7,11 +7,15 @@
 //
 
 import Foundation
+fileprivate var isTreatmentsFetchInProgress = false
 extension MainViewController {
     // NS Treatments Web Call
     // Downloads Basal, Bolus, Carbs, BG Check, Notes, Overrides
     func WebLoadNSTreatments() {
         if !UserDefaultsRepository.downloadTreatments.value { return }
+
+        if isTreatmentsFetchInProgress { return }
+        isTreatmentsFetchInProgress = true
         
         let startTimeString = dateTimeUtils.getDateTimeString(addingDays: -1 * UserDefaultsRepository.downloadDays.value)
         let currentTimeString = dateTimeUtils.getDateTimeString(addingHours: 6)
@@ -29,8 +33,10 @@ extension MainViewController {
                 } else {
                     LogManager.shared.log(category: .nightscout, message: "WebLoadNSTreatments, Unexpected data structure")
                 }
+                isTreatmentsFetchInProgress = false
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "WebLoadNSTreatments, error \(error.localizedDescription)")
+                isTreatmentsFetchInProgress = false
             }
         }
     }

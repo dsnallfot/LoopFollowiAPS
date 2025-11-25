@@ -10,9 +10,13 @@ import Foundation
 import UIKit
 import Charts
 
+fileprivate var isDeviceStatusFetchInProgress = false
+
 extension MainViewController {
     // NS Device Status Web Call
     func webLoadNSDeviceStatus() {
+        if isDeviceStatusFetchInProgress { return }
+        isDeviceStatusFetchInProgress = true
         let parameters: [String: String] = ["count": "1"]
         
         NightscoutUtils.executeDynamicRequest(eventType: .deviceStatus, parameters: parameters) { result in
@@ -20,22 +24,49 @@ extension MainViewController {
             case .success(let json):
                 if let jsonDeviceStatus = json as? [[String: AnyObject]] {
                     DispatchQueue.main.async {
+                        isDeviceStatusFetchInProgress = false
                         self.updateDeviceStatusDisplay(jsonDeviceStatus: jsonDeviceStatus)
                     }
                 } else {
-                    self.handleDeviceStatusError()
+                    self.handleDeviceStatusError(nil)
                 }
                 
-            case .failure:
-                self.handleDeviceStatusError()
+            case .failure(let error):
+                isDeviceStatusFetchInProgress = false
+                self.handleDeviceStatusError(error)
             }
         }
     }
-    
-    private func handleDeviceStatusError() {
-        LogManager.shared.log(category: .deviceStatus, message: "Device status fetch failed!", limitIdentifier: "Device status fetch failed!")
+
+    private func handleDeviceStatusError(_ error: Error? = nil) {
+        let retryDelay: TimeInterval
+
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut:
+                // Clearly offline / tunnel situation – back off more aggressively.
+                retryDelay = 60
+            default:
+                retryDelay = 20
+            }
+        } else {
+            retryDelay = 20
+        }
+
+        let message: String
+        if let error = error {
+            message = "Device status fetch failed: \(error.localizedDescription)"
+        } else {
+            message = "Device status fetch failed!"
+        }
+
+        LogManager.shared.log(category: .deviceStatus,
+                              message: message,
+                              limitIdentifier: "Device status fetch failed!")
+
         DispatchQueue.main.async {
-            TaskScheduler.shared.rescheduleTask(id: .deviceStatus, to: Date().addingTimeInterval(10))
+            TaskScheduler.shared.rescheduleTask(id: .deviceStatus,
+                                                to: Date().addingTimeInterval(retryDelay))
             //self.evaluateNotLooping()
         }
     }
