@@ -12,7 +12,7 @@ struct AggregatedStatsView: View {
     @State private var showFPU: Bool
     @State private var showSMB: Bool
     @State private var showProfileBasal: Bool
-    @State private var selectedPeriod = 14
+    @State private var selectedPeriod: Int
     @State private var isLoadingData = false
 
     init(viewModel: AggregatedStatsViewModel) {
@@ -22,6 +22,9 @@ struct AggregatedStatsView: View {
         _showFPU = State(initialValue: Storage.shared.showFPU.value)
         _showSMB = State(initialValue: Storage.shared.showSMB.value)
         _showProfileBasal = State(initialValue: Storage.shared.showProfileBasal.value)
+
+        let savedPeriod = UserDefaults.standard.object(forKey: "AggregatedStatsSelectedPeriod") as? Int ?? 14
+        _selectedPeriod = State(initialValue: savedPeriod)
     }
 
     var body: some View {
@@ -40,6 +43,7 @@ struct AggregatedStatsView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 8)
                 .onChange(of: selectedPeriod) { newValue in
+                    UserDefaults.standard.set(newValue, forKey: "AggregatedStatsSelectedPeriod")
                     isLoadingData = true
                     viewModel.updatePeriod(newValue) {
                         isLoadingData = false
