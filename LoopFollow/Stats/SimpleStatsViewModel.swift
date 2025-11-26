@@ -17,6 +17,8 @@ class SimpleStatsViewModel: ObservableObject {
     @Published var avgFPUCarbs: Double?
     @Published var avgManualBolus: Double?
     @Published var avgSMB: Double?
+    @Published var netMealBolus: Double?
+    @Published var realCarbRatio: Double?
 
     private let dataService: StatsDataService
 
@@ -125,7 +127,28 @@ class SimpleStatsViewModel: ObservableObject {
         }
 
         let basalProfile = dataService.getBasalProfile()
-        programmedBasal = calculateProgrammedBasalFromProfile(basalProfile: basalProfile)
+        if dataService.isTodayOnly {
+            // "Idag": använd teoretisk profilbasal från midnatt till nu
+            programmedBasal = calculateProgrammedBasalForToday(basalProfile: basalProfile)
+        } else {
+            // Övriga perioder: använd 24h-profilbasal (E/dygn)
+            programmedBasal = calculateProgrammedBasalFromProfile(basalProfile: basalProfile)
+        }
+
+        // Netto måltidsbolus = Total Daglig Dos − Profilbasal
+        if let tdd = totalDailyDose, let profile = programmedBasal {
+            let net = tdd - profile
+            netMealBolus = net > 0 ? net : 0
+        } else {
+            netMealBolus = nil
+        }
+
+        // Verklig insulinkvot (g/E) = Kolhydrater / Netto måltidsbolus
+        if let carbsPerDay = avgCarbs, let net = netMealBolus, net > 0 {
+            realCarbRatio = carbsPerDay / net
+        } else {
+            realCarbRatio = nil
+        }
     }
 
     private func calculateTotalBasal(basalData: [MainViewController.basalGraphStruct]) -> Double {
@@ -237,5 +260,94 @@ class SimpleStatsViewModel: ObservableObject {
         }
 
         return totalBasal
+    }
+    
+    // Profilbasal för "Idag": teoretisk basal från midnatt fram till nu
+    private func calculateProgrammedBasalForToday(
+        basalProfile: [MainViewController.basalProfileStruct]
+    ) -> Double {
+        guard !basalProfile.isEmpty else { return 0.0 }
+        let now = Date()
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        return scheduledBasal(from: startOfDay, to: now, basalProfile: basalProfile)
+    }
+
+    /// Integrera schemalagd profilbasal (enligt basalprofil) mellan två datum.
+    /// Baserad på MealAnalysisView.scheduledBasal(from:to:) men använder basalprofilen som skickas in.
+    private func scheduledBasal(
+        from start: Date,
+        to end: Date,
+        basalProfile: [MainViewController.basalProfileStruct]
+    ) -> Double {
+        let schedule = basalProfile  // array av (timeAsSeconds, value)
+        guard !schedule.isEmpty else { return 0 }
+        let calendar = Calendar.current
+        var total = 0.0
+        var current = start
+
+        func basalRate(at date: Date) -> Double {
+            let comps = calendar.dateComponents([.hour, .minute, .second], from: date)
+            let secondsOfDay = (comps.hour ?? 0) * 3600 + (comps.minute ?? 0) * 60 + (comps.second ?? 0)
+            // hitta sista entry vars timeAsSeconds ≤ secondsOfDay
+            var rate = schedule.last!.value
+            for entry in schedule {
+                if Int(entry.timeAsSeconds) <= secondsOfDay {
+                    rate = entry.value
+                } else {
+                    break
+                }
+            }
+            return rate
+        }
+
+        func nextChange(after date: Date) -> Date {
+            // Bygg DateComponents (hour, minute, second) för alla schema-brytningar
+            let breakpoints: [DateComponents] = schedule.map { entry in
+                let totalSeconds = Int(entry.timeAsSeconds)
+                let h = totalSeconds / 3600
+                let m = (totalSeconds % 3600) / 60
+                let s = totalSeconds % 60
+                var dc = DateComponents()
+                dc.hour = h
+                dc.minute = m
+                dc.second = s
+                return dc
+            }
+            var candidate: Date? = nil
+            for dc in breakpoints {
+                if let d = calendar.nextDate(
+                    after: date,
+                    matching: dc,
+                    matchingPolicy: .nextTime,
+                    repeatedTimePolicy: .last,
+                    direction: .forward
+                ) {
+                    if d > date {
+                        if candidate == nil || d < candidate! {
+                            candidate = d
+                        }
+                    }
+                }
+            }
+            // Om inget hittades (bör inte hända), flytta en sekund framåt för att undvika loop
+            return candidate ?? calendar.date(byAdding: .second, value: 1, to: date)!
+        }
+
+        while current < end {
+            let rate = basalRate(at: current)
+            let next = min(end, nextChange(after: current))
+
+            if next <= current {
+                let bumped = calendar.date(byAdding: .second, value: 1, to: current)!
+                if bumped >= end { break }
+                current = bumped
+                continue
+            }
+
+            let hours = next.timeIntervalSince(current) / 3600.0
+            total += rate * hours
+            current = next
+        }
+        return max(total, 0)
     }
 }

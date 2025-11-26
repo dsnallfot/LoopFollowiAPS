@@ -62,7 +62,8 @@ struct AggregatedStatsView: View {
                         showStdDev: $showStdDev,
                         showFPU: $showFPU,
                         showSMB: $showSMB,
-                        showProfileBasal: $showProfileBasal
+                        showProfileBasal: $showProfileBasal,
+                        isTodayOnly: selectedPeriod == 0
                     )
                     .padding(.horizontal)
 
@@ -157,6 +158,7 @@ struct StatsGridView: View {
     @Binding var showFPU: Bool
     @Binding var showSMB: Bool
     @Binding var showProfileBasal: Bool
+    let isTodayOnly: Bool
 
     private var hasInsulinData: Bool {
         simpleStats.totalDailyDose != nil || simpleStats.avgBolus != nil || simpleStats.actualBasal != nil
@@ -214,7 +216,7 @@ struct StatsGridView: View {
                         StatCard(
                             title: showFPU ? "FPU" : "Kolhydrater",
                             value: formatCarbs(showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs),
-                            unit: "g/dag",
+                            unit: isTodayOnly ? "g" : "g/dag",
                             color: showFPU ? .brown : .orange,
                             isInteractive: true
                         )
@@ -226,24 +228,24 @@ struct StatsGridView: View {
                 }
             }
 
-                HStack(spacing: 16) {
-                    if hasInsulinData {
-                        StatCard(
-                            title: "Total Daglig Dos",
-                            value: formatInsulin(simpleStats.totalDailyDose),
-                            unit: "E",
-                            color: .blue
-                        )
-                    }
-                    if hasInsulinData {
+            HStack(spacing: 16) {
+                if hasInsulinData {
+                    StatCard(
+                        title: isTodayOnly ? "Insulin totalt idag" : "Total Daglig Dos",
+                        value: formatInsulin(simpleStats.totalDailyDose),
+                        unit: isTodayOnly ? "E" : "E/dag",
+                        color: .blue
+                    )
+                }
+                if hasInsulinData {
                         StatCard(
                             title: "Total Bolus",
                             value: formatInsulin(simpleStats.avgBolus),
-                            unit: "E/dag",
-                            color: .blue
+                            unit: isTodayOnly ? "E" : "E/dag",
+                            color: .blue,
                         )
-                    }
                 }
+            }
             
             if hasInsulinData {
                 HStack(spacing: 16) {
@@ -254,7 +256,7 @@ struct StatsGridView: View {
                         StatCard(
                             title: showProfileBasal ? "Profilbasal" : "Levererad basal",
                             value: formatBasal(showProfileBasal ? simpleStats.programmedBasal : simpleStats.actualBasal),
-                            unit: "E/dag",
+                            unit: isTodayOnly ? "E" : "E/dag",
                             color: showProfileBasal ? .gray : .blue,
                             isInteractive: true
                         )
@@ -268,12 +270,28 @@ struct StatsGridView: View {
                         StatCard(
                             title: showSMB ? "SMB" : "Manuell bolus",
                             value: formatInsulin(showSMB ? simpleStats.avgSMB : simpleStats.avgManualBolus),
-                            unit: "E/dag",
+                            unit: isTodayOnly ? "E" : "E/dag",
                             color: showSMB ? .cyan : .blue,
                             isInteractive: true
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                }
+            }
+            if hasInsulinData && hasCarbData {
+                HStack(spacing: 16) {
+                    StatCard(
+                        title: "Verklig insulinkvot",
+                        value: formatCarbRatio(simpleStats.realCarbRatio),
+                        unit: "g/E",
+                        color: .primary
+                    )
+                    StatCard(
+                        title: "Netto måltidsbolus",
+                        value: formatInsulin(simpleStats.netMealBolus),
+                        unit: isTodayOnly ? "E" : "E/dag",
+                        color: .blue,
+                    )
                 }
             }
         }
@@ -340,5 +358,9 @@ struct StatsGridView: View {
     private func formatBasal(_ value: Double?) -> String {
         guard let value = value else { return "---" }
         return String(format: "%.2f", value)
+    }
+    private func formatCarbRatio(_ value: Double?) -> String {
+        guard let value = value else { return "---" }
+        return String(format: "%.1f", value)
     }
 }
