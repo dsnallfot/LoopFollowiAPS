@@ -187,7 +187,7 @@ struct StatsGridView: View {
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
-
+                
                 StatCard(
                     title: "Medel glukos",
                     value: formatGlucose(simpleStats.avgGlucose),
@@ -195,7 +195,7 @@ struct StatsGridView: View {
                     color: .primary
                 )
             }
-
+            
             HStack(spacing: 16) {
                 Button(action: {
                     showStdDev.toggle()
@@ -210,43 +210,57 @@ struct StatsGridView: View {
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
-
+                
                 if hasCarbData {
-                    Button(action: {
-                        showFPU.toggle()
-                        Storage.shared.showFPU.value = showFPU
-                    }) {
-                        StatCard(
-                            title: showFPU ? "FPU" : "Kolhydrater",
-                            value: formatCarbs(showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs),
-                            unit: isTodayOnly ? "g" : "g/dag",
-                            color: showFPU ? .brown : .orange,
-                            isInteractive: true
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
+                    StatCard(
+                        title: "Verklig insulinkvot",
+                        value: formatCarbRatio(simpleStats.realCarbRatio),
+                        unit: "g/E",
+                        color: .mint
+                    )
                 } else {
                     Color.clear
                         .frame(maxWidth: .infinity)
                 }
             }
-
+            if hasInsulinData && hasCarbData {
             HStack(spacing: 16) {
-                if hasInsulinData {
+                StatCard(
+                    title: isTodayOnly ? "Insulin totalt idag" : "Total Daglig Dos",
+                    value: formatInsulin(simpleStats.totalDailyDose),
+                    unit: isTodayOnly ? "E" : "E/dag",
+                    color: .blue
+                )
+                Button(action: {
+                    showFPU.toggle()
+                    Storage.shared.showFPU.value = showFPU
+                }) {
                     StatCard(
-                        title: isTodayOnly ? "Insulin totalt idag" : "Total Daglig Dos",
-                        value: formatInsulin(simpleStats.totalDailyDose),
-                        unit: isTodayOnly ? "E" : "E/dag",
-                        color: .blue
+                        title: showFPU ? "FPU" : "Kolhydrater",
+                        value: formatCarbs(showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs),
+                        unit: isTodayOnly ? "g" : "g/dag",
+                        color: showFPU ? .brown : .orange,
+                        isInteractive: true
                     )
+                    .buttonStyle(PlainButtonStyle())
                 }
-                if hasInsulinData {
-                        StatCard(
-                            title: "Total Bolus",
-                            value: formatInsulin(simpleStats.avgBolus),
-                            unit: isTodayOnly ? "E" : "E/dag",
-                            color: .blue,
-                        )
+            }
+        }
+            
+            if hasInsulinData && hasCarbData {
+                HStack(spacing: 16) {
+                            StatCard(
+                                title: "Total Bolus",
+                                value: formatInsulin(simpleStats.avgBolus),
+                                unit: isTodayOnly ? "E" : "E/dag",
+                                color: .blue,
+                            )
+                    StatCard(
+                        title: "Netto måltidsbolus",
+                        value: formatInsulin(simpleStats.netMealBolus),
+                        unit: isTodayOnly ? "E" : "E/dag",
+                        color: .mint,
+                    )
                 }
             }
             
@@ -274,27 +288,13 @@ struct StatsGridView: View {
                             title: showSMB ? "SMB" : "Manuell bolus",
                             value: formatInsulin(showSMB ? simpleStats.avgSMB : simpleStats.avgManualBolus),
                             unit: isTodayOnly ? "E" : "E/dag",
-                            color: showSMB ? .cyan : .blue,
+                            color: showSMB ? .cyan : .indigo,
                             isInteractive: true
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
-                }
-            }
-            if hasInsulinData && hasCarbData {
-                HStack(spacing: 16) {
-                    StatCard(
-                        title: "Verklig insulinkvot",
-                        value: formatCarbRatio(simpleStats.realCarbRatio),
-                        unit: "g/E",
-                        color: .primary
-                    )
-                    StatCard(
-                        title: "Netto måltidsbolus",
-                        value: formatInsulin(simpleStats.netMealBolus),
-                        unit: isTodayOnly ? "E" : "E/dag",
-                        color: .blue,
-                    )
+                
+                    
                 }
             }
         }
