@@ -19,8 +19,17 @@ struct AGPGraphView: UIViewRepresentable {
         chartView.rightAxis.enabled = true
         chartView.leftAxis.enabled = false
         chartView.xAxis.labelPosition = .bottom
-        chartView.rightAxis.drawGridLinesEnabled = false
+
+        // Enable dashed horizontal gridlines on the right axis
+        chartView.rightAxis.drawGridLinesEnabled = true
+        //chartView.rightAxis.gridLineDashLengths = [4, 2]
+        chartView.rightAxis.gridColor = .label.withAlphaComponent(0.15)
+        chartView.rightAxis.gridLineWidth = 0.5
+
+        // Left axis stays hidden
         chartView.leftAxis.drawGridLinesEnabled = false
+
+        // Keep X-axis gridlines disabled
         chartView.xAxis.drawGridLinesEnabled = false
 
         chartView.rightAxis.valueFormatter = ChartYMMOLValueFormatter()
@@ -198,14 +207,15 @@ struct AGPGraphView: UIViewRepresentable {
         targetHighDataSet.drawFilledEnabled = false
 
         let data = LineChartData()
+        data.append(hourLinesDataSet)
+        data.append(targetLowDataSet)
+        data.append(targetHighDataSet)
         data.append(p5DataSet)
         data.append(p25DataSet)
         data.append(p50DataSet)
         data.append(p75DataSet)
         data.append(p95DataSet)
-        data.append(hourLinesDataSet)
-        data.append(targetLowDataSet)
-        data.append(targetHighDataSet)
+        
 
         chartView.data = data
         chartView.notifyDataSetChanged()
