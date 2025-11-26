@@ -9,6 +9,11 @@ class StatsDataService {
     var daysToAnalyze: Int = 14
     var isTodayOnly: Bool = false
     private let dataFetcher: StatsDataFetcher
+    
+    struct DailyBasalStat {
+        let dayStart: Date
+        let totalUnits: Double
+    }
 
     init(mainViewController: MainViewController?) {
         self.mainViewController = mainViewController
@@ -141,5 +146,95 @@ class StatsDataService {
     func getBasalProfile() -> [MainViewController.basalProfileStruct] {
         guard let mainVC = mainViewController else { return [] }
         return mainVC.basalProfile
+    }
+    
+    func getDailyDeliveredBasal() -> [DailyBasalStat] {
+        guard let mainVC = mainViewController else { return [] }
+        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - getDailyDeliveredBasal called. isTodayOnly=\(isTodayOnly), daysToAnalyze=\(daysToAnalyze)")
+
+        let calendar = Calendar.current
+        let nowDate = Date()
+        let now = nowDate.timeIntervalSince1970
+
+        // Bestäm analysfönster – håll detta i sync med övriga getters
+        let endDate: Date = nowDate
+        let startDate: Date
+
+        if isTodayOnly {
+            // Idag: midnatt → nu
+            startDate = calendar.startOfDay(for: nowDate)
+        } else {
+            // Övriga perioder (1, 7, 14, 30 dagar): rullande fönster bakåt i tid
+            startDate = endDate.addingTimeInterval(-Double(daysToAnalyze) * 24 * 60 * 60)
+        }
+        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - window start=\(startDate), end=\(endDate)")
+
+        let cutoffTime = startDate.timeIntervalSince1970
+        let endTime = endDate.timeIntervalSince1970
+
+        // 1) Ta ut basalstege inom fönstret
+        let basalPoints = mainVC.statsBasalData
+            .filter { $0.date >= cutoffTime && $0.date <= endTime }
+            .sorted { $0.date < $1.date }
+
+        guard !basalPoints.isEmpty else { return [] }
+
+        // 2) Gör om till BasalChangeEvent (piecewise-constant rate U/h)
+        let events: [StatsBasalEngine.BasalChangeEvent] = basalPoints.map {
+            StatsBasalEngine.BasalChangeEvent(
+                date: Date(timeIntervalSince1970: $0.date),
+                rateUph: $0.basalRate
+            )
+        }
+
+        // 3) Simulera levererad basal med StatsBasalEngine
+        var results: [DailyBasalStat] = []
+
+        // Specialfall: 24 h‑valet (daysToAnalyze == 1 och inte "Idag") ska vara ett rullande 24 h‑fönster
+        if !isTodayOnly && daysToAnalyze == 1 {
+            let interval = DateInterval(start: startDate, end: endDate)
+            let sim = StatsBasalEngine.simulateDeliveredBasal(
+                events: events,
+                in: interval,
+                pulseSize: 0.05,
+                carryOverUndeliveredBasals: false
+            )
+
+            let stat = DailyBasalStat(dayStart: startDate, totalUnits: sim.totalUnits)
+            results.append(stat)
+            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - 24h window start=\(startDate), end=\(endDate), basalUnits=\(sim.totalUnits)")
+
+            let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
+            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)")
+            return results
+        }
+
+        // Standardfall: dela upp i kalenderdagar (Idag, 7, 14, 30 dagar)
+        var currentDayStart = calendar.startOfDay(for: startDate)
+        let finalDayStart = calendar.startOfDay(for: endDate)
+
+        while currentDayStart <= finalDayStart {
+            guard let nextDayStart = calendar.date(byAdding: .day, value: 1, to: currentDayStart) else { break }
+
+            let intervalEnd = min(nextDayStart, endDate)
+            let interval = DateInterval(start: currentDayStart, end: intervalEnd)
+
+            let sim = StatsBasalEngine.simulateDeliveredBasal(
+                events: events,
+                in: interval,
+                pulseSize: 0.05,
+                carryOverUndeliveredBasals: false
+            )
+
+            results.append(DailyBasalStat(dayStart: currentDayStart,
+                                          totalUnits: sim.totalUnits))
+            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - dayStart=\(currentDayStart), basalUnits=\(sim.totalUnits)")
+
+            currentDayStart = nextDayStart
+        }
+
+        let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
+        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)")
+        return results
     }
 }

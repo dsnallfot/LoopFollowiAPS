@@ -51,7 +51,34 @@ class AGPCalculator {
             ))
         }
 
-        return agpPoints.sorted { $0.timeOfDay < $1.timeOfDay }
+        // Sortera i tidsordning
+        var sortedPoints = agpPoints.sorted { $0.timeOfDay < $1.timeOfDay }
+
+        // För att undvika en visuell "lucka" mellan 23:00 och 24:00 i AGP-grafen
+        // lägger vi till en extra punkt vid 24:00 (1440 minuter) – men bara om
+        // vi faktiskt har data som når sista timmen (>= 23:00).
+        //
+        // För att göra övergången mer cirkulär låter vi 24:00-punkten ha samma
+        // percentiler som 00:00-punkten (timeOfDay == 0). Då representerar segmentet
+        // 23–24 rörelsen mot nästa dygns början istället för att bara “förlänga”
+        // sista timmen. Vid “Idag”-vyn, där vi ännu inte nått midnatt och saknar
+        // data i sista timmen, lägger vi inte till 24:00-punkten.
+        if let first = sortedPoints.first,
+           first.timeOfDay == 0,
+           let last = sortedPoints.last,
+           last.timeOfDay >= 23 * 60 {
+            let extended = AGPDataPoint(
+                timeOfDay: 24 * 60,
+                p5: first.p5,
+                p25: first.p25,
+                p50: first.p50,
+                p75: first.p75,
+                p95: first.p95
+            )
+            sortedPoints.append(extended)
+        }
+
+        return sortedPoints
     }
 }
 

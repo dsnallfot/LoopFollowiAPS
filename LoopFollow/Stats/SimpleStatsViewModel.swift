@@ -85,11 +85,7 @@ class SimpleStatsViewModel: ObservableObject {
             avgCarbs = nil
         }
 
-        let basalDataInPeriod = dataService.getBasalData()
-        let totalBasalOverPeriod = calculateTotalBasal(basalData: basalDataInPeriod)
-
-        let basalDates = basalDataInPeriod.map { $0.date }.filter { $0 >= cutoffTime }
-        let actualBasalDays = calculateActualDaysCovered(dates: basalDates, requestedDays: dataService.daysToAnalyze)
+        let dailyBasalStats = dataService.getDailyDeliveredBasal()
 
         var avgDailyBolus = 0.0
         var avgDailyBasal = 0.0
@@ -98,14 +94,15 @@ class SimpleStatsViewModel: ObservableObject {
             avgDailyBolus = totalBolusInPeriod / Double(actualDays)
         }
 
-        if actualBasalDays > 0 {
-            avgDailyBasal = totalBasalOverPeriod / Double(actualBasalDays)
+        if !dailyBasalStats.isEmpty {
+            let basalSum = dailyBasalStats.reduce(0.0) { $0 + $1.totalUnits }
+            avgDailyBasal = basalSum / Double(dailyBasalStats.count)
             actualBasal = avgDailyBasal
         } else {
             actualBasal = nil
         }
 
-        if actualDays > 0 || actualBasalDays > 0 {
+        if actualDays > 0 || !dailyBasalStats.isEmpty {
             totalDailyDose = avgDailyBolus + avgDailyBasal
         } else {
             totalDailyDose = nil
