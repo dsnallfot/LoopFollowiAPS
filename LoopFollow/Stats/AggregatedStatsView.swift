@@ -9,6 +9,9 @@ struct AggregatedStatsView: View {
     @Environment(\.dismiss) var dismiss
     @State private var showGMI: Bool
     @State private var showStdDev: Bool
+    @State private var showFPU: Bool
+    @State private var showSMB: Bool
+    @State private var showProfileBasal: Bool
     @State private var selectedPeriod = 14
     @State private var isLoadingData = false
 
@@ -16,6 +19,9 @@ struct AggregatedStatsView: View {
         self.viewModel = viewModel
         _showGMI = State(initialValue: Storage.shared.showGMI.value)
         _showStdDev = State(initialValue: Storage.shared.showStdDev.value)
+        _showFPU = State(initialValue: Storage.shared.showFPU.value)
+        _showSMB = State(initialValue: Storage.shared.showSMB.value)
+        _showProfileBasal = State(initialValue: Storage.shared.showProfileBasal.value)
     }
 
     var body: some View {
@@ -53,7 +59,10 @@ struct AggregatedStatsView: View {
                     StatsGridView(
                         simpleStats: viewModel.simpleStats,
                         showGMI: $showGMI,
-                        showStdDev: $showStdDev
+                        showStdDev: $showStdDev,
+                        showFPU: $showFPU,
+                        showSMB: $showSMB,
+                        showProfileBasal: $showProfileBasal
                     )
                     .padding(.horizontal)
 
@@ -136,34 +145,6 @@ struct StatCard: View {
         .cornerRadius(20)
     }
 }
-
-struct BasalComparisonCard: View {
-    let programmed: Double?
-    let actual: Double?
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            
-            HStack(spacing: 16) {
-                StatCard(
-                    title: "Profilbasal",
-                    value: formatBasal(programmed),
-                    unit: "E/dag",
-                    color: .secondary
-                )
-            
-            StatCard(
-                title: "Levererad basal",
-                value: formatBasal(actual),
-                unit: "E/dag",
-                color: .blue
-            )
-        }
- 
-                }
-            }
-        }
-
     private func formatBasal(_ value: Double?) -> String {
         guard let value = value else { return "---" }
         return String(format: "%.2f", value)
@@ -173,6 +154,9 @@ struct StatsGridView: View {
     @ObservedObject var simpleStats: SimpleStatsViewModel
     @Binding var showGMI: Bool
     @Binding var showStdDev: Bool
+    @Binding var showFPU: Bool
+    @Binding var showSMB: Bool
+    @Binding var showProfileBasal: Bool
 
     private var hasInsulinData: Bool {
         simpleStats.totalDailyDose != nil || simpleStats.avgBolus != nil || simpleStats.actualBasal != nil
@@ -222,45 +206,75 @@ struct StatsGridView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                if hasInsulinData {
-                    StatCard(
-                        title: "Total Daglig Dos",
-                        value: formatInsulin(simpleStats.totalDailyDose),
-                        unit: "E",
-                        color: .blue
-                    )
+                if hasCarbData {
+                    Button(action: {
+                        showFPU.toggle()
+                        Storage.shared.showFPU.value = showFPU
+                    }) {
+                        StatCard(
+                            title: showFPU ? "FPU" : "Kolhydrater",
+                            value: formatCarbs(showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs),
+                            unit: "g/dag",
+                            color: showFPU ? .brown : .orange,
+                            isInteractive: true
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 } else {
                     Color.clear
                         .frame(maxWidth: .infinity)
                 }
             }
 
-            if hasInsulinData || hasCarbData {
                 HStack(spacing: 16) {
-                    if hasCarbData {
+                    if hasInsulinData {
                         StatCard(
-                            title: "Medel Kolhydrater",
-                            value: formatCarbs(simpleStats.avgCarbs),
-                            unit: "g/dag",
-                            color: .orange
+                            title: "Total Daglig Dos",
+                            value: formatInsulin(simpleStats.totalDailyDose),
+                            unit: "E",
+                            color: .blue
                         )
                     }
                     if hasInsulinData {
                         StatCard(
-                            title: "Medel Bolus",
+                            title: "Total Bolus",
                             value: formatInsulin(simpleStats.avgBolus),
                             unit: "E/dag",
                             color: .blue
                         )
                     }
                 }
-            }
-
+            
             if hasInsulinData {
-                BasalComparisonCard(
-                    programmed: simpleStats.programmedBasal,
-                    actual: simpleStats.actualBasal
-                )
+                HStack(spacing: 16) {
+                    Button(action: {
+                        showProfileBasal.toggle()
+                        Storage.shared.showProfileBasal.value = showProfileBasal
+                    }) {
+                        StatCard(
+                            title: showProfileBasal ? "Profilbasal" : "Levererad basal",
+                            value: formatBasal(showProfileBasal ? simpleStats.programmedBasal : simpleStats.actualBasal),
+                            unit: "E/dag",
+                            color: showProfileBasal ? .gray : .blue,
+                            isInteractive: true
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: {
+                        showSMB.toggle()
+                        Storage.shared.showSMB.value = showSMB
+                    }) {
+                        StatCard(
+                            title: showSMB ? "SMB" : "Manuell bolus",
+                            value: formatInsulin(showSMB ? simpleStats.avgSMB : simpleStats.avgManualBolus),
+                            unit: "E/dag",
+                            color: showSMB ? .cyan : .blue,
+                            isInteractive: true
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
             }
         }
         .padding(.top, 12)
@@ -322,5 +336,9 @@ struct StatsGridView: View {
     private func formatCV(_ value: Double?) -> String {
         guard let value = value else { return "---" }
         return String(format: "%.1f", value)
+    }
+    private func formatBasal(_ value: Double?) -> String {
+        guard let value = value else { return "---" }
+        return String(format: "%.2f", value)
     }
 }

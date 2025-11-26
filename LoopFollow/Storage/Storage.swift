@@ -43,6 +43,9 @@ class Storage {
     var showGMI = StorageValue<Bool>(key: "showGMI", defaultValue: true)
     var showStdDev = StorageValue<Bool>(key: "showStdDev", defaultValue: true)
     var showTITR = StorageValue<Bool>(key: "showTITR", defaultValue: true)
+    var showFPU = StorageValue<Bool>(key: "showFPU", defaultValue: false)
+    var showSMB = StorageValue<Bool>(key: "showSMB", defaultValue: false)
+    var showProfileBasal = StorageValue<Bool>(key: "showProfileBasal", defaultValue: false)
     
     static let shared = Storage()
 

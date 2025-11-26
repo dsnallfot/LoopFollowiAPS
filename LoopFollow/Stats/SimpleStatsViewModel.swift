@@ -14,6 +14,9 @@ class SimpleStatsViewModel: ObservableObject {
     @Published var actualBasal: Double?
     @Published var avgBolus: Double?
     @Published var avgCarbs: Double?
+    @Published var avgFPUCarbs: Double?
+    @Published var avgManualBolus: Double?
+    @Published var avgSMB: Double?
 
     private let dataService: StatsDataService
 
@@ -44,45 +47,58 @@ class SimpleStatsViewModel: ObservableObject {
             coefficientOfVariation = nil
         }
 
-        let bolusesInPeriod = dataService.getBolusData()
-        let smbInPeriod = dataService.getSMBData()
-        let bolusTotal = bolusesInPeriod.reduce(0.0) { $0 + $1.value }
-        let smbTotal = smbInPeriod.reduce(0.0) { $0 + $1.value }
-        let totalBolusInPeriod = bolusTotal + smbTotal
-
         let cutoffTime = Date().timeIntervalSince1970 - (Double(dataService.daysToAnalyze) * 24 * 60 * 60)
-        let allBolusDates = (bolusesInPeriod + smbInPeriod).map { $0.date }.filter { $0 >= cutoffTime }
-        let actualDays = calculateActualDaysCovered(dates: allBolusDates, requestedDays: dataService.daysToAnalyze)
+        let now = Date().timeIntervalSince1970
 
-        if actualDays > 0 {
-            avgBolus = totalBolusInPeriod / Double(actualDays)
+        // Bolus-data (manuell + SMB)
+        let bolusData = dataService.getBolusData()
+        let smbData = dataService.getSMBData()
+
+        let manualBolusTotal = bolusData.reduce(0.0) { $0 + $1.value }
+        let smbTotal = smbData.reduce(0.0) { $0 + $1.value }
+        let totalBolusInPeriod = manualBolusTotal + smbTotal
+
+        let bolusDates = (bolusData.map { $0.date } + smbData.map { $0.date })
+            .filter { $0 >= cutoffTime && $0 <= now }
+
+        let actualDaysWithBolus = calculateActualDaysCovered(
+            dates: bolusDates,
+            requestedDays: dataService.daysToAnalyze
+        )
+
+        if actualDaysWithBolus > 0 {
+            avgBolus = totalBolusInPeriod / Double(actualDaysWithBolus)
+            avgManualBolus = manualBolusTotal / Double(actualDaysWithBolus)
+            avgSMB = smbTotal / Double(actualDaysWithBolus)
         } else {
             avgBolus = nil
+            avgManualBolus = nil
+            avgSMB = nil
         }
 
-        let carbsInPeriod = dataService.getCarbData()
+        // Kolhydrater + FPU (foodType tom)
+        let carbData = dataService.getCarbData()
 
-        let calendar = Calendar.current
-        var dailyCarbs: [Date: Double] = [:]
+        let totalCarbsInPeriod = carbData.reduce(0.0) { $0 + $1.value }
+        let totalFPUCarbsInPeriod = carbData
+            .filter { ($0.foodType ?? "").isEmpty }
+            .reduce(0.0) { $0 + $1.value }
 
-        for carb in carbsInPeriod {
-            let carbDate = Date(timeIntervalSince1970: carb.date)
-            let dayStart = calendar.startOfDay(for: carbDate)
+        let carbDates = carbData
+            .map { $0.date }
+            .filter { $0 >= cutoffTime && $0 <= now }
 
-            if dailyCarbs[dayStart] == nil {
-                dailyCarbs[dayStart] = 0.0
-            }
-            dailyCarbs[dayStart]? += carb.value
-        }
+        let actualDaysWithCarbs = calculateActualDaysCovered(
+            dates: carbDates,
+            requestedDays: dataService.daysToAnalyze
+        )
 
-        let totalCarbsInPeriod = dailyCarbs.values.reduce(0.0, +)
-
-        let daysWithData = max(dailyCarbs.count, 1)
-
-        if daysWithData > 0 {
-            avgCarbs = totalCarbsInPeriod / Double(daysWithData)
+        if actualDaysWithCarbs > 0 {
+            avgCarbs = totalCarbsInPeriod / Double(actualDaysWithCarbs)
+            avgFPUCarbs = totalFPUCarbsInPeriod / Double(actualDaysWithCarbs)
         } else {
             avgCarbs = nil
+            avgFPUCarbs = nil
         }
 
         let dailyBasalStats = dataService.getDailyDeliveredBasal()
@@ -90,8 +106,8 @@ class SimpleStatsViewModel: ObservableObject {
         var avgDailyBolus = 0.0
         var avgDailyBasal = 0.0
 
-        if actualDays > 0 {
-            avgDailyBolus = totalBolusInPeriod / Double(actualDays)
+        if actualDaysWithBolus > 0 {
+            avgDailyBolus = totalBolusInPeriod / Double(actualDaysWithBolus)
         }
 
         if !dailyBasalStats.isEmpty {
@@ -102,7 +118,7 @@ class SimpleStatsViewModel: ObservableObject {
             actualBasal = nil
         }
 
-        if actualDays > 0 || !dailyBasalStats.isEmpty {
+        if actualDaysWithBolus > 0 || !dailyBasalStats.isEmpty {
             totalDailyDose = avgDailyBolus + avgDailyBasal
         } else {
             totalDailyDose = nil
