@@ -1,7 +1,149 @@
 // LoopFollow
 // StatsDataService.swift
 
+
 import Foundation
+
+// Enkel persistent cache för statistikdata (bolus, SMB, kolhydrater, basal).
+// Lagrar upp till 30 dagar och används för att minska Nightscout-förfrågningar.
+private class StatsCacheManager {
+    static let shared = StatsCacheManager()
+    private init() {}
+
+    private struct CachedBolus: Codable {
+        let value: Double
+        let date: Double
+        let sgv: Int
+    }
+
+    private struct CachedCarb: Codable {
+        let value: Double
+        let date: Double
+        let sgv: Int
+        let absorptionTime: Int
+        let foodType: String?
+        let fat: Double
+        let protein: Double
+    }
+
+    private struct CachedBasal: Codable {
+        let basalRate: Double
+        let date: Double
+    }
+
+    private struct Cache: Codable {
+        let lastUpdated: Date
+        let bolus: [CachedBolus]
+        let smb: [CachedBolus]
+        let carbs: [CachedCarb]
+        let basal: [CachedBasal]
+    }
+
+    private var cacheURL: URL {
+        let fm = FileManager.default
+        let dir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        return dir.appendingPathComponent("StatsCache.json")
+    }
+
+    /// Läs in cache från disk och applicera på MainViewController (endast de senaste 30 dagarna).
+    func loadInto(mainVC: MainViewController) {
+        do {
+            let data = try Data(contentsOf: cacheURL)
+            let decoder = JSONDecoder()
+            let cache = try decoder.decode(Cache.self, from: data)
+
+            let now = Date()
+            let cutoff = now.addingTimeInterval(-30 * 24 * 60 * 60).timeIntervalSince1970
+
+            let bolus = cache.bolus
+                .filter { $0.date >= cutoff }
+                .map { MainViewController.bolusGraphStruct(value: $0.value, date: $0.date, sgv: $0.sgv) }
+
+            let smb = cache.smb
+                .filter { $0.date >= cutoff }
+                .map { MainViewController.bolusGraphStruct(value: $0.value, date: $0.date, sgv: $0.sgv) }
+
+            let carbs = cache.carbs
+                .filter { $0.date >= cutoff }
+                .map {
+                    MainViewController.carbGraphStruct(
+                        value: $0.value,
+                        date: $0.date,
+                        sgv: $0.sgv,
+                        absorptionTime: $0.absorptionTime,
+                        foodType: $0.foodType ?? "",
+                        fat: $0.fat,
+                        protein: $0.protein
+                    )
+                }
+
+            let basal = cache.basal
+                .filter { $0.date >= cutoff }
+                .map { MainViewController.basalGraphStruct(basalRate: $0.basalRate, date: $0.date) }
+
+            // Skriv över befintlig statsdata med cachen (vi utgår från att MainViewController precis initierats)
+            mainVC.statsBolusData = bolus
+            mainVC.statsSMBData = smb
+            mainVC.statsCarbData = carbs
+            mainVC.statsBasalData = basal
+
+            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - cache loaded: bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)", isDebug: true)
+        } catch {
+            // Ingen cache ännu eller så gick det fel att läsa – ignoreras tyst.
+            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - no cache loaded (\(error.localizedDescription))", isDebug: true)
+        }
+    }
+
+    /// Spara aktuella stats-arrayer från MainViewController till disk (endast de senaste 30 dagarna).
+    func saveFrom(mainVC: MainViewController) {
+        let now = Date()
+        let cutoff = now.addingTimeInterval(-30 * 24 * 60 * 60).timeIntervalSince1970
+
+        let bolus = mainVC.statsBolusData
+            .filter { $0.date >= cutoff }
+            .map { CachedBolus(value: $0.value, date: $0.date, sgv: $0.sgv) }
+
+        let smb = mainVC.statsSMBData
+            .filter { $0.date >= cutoff }
+            .map { CachedBolus(value: $0.value, date: $0.date, sgv: $0.sgv) }
+
+        let carbs = mainVC.statsCarbData
+            .filter { $0.date >= cutoff }
+            .map {
+                CachedCarb(
+                    value: $0.value,
+                    date: $0.date,
+                    sgv: $0.sgv,
+                    absorptionTime: $0.absorptionTime,
+                    foodType: $0.foodType,
+                    fat: $0.fat,
+                    protein: $0.protein
+                )
+            }
+
+        let basal = mainVC.statsBasalData
+            .filter { $0.date >= cutoff }
+            .map { CachedBasal(basalRate: $0.basalRate, date: $0.date) }
+
+        let cache = Cache(
+            lastUpdated: now,
+            bolus: bolus,
+            smb: smb,
+            carbs: carbs,
+            basal: basal
+        )
+
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted]
+            let data = try encoder.encode(cache)
+            try data.write(to: cacheURL, options: [.atomic])
+            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - cache saved: bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)", isDebug: true)
+        } catch {
+            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - failed to save cache: \(error.localizedDescription)", isDebug: true)
+        }
+    }
+}
 
 class StatsDataService {
     weak var mainViewController: MainViewController?
@@ -18,6 +160,11 @@ class StatsDataService {
     init(mainViewController: MainViewController?) {
         self.mainViewController = mainViewController
         dataFetcher = StatsDataFetcher(mainViewController: mainViewController)
+
+        // Ladda ev. cache direkt in i MainViewController när tjänsten skapas
+        if let mainVC = mainViewController {
+            StatsCacheManager.shared.loadInto(mainVC: mainVC)
+        }
     }
 
     func ensureDataAvailable(onProgress: @escaping () -> Void, completion: @escaping () -> Void) {
@@ -63,10 +210,12 @@ class StatsDataService {
                     self.dataFetcher.fetchTreatmentsData(days: self.daysToAnalyze) {
                         DispatchQueue.main.async {
                             onProgress()
+                            StatsCacheManager.shared.saveFrom(mainVC: mainVC)
                             completion()
                         }
                     }
                 } else {
+                    StatsCacheManager.shared.saveFrom(mainVC: mainVC)
                     completion()
                 }
             }
@@ -74,6 +223,7 @@ class StatsDataService {
             dataFetcher.fetchTreatmentsData(days: daysToAnalyze) {
                 DispatchQueue.main.async {
                     onProgress()
+                    StatsCacheManager.shared.saveFrom(mainVC: mainVC)
                     completion()
                 }
             }
@@ -85,12 +235,18 @@ class StatsDataService {
     /// Tvinga omladdning av BG + treatments från Nightscout för nuvarande period (daysToAnalyze).
     /// Används av "Ladda om"-knappen för att garantera att senaste data hämtas.
     func reloadAllData(onProgress: @escaping () -> Void, completion: @escaping () -> Void) {
-        dataFetcher.fetchBGData(days: daysToAnalyze) {
+        // För omladdning vill vi endast hämta de senaste 48 timmarna från Nightscout.
+        let recentDays = 2
+
+        dataFetcher.fetchBGData(days: recentDays) {
             DispatchQueue.main.async {
                 onProgress()
-                self.dataFetcher.fetchTreatmentsData(days: self.daysToAnalyze) {
+                self.dataFetcher.fetchTreatmentsData(days: recentDays) {
                     DispatchQueue.main.async {
                         onProgress()
+                        if let mainVC = self.mainViewController {
+                            StatsCacheManager.shared.saveFrom(mainVC: mainVC)
+                        }
                         completion()
                     }
                 }

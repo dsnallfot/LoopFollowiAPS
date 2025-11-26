@@ -5,6 +5,8 @@ import Foundation
 
 class StatsDataFetcher {
     weak var mainViewController: MainViewController?
+    
+    private let maxCachedDays: Double = 30
 
     init(mainViewController: MainViewController?) {
         self.mainViewController = mainViewController
@@ -47,12 +49,17 @@ class StatsDataFetcher {
                         }
                     }
 
-                    let cutoffTime = Date().timeIntervalSince1970 - (Double(days) * 24 * 60 * 60)
-                    mainVC.statsBGData.removeAll { $0.date < cutoffTime }
+                    let now = Date().timeIntervalSince1970
+                    let horizonDays = self.maxCachedDays
+                    let horizonCutoff = now - horizonDays * 24 * 60 * 60
+                    let reloadCutoff = now - Double(days) * 24 * 60 * 60
+
+                    // Behåll bara data inom [now - horizonDays, now - days)
+                    mainVC.statsBGData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
 
                     let existingDates = Set(mainVC.statsBGData.map { Int($0.date) })
                     for reading in nsData2 {
-                        if !existingDates.contains(Int(reading.date)), reading.date >= cutoffTime {
+                        if !existingDates.contains(Int(reading.date)), reading.date >= horizonCutoff {
                             mainVC.statsBGData.append(reading)
                         }
                     }
@@ -119,7 +126,10 @@ class StatsDataFetcher {
     }
 
     private func fetchAndMergeBolusData(entries: [[String: AnyObject]], days: Int, mainVC: MainViewController) {
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(days) * 24 * 60 * 60)
+        let now = Date().timeIntervalSince1970
+        let horizonDays = maxCachedDays
+        let horizonCutoff = now - horizonDays * 24 * 60 * 60
+        let reloadCutoff = now - Double(days) * 24 * 60 * 60
 
         var bolusEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -134,7 +144,8 @@ class StatsDataFetcher {
             }
         }
 
-        mainVC.statsBolusData.removeAll { $0.date < cutoffTime }
+        // Behåll bara data inom [now - horizonDays, now - days)
+        mainVC.statsBolusData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
 
         let existingDates = Set(mainVC.statsBolusData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -153,7 +164,7 @@ class StatsDataFetcher {
                   let bolus = currentEntry["insulin"] as? Double else { continue }
 
             let dateTimeStamp = parsedDate.timeIntervalSince1970
-            if dateTimeStamp < cutoffTime { continue }
+            if dateTimeStamp < horizonCutoff { continue }
 
             // Avoid duplicates (use Int to handle floating point precision)
             if existingDates.contains(Int(dateTimeStamp)) { continue }
@@ -169,7 +180,10 @@ class StatsDataFetcher {
     }
 
     private func fetchAndMergeSMBData(entries: [[String: AnyObject]], days: Int, mainVC: MainViewController) {
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(days) * 24 * 60 * 60)
+        let now = Date().timeIntervalSince1970
+        let horizonDays = maxCachedDays
+        let horizonCutoff = now - horizonDays * 24 * 60 * 60
+        let reloadCutoff = now - Double(days) * 24 * 60 * 60
 
         var smbEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -183,7 +197,8 @@ class StatsDataFetcher {
             }
         }
 
-        mainVC.statsSMBData.removeAll { $0.date < cutoffTime }
+        // Behåll bara data inom [now - horizonDays, now - days)
+        mainVC.statsSMBData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
 
         let existingDates = Set(mainVC.statsSMBData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -202,7 +217,7 @@ class StatsDataFetcher {
                   let bolus = currentEntry["insulin"] as? Double else { continue }
 
             let dateTimeStamp = parsedDate.timeIntervalSince1970
-            if dateTimeStamp < cutoffTime { continue }
+            if dateTimeStamp < horizonCutoff { continue }
 
             if existingDates.contains(Int(dateTimeStamp)) { continue }
 
@@ -217,8 +232,10 @@ class StatsDataFetcher {
     }
 
     private func fetchAndMergeCarbData(entries: [[String: AnyObject]], days: Int, mainVC: MainViewController) {
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(days) * 24 * 60 * 60)
         let now = Date().timeIntervalSince1970
+        let horizonDays = maxCachedDays
+        let horizonCutoff = now - horizonDays * 24 * 60 * 60
+        let reloadCutoff = now - Double(days) * 24 * 60 * 60
 
         var carbEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -228,7 +245,8 @@ class StatsDataFetcher {
             }
         }
 
-        mainVC.statsCarbData.removeAll { $0.date < cutoffTime || $0.date > now }
+        // Behåll bara data inom [now - horizonDays, now - days), och aldrig framtida datapunkter
+        mainVC.statsCarbData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff || $0.date > now }
 
         let existingDates = Set(mainVC.statsCarbData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -251,7 +269,7 @@ class StatsDataFetcher {
 
             let dateTimeStamp = parsedDate.timeIntervalSince1970
 
-            if dateTimeStamp < cutoffTime || dateTimeStamp > now { continue }
+            if dateTimeStamp < horizonCutoff || dateTimeStamp > now { continue }
 
             if existingDates.contains(Int(dateTimeStamp)) { continue }
 
@@ -289,7 +307,10 @@ class StatsDataFetcher {
     }
 
     private func fetchAndMergeBasalData(entries: [[String: AnyObject]], days: Int, mainVC: MainViewController) {
-        let cutoffTime = Date().timeIntervalSince1970 - (Double(days) * 24 * 60 * 60)
+        let now = Date().timeIntervalSince1970
+        let horizonDays = maxCachedDays
+        let horizonCutoff = now - horizonDays * 24 * 60 * 60
+        let reloadCutoff = now - Double(days) * 24 * 60 * 60
 
         var basalEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -299,7 +320,8 @@ class StatsDataFetcher {
             }
         }
 
-        mainVC.statsBasalData.removeAll { $0.date < cutoffTime }
+        // Behåll bara data inom [now - horizonDays, now - days)
+        mainVC.statsBasalData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
 
         let existingDates = Set(mainVC.statsBasalData.map { Int($0.date) })
         var tempArray = basalEntries
@@ -316,7 +338,7 @@ class StatsDataFetcher {
             }
 
             let dateTimeStamp = dateParsed.timeIntervalSince1970
-            if dateTimeStamp < cutoffTime { continue }
+            if dateTimeStamp < horizonCutoff { continue }
 
             guard let basalRate = currentEntry["absolute"] as? Double else {
                 continue

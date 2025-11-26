@@ -98,12 +98,10 @@ struct AggregatedStatsView: View {
             }
         }
         .onAppear {
-            viewModel.dataService.ensureDataAvailable(
-                onProgress: {},
-                completion: {
-                    viewModel.calculateStats()
-                }
-            )
+            isLoadingData = true
+            viewModel.updatePeriod(selectedPeriod, forceReload: true) {
+                isLoadingData = false
+            }
         }
     }
 }
