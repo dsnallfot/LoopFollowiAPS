@@ -81,6 +81,22 @@ class StatsDataService {
             completion()
         }
     }
+    
+    /// Tvinga omladdning av BG + treatments från Nightscout för nuvarande period (daysToAnalyze).
+    /// Används av "Ladda om"-knappen för att garantera att senaste data hämtas.
+    func reloadAllData(onProgress: @escaping () -> Void, completion: @escaping () -> Void) {
+        dataFetcher.fetchBGData(days: daysToAnalyze) {
+            DispatchQueue.main.async {
+                onProgress()
+                self.dataFetcher.fetchTreatmentsData(days: self.daysToAnalyze) {
+                    DispatchQueue.main.async {
+                        onProgress()
+                        completion()
+                    }
+                }
+            }
+        }
+    }
 
     func getBGData() -> [ShareGlucoseData] {
         guard let mainVC = mainViewController else { return [] }
@@ -150,7 +166,7 @@ class StatsDataService {
     
     func getDailyDeliveredBasal() -> [DailyBasalStat] {
         guard let mainVC = mainViewController else { return [] }
-        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - getDailyDeliveredBasal called. isTodayOnly=\(isTodayOnly), daysToAnalyze=\(daysToAnalyze)")
+        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - getDailyDeliveredBasal called. isTodayOnly=\(isTodayOnly), daysToAnalyze=\(daysToAnalyze)", isDebug: true)
 
         let calendar = Calendar.current
         let nowDate = Date()
@@ -167,7 +183,7 @@ class StatsDataService {
             // Övriga perioder (1, 7, 14, 30 dagar): rullande fönster bakåt i tid
             startDate = endDate.addingTimeInterval(-Double(daysToAnalyze) * 24 * 60 * 60)
         }
-        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - window start=\(startDate), end=\(endDate)")
+        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - window start=\(startDate), end=\(endDate)", isDebug: true)
 
         let cutoffTime = startDate.timeIntervalSince1970
         let endTime = endDate.timeIntervalSince1970
@@ -202,10 +218,10 @@ class StatsDataService {
 
             let stat = DailyBasalStat(dayStart: startDate, totalUnits: sim.totalUnits)
             results.append(stat)
-            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - 24h window start=\(startDate), end=\(endDate), basalUnits=\(sim.totalUnits)")
+            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - 24h window start=\(startDate), end=\(endDate), basalUnits=\(sim.totalUnits)", isDebug: true)
 
             let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
-            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)")
+            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)", isDebug: true)
             return results
         }
 
@@ -228,13 +244,13 @@ class StatsDataService {
 
             results.append(DailyBasalStat(dayStart: currentDayStart,
                                           totalUnits: sim.totalUnits))
-            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - dayStart=\(currentDayStart), basalUnits=\(sim.totalUnits)")
+            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - dayStart=\(currentDayStart), basalUnits=\(sim.totalUnits)", isDebug: true)
 
             currentDayStart = nextDayStart
         }
 
         let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
-        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)")
+        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)", isDebug: true)
         return results
     }
 }

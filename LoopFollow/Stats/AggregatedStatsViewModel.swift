@@ -27,7 +27,7 @@ class AggregatedStatsViewModel: ObservableObject {
         tirStats.calculateTIR()
     }
 
-    func updatePeriod(_ days: Int, completion: @escaping () -> Void = {}) {
+    func updatePeriod(_ days: Int, forceReload: Bool = false, completion: @escaping () -> Void = {}) {
         if days == 0 {
             // "Idag" – use only data from midnight to now, but fetch 1 dag bakåt om det behövs
             dataService.isTodayOnly = true
@@ -37,13 +37,23 @@ class AggregatedStatsViewModel: ObservableObject {
             dataService.daysToAnalyze = days
         }
 
-        dataService.ensureDataAvailable(
-            onProgress: {},
-            completion: {
-                self.calculateStats()
-                completion()
-            }
-        )
+        if forceReload {
+            dataService.reloadAllData(
+                onProgress: {},
+                completion: {
+                    self.calculateStats()
+                    completion()
+                }
+            )
+        } else {
+            dataService.ensureDataAvailable(
+                onProgress: {},
+                completion: {
+                    self.calculateStats()
+                    completion()
+                }
+            )
+        }
     }
 
     var gmi: Double? { simpleStats.gmi }

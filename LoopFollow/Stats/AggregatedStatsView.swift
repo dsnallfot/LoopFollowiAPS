@@ -30,7 +30,7 @@ struct AggregatedStatsView: View {
             VStack(spacing: 8) {
                 Picker("Period", selection: $selectedPeriod) {
                     Text("Idag").tag(0)
-                    Text("24 h").tag(1)
+                    Text("1 dag").tag(1)
                     Text("7 dagar").tag(7)
                     Text("14 dagar").tag(14)
                     Text("30 dagar").tag(30)
@@ -85,7 +85,10 @@ struct AggregatedStatsView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Ladda om") {
-                    viewModel.calculateStats()
+                    isLoadingData = true
+                    viewModel.updatePeriod(selectedPeriod, forceReload: true) {
+                        isLoadingData = false
+                    }
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
