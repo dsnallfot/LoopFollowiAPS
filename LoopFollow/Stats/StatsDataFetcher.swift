@@ -109,6 +109,7 @@ class StatsDataFetcher {
                         self.fetchAndMergeSMBData(entries: entries, days: days, mainVC: mainVC)
                         self.fetchAndMergeCarbData(entries: entries, days: days, mainVC: mainVC)
                         self.fetchAndMergeBasalData(entries: entries, days: days, mainVC: mainVC)
+                        self.fetchAndMergeBGCheckData(entries: entries, days: days, mainVC: mainVC)
                         completion()
                     }
                 } else {
@@ -123,6 +124,43 @@ class StatsDataFetcher {
                 }
             }
         }
+    }
+    
+    private func fetchAndMergeBGCheckData(entries: [[String: AnyObject]], days: Int, mainVC: MainViewController) {
+        let now = Date().timeIntervalSince1970
+        let horizonDays = maxCachedDays
+        let horizonCutoff = now - horizonDays * 24 * 60 * 60
+        let reloadCutoff = now - Double(days) * 24 * 60 * 60
+
+        var bgCheckEntries: [[String: AnyObject]] = []
+        for entry in entries {
+            guard let eventType = entry["eventType"] as? String else { continue }
+            if eventType == "BG Check" || eventType == "BGCheck" {
+                bgCheckEntries.append(entry)
+            }
+        }
+
+        // Behåll bara data inom [now - horizonDays, now - days)
+        mainVC.statsBGCheckData.removeAll { $0 < horizonCutoff || $0 >= reloadCutoff }
+
+        let existingDates = Set(mainVC.statsBGCheckData.map { Int($0) })
+
+        for currentEntry in bgCheckEntries.reversed() {
+            let dateString = currentEntry["timestamp"] as? String ?? currentEntry["created_at"] as? String
+            guard let rawDateStr = dateString,
+                  let parsedDate = NightscoutUtils.parseDate(rawDateStr) else {
+                continue
+            }
+
+            let dateTimeStamp = parsedDate.timeIntervalSince1970
+            if dateTimeStamp < horizonCutoff { continue }
+
+            if existingDates.contains(Int(dateTimeStamp)) { continue }
+
+            mainVC.statsBGCheckData.append(dateTimeStamp)
+        }
+
+        mainVC.statsBGCheckData.sort { $0 < $1 }
     }
 
     private func fetchAndMergeBolusData(entries: [[String: AnyObject]], days: Int, mainVC: MainViewController) {

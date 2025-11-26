@@ -174,6 +174,14 @@ struct StatsGridView: View {
     private var hasCarbData: Bool {
         simpleStats.avgCarbs != nil
     }
+    
+    private var hasBGCheckData: Bool {
+        simpleStats.avgBGCheck != nil
+    }
+    
+    private var hasLowTreatmentsData: Bool {
+        simpleStats.avgLowTreatments != nil
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -301,6 +309,28 @@ struct StatsGridView: View {
                     
                 }
             }
+            
+                HStack(spacing: 16) {
+                    if hasBGCheckData {
+                        StatCard(
+                            title: "Fingerstick",
+                            value: formatBGCheck(simpleStats.avgBGCheck),
+                            unit: isTodayOnly ? "st" : "st/dag",
+                            color: .red
+                        )
+                    }
+                    if hasLowTreatmentsData {
+                        StatCard(
+                            title: "Dextrotillfällen",
+                            value: formatLowTreatment(simpleStats.avgLowTreatments),
+                            unit: isTodayOnly ? "st" : "st/dag",
+                            color: .red
+                        )
+                    } else {
+                        Color.clear
+                            .frame(maxWidth: .infinity)
+                    }
+                }
         }
         .padding(.top, 12)
     }
@@ -367,6 +397,14 @@ struct StatsGridView: View {
         return String(format: "%.2f", value)
     }
     private func formatCarbRatio(_ value: Double?) -> String {
+        guard let value = value else { return "---" }
+        return String(format: "%.1f", value)
+    }
+    private func formatLowTreatment(_ value: Double?) -> String {
+        guard let value = value else { return "---" }
+        return String(format: "%.1f", value)
+    }
+    private func formatBGCheck(_ value: Double?) -> String {
         guard let value = value else { return "---" }
         return String(format: "%.1f", value)
     }

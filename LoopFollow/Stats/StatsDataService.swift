@@ -37,9 +37,14 @@ private class StatsCacheManager {
         let direction: String?
     }
 
+    private struct CachedBGCheck: Codable {
+        let date: Double
+    }
+
     private struct Cache: Codable {
         let lastUpdated: Date
         let bg: [CachedBG]
+        let bgChecks: [CachedBGCheck]
         let bolus: [CachedBolus]
         let smb: [CachedBolus]
         let carbs: [CachedCarb]
@@ -92,8 +97,13 @@ private class StatsCacheManager {
                 .filter { $0.date >= cutoff }
                 .map { MainViewController.basalGraphStruct(basalRate: $0.basalRate, date: $0.date) }
 
+            let bgChecks = cache.bgChecks
+                .filter { $0.date >= cutoff }
+                .map { $0.date }
+
             // Skriv över befintlig statsdata med cachen (vi utgår från att MainViewController precis initierats)
             mainVC.statsBGData = bg
+            mainVC.statsBGCheckData = bgChecks
             mainVC.statsBolusData = bolus
             mainVC.statsSMBData = smb
             mainVC.statsCarbData = carbs
@@ -101,7 +111,7 @@ private class StatsCacheManager {
 
             LogManager.shared.log(
                 category: .analysis,
-                message: "StatsCacheManager - cache loaded: bg=\(bg.count), bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)",
+                message: "StatsCacheManager - cache loaded: bg=\(bg.count), bgChecks=\(bgChecks.count), bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)",
                 isDebug: true
             )
         } catch {
@@ -118,6 +128,10 @@ private class StatsCacheManager {
         let bg = mainVC.statsBGData
             .filter { $0.date >= cutoff }
             .map { CachedBG(sgv: $0.sgv, date: $0.date, direction: $0.direction) }
+
+        let bgChecks = mainVC.statsBGCheckData
+            .filter { $0 >= cutoff }
+            .map { CachedBGCheck(date: $0) }
 
         let bolus = mainVC.statsBolusData
             .filter { $0.date >= cutoff }
@@ -148,6 +162,7 @@ private class StatsCacheManager {
         let cache = Cache(
             lastUpdated: now,
             bg: bg,
+            bgChecks: bgChecks,
             bolus: bolus,
             smb: smb,
             carbs: carbs,
@@ -161,7 +176,7 @@ private class StatsCacheManager {
             try data.write(to: cacheURL, options: [.atomic])
             LogManager.shared.log(
                 category: .analysis,
-                message: "StatsCacheManager - cache saved: bg=\(bg.count), bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)",
+                message: "StatsCacheManager - cache saved: bg=\(bg.count), bgChecks=\(bgChecks.count), bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)",
                 isDebug: true
             )
         } catch {
@@ -289,6 +304,19 @@ class StatsDataService {
             cutoffTime = nowDate.timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
         }
         return mainVC.statsBGData.filter { $0.date >= cutoffTime }
+    }
+    
+    func getBGCheckDates() -> [TimeInterval] {
+        guard let mainVC = mainViewController else { return [] }
+        let nowDate = Date()
+        let now = nowDate.timeIntervalSince1970
+        let cutoffTime: TimeInterval
+        if isTodayOnly {
+            cutoffTime = Calendar.current.startOfDay(for: nowDate).timeIntervalSince1970
+        } else {
+            cutoffTime = now - (Double(daysToAnalyze) * 24 * 60 * 60)
+        }
+        return mainVC.statsBGCheckData.filter { $0 >= cutoffTime && $0 <= now }
     }
 
     func getBolusData() -> [MainViewController.bolusGraphStruct] {

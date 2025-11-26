@@ -14,6 +14,8 @@ class SimpleStatsViewModel: ObservableObject {
     @Published var actualBasal: Double?
     @Published var avgBolus: Double?
     @Published var avgCarbs: Double?
+    @Published var avgBGCheck: Double?
+    @Published var avgLowTreatments: Double?
     @Published var avgFPUCarbs: Double?
     @Published var avgManualBolus: Double?
     @Published var avgSMB: Double?
@@ -101,6 +103,42 @@ class SimpleStatsViewModel: ObservableObject {
         } else {
             avgCarbs = nil
             avgFPUCarbs = nil
+        }
+
+        // Fingerstick (BG Check) – count of BG Check treatments per dag
+        let bgCheckDates = dataService.getBGCheckDates()
+        if !bgCheckDates.isEmpty {
+            let actualDaysWithBGChecks = calculateActualDaysCovered(
+                dates: bgCheckDates,
+                requestedDays: dataService.daysToAnalyze
+            )
+            if actualDaysWithBGChecks > 0 {
+                avgBGCheck = Double(bgCheckDates.count) / Double(actualDaysWithBGChecks)
+            } else {
+                avgBGCheck = nil
+            }
+        } else {
+            avgBGCheck = nil
+        }
+
+        // Hypo-behandlingar (Dextro): foodType innehåller minst en "🍬"
+        let lowTreatmentDates = carbData
+            .filter { ($0.foodType ?? "").contains("🍬") }
+            .map { $0.date }
+            .filter { $0 >= cutoffTime && $0 <= now }
+
+        if !lowTreatmentDates.isEmpty {
+            let actualDaysWithLowTreatments = calculateActualDaysCovered(
+                dates: lowTreatmentDates,
+                requestedDays: dataService.daysToAnalyze
+            )
+            if actualDaysWithLowTreatments > 0 {
+                avgLowTreatments = Double(lowTreatmentDates.count) / Double(actualDaysWithLowTreatments)
+            } else {
+                avgLowTreatments = nil
+            }
+        } else {
+            avgLowTreatments = nil
         }
 
         let dailyBasalStats = dataService.getDailyDeliveredBasal()
