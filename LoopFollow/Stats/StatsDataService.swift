@@ -31,8 +31,15 @@ private class StatsCacheManager {
         let date: Double
     }
 
+    private struct CachedBG: Codable {
+        let sgv: Int
+        let date: Double
+        let direction: String?
+    }
+
     private struct Cache: Codable {
         let lastUpdated: Date
+        let bg: [CachedBG]
         let bolus: [CachedBolus]
         let smb: [CachedBolus]
         let carbs: [CachedCarb]
@@ -54,6 +61,10 @@ private class StatsCacheManager {
 
             let now = Date()
             let cutoff = now.addingTimeInterval(-30 * 24 * 60 * 60).timeIntervalSince1970
+
+            let bg = cache.bg
+                .filter { $0.date >= cutoff }
+                .map { ShareGlucoseData(sgv: $0.sgv, date: $0.date, direction: $0.direction) }
 
             let bolus = cache.bolus
                 .filter { $0.date >= cutoff }
@@ -82,12 +93,17 @@ private class StatsCacheManager {
                 .map { MainViewController.basalGraphStruct(basalRate: $0.basalRate, date: $0.date) }
 
             // Skriv över befintlig statsdata med cachen (vi utgår från att MainViewController precis initierats)
+            mainVC.statsBGData = bg
             mainVC.statsBolusData = bolus
             mainVC.statsSMBData = smb
             mainVC.statsCarbData = carbs
             mainVC.statsBasalData = basal
 
-            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - cache loaded: bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)", isDebug: true)
+            LogManager.shared.log(
+                category: .analysis,
+                message: "StatsCacheManager - cache loaded: bg=\(bg.count), bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)",
+                isDebug: true
+            )
         } catch {
             // Ingen cache ännu eller så gick det fel att läsa – ignoreras tyst.
             LogManager.shared.log(category: .analysis, message: "StatsCacheManager - no cache loaded (\(error.localizedDescription))", isDebug: true)
@@ -98,6 +114,10 @@ private class StatsCacheManager {
     func saveFrom(mainVC: MainViewController) {
         let now = Date()
         let cutoff = now.addingTimeInterval(-30 * 24 * 60 * 60).timeIntervalSince1970
+
+        let bg = mainVC.statsBGData
+            .filter { $0.date >= cutoff }
+            .map { CachedBG(sgv: $0.sgv, date: $0.date, direction: $0.direction) }
 
         let bolus = mainVC.statsBolusData
             .filter { $0.date >= cutoff }
@@ -127,6 +147,7 @@ private class StatsCacheManager {
 
         let cache = Cache(
             lastUpdated: now,
+            bg: bg,
             bolus: bolus,
             smb: smb,
             carbs: carbs,
@@ -138,7 +159,11 @@ private class StatsCacheManager {
             encoder.outputFormatting = [.prettyPrinted]
             let data = try encoder.encode(cache)
             try data.write(to: cacheURL, options: [.atomic])
-            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - cache saved: bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)", isDebug: true)
+            LogManager.shared.log(
+                category: .analysis,
+                message: "StatsCacheManager - cache saved: bg=\(bg.count), bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)",
+                isDebug: true
+            )
         } catch {
             LogManager.shared.log(category: .analysis, message: "StatsCacheManager - failed to save cache: \(error.localizedDescription)", isDebug: true)
         }

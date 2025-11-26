@@ -93,7 +93,7 @@ class StatsDataFetcher {
         let startTimeString = utcISODateFormatter.string(from: startDate)
         let currentTimeString = utcISODateFormatter.string(from: endDate)
 
-        let estimatedCount = max(days * 100, 20000)
+        let estimatedCount = max(days * 100, 30000)
         let parameters: [String: String] = [
             "find[created_at][$gte]": startTimeString,
             "find[created_at][$lte]": currentTimeString,
