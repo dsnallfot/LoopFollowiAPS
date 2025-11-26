@@ -260,12 +260,28 @@ class StatsDataFetcher {
 
             var offset = -50
             if sgv.sgv < Double(mainVC.calculateMaxBgGraphValue() - 100) {
-                let bolusTime = mainVC.findNearestBolusbyTime(timeWithin: 300, needle: dateTimeStamp, haystack: mainVC.statsBolusData, startingIndex: lastFoundBolus)
+                let bolusTime = mainVC.findNearestBolusbyTime(
+                    timeWithin: 300,
+                    needle: dateTimeStamp,
+                    haystack: mainVC.statsBolusData,
+                    startingIndex: lastFoundBolus
+                )
                 lastFoundBolus = bolusTime.foundIndex
                 offset = bolusTime.offset ? 70 : 20
             }
 
-            let dot = MainViewController.carbGraphStruct(value: Double(carbs), date: Double(dateTimeStamp), sgv: Int(sgv.sgv + Double(offset)), absorptionTime: absorptionTime, foodType: "", fat: Double(0.0), protein: Double(0.0))
+            // Hämta foodType från Nightscout-entry om den finns (annars tom sträng).
+            let foodType = currentEntry["foodType"] as? String ?? ""
+
+            let dot = MainViewController.carbGraphStruct(
+                value: Double(carbs),
+                date: Double(dateTimeStamp),
+                sgv: Int(sgv.sgv + Double(offset)),
+                absorptionTime: absorptionTime,
+                foodType: foodType,
+                fat: Double(0.0),
+                protein: Double(0.0)
+            )
             mainVC.statsCarbData.append(dot)
         }
 
