@@ -70,11 +70,11 @@ struct AggregatedStatsView: View {
                         isTodayOnly: selectedPeriod == 0
                     )
                     .padding(.horizontal)
-
-                    AGPView(viewModel: viewModel.agpStats)
+                    
+                    TIRView(viewModel: viewModel.tirStats)
                         .padding(.horizontal)
 
-                    TIRView(viewModel: viewModel.tirStats)
+                    AGPView(viewModel: viewModel.agpStats)
                         .padding(.horizontal)
 
                     GRIView(viewModel: viewModel.griStats)
@@ -88,11 +88,13 @@ struct AggregatedStatsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("Ladda om") {
+                Button(action: {
                     isLoadingData = true
                     viewModel.updatePeriod(selectedPeriod, forceReload: true) {
                         isLoadingData = false
                     }
+                }) {
+                    Image(systemName: "arrow.clockwise")
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {

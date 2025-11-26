@@ -22,7 +22,35 @@ struct AGPGraphView: UIViewRepresentable {
         chartView.rightAxis.drawGridLinesEnabled = false
         chartView.leftAxis.drawGridLinesEnabled = false
         chartView.xAxis.drawGridLinesEnabled = false
+
         chartView.rightAxis.valueFormatter = ChartYMMOLValueFormatter()
+
+        // Fix Y-axis to 0–360 mg/dL, which via ChartYMMOLValueFormatter corresponds to 0–20 mmol/L
+        let rightAxis = chartView.rightAxis
+        rightAxis.axisMinimum = 0
+        rightAxis.axisMaximum = 360
+        rightAxis.granularity = 72 // 72 mg/dL ≈ 4.0 mmol/L
+        rightAxis.granularityEnabled = true
+        rightAxis.setLabelCount(6, force: true) // 0, 72, 144, 216, 288, 360
+        rightAxis.spaceTop = 0
+        rightAxis.spaceBottom = 0
+
+        // Make sure the (hidden) left axis uses the same scale and no extra padding,
+        // otherwise Charts will still reserve top/bottom space based on it.
+        let leftAxis = chartView.leftAxis
+        leftAxis.axisMinimum = 0
+        leftAxis.axisMaximum = 360
+        leftAxis.spaceTop = 0
+        leftAxis.spaceBottom = 0
+        leftAxis.drawLabelsEnabled = false
+        leftAxis.drawGridLinesEnabled = false
+
+        // Restore a small, consistent outer padding so axes and labels are fully visible,
+        // without affecting the internal 0–360 mg/dL scale.
+        chartView.extraTopOffset = 8
+        chartView.extraBottomOffset = 8
+        chartView.minOffset = 8
+
         chartView.legend.enabled = false
         chartView.chartDescription.enabled = false
         chartView.isUserInteractionEnabled = false
@@ -109,8 +137,10 @@ struct AGPGraphView: UIViewRepresentable {
         p95DataSet.drawValuesEnabled = false
         p95DataSet.drawFilledEnabled = false
         p95DataSet.mode = .cubicBezier
-        let maxY = max(sortedP95.map { $0.y }.max() ?? 300, 300) + 10
-        let hourMinY = min(sortedP5.map { $0.y }.min() ?? 0, 0) - 10
+
+        // Use a fixed Y-range 0–360 mg/dL to match axis settings (0–20 mmol/L)
+        let maxY = 360.0
+        let hourMinY = 0.0
 
         // Target lines (defaults: 70 / 140 mg/dL, converted if needed)
         let defaultTargetLowMgdl: Double = 70

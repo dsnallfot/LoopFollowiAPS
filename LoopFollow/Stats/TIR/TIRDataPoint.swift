@@ -13,11 +13,11 @@ struct TIRDataPoint {
 }
 
 enum TIRPeriod: String, CaseIterable {
-    case night = "Natt"
-    case morning = "Morgon"
-    case day = "Dag"
-    case evening = "Kväll"
-    case average = "Medel"
+    case night = "Natt\n00-06"
+    case morning = "Morgon\n06-12"
+    case day = "Dag\n12-18"
+    case evening = "Kväll\n18-24"
+    case average = "MEDEL"
 
     var hourRange: (start: Int, end: Int)? {
         switch self {
