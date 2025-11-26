@@ -16,6 +16,7 @@ class SimpleStatsViewModel: ObservableObject {
     @Published var avgCarbs: Double?
     @Published var avgBGCheck: Double?
     @Published var avgLowTreatments: Double?
+    @Published var avgLowTreatmentAmount: Double?
     @Published var avgFPUCarbs: Double?
     @Published var avgManualBolus: Double?
     @Published var avgSMB: Double?
@@ -122,8 +123,10 @@ class SimpleStatsViewModel: ObservableObject {
         }
 
         // Hypo-behandlingar (Dextro): foodType innehåller minst en "🍬"
-        let lowTreatmentDates = carbData
+        let lowTreatmentCarbEntries = carbData
             .filter { ($0.foodType ?? "").contains("🍬") }
+
+        let lowTreatmentDates = lowTreatmentCarbEntries
             .map { $0.date }
             .filter { $0 >= cutoffTime && $0 <= now }
 
@@ -132,13 +135,25 @@ class SimpleStatsViewModel: ObservableObject {
                 dates: lowTreatmentDates,
                 requestedDays: dataService.daysToAnalyze
             )
+
             if actualDaysWithLowTreatments > 0 {
+                // Antal Dextro-tillfällen per dag
                 avgLowTreatments = Double(lowTreatmentDates.count) / Double(actualDaysWithLowTreatments)
+
+                // Total mängd Dextro (g) i perioden, baserat på carb-värdet
+                let totalLowTreatmentCarbsInPeriod = lowTreatmentCarbEntries
+                    .filter { $0.date >= cutoffTime && $0.date <= now }
+                    .reduce(0.0) { $0 + $1.value }
+
+                // g Dextro per dag
+                avgLowTreatmentAmount = totalLowTreatmentCarbsInPeriod / Double(actualDaysWithLowTreatments)
             } else {
                 avgLowTreatments = nil
+                avgLowTreatmentAmount = nil
             }
         } else {
             avgLowTreatments = nil
+            avgLowTreatmentAmount = nil
         }
 
         let dailyBasalStats = dataService.getDailyDeliveredBasal()

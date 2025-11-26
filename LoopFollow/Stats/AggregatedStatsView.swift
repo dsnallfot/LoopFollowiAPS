@@ -11,6 +11,7 @@ struct AggregatedStatsView: View {
     @State private var showStdDev: Bool
     @State private var showFPU: Bool
     @State private var showSMB: Bool
+    @State private var showDextroAmount: Bool
     @State private var showProfileBasal: Bool
     @State private var selectedPeriod: Int
     @State private var isLoadingData = false
@@ -21,6 +22,7 @@ struct AggregatedStatsView: View {
         _showStdDev = State(initialValue: Storage.shared.showStdDev.value)
         _showFPU = State(initialValue: Storage.shared.showFPU.value)
         _showSMB = State(initialValue: Storage.shared.showSMB.value)
+        _showDextroAmount = State(initialValue: Storage.shared.showDextroAmount.value)
         _showProfileBasal = State(initialValue: Storage.shared.showProfileBasal.value)
 
         let savedPeriod = UserDefaults.standard.object(forKey: "AggregatedStatsSelectedPeriod") as? Int ?? 14
@@ -66,6 +68,7 @@ struct AggregatedStatsView: View {
                         showStdDev: $showStdDev,
                         showFPU: $showFPU,
                         showSMB: $showSMB,
+                        showDextroAmount: $showDextroAmount,
                         showProfileBasal: $showProfileBasal,
                         isTodayOnly: selectedPeriod == 0
                     )
@@ -164,6 +167,7 @@ struct StatsGridView: View {
     @Binding var showStdDev: Bool
     @Binding var showFPU: Bool
     @Binding var showSMB: Bool
+    @Binding var showDextroAmount: Bool
     @Binding var showProfileBasal: Bool
     let isTodayOnly: Bool
 
@@ -320,12 +324,21 @@ struct StatsGridView: View {
                         )
                     }
                     if hasLowTreatmentsData {
-                        StatCard(
-                            title: "Dextrotillfällen",
-                            value: formatLowTreatment(simpleStats.avgLowTreatments),
-                            unit: isTodayOnly ? "st" : "st/dag",
-                            color: .red
-                        )
+                        Button(action: {
+                            showDextroAmount.toggle()
+                            Storage.shared.showDextroAmount.value = showDextroAmount
+                        }) {
+                            StatCard(
+                                title: showDextroAmount ? "Dextro mängd" : "Dextrobehandlingar",
+                                value: showDextroAmount ? formatCarbs(simpleStats.avgLowTreatmentAmount)
+                                                        : formatLowTreatment(simpleStats.avgLowTreatments),
+                                unit: showDextroAmount ? (isTodayOnly ? "g" : "g/dag")
+                                                       : (isTodayOnly ? "st" : "st/dag"),
+                                color: .red,
+                                isInteractive: true
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     } else {
                         Color.clear
                             .frame(maxWidth: .infinity)
