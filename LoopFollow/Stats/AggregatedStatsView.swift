@@ -76,7 +76,8 @@ struct AggregatedStatsView: View {
                         showLowPercentage: $showLowPercentage,
                         isTodayOnly: selectedPeriod == 0,
                         isOneDayOnly: selectedPeriod < 2,
-                        showTrends: selectedPeriod != 0 && selectedPeriod != 90
+                        showTrends: selectedPeriod != 0 && selectedPeriod != 90,
+                        periodLabel: periodLabel(for: selectedPeriod)
                     )
                     .padding(.horizontal)
                     
@@ -119,15 +120,39 @@ struct AggregatedStatsView: View {
             }
         }
     }
+    
+    private func periodLabel(for period: Int) -> String {
+        switch period {
+        case 0:
+            return "idag"
+        case 1:
+            return "1 dag"
+        case 7:
+            return "7 dagar"
+        case 14:
+            return "14 dagar"
+        case 30:
+            return "30 dagar"
+        case 90:
+            return "90 dagar"
+        default:
+            return "föregående period"
+        }
+    }
 }
 
 struct StatCard: View {
-        let title: String
-        let value: String
-        let unit: String?
-        let color: Color
-        var isInteractive: Bool = false
-        var trendArrow: StatsTrendArrow? = nil
+    let title: String
+    let value: String
+    let unit: String?
+    let color: Color
+    var isInteractive: Bool = false
+    var trendArrow: StatsTrendArrow? = nil
+    var tooltipCurrent: Double? = nil
+    var tooltipPrevious: Double? = nil
+    var periodLabel: String? = nil
+
+    @State private var showTooltip: Bool = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -171,12 +196,85 @@ struct StatCard: View {
         }
         .background(Color(.systemGray5))
         .cornerRadius(15)
+        .overlay(alignment: .center) {
+            if showTooltip {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(.ultraThinMaterial)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 4) {
+                            Text(title)
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .tint(.primary)
+                            if let arrow = trendArrow, arrow != .none {
+                                Text(arrow.rawValue)
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(color)
+                            }
+                        }
+
+                        if let percentText = tooltipPercentChangeText {
+                            Text(percentText)
+                                .font(.caption2)
+                                .tint(.primary)
+                        } else {
+                            Text("Ingen trenddata")
+                                .font(.caption2)
+                                .tint(.primary)
+                        }
+
+                        if let pair = tooltipValuePair {
+                            Text("Förändring:")
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                                .tint(.primary)
+
+                            Text(tooltipChangeString(for: pair))
+                                .font(.caption2)
+                                .tint(.primary)
+                        }
+                    }
+                    .padding(8)
+                }
+            }
+        }
+        .onLongPressGesture {
+            withAnimation {
+                showTooltip.toggle()
+            }
+        }
+    }
+
+    private var tooltipValuePair: (prev: Double, curr: Double)? {
+        if let current = tooltipCurrent,
+           let previous = tooltipPrevious,
+           previous != 0 {
+            return (previous, current)
+        }
+        return nil
+    }
+
+    private var tooltipPercentChangeText: String? {
+        guard let pair = tooltipValuePair else { return nil }
+        let pct = (pair.curr - pair.prev) / pair.prev * 100.0
+        let label = periodLabel ?? "föregående period"
+        return String(format: "%+.1f %% vs fg %@", pct, label)
+    }
+    
+    private func tooltipChangeString(for pair: (prev: Double, curr: Double)) -> String {
+        if let unit = unit {
+            return String(format: "%.2f → %.2f %@", pair.prev, pair.curr, unit)
+        } else {
+            return String(format: "%.2f → %.2f", pair.prev, pair.curr)
+        }
     }
 }
-    private func formatBasal(_ value: Double?) -> String {
+    /*private func formatBasal(_ value: Double?) -> String {
         guard let value = value else { return "---" }
         return String(format: "%.2f", value)
-    }
+    }*/
 
 struct StatsGridView: View {
     @ObservedObject var simpleStats: SimpleStatsViewModel
@@ -190,6 +288,7 @@ struct StatsGridView: View {
     let isTodayOnly: Bool
     let isOneDayOnly: Bool
     let showTrends: Bool
+    let periodLabel: String
 
     private var hasInsulinData: Bool {
         simpleStats.totalDailyDose != nil || simpleStats.avgBolus != nil || simpleStats.actualBasal != nil
@@ -214,13 +313,34 @@ struct StatsGridView: View {
                     showGMI.toggle()
                     Storage.shared.showGMI.value = showGMI
                 }) {
+                    // Beräkna GMI/eHbA1c för nuvarande och föregående period
+                    let currentGMI = gmiValue(from: simpleStats.avgGlucose)
+                    let previousGMI = gmiValue(from: simpleStats.prevAvgGlucose)
+                    let currentEHb = eHbA1cPercent(from: simpleStats.avgGlucose)
+                    let previousEHb = eHbA1cPercent(from: simpleStats.prevAvgGlucose)
+
+                    let arrow: StatsTrendArrow? = {
+                        guard showTrends else { return nil }
+                        if showGMI {
+                            return StatsTrendCalculator.arrow(current: currentGMI, previous: previousGMI)
+                        } else {
+                            return StatsTrendCalculator.arrow(current: currentEHb, previous: previousEHb)
+                        }
+                    }()
+
                     StatCard(
                         title: showGMI ? "GMI" : "eA1c",
-                        value: showGMI ? formatGMI(simpleStats.gmi) : formatEhbA1c(simpleStats.avgGlucose),
-                        unit: showGMI ? "%" : (UserDefaultsRepository.units.value == "mg/dL" ? "%" : "mmol/mol"),
+                        value: showGMI
+                            ? formatGMI(simpleStats.gmi)
+                            : formatEhbA1c(simpleStats.avgGlucose),
+                        unit: showGMI ? "%"
+                             : (UserDefaultsRepository.units.value == "mg/dL" ? "%" : "mmol/mol"),
                         color: .primary,
                         isInteractive: true,
-                        trendArrow: showTrends ? simpleStats.avgGlucoseTrend : nil
+                        trendArrow: arrow,
+                        tooltipCurrent: showGMI ? currentGMI : currentEHb,
+                        tooltipPrevious: showGMI ? previousGMI : previousEHb,
+                        periodLabel: periodLabel
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -230,7 +350,10 @@ struct StatsGridView: View {
                     value: formatGlucose(simpleStats.avgGlucose),
                     unit: UserDefaultsRepository.units.value,
                     color: .primary,
-                    trendArrow: showTrends ? simpleStats.avgGlucoseTrend : nil
+                    trendArrow: showTrends ? simpleStats.avgGlucoseTrend : nil,
+                    tooltipCurrent: simpleStats.avgGlucose,
+                    tooltipPrevious: simpleStats.prevAvgGlucose,
+                    periodLabel: periodLabel
                 )
             }
             
@@ -245,7 +368,12 @@ struct StatsGridView: View {
                         unit: showStdDev ? UserDefaultsRepository.units.value : "%",
                         color: .primary,
                         isInteractive: true,
-                        trendArrow: showTrends ? simpleStats.cvTrend : nil
+                        trendArrow: showTrends
+                            ? (showStdDev ? simpleStats.stdDeviationTrend : simpleStats.cvTrend)
+                            : nil,
+                        tooltipCurrent: showStdDev ? simpleStats.stdDeviation : simpleStats.coefficientOfVariation,
+                        tooltipPrevious: showStdDev ? simpleStats.prevStdDeviation : simpleStats.prevCoefficientOfVariation,
+                        periodLabel: periodLabel
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -256,7 +384,10 @@ struct StatsGridView: View {
                         value: formatCarbRatio(simpleStats.realCarbRatio),
                         unit: "g/E",
                         color: .mint,
-                        trendArrow: showTrends ? simpleStats.realCarbRatioTrend : nil
+                        trendArrow: showTrends ? simpleStats.realCarbRatioTrend : nil,
+                        tooltipCurrent: simpleStats.realCarbRatio,
+                        tooltipPrevious: simpleStats.prevRealCarbRatio,
+                        periodLabel: periodLabel
                     )
                 } else {
                     Color.clear
@@ -270,7 +401,10 @@ struct StatsGridView: View {
                     value: formatInsulin(simpleStats.totalDailyDose),
                     unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                     color: .blue,
-                    trendArrow: showTrends ? simpleStats.totalDailyDoseTrend : nil
+                    trendArrow: showTrends ? simpleStats.totalDailyDoseTrend : nil,
+                    tooltipCurrent: simpleStats.totalDailyDose,
+                    tooltipPrevious: simpleStats.prevTotalDailyDose,
+                    periodLabel: periodLabel
                 )
                 Button(action: {
                     showFPU.toggle()
@@ -282,7 +416,10 @@ struct StatsGridView: View {
                         unit: isTodayOnly || isOneDayOnly ? "g" : "g/dag",
                         color: showFPU ? .brown : .orange,
                         isInteractive: true,
-                        trendArrow: showTrends ? simpleStats.avgCarbsTrend : nil
+                        trendArrow: showTrends ? simpleStats.avgCarbsTrend : nil,
+                        tooltipCurrent: showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs,
+                        tooltipPrevious: showFPU ? simpleStats.prevAvgFPUCarbs : simpleStats.prevAvgCarbs,
+                        periodLabel: periodLabel
                     )
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -296,14 +433,20 @@ struct StatsGridView: View {
                         value: formatInsulin(simpleStats.avgBolus),
                         unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                         color: .blue,
-                        trendArrow: showTrends ? simpleStats.avgBolusTrend : nil
+                        trendArrow: showTrends ? simpleStats.avgBolusTrend : nil,
+                        tooltipCurrent: simpleStats.avgBolus,
+                        tooltipPrevious: simpleStats.prevAvgBolus,
+                        periodLabel: periodLabel
                     )
                     StatCard(
                         title: "Måltidsbolus Netto",
                         value: formatInsulin(simpleStats.netMealBolus),
                         unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                         color: .mint,
-                        trendArrow: showTrends ? simpleStats.netMealBolusTrend : nil
+                        trendArrow: showTrends ? simpleStats.netMealBolusTrend : nil,
+                        tooltipCurrent: simpleStats.netMealBolus,
+                        tooltipPrevious: simpleStats.prevNetMealBolus,
+                        periodLabel: periodLabel
                     )
                 }
             }
@@ -322,7 +465,10 @@ struct StatsGridView: View {
                             isInteractive: true,
                             trendArrow: showTrends
                                 ? (showProfileBasal ? simpleStats.programmedBasalTrend : simpleStats.actualBasalTrend)
-                                : nil
+                                : nil,
+                            tooltipCurrent: showProfileBasal ? simpleStats.programmedBasal : simpleStats.actualBasal,
+                            tooltipPrevious: showProfileBasal ? simpleStats.prevProgrammedBasal : simpleStats.prevActualBasal,
+                            periodLabel: periodLabel
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -339,12 +485,13 @@ struct StatsGridView: View {
                             isInteractive: true,
                             trendArrow: showTrends
                                 ? (showSMB ? simpleStats.avgSMBTrend : simpleStats.avgManualBolusTrend)
-                                : nil
+                                : nil,
+                            tooltipCurrent: showSMB ? simpleStats.avgSMB : simpleStats.avgManualBolus,
+                            tooltipPrevious: showSMB ? simpleStats.prevAvgSMB : simpleStats.prevAvgManualBolus,
+                            periodLabel: periodLabel
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
-                
-                    
                 }
             }
             
@@ -354,14 +501,17 @@ struct StatsGridView: View {
                             Storage.shared.showLowPercentage.value = showLowPercentage
                         }) {
                         StatCard(
-                            title: showLowPercentage ? "Lågt glukos" : "Fingerstick",
+                            title: showLowPercentage ? "Låga glukosvärden" : "Fingerstick",
                             value: showLowPercentage ? formatGlucose(simpleStats.avgLowPercentage) : formatBGCheck(simpleStats.avgBGCheck),
                             unit: showLowPercentage ? "%" : isTodayOnly || isOneDayOnly ? "st" : "st/dag",
                             color: .red,
                             isInteractive: true,
                             trendArrow: showTrends
                                 ? (showLowPercentage ? simpleStats.avgLowPercentageTrend : simpleStats.avgBGCheckTrend)
-                                : nil
+                                : nil,
+                            tooltipCurrent: showLowPercentage ? simpleStats.avgLowPercentage : simpleStats.avgBGCheck,
+                            tooltipPrevious: showLowPercentage ? simpleStats.prevAvgLowPercentage : simpleStats.prevAvgBGCheck,
+                            periodLabel: periodLabel
                         )
                         .buttonStyle(PlainButtonStyle())
                         }
@@ -382,7 +532,10 @@ struct StatsGridView: View {
                                 trendArrow: showTrends
                                     ? (showDextroAmount ? simpleStats.avgLowTreatmentAmountTrend
                                                         : simpleStats.avgLowTreatmentsTrend)
-                                    : nil
+                                    : nil,
+                                tooltipCurrent: showDextroAmount ? simpleStats.avgLowTreatmentAmount : simpleStats.avgLowTreatments,
+                                tooltipPrevious: showDextroAmount ? simpleStats.prevAvgLowTreatmentAmount : simpleStats.prevAvgLowTreatments,
+                                periodLabel: periodLabel
                             )
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -475,5 +628,33 @@ struct StatsGridView: View {
         } else {
             return String(format: "%.1f", value)
         }
+    }
+    
+    private func gmiValue(from avgGlucose: Double?) -> Double? {
+        guard let avgGlucose = avgGlucose else { return nil }
+
+        let avgGlucoseMgdL: Double
+        if UserDefaultsRepository.units.value == "mg/dL" {
+            avgGlucoseMgdL = avgGlucose
+        } else {
+            avgGlucoseMgdL = avgGlucose * 18.0182
+        }
+
+        // GMI i % enligt din formel
+        return 3.31 + (0.02392 * avgGlucoseMgdL)
+    }
+
+    private func eHbA1cPercent(from avgGlucose: Double?) -> Double? {
+        guard let avgGlucose = avgGlucose else { return nil }
+
+        let avgGlucoseMgdL: Double
+        if UserDefaultsRepository.units.value == "mg/dL" {
+            avgGlucoseMgdL = avgGlucose
+        } else {
+            avgGlucoseMgdL = avgGlucose * 18.0182
+        }
+
+        // eHbA1c i % (samma grund som din formatter använder innan ev mmol/mol-konvertering)
+        return (avgGlucoseMgdL + 46.7) / 28.7
     }
 }
