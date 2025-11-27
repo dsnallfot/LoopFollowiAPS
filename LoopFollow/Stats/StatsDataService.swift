@@ -5,7 +5,7 @@
 import Foundation
 
 // Enkel persistent cache för statistikdata (bolus, SMB, kolhydrater, basal).
-// Lagrar upp till 30 dagar och används för att minska Nightscout-förfrågningar.
+// Lagrar upp till 90 dagar och används för att minska Nightscout-förfrågningar.
 private class StatsCacheManager {
     static let shared = StatsCacheManager()
     private init() {}
@@ -57,7 +57,7 @@ private class StatsCacheManager {
         return dir.appendingPathComponent("StatsCache.json")
     }
 
-    /// Läs in cache från disk och applicera på MainViewController (endast de senaste 30 dagarna).
+    /// Läs in cache från disk och applicera på MainViewController (endast de senaste 90 dagarna).
     func loadInto(mainVC: MainViewController) {
         do {
             let data = try Data(contentsOf: cacheURL)
@@ -65,7 +65,7 @@ private class StatsCacheManager {
             let cache = try decoder.decode(Cache.self, from: data)
 
             let now = Date()
-            let cutoff = now.addingTimeInterval(-30 * 24 * 60 * 60).timeIntervalSince1970
+            let cutoff = now.addingTimeInterval(-90 * 24 * 60 * 60).timeIntervalSince1970
 
             let bg = cache.bg
                 .filter { $0.date >= cutoff }
@@ -120,10 +120,10 @@ private class StatsCacheManager {
         }
     }
 
-    /// Spara aktuella stats-arrayer från MainViewController till disk (endast de senaste 30 dagarna).
+    /// Spara aktuella stats-arrayer från MainViewController till disk (endast de senaste 90 dagarna).
     func saveFrom(mainVC: MainViewController) {
         let now = Date()
-        let cutoff = now.addingTimeInterval(-30 * 24 * 60 * 60).timeIntervalSince1970
+        let cutoff = now.addingTimeInterval(-90 * 24 * 60 * 60).timeIntervalSince1970
 
         let bg = mainVC.statsBGData
             .filter { $0.date >= cutoff }
@@ -191,6 +191,7 @@ class StatsDataService {
     var daysToAnalyze: Int = 14
     var isTodayOnly: Bool = false
     private let dataFetcher: StatsDataFetcher
+    private let maxStatsDays: Int = 90
     
     struct DailyBasalStat {
         let dayStart: Date
@@ -222,32 +223,72 @@ class StatsDataService {
             cutoffTime = now - (Double(daysToAnalyze) * 24 * 60 * 60)
         }
 
-        let oldestBG = mainVC.statsBGData.filter { $0.date >= cutoffTime && $0.date <= now }.min(by: { $0.date < $1.date })?.date
-        let oldestBolus = mainVC.statsBolusData.filter { $0.date >= cutoffTime && $0.date <= now }.min(by: { $0.date < $1.date })?.date
-        let oldestCarb = mainVC.statsCarbData.filter { $0.date >= cutoffTime && $0.date <= now }.min(by: { $0.date < $1.date })?.date
-        let oldestBasal = mainVC.statsBasalData.filter { $0.date >= cutoffTime && $0.date <= now }.min(by: { $0.date < $1.date })?.date
+        let oldestBG = mainVC.statsBGData
+            .filter { $0.date >= cutoffTime && $0.date <= now }
+            .min(by: { $0.date < $1.date })?.date
+        let oldestBolus = mainVC.statsBolusData
+            .filter { $0.date >= cutoffTime && $0.date <= now }
+            .min(by: { $0.date < $1.date })?.date
+        let oldestCarb = mainVC.statsCarbData
+            .filter { $0.date >= cutoffTime && $0.date <= now }
+            .min(by: { $0.date < $1.date })?.date
+        let oldestBasal = mainVC.statsBasalData
+            .filter { $0.date >= cutoffTime && $0.date <= now }
+            .min(by: { $0.date < $1.date })?.date
 
-        let bgDataCount = mainVC.statsBGData.filter { $0.date >= cutoffTime && $0.date <= now }.count
-        let bolusDataCount = mainVC.statsBolusData.filter { $0.date >= cutoffTime && $0.date <= now }.count
-        let carbDataCount = mainVC.statsCarbData.filter { $0.date >= cutoffTime && $0.date <= now }.count
-        let basalDataCount = mainVC.statsBasalData.filter { $0.date >= cutoffTime && $0.date <= now }.count
+        let bgDataCount = mainVC.statsBGData
+            .filter { $0.date >= cutoffTime && $0.date <= now }
+            .count
+        let bolusDataCount = mainVC.statsBolusData
+            .filter { $0.date >= cutoffTime && $0.date <= now }
+            .count
+        let carbDataCount = mainVC.statsCarbData
+            .filter { $0.date >= cutoffTime && $0.date <= now }
+            .count
+        let basalDataCount = mainVC.statsBasalData
+            .filter { $0.date >= cutoffTime && $0.date <= now }
+            .count
+
+        // Freshness: senaste datapunkt får inte vara äldre än 48 timmar,
+        // annars betraktar vi datat som "stale" och triggar en ny 90-dagarsfetch.
+        let newestBG = mainVC.statsBGData.max(by: { $0.date < $1.date })?.date
+        let newestBolus = mainVC.statsBolusData.max(by: { $0.date < $1.date })?.date
+        let newestCarb = mainVC.statsCarbData.max(by: { $0.date < $1.date })?.date
+        let newestBasal = mainVC.statsBasalData.max(by: { $0.date < $1.date })?.date
+
+        let newestTreatment = max(newestBolus ?? 0, newestCarb ?? 0, newestBasal ?? 0)
+
+        let freshnessThreshold: TimeInterval = 48 * 60 * 60
+        let isBGStale = (newestBG == nil) || (now - (newestBG ?? 0)) > freshnessThreshold
+        let isTreatmentStale = (newestTreatment == 0) || (now - newestTreatment) > freshnessThreshold
+
+        LogManager.shared.log(
+            category: .analysis,
+            message: "StatsDataService - freshness BG: isStale=\(isBGStale), newestBG=\(String(describing: newestBG)); treatments: isStale=\(isTreatmentStale), newestTreatment=\(newestTreatment))",
+            isDebug: true
+        )
 
         let minExpectedBGEntries = max(daysToAnalyze * 6, 12)
-        let hasEnoughBGData = bgDataCount >= minExpectedBGEntries && (oldestBG ?? now) <= cutoffTime + (24 * 60 * 60)
+        let hasEnoughBGData = !isBGStale &&
+            bgDataCount >= minExpectedBGEntries &&
+            (oldestBG ?? now) <= cutoffTime + (24 * 60 * 60)
+
         let minExpectedTreatmentEntries = max(daysToAnalyze, 1)
-        let hasEnoughTreatmentData = (bolusDataCount + carbDataCount + basalDataCount) >= minExpectedTreatmentEntries &&
+        let hasEnoughTreatmentData = !isTreatmentStale &&
+            (bolusDataCount + carbDataCount + basalDataCount) >= minExpectedTreatmentEntries &&
             (oldestBolus ?? now) <= cutoffTime + (24 * 60 * 60) &&
             (oldestCarb ?? now) <= cutoffTime + (24 * 60 * 60) &&
             (oldestBasal ?? now) <= cutoffTime + (24 * 60 * 60)
 
         if !hasEnoughBGData {
-            dataFetcher.fetchBGData(days: daysToAnalyze) {
+            // Bootstrap med upp till 90 dagars data i cachen.
+            dataFetcher.fetchBGData(days: maxStatsDays) {
                 DispatchQueue.main.async {
                     onProgress()
                 }
 
                 if !hasEnoughTreatmentData {
-                    self.dataFetcher.fetchTreatmentsData(days: self.daysToAnalyze) {
+                    self.dataFetcher.fetchTreatmentsData(days: self.maxStatsDays) {
                         DispatchQueue.main.async {
                             onProgress()
                             StatsCacheManager.shared.saveFrom(mainVC: mainVC)
@@ -260,7 +301,8 @@ class StatsDataService {
                 }
             }
         } else if !hasEnoughTreatmentData {
-            dataFetcher.fetchTreatmentsData(days: daysToAnalyze) {
+            // Vi har tillräckligt med BG, men för lite treatments – fyll upp hela 90-dagarsfönstret.
+            dataFetcher.fetchTreatmentsData(days: maxStatsDays) {
                 DispatchQueue.main.async {
                     onProgress()
                     StatsCacheManager.shared.saveFrom(mainVC: mainVC)

@@ -35,10 +35,11 @@ struct AggregatedStatsView: View {
             VStack(spacing: 8) {
                 Picker("Period", selection: $selectedPeriod) {
                     Text("Idag").tag(0)
-                    Text("1 dag").tag(1)
-                    Text("7 dagar").tag(7)
-                    Text("14 dagar").tag(14)
-                    Text("30 dagar").tag(30)
+                    Text("1 d").tag(1)
+                    Text("7 d").tag(7)
+                    Text("14 d").tag(14)
+                    Text("30 d").tag(30)
+                    Text("90 d").tag(90)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
