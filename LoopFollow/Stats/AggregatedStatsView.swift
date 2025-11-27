@@ -167,7 +167,7 @@ struct StatCard: View {
             }
         }
         .background(Color(.systemGray5))
-        .cornerRadius(20)
+        .cornerRadius(15)
     }
 }
     private func formatBasal(_ value: Double?) -> String {

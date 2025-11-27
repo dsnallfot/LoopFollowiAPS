@@ -69,7 +69,7 @@ struct GRIView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(Color(.systemGray5))
-        .cornerRadius(20)
+        .cornerRadius(15)
     }
 
     private func griColor(_ gri: Double) -> Color {

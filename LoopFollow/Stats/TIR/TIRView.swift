@@ -82,7 +82,7 @@ struct TIRView: View {
                     .padding(8)
             }
             .background(Color(.systemGray5))
-            .cornerRadius(20)
+            .cornerRadius(15)
         }
         .buttonStyle(PlainButtonStyle())
     }
