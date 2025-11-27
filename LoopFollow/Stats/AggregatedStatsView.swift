@@ -13,6 +13,7 @@ struct AggregatedStatsView: View {
     @State private var showSMB: Bool
     @State private var showDextroAmount: Bool
     @State private var showProfileBasal: Bool
+    @State private var showLowPercentage: Bool
     @State private var selectedPeriod: Int
     @State private var isLoadingData = false
 
@@ -24,6 +25,7 @@ struct AggregatedStatsView: View {
         _showSMB = State(initialValue: Storage.shared.showSMB.value)
         _showDextroAmount = State(initialValue: Storage.shared.showDextroAmount.value)
         _showProfileBasal = State(initialValue: Storage.shared.showProfileBasal.value)
+        _showLowPercentage = State(initialValue: Storage.shared.showLowPercentage.value)
 
         let savedPeriod = UserDefaults.standard.object(forKey: "AggregatedStatsSelectedPeriod") as? Int ?? 14
         _selectedPeriod = State(initialValue: savedPeriod)
@@ -71,6 +73,7 @@ struct AggregatedStatsView: View {
                         showSMB: $showSMB,
                         showDextroAmount: $showDextroAmount,
                         showProfileBasal: $showProfileBasal,
+                        showLowPercentage: $showLowPercentage,
                         isTodayOnly: selectedPeriod == 0,
                         isOneDayOnly: selectedPeriod < 2,
                         showTrends: selectedPeriod != 0 && selectedPeriod != 90
@@ -183,6 +186,7 @@ struct StatsGridView: View {
     @Binding var showSMB: Bool
     @Binding var showDextroAmount: Bool
     @Binding var showProfileBasal: Bool
+    @Binding var showLowPercentage: Bool
     let isTodayOnly: Bool
     let isOneDayOnly: Bool
     let showTrends: Bool
@@ -345,15 +349,23 @@ struct StatsGridView: View {
             }
             
                 HStack(spacing: 16) {
-                    if hasBGCheckData {
+                        Button(action: {
+                            showLowPercentage.toggle()
+                            Storage.shared.showLowPercentage.value = showLowPercentage
+                        }) {
                         StatCard(
-                            title: "Fingerstick",
-                            value: formatBGCheck(simpleStats.avgBGCheck),
-                            unit: isTodayOnly || isOneDayOnly ? "st" : "st/dag",
+                            title: showLowPercentage ? "Lågt glukos" : "Fingerstick",
+                            value: showLowPercentage ? formatGlucose(simpleStats.avgLowPercentage) : formatBGCheck(simpleStats.avgBGCheck),
+                            unit: showLowPercentage ? "%" : isTodayOnly || isOneDayOnly ? "st" : "st/dag",
                             color: .red,
-                            trendArrow: showTrends ? simpleStats.avgBGCheckTrend : nil
+                            isInteractive: true,
+                            trendArrow: showTrends
+                                ? (showLowPercentage ? simpleStats.avgLowPercentageTrend : simpleStats.avgBGCheckTrend)
+                                : nil
                         )
-                    }
+                        .buttonStyle(PlainButtonStyle())
+                        }
+                    
                     if hasLowTreatmentsData {
                         Button(action: {
                             showDextroAmount.toggle()

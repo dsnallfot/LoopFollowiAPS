@@ -52,6 +52,9 @@ class SimpleStatsViewModel: ObservableObject {
 
     @Published var realCarbRatio: Double?
     @Published var realCarbRatioTrend: StatsTrendArrow = .none
+    
+    @Published var avgLowPercentage: Double?
+    @Published var avgLowPercentageTrend: StatsTrendArrow = .none
 
     private let dataService: StatsDataService
 
@@ -275,6 +278,17 @@ class SimpleStatsViewModel: ObservableObject {
                 }
                 prevStdDevMgdL = sqrt(prevVariance / Double(prevBG.count))
             }
+            
+            
+            // LOW PERCENTAGE (< 3.9 mmol/L)
+            let lowThresholdMgdL = 3.9 * 18.0182   // 70.27 mg/dL
+
+            let lowCount = bgData.filter { Double($0.sgv) < lowThresholdMgdL }.count
+            if bgData.count > 0 {
+                avgLowPercentage = (Double(lowCount) / Double(bgData.count)) * 100.0
+            } else {
+                avgLowPercentage = nil
+            }
 
             // Medelglukos-trend (i aktuella enheter)
             let prevAvgGlucoseConverted: Double? = {
@@ -287,6 +301,21 @@ class SimpleStatsViewModel: ObservableObject {
             }()
             avgGlucoseTrend = StatsTrendCalculator.arrow(current: avgGlucose, previous: prevAvgGlucoseConverted)
 
+            // Low % previous period
+            let prevLowCount: Int = prevBG.filter {
+                Double($0.sgv) < lowThresholdMgdL
+            }.count
+
+            let prevLowPercentage: Double? = {
+                guard !prevBG.isEmpty else { return nil }
+                return (Double(prevLowCount) / Double(prevBG.count)) * 100.0
+            }()
+
+            avgLowPercentageTrend = StatsTrendCalculator.arrow(
+                current: avgLowPercentage,
+                previous: prevLowPercentage
+            )
+            
             // StdAvvikelse/CV-trend
             if let prevStd = prevStdDevMgdL, let prevAvg = prevAvgBGmgdL, prevAvg > 0 {
                 let prevStdConverted: Double = {

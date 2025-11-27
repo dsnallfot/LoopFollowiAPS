@@ -47,6 +47,7 @@ class Storage {
     var showSMB = StorageValue<Bool>(key: "showSMB", defaultValue: false)
     var showDextroAmount = StorageValue<Bool>(key: "showDextroAmount", defaultValue: false)
     var showProfileBasal = StorageValue<Bool>(key: "showProfileBasal", defaultValue: false)
+    var showLowPercentage = StorageValue<Bool>(key: "showLowPercentage", defaultValue: false)
     
     static let shared = Storage()
 
