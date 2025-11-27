@@ -236,8 +236,8 @@ class AlarmSound {
 
     fileprivate static func enableAudio() {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
-            /*try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)*/
+            //try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true)
             LogManager.shared.log(category: .alarm, message: "Audio session configured for alarm playback")
         } catch {
