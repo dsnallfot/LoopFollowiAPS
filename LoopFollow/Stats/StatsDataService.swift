@@ -190,6 +190,7 @@ class StatsDataService {
 
     var daysToAnalyze: Int = 14
     var isTodayOnly: Bool = false
+    var isOneDayOnly: Bool = false
     private let dataFetcher: StatsDataFetcher
     private let maxStatsDays: Int = 90
     

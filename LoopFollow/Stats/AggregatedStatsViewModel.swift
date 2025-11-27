@@ -31,9 +31,15 @@ class AggregatedStatsViewModel: ObservableObject {
         if days == 0 {
             // "Idag" – use only data from midnight to now, but fetch 1 dag bakåt om det behövs
             dataService.isTodayOnly = true
+            dataService.isOneDayOnly = false
             dataService.daysToAnalyze = 1
+        } else if days < 2 {
+            dataService.isOneDayOnly = true
+            dataService.isTodayOnly = false
+            dataService.daysToAnalyze = days
         } else {
             dataService.isTodayOnly = false
+            dataService.isOneDayOnly = false
             dataService.daysToAnalyze = days
         }
 

@@ -71,7 +71,8 @@ struct AggregatedStatsView: View {
                         showSMB: $showSMB,
                         showDextroAmount: $showDextroAmount,
                         showProfileBasal: $showProfileBasal,
-                        isTodayOnly: selectedPeriod == 0
+                        isTodayOnly: selectedPeriod == 0,
+                        isOneDayOnly: selectedPeriod < 2
                     )
                     .padding(.horizontal)
                     
@@ -171,6 +172,7 @@ struct StatsGridView: View {
     @Binding var showDextroAmount: Bool
     @Binding var showProfileBasal: Bool
     let isTodayOnly: Bool
+    let isOneDayOnly: Bool
 
     private var hasInsulinData: Bool {
         simpleStats.totalDailyDose != nil || simpleStats.avgBolus != nil || simpleStats.actualBasal != nil
@@ -243,9 +245,9 @@ struct StatsGridView: View {
             if hasInsulinData && hasCarbData {
             HStack(spacing: 16) {
                 StatCard(
-                    title: isTodayOnly ? "Insulin totalt idag" : "Total Daglig Dos",
+                    title: isTodayOnly ? "Insulin Totalt" : "Insulin Totalt (TDD)",
                     value: formatInsulin(simpleStats.totalDailyDose),
-                    unit: isTodayOnly ? "E" : "E/dag",
+                    unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                     color: .blue
                 )
                 Button(action: {
@@ -253,9 +255,9 @@ struct StatsGridView: View {
                     Storage.shared.showFPU.value = showFPU
                 }) {
                     StatCard(
-                        title: showFPU ? "FPU" : "Kolhydrater",
+                        title: showFPU ? "Varav FPU" : "Kolhydrater Totalt",
                         value: formatCarbs(showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs),
-                        unit: isTodayOnly ? "g" : "g/dag",
+                        unit: isTodayOnly || isOneDayOnly ? "g" : "g/dag",
                         color: showFPU ? .brown : .orange,
                         isInteractive: true
                     )
@@ -267,15 +269,15 @@ struct StatsGridView: View {
             if hasInsulinData && hasCarbData {
                 HStack(spacing: 16) {
                             StatCard(
-                                title: "Total Bolus",
+                                title: "Bolus Totalt",
                                 value: formatInsulin(simpleStats.avgBolus),
-                                unit: isTodayOnly ? "E" : "E/dag",
+                                unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                                 color: .blue,
                             )
                     StatCard(
-                        title: "Netto måltidsbolus",
+                        title: "Måltidsbolus Netto",
                         value: formatInsulin(simpleStats.netMealBolus),
-                        unit: isTodayOnly ? "E" : "E/dag",
+                        unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                         color: .mint,
                     )
                 }
@@ -288,9 +290,9 @@ struct StatsGridView: View {
                         Storage.shared.showProfileBasal.value = showProfileBasal
                     }) {
                         StatCard(
-                            title: showProfileBasal ? "Profilbasal" : "Levererad basal",
+                            title: showProfileBasal ? "Profilbasal" : "Levererad Basal",
                             value: formatBasal(showProfileBasal ? simpleStats.programmedBasal : simpleStats.actualBasal),
-                            unit: isTodayOnly ? "E" : "E/dag",
+                            unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                             color: showProfileBasal ? .gray : .blue,
                             isInteractive: true
                         )
@@ -302,9 +304,9 @@ struct StatsGridView: View {
                         Storage.shared.showSMB.value = showSMB
                     }) {
                         StatCard(
-                            title: showSMB ? "SMB" : "Manuell bolus",
+                            title: showSMB ? "SMB" : "Manuell Bolus",
                             value: formatInsulin(showSMB ? simpleStats.avgSMB : simpleStats.avgManualBolus),
-                            unit: isTodayOnly ? "E" : "E/dag",
+                            unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                             color: showSMB ? .cyan : .indigo,
                             isInteractive: true
                         )
@@ -320,7 +322,7 @@ struct StatsGridView: View {
                         StatCard(
                             title: "Fingerstick",
                             value: formatBGCheck(simpleStats.avgBGCheck),
-                            unit: isTodayOnly ? "st" : "st/dag",
+                            unit: isTodayOnly || isOneDayOnly ? "st" : "st/dag",
                             color: .red
                         )
                     }
@@ -330,11 +332,11 @@ struct StatsGridView: View {
                             Storage.shared.showDextroAmount.value = showDextroAmount
                         }) {
                             StatCard(
-                                title: showDextroAmount ? "Dextro mängd" : "Dextrobehandlingar",
+                                title: showDextroAmount ? "Dextro Mängd" : "Dextro Behandlingar",
                                 value: showDextroAmount ? formatCarbs(simpleStats.avgLowTreatmentAmount)
                                                         : formatLowTreatment(simpleStats.avgLowTreatments),
-                                unit: showDextroAmount ? (isTodayOnly ? "g" : "g/dag")
-                                                       : (isTodayOnly ? "st" : "st/dag"),
+                                unit: showDextroAmount ? (isTodayOnly || isOneDayOnly ? "g" : "g/dag")
+                                                       : (isTodayOnly || isOneDayOnly ? "ggr" : "ggr/dag"),
                                 color: .red,
                                 isInteractive: true
                             )
@@ -416,10 +418,18 @@ struct StatsGridView: View {
     }
     private func formatLowTreatment(_ value: Double?) -> String {
         guard let value = value else { return "---" }
-        return String(format: "%.1f", value)
+        if isTodayOnly || isOneDayOnly {
+            return String(format: "%.0f", value)
+        } else {
+            return String(format: "%.1f", value)
+        }
     }
     private func formatBGCheck(_ value: Double?) -> String {
         guard let value = value else { return "---" }
-        return String(format: "%.1f", value)
+        if isTodayOnly || isOneDayOnly {
+            return String(format: "%.0f", value)
+        } else {
+            return String(format: "%.1f", value)
+        }
     }
 }
