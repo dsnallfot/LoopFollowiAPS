@@ -107,6 +107,17 @@ class SimpleStatsViewModel: ObservableObject {
         } else {
             coefficientOfVariation = nil
         }
+        
+        // LOW PERCENTAGE (< 3.9 mmol/L)
+        // Vi räknar alltid i mg/dL eftersom sgv är mg/dL
+        let lowThresholdMgdL = 3.9 * 18.0182   // ≈ 70.27 mg/dL
+
+        let lowCount = bgData.filter { Double($0.sgv) < lowThresholdMgdL }.count
+        if bgData.count > 0 {
+            avgLowPercentage = (Double(lowCount) / Double(bgData.count)) * 100.0
+        } else {
+            avgLowPercentage = nil
+        }
 
         let cutoffTime = Date().timeIntervalSince1970 - (Double(dataService.daysToAnalyze) * 24 * 60 * 60)
         let now = Date().timeIntervalSince1970
@@ -278,17 +289,6 @@ class SimpleStatsViewModel: ObservableObject {
                     return sum + (diff * diff)
                 }
                 prevStdDevMgdL = sqrt(prevVariance / Double(prevBG.count))
-            }
-            
-            
-            // LOW PERCENTAGE (< 3.9 mmol/L)
-            let lowThresholdMgdL = 3.9 * 18.0182   // 70.27 mg/dL
-
-            let lowCount = bgData.filter { Double($0.sgv) < lowThresholdMgdL }.count
-            if bgData.count > 0 {
-                avgLowPercentage = (Double(lowCount) / Double(bgData.count)) * 100.0
-            } else {
-                avgLowPercentage = nil
             }
 
             // Medelglukos-trend (i aktuella enheter)
