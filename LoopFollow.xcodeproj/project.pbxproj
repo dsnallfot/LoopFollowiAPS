@@ -43,6 +43,7 @@
 		6545DD2B2D6F03A0007B0D70 /* LineChartWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */; };
 		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
+		6574FFFA2ED8689E00DEF7D0 /* StatsTrendCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */; };
 		6578DBD12EB7739A00AF4942 /* VolumeButtonHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6578DBD02EB7738900AF4942 /* VolumeButtonHandler.swift */; };
 		6578DBD32EB8DD4B00AF4942 /* SnoozeStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */; };
 		6582C4B72ED23B4F0047658C /* GlucoseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6582C4B62ED23B490047658C /* GlucoseView.swift */; };
@@ -365,6 +366,7 @@
 		6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineChartWrapper.swift; sourceTree = "<group>"; };
 		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
+		6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsTrendCalculator.swift; sourceTree = "<group>"; };
 		6578DBD02EB7738900AF4942 /* VolumeButtonHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeButtonHandler.swift; sourceTree = "<group>"; };
 		6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeStatusView.swift; sourceTree = "<group>"; };
 		6582C4B62ED23B490047658C /* GlucoseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseView.swift; sourceTree = "<group>"; };
@@ -673,12 +675,13 @@
 		651C9D222ED5D1CA0077D40A /* Stats */ = {
 			isa = PBXGroup;
 			children = (
-				6517B66B2ED72FFF003360A4 /* StatsBasalEngine.swift */,
 				651C9D442ED5D35D0077D40A /* AGP */,
 				651C9D3A2ED5D2F90077D40A /* GRI */,
 				651C9D2F2ED5D2850077D40A /* TIR */,
+				6517B66B2ED72FFF003360A4 /* StatsBasalEngine.swift */,
 				651C9D2D2ED5D2680077D40A /* StatsDataService.swift */,
 				651C9D2B2ED5D2560077D40A /* StatsDataFetcher.swift */,
+				6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */,
 				651C9D292ED5D23E0077D40A /* SimpleStatsViewModel.swift */,
 				651C9D272ED5D22C0077D40A /* ChartContainerView.swift */,
 				651C9D252ED5D2100077D40A /* AggregatedStatsViewModel.swift */,
@@ -1778,6 +1781,7 @@
 				FC3CAB022493B6220068A152 /* BackgroundTaskAudio.swift in Sources */,
 				65CDBDD12DBD296800587289 /* NSCacheTask.swift in Sources */,
 				651C9D2E2ED5D2710077D40A /* StatsDataService.swift in Sources */,
+				6574FFFA2ED8689E00DEF7D0 /* StatsTrendCalculator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

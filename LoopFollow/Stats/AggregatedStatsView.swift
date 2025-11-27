@@ -118,11 +118,12 @@ struct AggregatedStatsView: View {
 }
 
 struct StatCard: View {
-    let title: String
-    let value: String
-    let unit: String?
-    let color: Color
-    var isInteractive: Bool = false
+        let title: String
+        let value: String
+        let unit: String?
+        let color: Color
+        var isInteractive: Bool = false
+        var trendArrow: StatsTrendArrow? = nil
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -140,6 +141,15 @@ struct StatCard: View {
                     if let unit = unit {
                         Text(unit)
                             .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer(minLength: 4)
+
+                    if let arrow = trendArrow, arrow != .none {
+                        Text(arrow.rawValue)
+                            .font(.caption)
+                            .fontWeight(.bold)
                             .foregroundColor(.secondary)
                     }
                 }
@@ -202,7 +212,8 @@ struct StatsGridView: View {
                         value: showGMI ? formatGMI(simpleStats.gmi) : formatEhbA1c(simpleStats.avgGlucose),
                         unit: showGMI ? "%" : (UserDefaultsRepository.units.value == "mg/dL" ? "%" : "mmol/mol"),
                         color: .primary,
-                        isInteractive: true
+                        isInteractive: true,
+                        trendArrow: simpleStats.avgGlucoseTrend
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -211,7 +222,8 @@ struct StatsGridView: View {
                     title: "Medel glukos",
                     value: formatGlucose(simpleStats.avgGlucose),
                     unit: UserDefaultsRepository.units.value,
-                    color: .primary
+                    color: .primary,
+                    trendArrow: simpleStats.avgGlucoseTrend
                 )
             }
             
@@ -225,7 +237,8 @@ struct StatsGridView: View {
                         value: showStdDev ? formatStdDev(simpleStats.stdDeviation) : formatCV(simpleStats.coefficientOfVariation),
                         unit: showStdDev ? UserDefaultsRepository.units.value : "%",
                         color: .primary,
-                        isInteractive: true
+                        isInteractive: true,
+                        trendArrow: simpleStats.cvTrend
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -235,7 +248,8 @@ struct StatsGridView: View {
                         title: "Verklig insulinkvot",
                         value: formatCarbRatio(simpleStats.realCarbRatio),
                         unit: "g/E",
-                        color: .mint
+                        color: .mint,
+                        trendArrow: simpleStats.realCarbRatioTrend
                     )
                 } else {
                     Color.clear
@@ -248,7 +262,8 @@ struct StatsGridView: View {
                     title: isTodayOnly ? "Insulin Totalt" : "Insulin Totalt (TDD)",
                     value: formatInsulin(simpleStats.totalDailyDose),
                     unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
-                    color: .blue
+                    color: .blue,
+                    trendArrow: simpleStats.totalDailyDoseTrend
                 )
                 Button(action: {
                     showFPU.toggle()
@@ -259,7 +274,8 @@ struct StatsGridView: View {
                         value: formatCarbs(showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs),
                         unit: isTodayOnly || isOneDayOnly ? "g" : "g/dag",
                         color: showFPU ? .brown : .orange,
-                        isInteractive: true
+                        isInteractive: true,
+                        trendArrow: simpleStats.avgCarbsTrend
                     )
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -268,17 +284,19 @@ struct StatsGridView: View {
             
             if hasInsulinData && hasCarbData {
                 HStack(spacing: 16) {
-                            StatCard(
-                                title: "Bolus Totalt",
-                                value: formatInsulin(simpleStats.avgBolus),
-                                unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
-                                color: .blue,
-                            )
+                    StatCard(
+                        title: "Bolus Totalt",
+                        value: formatInsulin(simpleStats.avgBolus),
+                        unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
+                        color: .blue,
+                        trendArrow: simpleStats.avgBolusTrend
+                    )
                     StatCard(
                         title: "Måltidsbolus Netto",
                         value: formatInsulin(simpleStats.netMealBolus),
                         unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                         color: .mint,
+                        trendArrow: simpleStats.netMealBolusTrend
                     )
                 }
             }
@@ -294,7 +312,8 @@ struct StatsGridView: View {
                             value: formatBasal(showProfileBasal ? simpleStats.programmedBasal : simpleStats.actualBasal),
                             unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                             color: showProfileBasal ? .gray : .blue,
-                            isInteractive: true
+                            isInteractive: true,
+                            trendArrow: showProfileBasal ? simpleStats.programmedBasalTrend : simpleStats.actualBasalTrend
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -308,7 +327,8 @@ struct StatsGridView: View {
                             value: formatInsulin(showSMB ? simpleStats.avgSMB : simpleStats.avgManualBolus),
                             unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
                             color: showSMB ? .cyan : .indigo,
-                            isInteractive: true
+                            isInteractive: true,
+                            trendArrow: showSMB ? simpleStats.avgSMBTrend : simpleStats.avgManualBolusTrend
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -323,7 +343,8 @@ struct StatsGridView: View {
                             title: "Fingerstick",
                             value: formatBGCheck(simpleStats.avgBGCheck),
                             unit: isTodayOnly || isOneDayOnly ? "st" : "st/dag",
-                            color: .red
+                            color: .red,
+                            trendArrow: simpleStats.avgBGCheckTrend
                         )
                     }
                     if hasLowTreatmentsData {
@@ -338,7 +359,9 @@ struct StatsGridView: View {
                                 unit: showDextroAmount ? (isTodayOnly || isOneDayOnly ? "g" : "g/dag")
                                                        : (isTodayOnly || isOneDayOnly ? "ggr" : "ggr/dag"),
                                 color: .red,
-                                isInteractive: true
+                                isInteractive: true,
+                                trendArrow: showDextroAmount ? simpleStats.avgLowTreatmentAmountTrend
+                                                             : simpleStats.avgLowTreatmentsTrend
                             )
                         }
                         .buttonStyle(PlainButtonStyle())

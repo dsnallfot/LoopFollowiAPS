@@ -337,6 +337,106 @@ class StatsDataService {
         }
     }
 
+    // Nuvarande analysfönster baserat på isTodayOnly/daysToAnalyze
+    func currentStatsInterval() -> DateInterval {
+        let nowDate = Date()
+        if isTodayOnly {
+            let start = Calendar.current.startOfDay(for: nowDate)
+            return DateInterval(start: start, end: nowDate)
+        } else {
+            let end = nowDate
+            let start = end.addingTimeInterval(-Double(daysToAnalyze) * 24 * 60 * 60)
+            return DateInterval(start: start, end: end)
+        }
+    }
+
+    // Föregående analysfönster med samma längd som nuvarande
+    func previousStatsInterval() -> DateInterval? {
+        if isTodayOnly { return nil }
+        let current = currentStatsInterval()
+        let duration = current.duration
+        guard duration > 0 else { return nil }
+        let previousEnd = current.start
+        let previousStart = previousEnd.addingTimeInterval(-duration)
+        return DateInterval(start: previousStart, end: previousEnd)
+    }
+    
+    // MARK: - Interval-baserade getters för trendberäkningar
+
+    func getBGData(in interval: DateInterval) -> [ShareGlucoseData] {
+        guard let mainVC = mainViewController else { return [] }
+        let start = interval.start.timeIntervalSince1970
+        let end = interval.end.timeIntervalSince1970
+        return mainVC.statsBGData.filter { $0.date >= start && $0.date <= end }
+    }
+
+    func getBGCheckDates(in interval: DateInterval) -> [TimeInterval] {
+        guard let mainVC = mainViewController else { return [] }
+        let start = interval.start.timeIntervalSince1970
+        let end = interval.end.timeIntervalSince1970
+        return mainVC.statsBGCheckData.filter { $0 >= start && $0 <= end }
+    }
+
+    func getBolusData(in interval: DateInterval) -> [MainViewController.bolusGraphStruct] {
+        guard let mainVC = mainViewController else { return [] }
+        let start = interval.start.timeIntervalSince1970
+        let end = interval.end.timeIntervalSince1970
+        return mainVC.statsBolusData.filter { $0.date >= start && $0.date <= end }
+    }
+
+    func getSMBData(in interval: DateInterval) -> [MainViewController.bolusGraphStruct] {
+        guard let mainVC = mainViewController else { return [] }
+        let start = interval.start.timeIntervalSince1970
+        let end = interval.end.timeIntervalSince1970
+        return mainVC.statsSMBData.filter { $0.date >= start && $0.date <= end }
+    }
+
+    func getCarbData(in interval: DateInterval) -> [MainViewController.carbGraphStruct] {
+        guard let mainVC = mainViewController else { return [] }
+        let start = interval.start.timeIntervalSince1970
+        let end = interval.end.timeIntervalSince1970
+        return mainVC.statsCarbData.filter { $0.date >= start && $0.date <= end }
+    }
+
+    func getDailyDeliveredBasal(in interval: DateInterval) -> [DailyBasalStat] {
+        guard let mainVC = mainViewController else { return [] }
+
+        let startDate = interval.start
+        let endDate = interval.end
+        let cutoffTime = startDate.timeIntervalSince1970
+        let endTime = endDate.timeIntervalSince1970
+
+        // Ta ut basalstege upp till endTime och inkludera sista punkt före start
+        let allBasal = mainVC.statsBasalData
+            .filter { $0.date <= endTime }
+            .sorted { $0.date < $1.date }
+
+        guard !allBasal.isEmpty else { return [] }
+
+        var basalPoints = allBasal.filter { $0.date >= cutoffTime }
+        if let lastBeforeStart = allBasal.last(where: { $0.date < cutoffTime }) {
+            basalPoints.insert(lastBeforeStart, at: 0)
+        }
+
+        guard !basalPoints.isEmpty else { return [] }
+
+        let events: [StatsBasalEngine.BasalChangeEvent] = basalPoints.map {
+            StatsBasalEngine.BasalChangeEvent(
+                date: Date(timeIntervalSince1970: $0.date),
+                rateUph: $0.basalRate
+            )
+        }
+
+        let sim = StatsBasalEngine.simulateDeliveredBasal(
+            events: events,
+            in: interval,
+            pulseSize: 0.05,
+            carryOverUndeliveredBasals: false
+        )
+
+        return [DailyBasalStat(dayStart: startDate, totalUnits: sim.totalUnits)]
+    }
+    
     func getBGData() -> [ShareGlucoseData] {
         guard let mainVC = mainViewController else { return [] }
         let nowDate = Date()
@@ -399,23 +499,12 @@ class StatsDataService {
         return mainVC.statsCarbData.filter { $0.date >= cutoffTime && $0.date <= now }
     }
 
-    func getBasalData() -> [MainViewController.basalGraphStruct] {
-        guard let mainVC = mainViewController else { return [] }
-        let nowDate = Date()
-        let cutoffTime: TimeInterval
-        if isTodayOnly {
-            cutoffTime = Calendar.current.startOfDay(for: nowDate).timeIntervalSince1970
-        } else {
-            cutoffTime = nowDate.timeIntervalSince1970 - (Double(daysToAnalyze) * 24 * 60 * 60)
-        }
-        return mainVC.statsBasalData.filter { $0.date >= cutoffTime }
-    }
-
     func getBasalProfile() -> [MainViewController.basalProfileStruct] {
         guard let mainVC = mainViewController else { return [] }
         return mainVC.basalProfile
     }
     
+    /*
     func getDailyDeliveredBasal() -> [DailyBasalStat] {
         guard let mainVC = mainViewController else { return [] }
         LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - getDailyDeliveredBasal called. isTodayOnly=\(isTodayOnly), daysToAnalyze=\(daysToAnalyze)", isDebug: true)
@@ -503,6 +592,131 @@ class StatsDataService {
 
         let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
         LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)", isDebug: true)
+        return results
+    }
+    */
+    func getDailyDeliveredBasal() -> [DailyBasalStat] {
+        guard let mainVC = mainViewController else { return [] }
+        LogManager.shared.log(
+            category: .analysis,
+            message: "StatsBasalEngine - getDailyDeliveredBasal called. isTodayOnly=\(isTodayOnly), daysToAnalyze=\(daysToAnalyze)",
+            isDebug: true
+        )
+
+        let calendar = Calendar.current
+        let nowDate = Date()
+
+        // Bestäm analysfönster – håll detta i sync med övriga getters
+        let endDate: Date = nowDate
+        let startDate: Date
+
+        if isTodayOnly {
+            // Idag: midnatt → nu
+            startDate = calendar.startOfDay(for: nowDate)
+        } else {
+            // Övriga perioder (1, 7, 14, 30, 90 dagar): rullande fönster bakåt i tid
+            startDate = endDate.addingTimeInterval(-Double(daysToAnalyze) * 24 * 60 * 60)
+        }
+        LogManager.shared.log(
+            category: .analysis,
+            message: "StatsBasalEngine - window start=\(startDate), end=\(endDate)",
+            isDebug: true
+        )
+
+        let cutoffTime = startDate.timeIntervalSince1970
+        let endTime = endDate.timeIntervalSince1970
+
+        // 1) Ta ut basalstege upp till endTime
+        //    och inkludera även sista punkt *före* startDate
+        let allBasal = mainVC.statsBasalData
+            .filter { $0.date <= endTime }
+            .sorted { $0.date < $1.date }
+
+        guard !allBasal.isEmpty else { return [] }
+
+        // Alla punkter inom fönstret
+        var basalPoints = allBasal.filter { $0.date >= cutoffTime }
+
+        // Lägg till sista punkten innan cutoff som första element (om den finns),
+        // så att motorn vet vilken basal som gällde vid fönstrets start.
+        if let lastBeforeStart = allBasal.last(where: { $0.date < cutoffTime }) {
+            basalPoints.insert(lastBeforeStart, at: 0)
+        }
+
+        guard !basalPoints.isEmpty else { return [] }
+
+        // 2) Gör om till BasalChangeEvent (piecewise-constant rate U/h)
+        let events: [StatsBasalEngine.BasalChangeEvent] = basalPoints.map {
+            StatsBasalEngine.BasalChangeEvent(
+                date: Date(timeIntervalSince1970: $0.date),
+                rateUph: $0.basalRate
+            )
+        }
+
+        // 3) Simulera levererad basal med StatsBasalEngine
+        var results: [DailyBasalStat] = []
+
+        // Specialfall: 24 h-valet (daysToAnalyze == 1 och inte "Idag") ska vara ett rullande 24 h-fönster
+        if !isTodayOnly && daysToAnalyze == 1 {
+            let interval = DateInterval(start: startDate, end: endDate)
+            let sim = StatsBasalEngine.simulateDeliveredBasal(
+                events: events,
+                in: interval,
+                pulseSize: 0.05,
+                carryOverUndeliveredBasals: false
+            )
+
+            let stat = DailyBasalStat(dayStart: startDate, totalUnits: sim.totalUnits)
+            results.append(stat)
+            LogManager.shared.log(
+                category: .analysis,
+                message: "StatsBasalEngine - 24h window start=\(startDate), end=\(endDate), basalUnits=\(sim.totalUnits)",
+                isDebug: true
+            )
+
+            let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
+            LogManager.shared.log(
+                category: .analysis,
+                message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)",
+                isDebug: true
+            )
+            return results
+        }
+
+        // Standardfall: dela upp i kalenderdagar (Idag, 7, 14, 30, 90 dagar)
+        var currentDayStart = calendar.startOfDay(for: startDate)
+        let finalDayStart = calendar.startOfDay(for: endDate)
+
+        while currentDayStart <= finalDayStart {
+            guard let nextDayStart = calendar.date(byAdding: .day, value: 1, to: currentDayStart) else { break }
+
+            let intervalEnd = min(nextDayStart, endDate)
+            let interval = DateInterval(start: currentDayStart, end: intervalEnd)
+
+            let sim = StatsBasalEngine.simulateDeliveredBasal(
+                events: events,
+                in: interval,
+                pulseSize: 0.05,
+                carryOverUndeliveredBasals: false
+            )
+
+            results.append(DailyBasalStat(dayStart: currentDayStart,
+                                          totalUnits: sim.totalUnits))
+            LogManager.shared.log(
+                category: .analysis,
+                message: "StatsBasalEngine - dayStart=\(currentDayStart), basalUnits=\(sim.totalUnits)",
+                isDebug: true
+            )
+
+            currentDayStart = nextDayStart
+        }
+
+        let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
+        LogManager.shared.log(
+            category: .analysis,
+            message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)",
+            isDebug: true
+        )
         return results
     }
 }

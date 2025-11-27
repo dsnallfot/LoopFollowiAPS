@@ -7,21 +7,51 @@ import Foundation
 class SimpleStatsViewModel: ObservableObject {
     @Published var gmi: Double?
     @Published var avgGlucose: Double?
+    @Published var avgGlucoseTrend: StatsTrendArrow = .none
+
     @Published var stdDeviation: Double?
     @Published var coefficientOfVariation: Double?
+    @Published var stdDeviationTrend: StatsTrendArrow = .none
+    @Published var cvTrend: StatsTrendArrow = .none
+
     @Published var totalDailyDose: Double?
+    @Published var totalDailyDoseTrend: StatsTrendArrow = .none
+
     @Published var programmedBasal: Double?
+    @Published var programmedBasalTrend: StatsTrendArrow = .none
+
     @Published var actualBasal: Double?
+    @Published var actualBasalTrend: StatsTrendArrow = .none
+
     @Published var avgBolus: Double?
+    @Published var avgBolusTrend: StatsTrendArrow = .none
+
     @Published var avgCarbs: Double?
+    @Published var avgCarbsTrend: StatsTrendArrow = .none
+
     @Published var avgBGCheck: Double?
+    @Published var avgBGCheckTrend: StatsTrendArrow = .none
+
     @Published var avgLowTreatments: Double?
+    @Published var avgLowTreatmentsTrend: StatsTrendArrow = .none
+
     @Published var avgLowTreatmentAmount: Double?
+    @Published var avgLowTreatmentAmountTrend: StatsTrendArrow = .none
+
     @Published var avgFPUCarbs: Double?
+    @Published var avgFPUCarbsTrend: StatsTrendArrow = .none
+
     @Published var avgManualBolus: Double?
+    @Published var avgManualBolusTrend: StatsTrendArrow = .none
+
     @Published var avgSMB: Double?
+    @Published var avgSMBTrend: StatsTrendArrow = .none
+
     @Published var netMealBolus: Double?
+    @Published var netMealBolusTrend: StatsTrendArrow = .none
+
     @Published var realCarbRatio: Double?
+    @Published var realCarbRatioTrend: StatsTrendArrow = .none
 
     private let dataService: StatsDataService
 
@@ -30,6 +60,28 @@ class SimpleStatsViewModel: ObservableObject {
     }
 
     func calculateStats() {
+        // Reset trends – sätts upp senare när previous-period-logik är på plats
+            avgGlucoseTrend = .none
+            stdDeviationTrend = .none
+            cvTrend = .none
+            totalDailyDoseTrend = .none
+            programmedBasalTrend = .none
+            actualBasalTrend = .none
+            avgBolusTrend = .none
+            avgCarbsTrend = .none
+            avgBGCheckTrend = .none
+            avgLowTreatmentsTrend = .none
+            avgLowTreatmentAmountTrend = .none
+            avgFPUCarbsTrend = .none
+            avgManualBolusTrend = .none
+            avgSMBTrend = .none
+            netMealBolusTrend = .none
+            realCarbRatioTrend = .none
+        
+        // Definiera nuvarande och föregående analysfönster (för trend-pilar)
+                let currentInterval = dataService.currentStatsInterval()
+                let previousInterval = dataService.previousStatsInterval()
+        
         let bgData = dataService.getBGData()
         guard !bgData.isEmpty else { return }
 
@@ -201,6 +253,126 @@ class SimpleStatsViewModel: ObservableObject {
             realCarbRatio = carbsPerDay / net
         } else {
             realCarbRatio = nil
+        }
+
+        // MARK: - Trender (jämför med föregående period med samma längd)
+        if let prevInterval = previousInterval {
+            let periodDays = max(currentInterval.duration / (24 * 60 * 60), 1)
+
+            // BG-data föregående period
+            let prevBG = dataService.getBGData(in: prevInterval)
+            var prevAvgBGmgdL: Double?
+            var prevStdDevMgdL: Double?
+
+            if !prevBG.isEmpty {
+                let prevTotalGlucose = prevBG.reduce(0) { $0 + $1.sgv }
+                let avg = Double(prevTotalGlucose) / Double(prevBG.count)
+                prevAvgBGmgdL = avg
+
+                let prevVariance = prevBG.reduce(0.0) { sum, reading in
+                    let diff = Double(reading.sgv) - avg
+                    return sum + (diff * diff)
+                }
+                prevStdDevMgdL = sqrt(prevVariance / Double(prevBG.count))
+            }
+
+            // Medelglukos-trend (i aktuella enheter)
+            let prevAvgGlucoseConverted: Double? = {
+                guard let base = prevAvgBGmgdL else { return nil }
+                if UserDefaultsRepository.units.value == "mg/dL" {
+                    return base
+                } else {
+                    return base * GlucoseConversion.mgDlToMmolL
+                }
+            }()
+            avgGlucoseTrend = StatsTrendCalculator.arrow(current: avgGlucose, previous: prevAvgGlucoseConverted)
+
+            // StdAvvikelse/CV-trend
+            if let prevStd = prevStdDevMgdL, let prevAvg = prevAvgBGmgdL, prevAvg > 0 {
+                let prevStdConverted: Double = {
+                    if UserDefaultsRepository.units.value == "mg/dL" {
+                        return prevStd
+                    } else {
+                        return prevStd * GlucoseConversion.mgDlToMmolL
+                    }
+                }()
+                let prevCV = (prevStd / prevAvg) * 100.0
+
+                stdDeviationTrend = StatsTrendCalculator.arrow(current: stdDeviation, previous: prevStdConverted)
+                cvTrend = StatsTrendCalculator.arrow(current: coefficientOfVariation, previous: prevCV)
+            } else {
+                stdDeviationTrend = .none
+                cvTrend = .none
+            }
+
+            // Bolus + basal → TDD-trend
+            let prevBolus = dataService.getBolusData(in: prevInterval)
+            let prevSMB = dataService.getSMBData(in: prevInterval)
+            let prevManualBolusTotal = prevBolus.reduce(0.0) { $0 + $1.value }
+            let prevSMBTotal = prevSMB.reduce(0.0) { $0 + $1.value }
+            let prevTotalBolus = prevManualBolusTotal + prevSMBTotal
+
+            let prevBasalTotal = dataService.getDailyDeliveredBasal(in: prevInterval)
+                .reduce(0.0) { $0 + $1.totalUnits }
+
+            let prevAvgDailyBolus = prevTotalBolus / periodDays
+            let prevAvgDailyBasal = prevBasalTotal / periodDays
+            let prevTDD = prevAvgDailyBolus + prevAvgDailyBasal
+
+            totalDailyDoseTrend = StatsTrendCalculator.arrow(current: totalDailyDose, previous: prevTDD)
+            actualBasalTrend = StatsTrendCalculator.arrow(current: actualBasal, previous: prevAvgDailyBasal)
+
+            // Kolhydrater + FPU
+            let prevCarbsData = dataService.getCarbData(in: prevInterval)
+            let prevTotalCarbs = prevCarbsData.reduce(0.0) { $0 + $1.value }
+            let prevAvgCarbsPerDay = prevTotalCarbs / periodDays
+            avgCarbsTrend = StatsTrendCalculator.arrow(current: avgCarbs, previous: prevAvgCarbsPerDay)
+
+            let prevFPUCarbs = prevCarbsData
+                .filter { ($0.foodType ?? "").isEmpty }
+                .reduce(0.0) { $0 + $1.value }
+            let prevAvgFPUPerDay = prevFPUCarbs / periodDays
+            avgFPUCarbsTrend = StatsTrendCalculator.arrow(current: avgFPUCarbs, previous: prevAvgFPUPerDay)
+
+            // Fingerstick / BG Check
+            let prevBGChecks = dataService.getBGCheckDates(in: prevInterval)
+            let prevAvgBGChecksPerDay = Double(prevBGChecks.count) / periodDays
+            avgBGCheckTrend = StatsTrendCalculator.arrow(current: avgBGCheck, previous: prevAvgBGChecksPerDay)
+
+            // Hypo-behandlingar (Dextro)
+            let prevLowTreatmentEntries = prevCarbsData.filter { ($0.foodType ?? "").contains("🍬") }
+            let prevLowTreatmentCount = prevLowTreatmentEntries.count
+            let prevLowTreatmentCarbs = prevLowTreatmentEntries.reduce(0.0) { $0 + $1.value }
+
+            let prevAvgLowTreatmentsPerDay = Double(prevLowTreatmentCount) / periodDays
+            let prevAvgLowTreatmentAmountPerDay = prevLowTreatmentCarbs / periodDays
+
+            avgLowTreatmentsTrend = StatsTrendCalculator.arrow(current: avgLowTreatments, previous: prevAvgLowTreatmentsPerDay)
+            avgLowTreatmentAmountTrend = StatsTrendCalculator.arrow(current: avgLowTreatmentAmount, previous: prevAvgLowTreatmentAmountPerDay)
+
+            // Medel bolus (manuell + SMB) + uppdelning
+            let prevAvgBolusPerDay = prevTotalBolus / periodDays
+            avgBolusTrend = StatsTrendCalculator.arrow(current: avgBolus, previous: prevAvgBolusPerDay)
+
+            let prevAvgManualBolusPerDay = prevManualBolusTotal / periodDays
+            avgManualBolusTrend = StatsTrendCalculator.arrow(current: avgManualBolus, previous: prevAvgManualBolusPerDay)
+
+            let prevAvgSMBPerDay = prevSMBTotal / periodDays
+            avgSMBTrend = StatsTrendCalculator.arrow(current: avgSMB, previous: prevAvgSMBPerDay)
+
+            // Netto måltidsbolus och verklig insulinkvot
+            let prevNetMealBolus: Double? = {
+                guard let profile = programmedBasal else { return nil }
+                let net = prevTDD - profile
+                return net > 0 ? net : 0
+            }()
+            netMealBolusTrend = StatsTrendCalculator.arrow(current: netMealBolus, previous: prevNetMealBolus)
+
+            let prevRealCarbRatio: Double? = {
+                guard let net = prevNetMealBolus, net > 0 else { return nil }
+                return prevAvgCarbsPerDay / net
+            }()
+            realCarbRatioTrend = StatsTrendCalculator.arrow(current: realCarbRatio, previous: prevRealCarbRatio)
         }
     }
 
