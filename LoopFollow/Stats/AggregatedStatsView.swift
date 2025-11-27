@@ -196,20 +196,22 @@ struct StatCard: View {
         }
         .background(Color(.systemGray5))
         .cornerRadius(15)
-        .overlay(alignment: .center) {
+        .overlay {
             if showTooltip {
                 ZStack {
                     RoundedRectangle(cornerRadius: 15)
                         .fill(.ultraThinMaterial)
+
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 4) {
                             Text(title)
                                 .font(.caption)
                                 .fontWeight(.bold)
                                 .tint(.primary)
+                            Spacer()
                             if let arrow = trendArrow, arrow != .none {
                                 Text(arrow.rawValue)
-                                    .font(.caption)
+                                    .font(.subheadline)
                                     .fontWeight(.bold)
                                     .foregroundColor(color)
                             }
@@ -226,18 +228,20 @@ struct StatCard: View {
                         }
 
                         if let pair = tooltipValuePair {
-                            Text("Förändring:")
+                            /*Text("Förändring:")
                                 .font(.caption2)
                                 .fontWeight(.semibold)
-                                .tint(.primary)
+                                .tint(.primary)*/
 
                             Text(tooltipChangeString(for: pair))
                                 .font(.caption2)
                                 .tint(.primary)
                         }
                     }
-                    .padding(8)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .onLongPressGesture {
@@ -260,14 +264,14 @@ struct StatCard: View {
         guard let pair = tooltipValuePair else { return nil }
         let pct = (pair.curr - pair.prev) / pair.prev * 100.0
         let label = periodLabel ?? "föregående period"
-        return String(format: "%+.1f %% vs fg %@", pct, label)
+        return String(format: "%+.1f%% vs fg %@", pct, label)
     }
     
     private func tooltipChangeString(for pair: (prev: Double, curr: Double)) -> String {
         if let unit = unit {
-            return String(format: "%.1f → %.1f %@", pair.prev, pair.curr, unit)
+            return String(format: "%.1f ⇢ %.1f %@", pair.prev, pair.curr, unit)
         } else {
-            return String(format: "%.1f → %.1f", pair.prev, pair.curr)
+            return String(format: "%.1f ⇢ %.1f", pair.prev, pair.curr)
         }
     }
 }
