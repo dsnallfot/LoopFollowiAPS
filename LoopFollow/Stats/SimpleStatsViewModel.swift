@@ -78,6 +78,7 @@ class SimpleStatsViewModel: ObservableObject {
             avgFPUCarbsTrend = .none
             avgManualBolusTrend = .none
             avgSMBTrend = .none
+            avgLowPercentageTrend = .none
             netMealBolusTrend = .none
             realCarbRatioTrend = .none
         
