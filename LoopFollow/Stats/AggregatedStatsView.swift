@@ -265,9 +265,9 @@ struct StatCard: View {
     
     private func tooltipChangeString(for pair: (prev: Double, curr: Double)) -> String {
         if let unit = unit {
-            return String(format: "%.2f → %.2f %@", pair.prev, pair.curr, unit)
+            return String(format: "%.1f → %.1f %@", pair.prev, pair.curr, unit)
         } else {
-            return String(format: "%.2f → %.2f", pair.prev, pair.curr)
+            return String(format: "%.1f → %.1f", pair.prev, pair.curr)
         }
     }
 }
@@ -653,8 +653,18 @@ struct StatsGridView: View {
         } else {
             avgGlucoseMgdL = avgGlucose * 18.0182
         }
+        
+        let ehba1cPercent = (avgGlucoseMgdL + 46.7) / 28.7
+
+        if UserDefaultsRepository.units.value == "mg/dL" {
+            return ehba1cPercent
+        } else {
+            let ehba1cMmolMol = (ehba1cPercent - 2.15) * 10.929
+            return ehba1cMmolMol
+        }
+
 
         // eHbA1c i % (samma grund som din formatter använder innan ev mmol/mol-konvertering)
-        return (avgGlucoseMgdL + 46.7) / 28.7
+        //return (avgGlucoseMgdL + 46.7) / 28.7
     }
 }
