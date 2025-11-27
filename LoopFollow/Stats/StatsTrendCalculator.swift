@@ -25,10 +25,10 @@ static func arrow(current: Double?, previous: Double?) -> StatsTrendArrow {
     let change = (current - previous) / abs(previous) * 100.0
 
     switch change {
-    case let x where x > 50:  return .strongUp
-    case let x where x > 20:  return .up
-    case let x where x < -50: return .strongDown
-    case let x where x < -20: return .down
+    case let x where x > 30:  return .strongUp
+    case let x where x > 5:  return .up
+    case let x where x < -30: return .strongDown
+    case let x where x < -5: return .down
     default:                  return .flat
     }
 }
