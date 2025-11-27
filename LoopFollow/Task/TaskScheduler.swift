@@ -17,7 +17,8 @@ enum TaskID: CaseIterable {
     case minAgoUpdate
     case calendarWrite
     case alarmCheck
-    case cacheFill 
+    case cacheFill
+    case statsPrefetch
 }
 
 struct ScheduledTask {
@@ -95,7 +96,7 @@ class TaskScheduler {
     private func fireOverdueTasks() {
         let now = Date()
         var didExecuteAnyTask = false
-        let tasksToSkipAlarmCheck: Set<TaskID> = [.deviceStatus, .treatments, .fetchBG]
+        let tasksToSkipAlarmCheck: Set<TaskID> = [.deviceStatus, .treatments, .fetchBG, .statsPrefetch]
         
         for taskID in TaskID.allCases {
             guard let task = tasks[taskID], task.nextRun <= now else {
