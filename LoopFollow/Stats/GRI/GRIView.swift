@@ -9,7 +9,7 @@ struct GRIView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("GRI (Glykemiskt Riskindex)")
+                Text("Glykemiskt Riskindex (GRI)")
                     .font(.callout)
                     .fontWeight(.medium)
                     .foregroundColor(.secondary)
