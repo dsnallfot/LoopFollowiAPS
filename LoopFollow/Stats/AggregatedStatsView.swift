@@ -16,6 +16,7 @@ struct AggregatedStatsView: View {
     @State private var showLowPercentage: Bool
     @State private var selectedPeriod: Int
     @State private var isLoadingData = false
+    @State private var showingDailyStats = false
 
     init(viewModel: AggregatedStatsViewModel) {
         self.viewModel = viewModel
@@ -108,8 +109,16 @@ struct AggregatedStatsView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Klar") {
-                    dismiss()
+                HStack(spacing: 16) {
+                    Button {
+                        showingDailyStats = true
+                    } label: {
+                        Image(systemName: "tablecells")
+                    }
+
+                    Button("Klar") {
+                        dismiss()
+                    }
                 }
             }
         }
@@ -117,6 +126,20 @@ struct AggregatedStatsView: View {
             isLoadingData = true
             viewModel.updatePeriod(selectedPeriod, forceReload: true) {
                 isLoadingData = false
+            }
+        }
+        .sheet(isPresented: $showingDailyStats) {
+            // Antag att AggregatedStatsViewModel har en referens till samma StatsDataService
+            // Justera "dataService" till faktiskt property-namn om det skiljer sig.
+            if #available(iOS 16.0, *) {
+                DailyStatsView(
+                    viewModel: DailyStatsViewModel(
+                        dataService: viewModel.dataService,
+                        daysBack: 90
+                    )
+                )
+            } else {
+                // Fallback on earlier versions
             }
         }
     }

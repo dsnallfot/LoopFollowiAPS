@@ -1,0 +1,290 @@
+// LoopFollow
+// DailyStatsViewModel.swift
+
+import Foundation
+import Combine
+
+struct DailyStatRow: Identifiable {
+    let id = UUID()
+    let date: Date
+
+    let totalCarbs: Double?          // g
+    let insulinTDD: Double?          // E (basal + bolus)
+    let meanGlucoseMmol: Double?     // mmol/L
+    let lowPercent: Double?          // %
+    let tightRangePercent: Double?   // %
+    let stdDevMmol: Double?          // mmol/L
+    let profileBasal: Double?        // E (teoretisk profilbasal per 24h)
+}
+
+final class DailyStatsViewModel: ObservableObject {
+    @Published var rows: [DailyStatRow] = []
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
+
+    private let dataService: StatsDataService
+    private let daysBack: Int
+
+    init(dataService: StatsDataService, daysBack: Int = 90) {
+        self.dataService = dataService
+        self.daysBack = daysBack
+    }
+
+    // MARK: - Public API
+
+    func loadDailyStats() {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let calendar = Calendar.current
+
+            let bgAll = self.dataService.getBGData()
+            guard !bgAll.isEmpty else {
+                DispatchQueue.main.async {
+                    self.rows = []
+                    self.isLoading = false
+                    self.errorMessage = "Inga glukosdata hittades."
+                }
+                return
+            }
+
+            // Grupp BG per dag (startOfDay)
+            let groupedBG = Dictionary(grouping: bgAll) { reading -> Date in
+                let date = Date(timeIntervalSince1970: reading.date)
+                return calendar.startOfDay(for: date)
+            }
+
+            // Senaste dagen med BG-data (≈ oftast igår)
+            guard let latestDay = groupedBG.keys.max() else {
+                DispatchQueue.main.async {
+                    self.rows = []
+                    self.isLoading = false
+                    self.errorMessage = "Kunde inte bestämma senaste datum."
+                }
+                return
+            }
+
+            // Hämta övrig data bara en gång
+            let bolusData = self.dataService.getBolusData()
+            let smbData = self.dataService.getSMBData()
+            let carbData = self.dataService.getCarbData()
+            let dailyBasalStats = self.dataService.getDailyDeliveredBasal()
+            let basalProfile = self.dataService.getBasalProfile()
+
+            let profileBasalValue = self.calculateProgrammedBasalFromProfile(basalProfile: basalProfile)
+
+            // Bygg upp dictionarier per dag
+            let basalPerDay: [Date: Double] = Dictionary(
+                grouping: dailyBasalStats,
+                by: { stat in
+                    let d = stat.dayStart
+                    return calendar.startOfDay(for: d)
+                }
+            ).mapValues { stats in
+                stats.reduce(0.0) { $0 + $1.totalUnits }
+            }
+
+            let bolusPerDay: [Date: Double] = self.sumPerDay(
+                data: bolusData,
+                dateKey: { Date(timeIntervalSince1970: $0.date) },
+                valueKey: { $0.value },
+                calendar: calendar
+            )
+
+            let smbPerDay: [Date: Double] = self.sumPerDay(
+                data: smbData,
+                dateKey: { Date(timeIntervalSince1970: $0.date) },
+                valueKey: { $0.value },
+                calendar: calendar
+            )
+
+            let carbsPerDay: [Date: Double] = self.sumPerDay(
+                data: carbData,
+                dateKey: { Date(timeIntervalSince1970: $0.date) },
+                valueKey: { $0.value },
+                calendar: calendar
+            )
+
+            var rows: [DailyStatRow] = []
+
+            // Konstanter för beräkningar
+            let mgToMmol = GlucoseConversion.mgDlToMmolL
+            let lowThresholdMgdL = 3.9 * 18.0182
+            let tightLowMgdL = 3.9 * 18.0182
+            let tightHighMgdL = 7.8 * 18.0182
+
+            // Bygg rader: nyaste först (offset 0 = senaste dag)
+            for offset in 0 ..< self.daysBack {
+                guard let day = calendar.date(byAdding: .day, value: -offset, to: latestDay) else { continue }
+
+                let startOfDay = calendar.startOfDay(for: day)
+                guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { continue }
+
+                // BG för dagen
+                let bgForDay = groupedBG[startOfDay] ?? []
+
+                var meanGlucoseMmol: Double?
+                var stdDevMmol: Double?
+                var lowPercent: Double?
+                var tightRangePercent: Double?
+
+                if !bgForDay.isEmpty {
+                    // all sgv i mg/dL
+                    let sgvValues = bgForDay.map { Double($0.sgv) }
+                    let count = Double(sgvValues.count)
+
+                    let sum = sgvValues.reduce(0.0, +)
+                    let meanMgdL = sum / count
+                    meanGlucoseMmol = meanMgdL * mgToMmol
+
+                    let variance = sgvValues.reduce(0.0) { partial, v in
+                        let diff = v - meanMgdL
+                        return partial + diff * diff
+                    } / count
+                    let stdDevMgdL = sqrt(variance)
+                    stdDevMmol = stdDevMgdL * mgToMmol
+
+                    let lowCount = sgvValues.filter { $0 < lowThresholdMgdL }.count
+                    lowPercent = (Double(lowCount) / count) * 100.0
+
+                    let tightCount = sgvValues.filter { $0 >= tightLowMgdL && $0 <= tightHighMgdL }.count
+                    tightRangePercent = (Double(tightCount) / count) * 100.0
+                }
+
+                // Kolhydrater
+                let carbs = carbsPerDay[startOfDay]
+
+                // Bolus + SMB
+                let manualBolus = bolusPerDay[startOfDay] ?? 0.0
+                let smb = smbPerDay[startOfDay] ?? 0.0
+
+                // Levererad basal
+                let basalDelivered = basalPerDay[startOfDay] ?? 0.0
+
+                let insulinTDD = (manualBolus + smb + basalDelivered)
+                let insulinTDDValue: Double? = insulinTDD > 0 ? insulinTDD : nil
+
+                let row = DailyStatRow(
+                    date: startOfDay,
+                    totalCarbs: carbs,
+                    insulinTDD: insulinTDDValue,
+                    meanGlucoseMmol: meanGlucoseMmol,
+                    lowPercent: lowPercent,
+                    tightRangePercent: tightRangePercent,
+                    stdDevMmol: stdDevMmol,
+                    profileBasal: profileBasalValue
+                )
+                rows.append(row)
+            }
+
+            DispatchQueue.main.async {
+                self.rows = rows
+                self.isLoading = false
+            }
+        }
+    }
+
+    /// Skapa CSV-sträng (separat från export så du kan testa i logg om du vill).
+    func makeCSVString() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        func fmt(_ value: Double?, decimals: Int = 2) -> String {
+            guard let value = value else { return "" }
+            return String(format: "%.\(decimals)f", value)
+        }
+
+        var lines: [String] = []
+        lines.append("Date,Carbs total (g),Insulin TDD (E),Mean glucose (mmol/L),Low glucose (%),Time in tight range (%),Std dev (mmol/L),Profile basal (E)")
+
+        for row in rows {
+            let dateStr = dateFormatter.string(from: row.date)
+            let line = [
+                dateStr,
+                fmt(row.totalCarbs, decimals: 0),
+                fmt(row.insulinTDD),
+                fmt(row.meanGlucoseMmol, decimals: 2),
+                fmt(row.lowPercent),
+                fmt(row.tightRangePercent),
+                fmt(row.stdDevMmol, decimals: 2),
+                fmt(row.profileBasal)
+            ].joined(separator: ",")
+            lines.append(line)
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
+    /// Skriv CSV till Documents och returnera URL för delning.
+    func writeCSVToDisk() -> URL? {
+        let csvString = makeCSVString()
+        guard let data = csvString.data(using: .utf8) else { return nil }
+
+        let fileManager = FileManager.default
+        guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let today = dateFormatter.string(from: Date())
+        let exportURL = documentsURL.appendingPathComponent("DailyStats_\(today).csv")
+
+        do {
+            try data.write(to: exportURL, options: .atomic)
+            return exportURL
+        } catch {
+            DispatchQueue.main.async {
+                self.errorMessage = "Misslyckades skriva CSV: \(error.localizedDescription)"
+            }
+            return nil
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func sumPerDay<T>(
+        data: [T],
+        dateKey: (T) -> Date,
+        valueKey: (T) -> Double,
+        calendar: Calendar
+    ) -> [Date: Double] {
+        var dict: [Date: Double] = [:]
+        for item in data {
+            let d = calendar.startOfDay(for: dateKey(item))
+            dict[d, default: 0.0] += valueKey(item)
+        }
+        return dict
+    }
+
+    // 24h teoretisk profilbasal, samma logik som i SimpleStatsViewModel
+    private func calculateProgrammedBasalFromProfile(
+        basalProfile: [MainViewController.basalProfileStruct]
+    ) -> Double {
+        guard !basalProfile.isEmpty else { return 0.0 }
+
+        let sortedProfile = basalProfile.sorted { $0.timeAsSeconds < $1.timeAsSeconds }
+
+        var totalBasal = 0.0
+        let secondsInDay = 24 * 60 * 60
+
+        for i in 0 ..< sortedProfile.count {
+            let current = sortedProfile[i]
+            let currentTime = Double(current.timeAsSeconds)
+
+            let nextTime: Double
+            if i < sortedProfile.count - 1 {
+                nextTime = Double(sortedProfile[i + 1].timeAsSeconds)
+            } else {
+                nextTime = Double(secondsInDay)
+            }
+
+            let durationHours = (nextTime - currentTime) / 3600.0
+            totalBasal += current.value * durationHours
+        }
+
+        return totalBasal
+    }
+}

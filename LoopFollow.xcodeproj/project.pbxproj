@@ -44,6 +44,8 @@
 		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
 		6574FFFA2ED8689E00DEF7D0 /* StatsTrendCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */; };
+		6577653B2ED9C96C001D1AC7 /* DailyStatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */; };
+		6577653D2ED9C99B001D1AC7 /* DailyStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6577653C2ED9C995001D1AC7 /* DailyStatsView.swift */; };
 		6578DBD12EB7739A00AF4942 /* VolumeButtonHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6578DBD02EB7738900AF4942 /* VolumeButtonHandler.swift */; };
 		6578DBD32EB8DD4B00AF4942 /* SnoozeStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */; };
 		6582C4B72ED23B4F0047658C /* GlucoseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6582C4B62ED23B490047658C /* GlucoseView.swift */; };
@@ -367,6 +369,8 @@
 		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
 		6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsTrendCalculator.swift; sourceTree = "<group>"; };
+		6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStatsViewModel.swift; sourceTree = "<group>"; };
+		6577653C2ED9C995001D1AC7 /* DailyStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStatsView.swift; sourceTree = "<group>"; };
 		6578DBD02EB7738900AF4942 /* VolumeButtonHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeButtonHandler.swift; sourceTree = "<group>"; };
 		6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeStatusView.swift; sourceTree = "<group>"; };
 		6582C4B62ED23B490047658C /* GlucoseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseView.swift; sourceTree = "<group>"; };
@@ -675,6 +679,8 @@
 		651C9D222ED5D1CA0077D40A /* Stats */ = {
 			isa = PBXGroup;
 			children = (
+				6577653C2ED9C995001D1AC7 /* DailyStatsView.swift */,
+				6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */,
 				651C9D442ED5D35D0077D40A /* AGP */,
 				651C9D3A2ED5D2F90077D40A /* GRI */,
 				651C9D2F2ED5D2850077D40A /* TIR */,
@@ -1691,6 +1697,7 @@
 				DDF9676E2AD08C6E00C5EB95 /* SiteChange.swift in Sources */,
 				DD13BC772C3FD64E0062313B /* InfoData.swift in Sources */,
 				DD13BC752C3FD6210062313B /* InfoType.swift in Sources */,
+				6577653B2ED9C96C001D1AC7 /* DailyStatsViewModel.swift in Sources */,
 				DD9ACA0A2D33095600415D8A /* MinAgoTask.swift in Sources */,
 				DD9ED0CC2D35526E000D2A63 /* SearchBar.swift in Sources */,
 				DDD10EFF2C510C3C00D76A8E /* ObservableUserDefaultsValue.swift in Sources */,
@@ -1719,6 +1726,7 @@
 				DD4878082C7B30BF0048F05C /* RemoteSettingsView.swift in Sources */,
 				DDEF503C2D31BE2D00999A5D /* TaskScheduler.swift in Sources */,
 				DD0C0C6B2C48562000DBADDF /* InsulinMetric.swift in Sources */,
+				6577653D2ED9C99B001D1AC7 /* DailyStatsView.swift in Sources */,
 				DD493AD92ACF2171009A6922 /* Carbs.swift in Sources */,
 				DD493AE92ACF2445009A6922 /* BGData.swift in Sources */,
 				FCC6886B24898FD800A0279D /* ObservationToken.swift in Sources */,
@@ -1931,7 +1939,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "LoopFollow/Loop Follow.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = RMSRR5SURS;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = LoopFollow/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1953,7 +1961,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "LoopFollow/Loop Follow.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = RMSRR5SURS;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = LoopFollow/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
