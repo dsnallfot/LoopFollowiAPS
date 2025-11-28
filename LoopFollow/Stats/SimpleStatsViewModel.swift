@@ -156,7 +156,7 @@ class SimpleStatsViewModel: ObservableObject {
         
         // LOW PERCENTAGE (< 3.9 mmol/L)
         // Vi räknar alltid i mg/dL eftersom sgv är mg/dL
-        let lowThresholdMgdL = 3.9 * 18.0182   // ≈ 70.27 mg/dL
+        let lowThresholdMgdL = 70.0 //3.9 * 18.0182   // ≈ 70.27 mg/dL
 
         let lowCount = bgData.filter { Double($0.sgv) < lowThresholdMgdL }.count
         if bgData.count > 0 {

@@ -206,7 +206,13 @@ struct DailyStatsView: View {
         let color: Color
         if let value = value {
             let fraction = value / 100.0
-            color = fraction > viewModel.lowGlucoseTargetThreshold ? .red : .primary
+            if fraction <= viewModel.lowGlucoseGreatThreshold {
+                color = .green
+            } else if fraction <= viewModel.lowGlucoseOKThreshold {
+                color = .orange
+            } else {
+                color = .red
+            }
         } else {
             color = .secondary
         }

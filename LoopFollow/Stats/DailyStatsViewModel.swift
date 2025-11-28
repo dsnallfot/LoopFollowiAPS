@@ -22,7 +22,8 @@ final class DailyStatsViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
-    let lowGlucoseTargetThreshold: Double = 0.05
+    let lowGlucoseOKThreshold: Double = 0.05
+    let lowGlucoseGreatThreshold: Double = 0.03
     let titrTargetThreshold: Double = 0.5
     let stdDevOkThreshold: Double = 3.0
     let stdDevGreatThreshold: Double = 2.5
