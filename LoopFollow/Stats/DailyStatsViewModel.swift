@@ -22,6 +22,35 @@ final class DailyStatsViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
+    let lowGlucoseTargetThreshold: Double = 0.05
+    let titrTargetThreshold: Double = 0.5
+    let stdDevOkThreshold: Double = 3.0
+    let stdDevGreatThreshold: Double = 2.5
+    let bgAverageOKThreshold: Double = 8.0
+    let bgAverageGreatThreshold: Double = 7.5
+
+    var numberOfDaysMeetingTitrTarget: Int {
+        rows.filter { row in
+            if let tir = row.tightRangePercent {
+                return (tir / 100.0) >= titrTargetThreshold
+            } else {
+                return false
+            }
+        }.count
+    }
+
+    var numberOfDaysInScope: Int {
+        rows.filter { row in
+            row.meanGlucoseMmol != nil
+        }.count
+    }
+
+    var percentageOfDaysMeetingTarget: Double {
+        let scope = numberOfDaysInScope
+        guard scope > 0 else { return 0.0 }
+        return Double(numberOfDaysMeetingTitrTarget) / Double(scope)
+    }
+
     private let dataService: StatsDataService
     private let daysBack: Int
 

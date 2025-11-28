@@ -36,38 +36,44 @@ struct DailyStatsView: View {
                     ProgressView("Beräknar daglig statistik…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    ScrollView(.horizontal) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            headerRow
-                                .padding(.vertical, 6)
-                            Divider()
+                    VStack(alignment: .leading, spacing: 0) {
+                        summarySection
+                            .padding(.horizontal, 10)
+                            .padding(.top, 8)
 
-                            ScrollView(.vertical) {
-                                VStack(alignment: .leading, spacing: 0) {
-                                    ForEach(Array(viewModel.rows.enumerated()), id: \.element.id) { index, row in
-                                        HStack(spacing: columnSpacing) {
-                                            Text(dateFormatter.string(from: row.date))
-                                                .frame(width: dateWidth, alignment: .leading)
-                                                .font(.system(size: 11).monospacedDigit())
+                        ScrollView(.horizontal) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                headerRow
+                                    .padding(.vertical, 6)
+                                Divider()
 
-                                            numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
-                                            numberCell(row.insulinTDD, width: insulinWidth)
-                                            numberCell(row.meanGlucoseMmol, width: meanWidth, decimals: 1)
-                                            numberCell(row.lowPercent, width: lowWidth)
-                                            numberCell(row.tightRangePercent, width: tirWidth, decimals: 0)
-                                            numberCell(row.stdDevMmol, width: stdWidth, decimals: 1)
-                                            numberCell(row.profileBasal, width: profileWidth)
+                                ScrollView(.vertical) {
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        ForEach(Array(viewModel.rows.enumerated()), id: \.element.id) { index, row in
+                                            HStack(spacing: columnSpacing) {
+                                                Text(dateFormatter.string(from: row.date))
+                                                    .frame(width: dateWidth, alignment: .leading)
+                                                    .font(.system(size: 11).monospacedDigit())
+
+                                                numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
+                                                numberCell(row.insulinTDD, width: insulinWidth)
+                                                meanCell(row.meanGlucoseMmol)
+                                                lowCell(row.lowPercent)
+                                                titrCell(row.tightRangePercent)
+                                                stdDevCell(stdDev: row.stdDevMmol, mean: row.meanGlucoseMmol)
+                                                numberCell(row.profileBasal, width: profileWidth)
+                                            }
+                                            .padding(.vertical, 4)
+                                            .background(index % 2 == 0 ? Color(.systemGray5) : Color.clear)
+                                            Divider()
                                         }
-                                        .padding(.vertical, 4)
-                                        .background(index % 2 == 0 ? Color(.systemGray5) : Color.clear)
-                                        Divider()
                                     }
                                 }
                             }
+                            .padding(.horizontal, 10)
+                            .padding(.top, 12)
+                            //.padding(.bottom, 12)
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.top, 6)
-                        .padding(.bottom, 12)
                     }
                 }
             }
@@ -116,6 +122,30 @@ struct DailyStatsView: View {
 
     // MARK: - Subviews
 
+    private var summarySection: some View {
+        let daysInScope = viewModel.numberOfDaysInScope
+        let daysMeeting = viewModel.numberOfDaysMeetingTitrTarget
+        let thresholdPercentString = String(format: "%.0f%%", viewModel.titrTargetThreshold * 100)
+        let daysInScopeString = "\(daysInScope)"
+        let daysMeetingString = "\(daysMeeting)"
+
+        return Group {
+            if daysInScope > 0 {
+                Text("Du nådde ditt mål ") +
+                Text(thresholdPercentString).fontWeight(.semibold) +
+                Text(" inom intervallet 3.9–7.8 mmol/L under ") +
+                Text(daysMeetingString).fontWeight(.semibold) +
+                Text(" av de senaste ") +
+                Text(daysInScopeString).fontWeight(.semibold) +
+                Text(" dagarna.")
+            } else {
+                Text("Ingen daglig statistik att visa ännu.")
+            }
+        }
+        .font(.system(size: 14))
+        .multilineTextAlignment(.leading)
+    }
+
     private var headerRow: some View {
         HStack(spacing: columnSpacing) {
             Text("Datum")
@@ -155,12 +185,14 @@ struct DailyStatsView: View {
     private func numberCell(
         _ value: Double?,
         width: CGFloat,
-        decimals: Int = 1
+        decimals: Int = 1,
+        foregroundColor: Color? = nil
     ) -> some View {
         Group {
             if let value = value {
                 Text(String(format: "%.\(decimals)f", value))
                     .font(.system(size: 11).monospacedDigit())
+                    .foregroundColor(foregroundColor ?? .primary)
             } else {
                 Text("—")
                     .font(.system(size: 11))
@@ -168,6 +200,60 @@ struct DailyStatsView: View {
             }
         }
         .frame(width: width, alignment: .trailing)
+    }
+
+    private func lowCell(_ value: Double?) -> some View {
+        let color: Color
+        if let value = value {
+            let fraction = value / 100.0
+            color = fraction > viewModel.lowGlucoseTargetThreshold ? .red : .primary
+        } else {
+            color = .secondary
+        }
+        return numberCell(value, width: lowWidth, decimals: 1, foregroundColor: color)
+    }
+
+    private func titrCell(_ value: Double?) -> some View {
+        let color: Color
+        if let value = value {
+            let fraction = value / 100.0
+            color = fraction >= viewModel.titrTargetThreshold ? .green : .red
+        } else {
+            color = .secondary
+        }
+        return numberCell(value, width: tirWidth, decimals: 0, foregroundColor: color)
+    }
+
+    private func meanCell(_ value: Double?) -> some View {
+        let color: Color
+        if let value = value {
+            if value <= viewModel.bgAverageGreatThreshold {
+                color = .green
+            } else if value <= viewModel.bgAverageOKThreshold {
+                color = .orange
+            } else {
+                color = .red
+            }
+        } else {
+            color = .secondary
+        }
+        return numberCell(value, width: meanWidth, decimals: 1, foregroundColor: color)
+    }
+
+    private func stdDevCell(stdDev: Double?, mean: Double?) -> some View {
+        let color: Color
+        if let stdDev = stdDev, stdDev > 0 {
+            if stdDev <= viewModel.stdDevGreatThreshold {
+                color = .green
+            } else if stdDev <= viewModel.stdDevOkThreshold {
+                color = .orange
+            } else {
+                color = .red
+            }
+        } else {
+            color = .secondary
+        }
+        return numberCell(stdDev, width: stdWidth, decimals: 1, foregroundColor: color)
     }
 }
 
