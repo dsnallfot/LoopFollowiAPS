@@ -539,7 +539,11 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
 
         let viewModel = AggregatedStatsViewModel(mainViewController: mainVC)
         let statsRootView = NavigationView {
-            AggregatedStatsView(viewModel: viewModel)
+            if #available(iOS 26.0, *) {
+                AggregatedStatsView(viewModel: viewModel)
+            } else {
+                // Fallback on earlier versions
+            }
         }
 
         let hostingController = UIHostingController(rootView: statsRootView)

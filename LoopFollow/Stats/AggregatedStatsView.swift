@@ -4,6 +4,7 @@
 import SwiftUI
 import UIKit
 
+@available(iOS 26.0, *)
 struct AggregatedStatsView: View {
     @ObservedObject var viewModel: AggregatedStatsViewModel
     @Environment(\.dismiss) var dismiss
@@ -98,9 +99,8 @@ struct AggregatedStatsView: View {
             }
             .navigationTitle("Statistik")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarRole(.editor)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button(action: {
                         isLoadingData = true
                         viewModel.updatePeriod(selectedPeriod, forceReload: true) {
@@ -110,14 +110,18 @@ struct AggregatedStatsView: View {
                         Image(systemName: "arrow.clockwise")
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+
+                ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
                         showingDailyStats = true
                     } label: {
                         Image(systemName: "tablecells")
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+
+                ToolbarSpacer(placement: .topBarTrailing)
+
+                ToolbarItemGroup(placement: .topBarTrailing) {
                     Button("Klar") {
                         dismiss()
                     }

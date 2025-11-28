@@ -366,7 +366,11 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         // Build AggregatedStatsView with this MainViewController as context
         let viewModel = AggregatedStatsViewModel(mainViewController: self)
         let statsRootView = NavigationView {
-            AggregatedStatsView(viewModel: viewModel)
+            if #available(iOS 26.0, *) {
+                AggregatedStatsView(viewModel: viewModel)
+            } else {
+                // Fallback on earlier versions
+            }
         }
 
         let hostingController = UIHostingController(rootView: statsRootView)
