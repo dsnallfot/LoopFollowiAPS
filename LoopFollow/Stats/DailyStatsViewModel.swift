@@ -190,27 +190,34 @@ final class DailyStatsViewModel: ObservableObject {
     func makeCSVString() -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
-
+        
         func fmt(_ value: Double?, decimals: Int = 2) -> String {
             guard let value = value else { return "" }
-            return String(format: "%.\(decimals)f", value)
+            let formatted = String(format: "%.\(decimals)f", value)
+            // Byt punkt mot komma för svensk Excel
+            return formatted.replacingOccurrences(of: ".", with: ",")
         }
-
+        
         var lines: [String] = []
-        lines.append("Date,Carbs total (g),Insulin TDD (E),Mean glucose (mmol/L),Low glucose (%),Time in tight range (%),Std dev (mmol/L),Profile basal (E)")
-
-        for row in rows {
+        lines.append("Date;Carbs total (g);Insulin TDD (E);Mean glucose (mmol/L);Low glucose (%);Time in tight range (%);Std dev (mmol/L);Profile basal (E)")
+        
+        for row in rows.sorted(by: { $0.date < $1.date }) {
             let dateStr = dateFormatter.string(from: row.date)
+            
+            // Skala procent 0–100 → 0–1 så Excel kan använda cellformat Procent
+            let lowFraction = row.lowPercent.map { $0 / 100.0 }
+            let tightFraction = row.tightRangePercent.map { $0 / 100.0 }
+            
             let line = [
                 dateStr,
                 fmt(row.totalCarbs, decimals: 0),
                 fmt(row.insulinTDD),
                 fmt(row.meanGlucoseMmol, decimals: 2),
-                fmt(row.lowPercent),
-                fmt(row.tightRangePercent),
+                fmt(lowFraction),                 // nu 0–1
+                fmt(tightFraction),               // nu 0–1
                 fmt(row.stdDevMmol, decimals: 2),
                 fmt(row.profileBasal)
-            ].joined(separator: ",")
+            ].joined(separator: ";")              // semikolonseparerat
             lines.append(line)
         }
 

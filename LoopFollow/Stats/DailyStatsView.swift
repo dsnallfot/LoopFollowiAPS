@@ -9,7 +9,6 @@ struct DailyStatsView: View {
     @ObservedObject var viewModel: DailyStatsViewModel
     @Environment(\.dismiss) private var dismiss
 
-    @State private var isExporting: Bool = false
     @State private var exportURL: URL?
 
     private let dateFormatter: DateFormatter = {
@@ -43,7 +42,7 @@ struct DailyStatsView: View {
                                 .padding(.vertical, 6)
                             Divider()
 
-                            ForEach(viewModel.rows) { row in
+                            ForEach(Array(viewModel.rows.enumerated()), id: \.element.id) { index, row in
                                 HStack(spacing: columnSpacing) {
                                     Text(dateFormatter.string(from: row.date))
                                         .frame(width: dateWidth, alignment: .leading)
@@ -51,13 +50,14 @@ struct DailyStatsView: View {
 
                                     numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
                                     numberCell(row.insulinTDD, width: insulinWidth)
-                                    numberCell(row.meanGlucoseMmol, width: meanWidth, decimals: 2)
+                                    numberCell(row.meanGlucoseMmol, width: meanWidth, decimals: 1)
                                     numberCell(row.lowPercent, width: lowWidth)
-                                    numberCell(row.tightRangePercent, width: tirWidth)
-                                    numberCell(row.stdDevMmol, width: stdWidth, decimals: 2)
+                                    numberCell(row.tightRangePercent, width: tirWidth, decimals: 0)
+                                    numberCell(row.stdDevMmol, width: stdWidth, decimals: 1)
                                     numberCell(row.profileBasal, width: profileWidth)
                                 }
                                 .padding(.vertical, 4)
+                                .background(index % 2 == 0 ? Color(.systemGray5) : Color.clear)
                                 Divider()
                             }
                         }
@@ -74,7 +74,6 @@ struct DailyStatsView: View {
                     Button {
                         if let url = viewModel.writeCSVToDisk() {
                             exportURL = url
-                            isExporting = true
                         }
                     } label: {
                         Image(systemName: "square.and.arrow.up")
@@ -89,13 +88,18 @@ struct DailyStatsView: View {
             .onAppear {
                 viewModel.loadDailyStats()
             }
-            .sheet(isPresented: $isExporting, onDismiss: {
-                exportURL = nil
-            }) {
+            .sheet(
+                isPresented: Binding(
+                    get: { exportURL != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            exportURL = nil
+                        }
+                    }
+                )
+            ) {
                 if let url = exportURL {
                     ActivityView(activityItems: [url])
-                } else {
-                    Text("Ingen fil att exportera")
                 }
             }
             .alert("Fel", isPresented: .constant(viewModel.errorMessage != nil), actions: {

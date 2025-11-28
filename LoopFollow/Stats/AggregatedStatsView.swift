@@ -33,114 +33,118 @@ struct AggregatedStatsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Fixed segment picker header
-            VStack(spacing: 8) {
-                Picker("Period", selection: $selectedPeriod) {
-                    Text("Idag").tag(0)
-                    Text("1 d").tag(1)
-                    Text("7 d").tag(7)
-                    Text("14 d").tag(14)
-                    Text("30 d").tag(30)
-                    Text("90 d").tag(90)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                .padding(.top, 8)
-                .padding(.bottom, 8)
-                .onChange(of: selectedPeriod) { newValue in
-                    UserDefaults.standard.set(newValue, forKey: "AggregatedStatsSelectedPeriod")
-                    isLoadingData = true
-                    viewModel.updatePeriod(newValue) {
-                        isLoadingData = false
+        if #available(iOS 16.0, *) {
+            VStack(spacing: 0) {
+                // Fixed segment picker header
+                VStack(spacing: 8) {
+                    Picker("Period", selection: $selectedPeriod) {
+                        Text("Idag").tag(0)
+                        Text("1 d").tag(1)
+                        Text("7 d").tag(7)
+                        Text("14 d").tag(14)
+                        Text("30 d").tag(30)
+                        Text("90 d").tag(90)
                     }
-                }
-            }
-            .background(Color(.systemBackground))
-            .zIndex(1)
-
-            ScrollView {
-                VStack(spacing: 20) {
-                    if isLoadingData {
-                        ProgressView("Laddar data...")
-                            .padding()
-                    }
-
-                    StatsGridView(
-                        simpleStats: viewModel.simpleStats,
-                        showGMI: $showGMI,
-                        showStdDev: $showStdDev,
-                        showFPU: $showFPU,
-                        showSMB: $showSMB,
-                        showDextroAmount: $showDextroAmount,
-                        showProfileBasal: $showProfileBasal,
-                        showLowPercentage: $showLowPercentage,
-                        isTodayOnly: selectedPeriod == 0,
-                        isOneDayOnly: selectedPeriod < 2,
-                        showTrends: selectedPeriod != 0 && selectedPeriod != 90,
-                        periodLabel: periodLabel(for: selectedPeriod)
-                    )
+                    .pickerStyle(.segmented)
                     .padding(.horizontal)
-                    
-                    TIRView(viewModel: viewModel.tirStats)
-                        .padding(.horizontal)
-
-                    AGPView(viewModel: viewModel.agpStats)
-                        .padding(.horizontal)
-
-                    GRIView(viewModel: viewModel.griStats)
-                        .padding(.horizontal)
-                }
-                .padding(.bottom)
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .navigationTitle("Statistik")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: {
-                    isLoadingData = true
-                    viewModel.updatePeriod(selectedPeriod, forceReload: true) {
-                        isLoadingData = false
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+                    .onChange(of: selectedPeriod) { newValue in
+                        UserDefaults.standard.set(newValue, forKey: "AggregatedStatsSelectedPeriod")
+                        isLoadingData = true
+                        viewModel.updatePeriod(newValue) {
+                            isLoadingData = false
+                        }
                     }
-                }) {
-                    Image(systemName: "arrow.clockwise")
+                }
+                .background(Color(.systemBackground))
+                .zIndex(1)
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        if isLoadingData {
+                            ProgressView("Laddar data...")
+                                .padding()
+                        }
+                        
+                        StatsGridView(
+                            simpleStats: viewModel.simpleStats,
+                            showGMI: $showGMI,
+                            showStdDev: $showStdDev,
+                            showFPU: $showFPU,
+                            showSMB: $showSMB,
+                            showDextroAmount: $showDextroAmount,
+                            showProfileBasal: $showProfileBasal,
+                            showLowPercentage: $showLowPercentage,
+                            isTodayOnly: selectedPeriod == 0,
+                            isOneDayOnly: selectedPeriod < 2,
+                            showTrends: selectedPeriod != 0 && selectedPeriod != 90,
+                            periodLabel: periodLabel(for: selectedPeriod)
+                        )
+                        .padding(.horizontal)
+                        
+                        TIRView(viewModel: viewModel.tirStats)
+                            .padding(.horizontal)
+                        
+                        AGPView(viewModel: viewModel.agpStats)
+                            .padding(.horizontal)
+                        
+                        GRIView(viewModel: viewModel.griStats)
+                            .padding(.horizontal)
+                    }
+                    .padding(.bottom)
+                    .frame(maxWidth: .infinity)
                 }
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
+            .navigationTitle("Statistik")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarRole(.editor)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        isLoadingData = true
+                        viewModel.updatePeriod(selectedPeriod, forceReload: true) {
+                            isLoadingData = false
+                        }
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingDailyStats = true
                     } label: {
                         Image(systemName: "tablecells")
                     }
-
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {
                         dismiss()
                     }
                 }
             }
-        }
-        .onAppear {
-            isLoadingData = true
-            viewModel.updatePeriod(selectedPeriod, forceReload: true) {
-                isLoadingData = false
+            .onAppear {
+                isLoadingData = true
+                viewModel.updatePeriod(selectedPeriod, forceReload: true) {
+                    isLoadingData = false
+                }
             }
-        }
-        .sheet(isPresented: $showingDailyStats) {
-            // Antag att AggregatedStatsViewModel har en referens till samma StatsDataService
-            // Justera "dataService" till faktiskt property-namn om det skiljer sig.
-            if #available(iOS 16.0, *) {
-                DailyStatsView(
-                    viewModel: DailyStatsViewModel(
-                        dataService: viewModel.dataService,
-                        daysBack: 90
+            .sheet(isPresented: $showingDailyStats) {
+                // Antag att AggregatedStatsViewModel har en referens till samma StatsDataService
+                // Justera "dataService" till faktiskt property-namn om det skiljer sig.
+                if #available(iOS 16.0, *) {
+                    DailyStatsView(
+                        viewModel: DailyStatsViewModel(
+                            dataService: viewModel.dataService,
+                            daysBack: 90
+                        )
                     )
-                )
-            } else {
-                // Fallback on earlier versions
+                } else {
+                    // Fallback on earlier versions
+                }
             }
+        } else {
+            // Fallback on earlier versions
         }
     }
     
