@@ -36,29 +36,33 @@ struct DailyStatsView: View {
                     ProgressView("Beräknar daglig statistik…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    ScrollView([.vertical, .horizontal]) {
+                    ScrollView(.horizontal) {
                         VStack(alignment: .leading, spacing: 0) {
                             headerRow
                                 .padding(.vertical, 6)
                             Divider()
 
-                            ForEach(Array(viewModel.rows.enumerated()), id: \.element.id) { index, row in
-                                HStack(spacing: columnSpacing) {
-                                    Text(dateFormatter.string(from: row.date))
-                                        .frame(width: dateWidth, alignment: .leading)
-                                        .font(.system(size: 11).monospacedDigit())
+                            ScrollView(.vertical) {
+                                VStack(alignment: .leading, spacing: 0) {
+                                    ForEach(Array(viewModel.rows.enumerated()), id: \.element.id) { index, row in
+                                        HStack(spacing: columnSpacing) {
+                                            Text(dateFormatter.string(from: row.date))
+                                                .frame(width: dateWidth, alignment: .leading)
+                                                .font(.system(size: 11).monospacedDigit())
 
-                                    numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
-                                    numberCell(row.insulinTDD, width: insulinWidth)
-                                    numberCell(row.meanGlucoseMmol, width: meanWidth, decimals: 1)
-                                    numberCell(row.lowPercent, width: lowWidth)
-                                    numberCell(row.tightRangePercent, width: tirWidth, decimals: 0)
-                                    numberCell(row.stdDevMmol, width: stdWidth, decimals: 1)
-                                    numberCell(row.profileBasal, width: profileWidth)
+                                            numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
+                                            numberCell(row.insulinTDD, width: insulinWidth)
+                                            numberCell(row.meanGlucoseMmol, width: meanWidth, decimals: 1)
+                                            numberCell(row.lowPercent, width: lowWidth)
+                                            numberCell(row.tightRangePercent, width: tirWidth, decimals: 0)
+                                            numberCell(row.stdDevMmol, width: stdWidth, decimals: 1)
+                                            numberCell(row.profileBasal, width: profileWidth)
+                                        }
+                                        .padding(.vertical, 4)
+                                        .background(index % 2 == 0 ? Color(.systemGray5) : Color.clear)
+                                        Divider()
+                                    }
                                 }
-                                .padding(.vertical, 4)
-                                .background(index % 2 == 0 ? Color(.systemGray5) : Color.clear)
-                                Divider()
                             }
                         }
                         .padding(.horizontal, 8)
