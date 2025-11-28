@@ -53,8 +53,10 @@ struct AggregatedStatsView: View {
                     .onChange(of: selectedPeriod) { newValue in
                         UserDefaults.standard.set(newValue, forKey: "AggregatedStatsSelectedPeriod")
                         isLoadingData = true
-                        viewModel.updatePeriod(newValue) {
-                            isLoadingData = false
+                        DispatchQueue.main.async {
+                            viewModel.updatePeriod(newValue) {
+                                isLoadingData = false
+                            }
                         }
                     }
                 }
@@ -103,8 +105,10 @@ struct AggregatedStatsView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: {
                         isLoadingData = true
-                        viewModel.updatePeriod(selectedPeriod, forceReload: true) {
-                            isLoadingData = false
+                        DispatchQueue.main.async {
+                            viewModel.updatePeriod(selectedPeriod, forceReload: true) {
+                                isLoadingData = false
+                            }
                         }
                     }) {
                         Image(systemName: "arrow.clockwise")
@@ -129,8 +133,10 @@ struct AggregatedStatsView: View {
             }
             .onAppear {
                 isLoadingData = true
-                viewModel.updatePeriod(selectedPeriod, forceReload: true) {
-                    isLoadingData = false
+                DispatchQueue.main.async {
+                    viewModel.updatePeriod(selectedPeriod, forceReload: true) {
+                        isLoadingData = false
+                    }
                 }
             }
             .sheet(isPresented: $showingDailyStats) {

@@ -137,7 +137,7 @@ struct DailyStatsView: View {
                 Text(daysMeetingString).fontWeight(.semibold) +
                 Text(" av de senaste ") +
                 Text(daysInScopeString).fontWeight(.semibold) +
-                Text(" dagarna.")
+                Text(" dagarna. ")
             } else {
                 Text("Ingen daglig statistik att visa ännu.")
             }
