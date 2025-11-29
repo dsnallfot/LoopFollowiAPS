@@ -18,7 +18,7 @@ struct DailyStatsView: View {
     }()
 
     // Kolumnbredder för raka marginaler
-    private let dateWidth: CGFloat = 66
+    private let dateWidth: CGFloat = 70
         private let carbsWidth: CGFloat = 40
         private let insulinWidth: CGFloat = 40
         private let meanWidth: CGFloat = 40
