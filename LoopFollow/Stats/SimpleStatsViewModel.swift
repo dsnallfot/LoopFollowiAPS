@@ -438,6 +438,7 @@ class SimpleStatsViewModel: ObservableObject {
                 }
             }()
             prevProgrammedBasal = prevProgrammedBasalValue
+            programmedBasalTrend = StatsTrendCalculator.arrow(current: programmedBasal, previous: prevProgrammedBasalValue)
 
             // Kolhydrater + FPU
             let prevCarbsData = dataService.getCarbData(in: prevInterval)
