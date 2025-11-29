@@ -36,31 +36,36 @@ struct TIRView: View {
                         let highThreshold = viewModel.showTITR ? 7.8 : 10.0   // upper range for "Inom mål"
                         let high = viewModel.showTITR ? 7.9 : 10.1           // lower range for "Högt"
                         
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 4) {
                             if let average = viewModel.tirData.first(where: { $0.period == .average }) {
                                 TIRLegendItem(
                                     color: .purple,
-                                    label: "Akut högt  (> 13.9 mmol/L)",
+                                    label: "Akut högt",
+                                    detailLabel: "(över 13.9 mmol/L)",
                                     percentage: average.veryHigh
                                 )
                                 TIRLegendItem(
                                     color: .blue,
-                                    label: String(format: "Högt  (%.1f - 13.9 mmol/L)", high),
+                                    label: "Högt",
+                                    detailLabel: String(format: "(%.1f - 13.9 mmol/L)", high),
                                     percentage: average.high
                                 )
                                 TIRLegendItem(
                                     color: .green,
-                                    label: String(format: "Inom mål  (3.9 - %.1f mmol/L)", highThreshold),
+                                    label: "Inom mål",
+                                    detailLabel: String(format: "(3.9 - %.1f mmol/L)", highThreshold),
                                     percentage: average.inRange
                                 )
                                 TIRLegendItem(
                                     color: .orange,
-                                    label: "Lågt  (3.1 - 3.8 mmol/L)",
+                                    label: "Lågt",
+                                    detailLabel: "(3.1 - 3.8 mmol/L)",
                                     percentage: average.low
                                 )
                                 TIRLegendItem(
                                     color: .red,
-                                    label: "Akut lågt  (< 3.1 mmol/L)",
+                                    label: "Akut lågt",
+                                    detailLabel: "(under 3.1 mmol/L)",
                                     percentage: average.veryLow
                                 )
                             }
@@ -106,17 +111,24 @@ struct TIRView: View {
 struct TIRLegendItem: View {
     let color: Color
     let label: String
+    let detailLabel: String
     let percentage: Double
 
     var body: some View {
         HStack(spacing: 8) {
             Rectangle()
                 .fill(color)
-                .frame(width: 12, height: 12)
-            Text(String(format: "%.1f%%", percentage))
+                .frame(width: 10, height: 10)
+                .frame(width: 14, alignment: .leading)
+            Text(String(format: "%.1f %%", percentage))
                 .foregroundColor(.primary)
+                .frame(width: 45, alignment: .leading)
             Text(label)
+                .foregroundColor(.primary)
+                .frame(width: 65, alignment: .leading)
+            Text(detailLabel)
                 .foregroundColor(.secondary)
+                .frame(width: 120, alignment: .leading)
             Spacer()
         }
     }

@@ -53,7 +53,11 @@ struct TIRGraphView: UIViewRepresentable {
         guard !tirData.isEmpty else { return }
 
         var stackedEntries: [BarChartDataEntry] = []
-        var labelEntries: [BarChartDataEntry] = []
+        var veryLowLabelEntries: [BarChartDataEntry] = []
+        var lowLabelEntries: [BarChartDataEntry] = []
+        var inRangeLabelEntries: [BarChartDataEntry] = []
+        var highLabelEntries: [BarChartDataEntry] = []
+        var veryHighLabelEntries: [BarChartDataEntry] = []
         var xAxisLabels: [String] = []
 
         for (index, point) in tirData.enumerated() {
@@ -70,17 +74,54 @@ struct TIRGraphView: UIViewRepresentable {
             )
             stackedEntries.append(stackedEntry)
 
-            // Label entry: place the value label at the vertical center of the "In Range" segment.
-            // The "In Range" segment starts after veryLow + low and has height = inRange.
+            // Label entries: place value labels at the vertical center of each segment.
+            // Very Low segment
+            let centerVeryLow = point.veryLow / 2.0 - 5
+            let veryLowLabelEntry = BarChartDataEntry(
+                x: Double(index),
+                y: centerVeryLow,
+                data: NSNumber(value: point.veryLow)
+            )
+            veryLowLabelEntries.append(veryLowLabelEntry)
+
+            // Low segment
+            let centerLow = point.veryLow + (point.low / 2.0 - 5)
+            let lowLabelEntry = BarChartDataEntry(
+                x: Double(index),
+                y: centerLow,
+                data: NSNumber(value: point.low)
+            )
+            lowLabelEntries.append(lowLabelEntry)
+
+            // In Range segment (keep small upward offset as tidigare)
             let belowInRange = point.veryLow + point.low
             let centerOfInRange = belowInRange + (point.inRange / 2.0 - 5)
-
-            let labelEntry = BarChartDataEntry(
+            let inRangeLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerOfInRange,
                 data: NSNumber(value: point.inRange)
             )
-            labelEntries.append(labelEntry)
+            inRangeLabelEntries.append(inRangeLabelEntry)
+
+            // High segment
+            let belowHigh = belowInRange + point.inRange
+            let centerHigh = belowHigh + (point.high / 2.0 - 5)
+            let highLabelEntry = BarChartDataEntry(
+                x: Double(index),
+                y: centerHigh,
+                data: NSNumber(value: point.high)
+            )
+            highLabelEntries.append(highLabelEntry)
+
+            // Very High segment
+            let belowVeryHigh = belowHigh + point.high
+            let centerVeryHigh = belowVeryHigh + (point.veryHigh / 2.0 - 5)
+            let veryHighLabelEntry = BarChartDataEntry(
+                x: Double(index),
+                y: centerVeryHigh,
+                data: NSNumber(value: point.veryHigh)
+            )
+            veryHighLabelEntries.append(veryHighLabelEntry)
 
             xAxisLabels.append(point.period.rawValue)
         }
@@ -97,15 +138,50 @@ struct TIRGraphView: UIViewRepresentable {
         stackedSet.stackLabels = ["Very Low", "Low", "In Range", "High", "Very High"]
         stackedSet.drawValuesEnabled = false
 
-        // Transparent dataset used only for drawing centered "In Range" percentage labels
-        let labelSet = BarChartDataSet(entries: labelEntries, label: "")
-        labelSet.colors = [UIColor.clear]
-        labelSet.drawValuesEnabled = true
-        labelSet.valueFont = .systemFont(ofSize: 10, weight: .semibold)
-        labelSet.valueTextColor = .white
-        labelSet.valueFormatter = InRangeValueFormatter()
+        // Transparent datasets used only for drawing centered percentage labels per segment
+        let veryLowLabelSet = BarChartDataSet(entries: veryLowLabelEntries, label: "")
+        veryLowLabelSet.colors = [UIColor.clear]
+        veryLowLabelSet.drawValuesEnabled = true
+        veryLowLabelSet.valueFont = .systemFont(ofSize: 8, weight: .semibold)
+        veryLowLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
+        veryLowLabelSet.valueFormatter = InRangeValueFormatter()
 
-        let data = BarChartData(dataSets: [stackedSet, labelSet])
+        let lowLabelSet = BarChartDataSet(entries: lowLabelEntries, label: "")
+        lowLabelSet.colors = [UIColor.clear]
+        lowLabelSet.drawValuesEnabled = true
+        lowLabelSet.valueFont = .systemFont(ofSize: 8, weight: .semibold)
+        lowLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
+        lowLabelSet.valueFormatter = InRangeValueFormatter()
+
+        let inRangeLabelSet = BarChartDataSet(entries: inRangeLabelEntries, label: "")
+        inRangeLabelSet.colors = [UIColor.clear]
+        inRangeLabelSet.drawValuesEnabled = true
+        inRangeLabelSet.valueFont = .systemFont(ofSize: 8, weight: .semibold)
+        inRangeLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
+        inRangeLabelSet.valueFormatter = InRangeValueFormatter()
+
+        let highLabelSet = BarChartDataSet(entries: highLabelEntries, label: "")
+        highLabelSet.colors = [UIColor.clear]
+        highLabelSet.drawValuesEnabled = true
+        highLabelSet.valueFont = .systemFont(ofSize: 8, weight: .semibold)
+        highLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
+        highLabelSet.valueFormatter = InRangeValueFormatter()
+
+        let veryHighLabelSet = BarChartDataSet(entries: veryHighLabelEntries, label: "")
+        veryHighLabelSet.colors = [UIColor.clear]
+        veryHighLabelSet.drawValuesEnabled = true
+        veryHighLabelSet.valueFont = .systemFont(ofSize: 8, weight: .semibold)
+        veryHighLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
+        veryHighLabelSet.valueFormatter = InRangeValueFormatter()
+
+        let data = BarChartData(dataSets: [
+            stackedSet,
+            veryLowLabelSet,
+            lowLabelSet,
+            inRangeLabelSet,
+            highLabelSet,
+            veryHighLabelSet,
+        ])
         data.barWidth = 0.6
 
         chartView.data = data
@@ -120,7 +196,7 @@ struct TIRGraphView: UIViewRepresentable {
 
 class PercentageAxisValueFormatter: AxisValueFormatter {
     func stringForValue(_ value: Double, axis _: AxisBase?) -> String {
-        return String(format: "%.0f%%", value)
+        return String(format: "%.0f %%", value)
     }
 }
 
@@ -138,13 +214,13 @@ class InRangeValueFormatter: ValueFormatter {
             if inRange < 5.0 {
                 return ""
             }
-            return String(format: "%.0f%%", inRange)
+            return String(format: "%.0f %%", inRange)
         } else {
             // Fallback to the raw value if data is missing
             if value < 5.0 {
                 return ""
             }
-            return String(format: "%.0f%%", value)
+            return String(format: "%.0f %%", value)
         }
     }
 }
