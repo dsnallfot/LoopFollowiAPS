@@ -101,9 +101,6 @@ final class DailyStatsViewModel: ObservableObject {
             let smbData = self.dataService.getSMBData()
             let carbData = self.dataService.getCarbData()
             let dailyBasalStats = self.dataService.getDailyDeliveredBasal()
-            let basalProfile = self.dataService.getBasalProfile()
-
-            let profileBasalValue = self.calculateProgrammedBasalFromProfile(basalProfile: basalProfile)
 
             // Bygg upp dictionarier per dag
             let basalPerDay: [Date: Double] = Dictionary(
@@ -151,6 +148,11 @@ final class DailyStatsViewModel: ObservableObject {
 
                 let startOfDay = calendar.startOfDay(for: day)
                 guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { continue }
+
+                // Historisk profilbasal för just denna dag (24h, teoretisk)
+                let dayInterval = DateInterval(start: startOfDay, end: endOfDay)
+                let dayBasalProfile = self.dataService.getBasalProfile(for: dayInterval)
+                let profileBasalValueForDay = self.calculateProgrammedBasalFromProfile(basalProfile: dayBasalProfile)
 
                 // BG för dagen
                 let bgForDay = groupedBG[startOfDay] ?? []
@@ -204,7 +206,7 @@ final class DailyStatsViewModel: ObservableObject {
                     lowPercent: lowPercent,
                     tightRangePercent: tightRangePercent,
                     stdDevMmol: stdDevMmol,
-                    profileBasal: profileBasalValue
+                    profileBasal: profileBasalValueForDay
                 )
                 rows.append(row)
             }

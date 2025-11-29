@@ -292,13 +292,15 @@ class SimpleStatsViewModel: ObservableObject {
             totalDailyDose = nil
         }
 
-        let basalProfile = dataService.getBasalProfile()
+        // Hämta basalprofil baserat på aktuellt analysintervall (historisk om möjligt)
+        let basalProfileForInterval = dataService.getBasalProfile(for: currentInterval)
         if dataService.isTodayOnly {
             // "Idag": använd teoretisk profilbasal från midnatt till nu
-            programmedBasal = calculateProgrammedBasalForToday(basalProfile: basalProfile)
+            programmedBasal = calculateProgrammedBasalForToday(basalProfile: basalProfileForInterval)
         } else {
-            // Övriga perioder: använd 24h-profilbasal (E/dygn)
-            programmedBasal = calculateProgrammedBasalFromProfile(basalProfile: basalProfile)
+            // Övriga perioder: använd genomsnittlig profilbasal per dag i analysfönstret
+            let days = max(dataService.daysToAnalyze, 1)
+            programmedBasal = averageProgrammedBasalOverPeriod(interval: currentInterval, days: days)
         }
 
         // Netto måltidsbolus = Total Daglig Dos − Profilbasal
@@ -424,8 +426,18 @@ class SimpleStatsViewModel: ObservableObject {
             prevTotalDailyDose = prevTDD
             prevActualBasal = prevAvgDailyBasal
             
-            // basalprofil antas oförändrad mellan perioderna
-            prevProgrammedBasal = programmedBasal
+            // Historisk profilbasal för föregående period (samma längd)
+            let prevProgrammedBasalValue: Double? = {
+                if dataService.isTodayOnly {
+                    // För "Idag" jämför vi mot samma tidsfönster igår
+                    let prevBasalProfile = dataService.getBasalProfile(for: prevInterval)
+                    return scheduledBasal(from: prevInterval.start, to: prevInterval.end, basalProfile: prevBasalProfile)
+                } else {
+                    let days = max(dataService.daysToAnalyze, 1)
+                    return averageProgrammedBasalOverPeriod(interval: prevInterval, days: days)
+                }
+            }()
+            prevProgrammedBasal = prevProgrammedBasalValue
 
             // Kolhydrater + FPU
             let prevCarbsData = dataService.getCarbData(in: prevInterval)
@@ -479,7 +491,7 @@ class SimpleStatsViewModel: ObservableObject {
 
             // Netto måltidsbolus och verklig insulinkvot
             let prevNetMealBolus: Double? = {
-                guard let profile = programmedBasal else { return nil }
+                guard let profile = prevProgrammedBasalValue else { return nil }
                 let net = prevTDD - profile
                 return net > 0 ? net : 0
             }()
@@ -605,6 +617,36 @@ class SimpleStatsViewModel: ObservableObject {
         }
 
         return totalBasal
+    }
+
+    /// Genomsnittlig teoretisk profilbasal per dag över en given period.
+    /// Vi delar upp perioden i kalenderdagar och räknar ut 24h-profilbasal för varje dag
+    /// (baserat på den profil som gäller för den dagen via StatsProfileBasalEngine),
+    /// och tar sedan snittet.
+    private func averageProgrammedBasalOverPeriod(
+        interval: DateInterval,
+        days: Int
+    ) -> Double {
+        guard days > 0 else { return 0.0 }
+        
+        let calendar = Calendar.current
+        var total = 0.0
+        
+        // Starta på kalenderdagens början för intervallets start
+        var currentDayStart = calendar.startOfDay(for: interval.start)
+        
+        for _ in 0 ..< days {
+            guard let nextDayStart = calendar.date(byAdding: .day, value: 1, to: currentDayStart) else { break }
+            
+            let dayInterval = DateInterval(start: currentDayStart, end: nextDayStart)
+            let dayBasalProfile = dataService.getBasalProfile(for: dayInterval)
+            let dayBasal = calculateProgrammedBasalFromProfile(basalProfile: dayBasalProfile)
+            total += dayBasal
+            
+            currentDayStart = nextDayStart
+        }
+        
+        return total / Double(days)
     }
     
     // Profilbasal för "Idag": teoretisk basal från midnatt fram till nu

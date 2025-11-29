@@ -803,5 +803,87 @@ class NightscoutUtils {
         }
         task.resume()
     }
+    
+    // MARK: - Stats: Profile basal history support
+        /// Minimal profilmodell för statistikmotor – vi bryr oss bara om created_at + basalprofil.
+    struct StatsProfileDocument: Decodable {
+        let created_at: String?
+        let store: [String: StatsProfileStore]?
+        let defaultProfile: String?
+    }
+
+        struct StatsProfileStore: Decodable {
+            let basal: [MainViewController.basalProfileStruct]
+        }
+
+        /// Hämta alla profildokument nyare än `daysBack` dagar (max 1000 st).
+        static func fetchBasalProfilesSince(
+            daysBack: Int,
+            completion: @escaping (Result<[StatsProfileDocument], Error>) -> Void
+        ) {
+            let baseURL = ObservableUserDefaults.shared.url.value
+            let token = UserDefaultsRepository.token.value
+
+            // Från och med datum: now - daysBack
+            let sinceDate = Calendar.current.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let sinceString = isoFormatter.string(from: sinceDate)
+
+            let parameters: [String: String] = [
+                "count": "1000",
+                "find[created_at][$gte]": sinceString
+            ]
+
+            guard let url = NightscoutUtils.constructURL(
+                baseURL: baseURL,
+                token: token,
+                endpoint: "/api/v1/profile.json",
+                parameters: parameters
+            ) else {
+                DispatchQueue.main.async {
+                    completion(.failure(NightscoutError.invalidURL))
+                }
+                return
+            }
+
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+
+            let config = URLSessionConfiguration.default
+            config.waitsForConnectivity = true
+            config.networkServiceType = .responsiveData
+            let session = URLSession(configuration: config)
+
+            let task = session.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                    return
+                }
+
+                guard let data = data else {
+                    DispatchQueue.main.async {
+                        completion(.failure(NightscoutError.networkError))
+                    }
+                    return
+                }
+
+                do {
+                    let decoder = JSONDecoder()
+                    let docs = try decoder.decode([StatsProfileDocument].self, from: data)
+                    DispatchQueue.main.async {
+                        completion(.success(docs))
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                }
+            }
+
+            task.resume()
+        }
 
 }

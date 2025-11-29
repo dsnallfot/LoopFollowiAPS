@@ -193,6 +193,9 @@ class StatsDataService {
     var isOneDayOnly: Bool = false
     private let dataFetcher: StatsDataFetcher
     private let maxStatsDays: Int = 90
+
+    // Motor för historisk profilbasal (statistik)
+    private let statsBasalEngine = StatsProfileBasalEngine()
     
     struct DailyBasalStat {
         let dayStart: Date
@@ -206,6 +209,23 @@ class StatsDataService {
         // Ladda ev. cache direkt in i MainViewController när tjänsten skapas
         if let mainVC = mainViewController {
             StatsCacheManager.shared.loadInto(mainVC: mainVC)
+        }
+
+        // Ladda historisk profilbasal för statistik (upp till maxStatsDays)
+        statsBasalEngine.refresh(daysBack: maxStatsDays) { error in
+            if let error = error {
+                LogManager.shared.log(
+                    category: .analysis,
+                    message: "StatsProfileBasalEngine refresh error: \(error.localizedDescription)",
+                    isDebug: true
+                )
+            } else {
+                LogManager.shared.log(
+                    category: .analysis,
+                    message: "StatsProfileBasalEngine refresh completed",
+                    isDebug: true
+                )
+            }
         }
     }
 
@@ -502,6 +522,16 @@ class StatsDataService {
     func getBasalProfile() -> [MainViewController.basalProfileStruct] {
         guard let mainVC = mainViewController else { return [] }
         return mainVC.basalProfile
+    }
+
+    /// Hämta basalprofil för ett visst analysintervall.
+    /// Försöker använda historisk profil från StatsProfileBasalEngine, annars fall-back till nuvarande profil.
+    func getBasalProfile(for interval: DateInterval) -> [MainViewController.basalProfileStruct] {
+        if let historical = statsBasalEngine.basalProfile(for: interval) {
+            return historical
+        } else {
+            return getBasalProfile()
+        }
     }
     
     /*
