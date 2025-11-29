@@ -10,6 +10,7 @@ struct DailyStatsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var exportURL: URL?
+    @State private var showingTitrSummary: Bool = true
 
     private let dateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -18,16 +19,16 @@ struct DailyStatsView: View {
     }()
 
     // Kolumnbredder för raka marginaler
-    private let dateWidth: CGFloat = 67
-        private let carbsWidth: CGFloat = 37
-        private let insulinWidth: CGFloat = 37
-        private let meanWidth: CGFloat = 37
-        private let lowWidth: CGFloat = 37
-        private let titrWidth: CGFloat = 37
-        private let tirWidth: CGFloat = 37
-        private let stdWidth: CGFloat = 37
-        private let profileWidth: CGFloat = 37
-        private let emptyWidth: CGFloat = 4
+    private let dateWidth: CGFloat = 66
+        private let carbsWidth: CGFloat = 36
+        private let insulinWidth: CGFloat = 36
+        private let meanWidth: CGFloat = 36
+        private let lowWidth: CGFloat = 36
+        private let titrWidth: CGFloat = 36
+        private let tirWidth: CGFloat = 36
+        private let stdWidth: CGFloat = 36
+        private let profileWidth: CGFloat = 36
+        private let emptyWidth: CGFloat = 11
 
         private let columnSpacing: CGFloat = 1
 
@@ -128,27 +129,58 @@ struct DailyStatsView: View {
 
     private var summarySection: some View {
         let daysInScope = viewModel.numberOfDaysInScope
-        let daysMeeting = viewModel.numberOfDaysMeetingTitrTarget
-        let thresholdPercentString = String(format: "%.0f%%", viewModel.titrTargetThreshold * 100)
+        let daysMeetingTitr = viewModel.numberOfDaysMeetingTitrTarget
+        let daysMeetingTir = viewModel.numberOfDaysMeetingTirTarget
+        let titrThresholdPercentString = String(format: "%.0f%%", viewModel.titrTargetThreshold * 100)
+        let tirThresholdPercentString = String(format: "%.0f%%", viewModel.tirTargetThreshold * 100)
         let daysInScopeString = "\(daysInScope)"
-        let daysMeetingString = "\(daysMeeting)"
+        let daysMeetingTitrString = "\(daysMeetingTitr)"
+        let daysMeetingTirString = "\(daysMeetingTir)"
 
         return Group {
             if daysInScope > 0 {
                 VStack(alignment: .leading, spacing: 6) {
-                    (
-                        Text("Du nådde ditt mål ") +
-                        Text(thresholdPercentString).fontWeight(.semibold) +
-                        Text(" inom intervallet 3.9–7.8 mmol/L under ") +
-                        Text(daysMeetingString).fontWeight(.semibold) +
-                        Text(" av de senaste ") +
-                        Text(daysInScopeString).fontWeight(.semibold) +
-                        Text(" dagarna. ")
-                    )
+                    Group {
+                        VStack(alignment: .leading, spacing: 4) {
+                            // Rad 1: “Du nådde ditt mål på XX% tid i ...”
+                            HStack(spacing: 0) {
+                                Text("Du nådde ditt mål på ")
+                                Text(showingTitrSummary ? titrThresholdPercentString : tirThresholdPercentString)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.green.opacity(0.8))
+                                Text(showingTitrSummary ? " tid i tight målområde" : " tid i målområde ")
+                            }
+
+                            // Rad 2: intervallet i grått
+                            HStack(spacing: 0) {
+                            Text(showingTitrSummary ? "(3.9–7.8 mmol/L) " : "(3.9–10.0 mmol/L) ")
+                                .foregroundColor(.secondary)
+                                Text("under ")
+                                Text(showingTitrSummary ? daysMeetingTitrString : daysMeetingTirString)
+                                    .fontWeight(.bold)
+                                Text(" av de senaste ")
+                                Text(daysInScopeString)
+                                    .fontWeight(.bold)
+                                Text(" dagarna.")
+                            }
+                        }
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 10)
+                    }
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.bottom, 10)
 
-                    titrStreakBar
+                    if showingTitrSummary {
+                        titrStreakBar
+                    } else {
+                        tirStreakBar
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showingTitrSummary.toggle()
+                    }
                 }
             } else {
                 Text("Ingen daglig statistik att visa ännu.")
@@ -185,7 +217,7 @@ struct DailyStatsView: View {
                         .frame(width: barWidth, height: barHeight)
                         .overlay(
                             Rectangle()
-                                .stroke(Color.green.opacity(0.3), lineWidth: 0.5)
+                                .stroke(Color.green.opacity(0.2), lineWidth: 0.5)
                         )
                 }
             }
@@ -217,7 +249,7 @@ struct DailyStatsView: View {
                         .frame(width: barWidth, height: barHeight)
                         .overlay(
                             Rectangle()
-                                .stroke(Color.green.opacity(0.3), lineWidth: 0.5)
+                                .stroke(Color.green.opacity(0.2), lineWidth: 0.5)
                         )
                 }
             }
@@ -231,7 +263,7 @@ struct DailyStatsView: View {
                 .frame(width: dateWidth, alignment: .leading)
                 .font(.system(size: 10, weight: .semibold))
 
-            Text("KH")
+            Text("Kolh")
                 .frame(width: carbsWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
@@ -255,7 +287,7 @@ struct DailyStatsView: View {
                 .frame(width: tirWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
-            Text("Std av")
+            Text("Std.av")
                 .frame(width: stdWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
@@ -320,23 +352,31 @@ struct DailyStatsView: View {
 
     private func titrCell(_ value: Double?) -> some View {
         let color: Color
-        if let value = value {
-            let fraction = value / 100.0
-            color = fraction >= viewModel.titrTargetThreshold ? .green : .red
-        } else {
-            color = .secondary
-        }
-        return numberCell(value, width: tirWidth, decimals: 0, foregroundColor: color)
+        //if showingTitrSummary {
+            if let value = value {
+                let fraction = value / 100.0
+                color = fraction >= viewModel.titrTargetThreshold ? .green : .red
+            } else {
+                color = .secondary
+            }
+        //} else {
+        //    color = .secondary
+        //}
+        return numberCell(value, width: titrWidth, decimals: 0, foregroundColor: color)
     }
     
     private func tirCell(_ value: Double?) -> some View {
         let color: Color
+        //if !showingTitrSummary {
         if let value = value {
             let fraction = value / 100.0
             color = fraction >= viewModel.tirTargetThreshold ? .green : .red
         } else {
             color = .secondary
         }
+        //} else {
+        //    color = .secondary
+        //}
         return numberCell(value, width: tirWidth, decimals: 0, foregroundColor: color)
     }
 

@@ -13,7 +13,7 @@ struct TIRView: View {
             ZStack(alignment: .topTrailing) {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text(viewModel.showTITR ? "Tid inom tight målområde" : "Tid inom målområde")
+                        Text(viewModel.showTITR ? "Tid i (tight) målområde" : "Tid i målområde")
                             .font(.callout)
                             .fontWeight(.medium)
                             .foregroundColor(.primary)
