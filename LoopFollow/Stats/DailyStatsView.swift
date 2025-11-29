@@ -28,7 +28,7 @@ struct DailyStatsView: View {
         private let tirWidth: CGFloat = 36
         private let stdWidth: CGFloat = 36
         private let profileWidth: CGFloat = 36
-        private let emptyWidth: CGFloat = 11
+        private let emptyWidth: CGFloat = 10
 
         private let columnSpacing: CGFloat = 1
 
@@ -164,8 +164,6 @@ struct DailyStatsView: View {
                                 Text(" dagarna.")
                             }
                         }
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, 10)
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.bottom, 10)
