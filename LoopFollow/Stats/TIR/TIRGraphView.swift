@@ -74,9 +74,9 @@ struct TIRGraphView: UIViewRepresentable {
             )
             stackedEntries.append(stackedEntry)
 
-            // Label entries: place value labels at the vertical center of each segment.
+            // Label entries: place value labels at the vertical center of each segment, offest with - 5.5 for perfect center alignment.
             // Very Low segment
-            let centerVeryLow = point.veryLow / 2.0 - 5
+            let centerVeryLow = point.veryLow / 2.0 - 5.5
             let veryLowLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerVeryLow,
@@ -85,7 +85,7 @@ struct TIRGraphView: UIViewRepresentable {
             veryLowLabelEntries.append(veryLowLabelEntry)
 
             // Low segment
-            let centerLow = point.veryLow + (point.low / 2.0 - 5)
+            let centerLow = point.veryLow + (point.low / 2.0 - 5.5)
             let lowLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerLow,
@@ -95,7 +95,7 @@ struct TIRGraphView: UIViewRepresentable {
 
             // In Range segment (keep small upward offset as tidigare)
             let belowInRange = point.veryLow + point.low
-            let centerOfInRange = belowInRange + (point.inRange / 2.0 - 5)
+            let centerOfInRange = belowInRange + (point.inRange / 2.0 - 5.5)
             let inRangeLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerOfInRange,
@@ -105,7 +105,7 @@ struct TIRGraphView: UIViewRepresentable {
 
             // High segment
             let belowHigh = belowInRange + point.inRange
-            let centerHigh = belowHigh + (point.high / 2.0 - 5)
+            let centerHigh = belowHigh + (point.high / 2.0 - 5.5)
             let highLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerHigh,
@@ -115,7 +115,7 @@ struct TIRGraphView: UIViewRepresentable {
 
             // Very High segment
             let belowVeryHigh = belowHigh + point.high
-            let centerVeryHigh = belowVeryHigh + (point.veryHigh / 2.0 - 5)
+            let centerVeryHigh = belowVeryHigh + (point.veryHigh / 2.0 - 5.5)
             let veryHighLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerVeryHigh,
