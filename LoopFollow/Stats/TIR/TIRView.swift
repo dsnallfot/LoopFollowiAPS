@@ -16,7 +16,7 @@ struct TIRView: View {
                         Text(viewModel.showTITR ? "Tid inom tight målområde" : "Tid inom målområde")
                             .font(.callout)
                             .fontWeight(.medium)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.primary)
                         Spacer()
                         if let inRangeValue = viewModel.tirData.first(where: { $0.period == .average })?.inRange {
                             Text(formatRange(inRangeValue))
@@ -39,31 +39,31 @@ struct TIRView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             if let average = viewModel.tirData.first(where: { $0.period == .average }) {
                                 TIRLegendItem(
-                                    color: .purple,
+                                    color: .purple.opacity(0.7),
                                     label: "Akut högt",
                                     detailLabel: "(över 13.9 mmol/L)",
                                     percentage: average.veryHigh
                                 )
                                 TIRLegendItem(
-                                    color: .blue,
+                                    color: .blue.opacity(0.7),
                                     label: "Högt",
                                     detailLabel: String(format: "(%.1f - 13.9 mmol/L)", high),
                                     percentage: average.high
                                 )
                                 TIRLegendItem(
-                                    color: .green,
+                                    color: .green.opacity(0.7),
                                     label: "Inom mål",
                                     detailLabel: String(format: "(3.9 - %.1f mmol/L)", highThreshold),
                                     percentage: average.inRange
                                 )
                                 TIRLegendItem(
-                                    color: .orange,
+                                    color: .orange.opacity(0.7),
                                     label: "Lågt",
                                     detailLabel: "(3.1 - 3.8 mmol/L)",
                                     percentage: average.low
                                 )
                                 TIRLegendItem(
-                                    color: .red,
+                                    color: .red.opacity(0.7),
                                     label: "Akut lågt",
                                     detailLabel: "(under 3.1 mmol/L)",
                                     percentage: average.veryLow

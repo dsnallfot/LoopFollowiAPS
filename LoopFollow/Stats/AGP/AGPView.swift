@@ -12,7 +12,7 @@ struct AGPView: View {
                 Text("Ambulatorisk Glukosprofil (AGP)")
                     .font(.callout)
                     .fontWeight(.medium)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.primary)
 
                 AGPGraphView(agpData: viewModel.agpData)
                     .frame(height: 200)
@@ -43,7 +43,7 @@ struct LegendItem: View {
         HStack(spacing: 4) {
             Rectangle()
                 .fill(color)
-                .frame(width: 12, height: 12)
+                .frame(width: 10, height: 10)
             Text(label)
                 .foregroundColor(.secondary)
         }

@@ -49,7 +49,7 @@ struct DailyStatsView: View {
 
                                 ScrollView(.vertical) {
                                     VStack(alignment: .leading, spacing: 0) {
-                                        ForEach(Array(viewModel.rows.enumerated()), id: \.element.id) { index, row in
+                                        ForEach(Array(viewModel.rows.filter { $0.tightRangePercent != nil }.enumerated()), id: \.element.id) { index, row in
                                             HStack(spacing: columnSpacing) {
                                                 Text(dateFormatter.string(from: row.date))
                                                     .frame(width: dateWidth, alignment: .leading)

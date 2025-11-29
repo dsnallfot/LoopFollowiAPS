@@ -112,7 +112,7 @@ struct GRIRiskGridView: UIViewRepresentable {
         currentDataSet.scatterShapeSize = 12
         currentDataSet.setScatterShape(.circle)
         currentDataSet.scatterShapeHoleRadius = 4
-        currentDataSet.scatterShapeHoleColor = .gray
+        currentDataSet.scatterShapeHoleColor = .blue.withAlphaComponent(0.8)
         currentDataSet.drawValuesEnabled = false
 
         let data = ScatterChartData()

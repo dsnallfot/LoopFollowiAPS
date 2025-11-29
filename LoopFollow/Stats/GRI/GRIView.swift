@@ -12,7 +12,7 @@ struct GRIView: View {
                 Text("Glykemiskt Riskindex (GRI)")
                     .font(.callout)
                     .fontWeight(.medium)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.primary)
                 Spacer()
                 if let gri = viewModel.gri {
                     VStack(alignment: .trailing, spacing: 2) {
@@ -52,11 +52,11 @@ struct GRIView: View {
                 }
 
                 HStack(spacing: 8) {
-                    ZoneLegendItem(color: .green, label: "A 0-20")
-                    ZoneLegendItem(color: .yellow, label: "B 21-40")
-                    ZoneLegendItem(color: .orange, label: "C 41-60")
-                    ZoneLegendItem(color: .red.opacity(0.7), label: "D 61-80")
-                    ZoneLegendItem(color: .red, label: "E 81-100")
+                    ZoneLegendItem(color: .green.opacity(0.6), label: "A 0-20")
+                    ZoneLegendItem(color: .yellow.opacity(0.6), label: "B 21-40")
+                    ZoneLegendItem(color: .orange.opacity(0.6), label: "C 41-60")
+                    ZoneLegendItem(color: .red.opacity(0.6), label: "D 61-80")
+                    ZoneLegendItem(color: .red.opacity(0.8), label: "E 81-100")
                 }
                 .font(.caption2)
             } else {
@@ -67,7 +67,9 @@ struct GRIView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
+        .padding(.horizontal)
+        .padding(.bottom)
+        .padding(.top, 8)
         .background(Color(.systemGray5))
         .cornerRadius(15)
     }
@@ -80,9 +82,9 @@ struct GRIView: View {
         } else if gri <= 60 {
             return .orange
         } else if gri <= 80 {
-            return .red
-        } else {
             return .red.opacity(0.8)
+        } else {
+            return .red
         }
     }
 
@@ -108,8 +110,8 @@ struct ZoneLegendItem: View {
     var body: some View {
         HStack(spacing: 4) {
             Rectangle()
-                .fill(color.opacity(0.3))
-                .frame(width: 12, height: 12)
+                .fill(color)
+                .frame(width: 10, height: 10)
             Text(label)
                 .foregroundColor(.secondary)
         }
