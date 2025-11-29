@@ -65,11 +65,6 @@ struct AggregatedStatsView: View {
                 
                 ScrollView {
                     VStack(spacing: 20) {
-                        if isLoadingData {
-                            ProgressView("Laddar data...")
-                                .padding()
-                        }
-                        
                         TIRView(viewModel: viewModel.tirStats)
                             .padding(.horizontal)
                             .padding(.top, 12)
@@ -104,15 +99,19 @@ struct AggregatedStatsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(action: {
-                        isLoadingData = true
-                        DispatchQueue.main.async {
-                            viewModel.updatePeriod(selectedPeriod, forceReload: true) {
-                                isLoadingData = false
+                    if isLoadingData {
+                        ProgressView()
+                    } else {
+                        Button(action: {
+                            isLoadingData = true
+                            DispatchQueue.main.async {
+                                viewModel.updatePeriod(selectedPeriod, forceReload: true) {
+                                    isLoadingData = false
+                                }
                             }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
                         }
-                    }) {
-                        Image(systemName: "arrow.clockwise")
                     }
                 }
 
