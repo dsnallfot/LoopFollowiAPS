@@ -16,8 +16,8 @@ struct AGPGraphView: UIViewRepresentable {
         containerView.backgroundColor = .clear
 
         let chartView = LineChartView()
-        chartView.rightAxis.enabled = true
-        chartView.leftAxis.enabled = false
+        chartView.rightAxis.enabled = false
+        chartView.leftAxis.enabled = true
         chartView.xAxis.labelPosition = .bottom
 
         // Enable dashed horizontal gridlines on the right axis
@@ -33,6 +33,8 @@ struct AGPGraphView: UIViewRepresentable {
         chartView.xAxis.drawGridLinesEnabled = false
 
         chartView.rightAxis.valueFormatter = ChartYMMOLValueFormatter()
+        
+        chartView.leftAxis.valueFormatter = ChartYMMOLValueFormatter()
 
         // Fix Y-axis to 0–360 mg/dL, which via ChartYMMOLValueFormatter corresponds to 0–20 mmol/L
         let rightAxis = chartView.rightAxis
@@ -49,9 +51,12 @@ struct AGPGraphView: UIViewRepresentable {
         let leftAxis = chartView.leftAxis
         leftAxis.axisMinimum = 0
         leftAxis.axisMaximum = 360
+        leftAxis.granularity = 72 // 72 mg/dL ≈ 4.0 mmol/L
+        leftAxis.granularityEnabled = true
+        leftAxis.setLabelCount(6, force: true) // 0, 72, 144, 216, 288, 360
         leftAxis.spaceTop = 0
         leftAxis.spaceBottom = 0
-        leftAxis.drawLabelsEnabled = false
+        leftAxis.drawLabelsEnabled = true
         leftAxis.drawGridLinesEnabled = false
 
         // Restore a small, consistent outer padding so axes and labels are fully visible,

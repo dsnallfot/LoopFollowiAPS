@@ -42,16 +42,16 @@ struct GRIView: View {
                 .allowsHitTesting(false)
                 .clipped()
                 HStack {
-                    Text("Hyperglykemi >10 mmol/L (%)")
+                    Text("Hyper >10 mmol/L (%)")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("Hypoglykemi <3.9 mmol/L (%)")
+                    Text("Hypo <3.9 mmol/L (%)")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ZoneLegendItem(color: .green.opacity(0.6), label: "A 0-20")
                     ZoneLegendItem(color: .yellow.opacity(0.6), label: "B 21-40")
                     ZoneLegendItem(color: .orange.opacity(0.6), label: "C 41-60")

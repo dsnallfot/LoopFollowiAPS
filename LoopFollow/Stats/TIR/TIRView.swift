@@ -124,7 +124,7 @@ struct TIRLegendItem: View {
                 .foregroundColor(.primary)
                 .frame(width: 45, alignment: .leading)
             Text(label)
-                .foregroundColor(.primary)
+                .foregroundColor(.secondary)
                 .frame(width: 65, alignment: .leading)
             Text(detailLabel)
                 .foregroundColor(.secondary)
