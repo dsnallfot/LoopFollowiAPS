@@ -81,7 +81,7 @@ struct AggregatedStatsView: View {
                             showLowPercentage: $showLowPercentage,
                             isTodayOnly: selectedPeriod == 0,
                             isOneDayOnly: selectedPeriod < 2,
-                            showTrends: selectedPeriod != 0 && selectedPeriod != 90,
+                            showTrends: selectedPeriod != 90,
                             periodLabel: periodLabel(for: selectedPeriod)
                         )
                         .padding(.horizontal)
@@ -253,11 +253,16 @@ struct StatCard: View {
                                     .foregroundColor(color)
                             }
                         }
-
-                        if let percentText = tooltipPercentChangeText {
-                            Text(percentText)
-                                .font(.caption2)
-                                .tint(.primary)
+                        if let arrow = trendArrow, arrow != .none {
+                            if let percentText = tooltipPercentChangeText {
+                                Text(percentText)
+                                    .font(.caption2)
+                                    .tint(.primary)
+                            } else {
+                                Text("Ingen trenddata")
+                                    .font(.caption2)
+                                    .tint(.primary)
+                            }
                         } else {
                             Text("Ingen trenddata")
                                 .font(.caption2)
@@ -300,8 +305,27 @@ struct StatCard: View {
     private var tooltipPercentChangeText: String? {
         guard let pair = tooltipValuePair else { return nil }
         let pct = (pair.curr - pair.prev) / pair.prev * 100.0
-        let label = periodLabel ?? "föregående period"
-        return String(format: "%+.1f%% vs fg %@", pct, label)
+        
+        let rawLabel = periodLabel ?? "föregående period"
+        let label: String
+        let format: String
+        
+        switch rawLabel {
+        case "idag":
+            // För idag jämför vi mot samma tidsfönster igår
+            label = "igår"
+            format = "%+.1f%% vs samma tid %@"
+        case "1 dag":
+            // För 1 dag använder vi igår utan "fg"
+            label = "24 timmar"
+            format = "%+.1f%% vs fg %@"
+        default:
+            // Standardtext för övriga perioder
+            label = rawLabel
+            format = "%+.1f%% vs fg %@"
+        }
+        
+        return String(format: format, pct, label)
     }
     
     private func tooltipChangeString(for pair: (prev: Double, curr: Double)) -> String {

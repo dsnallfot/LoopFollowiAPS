@@ -317,7 +317,24 @@ class SimpleStatsViewModel: ObservableObject {
         }
 
         // MARK: - Trender (jämför med föregående period med samma längd)
-        if let prevInterval = previousInterval {
+        // För "Idag" vill vi jämföra 00:00–nu idag med samma tidsfönster igår (00:00–nu-00:00 igår).
+        let prevIntervalForTrends: DateInterval?
+
+        if dataService.isTodayOnly {
+            let now = Date()
+            let calendar = Calendar.current
+            let startOfToday = calendar.startOfDay(for: now)
+            let elapsedSinceMidnight = now.timeIntervalSince(startOfToday)
+
+            let startOfYesterday = calendar.date(byAdding: .day, value: -1, to: startOfToday)!
+            let endOfYesterdayWindow = startOfYesterday.addingTimeInterval(elapsedSinceMidnight)
+
+            prevIntervalForTrends = DateInterval(start: startOfYesterday, end: endOfYesterdayWindow)
+        } else {
+            prevIntervalForTrends = previousInterval
+        }
+
+        if let prevInterval = prevIntervalForTrends {
             let periodDays = max(currentInterval.duration / (24 * 60 * 60), 1)
 
             // BG-data föregående period
