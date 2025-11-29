@@ -17,6 +17,9 @@ struct DailyStatRow: Identifiable {
     let stdDevMmol: Double?          // mmol/L
     let profileBasal: Double?        // E (teoretisk profilbasal per 24h)
     let emptyInfo: String?           // Trailing space
+
+    /// Antal glukosvärden för dagen (används för att filtrera bort "halva" dagar ur statistiken)
+    let glucoseCount: Int?
 }
 
 final class DailyStatsViewModel: ObservableObject {
@@ -32,9 +35,10 @@ final class DailyStatsViewModel: ObservableObject {
     let stdDevGreatThreshold: Double = 2.5
     let bgAverageOKThreshold: Double = 8.0
     let bgAverageGreatThreshold: Double = 7.5
+    let minGlucoseReadingsPerDay: Int = 150
 
     var numberOfDaysMeetingTitrTarget: Int {
-        rows.filter { row in
+        rowsWithSufficientGlucose.filter { row in
             if let tir = row.tightRangePercent {
                 return (tir / 100.0) >= titrTargetThreshold
             } else {
@@ -44,7 +48,7 @@ final class DailyStatsViewModel: ObservableObject {
     }
     
     var numberOfDaysMeetingTirTarget: Int {
-        rows.filter { row in
+        rowsWithSufficientGlucose.filter { row in
             if let tir = row.timeInRangePercent {
                 return (tir / 100.0) >= tirTargetThreshold
             } else {
@@ -54,9 +58,19 @@ final class DailyStatsViewModel: ObservableObject {
     }
 
     var numberOfDaysInScope: Int {
+        rowsWithSufficientGlucose.count
+    }
+
+    /// Endast dagar med tillräckligt många glukosvärden (för att slippa med halva dagar)
+    var rowsWithSufficientGlucose: [DailyStatRow] {
         rows.filter { row in
-            row.meanGlucoseMmol != nil
-        }.count
+            if let _ = row.meanGlucoseMmol,
+               let count = row.glucoseCount {
+                return count >= minGlucoseReadingsPerDay
+            } else {
+                return false
+            }
+        }
     }
 
     var percentageOfDaysMeetingTarget: Double {
@@ -178,11 +192,13 @@ final class DailyStatsViewModel: ObservableObject {
                 var lowPercent: Double?
                 var tightRangePercent: Double?
                 var timeInRangePercent: Double?
+                var glucoseCountForDay: Int?
 
                 if !bgForDay.isEmpty {
                     // all sgv i mg/dL
                     let sgvValues = bgForDay.map { Double($0.sgv) }
                     let count = Double(sgvValues.count)
+                    glucoseCountForDay = sgvValues.count
 
                     let sum = sgvValues.reduce(0.0, +)
                     let meanMgdL = sum / count
@@ -228,7 +244,8 @@ final class DailyStatsViewModel: ObservableObject {
                     timeInRangePercent: timeInRangePercent,
                     stdDevMmol: stdDevMmol,
                     profileBasal: profileBasalValueForDay,
-                    emptyInfo: emptyInfo
+                    emptyInfo: emptyInfo,
+                    glucoseCount: glucoseCountForDay
                 )
                 rows.append(row)
             }
@@ -255,7 +272,7 @@ final class DailyStatsViewModel: ObservableObject {
         var lines: [String] = []
         lines.append("Datum;KH tot (g);Insulin tot (E);Medel BS;Låg %;TIT 3.9-7.8;Std. Dev;Basal (teoretisk)")
         
-        for row in rows.sorted(by: { $0.date < $1.date }) {
+        for row in rowsWithSufficientGlucose.sorted(by: { $0.date < $1.date }) {
             let dateStr = dateFormatter.string(from: row.date)
             
             // Skala procent 0–100 → 0–1 så Excel kan använda cellformat Procent

@@ -52,7 +52,7 @@ struct DailyStatsView: View {
 
                                 ScrollView(.vertical) {
                                     VStack(alignment: .leading, spacing: 0) {
-                                        ForEach(Array(viewModel.rows.filter { $0.tightRangePercent != nil }.enumerated()), id: \.element.id) { index, row in
+                                        ForEach(Array(viewModel.rowsWithSufficientGlucose.filter { $0.tightRangePercent != nil }.enumerated()), id: \.element.id) { index, row in
                                             HStack(spacing: columnSpacing) {
                                                 Text(dateFormatter.string(from: row.date))
                                                     .frame(width: dateWidth, alignment: .leading)
@@ -196,7 +196,7 @@ struct DailyStatsView: View {
     private var titrStreakBar: some View {
         // Sortera dagar i kronologisk ordning (äldst till nyast) för vänster-till-höger-läsning
         // och filtrera bort dagar utan TITR-data.
-        let filteredRows = viewModel.rows
+        let filteredRows = viewModel.rowsWithSufficientGlucose
             .sorted { $0.date < $1.date }
             .filter { $0.tightRangePercent != nil }
 
@@ -213,7 +213,7 @@ struct DailyStatsView: View {
                     let meetsTarget = ((row.tightRangePercent ?? 0) / 100.0) >= viewModel.titrTargetThreshold
 
                     Rectangle()
-                        .fill(meetsTarget ? Color.green.opacity(0.8) : Color.clear)
+                        .fill(meetsTarget ? Color.green.opacity(0.8) : Color.red.opacity(0.7))
                         .frame(width: barWidth, height: barHeight)
                         .overlay(
                             Rectangle()
@@ -228,7 +228,7 @@ struct DailyStatsView: View {
     private var tirStreakBar: some View {
         // Sortera dagar i kronologisk ordning (äldst till nyast) för vänster-till-höger-läsning
         // och filtrera bort dagar utan TITR-data.
-        let filteredRows = viewModel.rows
+        let filteredRows = viewModel.rowsWithSufficientGlucose
             .sorted { $0.date < $1.date }
             .filter { $0.timeInRangePercent != nil }
 
@@ -245,7 +245,7 @@ struct DailyStatsView: View {
                     let meetsTarget = ((row.timeInRangePercent ?? 0) / 100.0) >= viewModel.tirTargetThreshold
 
                     Rectangle()
-                        .fill(meetsTarget ? Color.green.opacity(0.8) : Color.clear)
+                        .fill(meetsTarget ? Color.green.opacity(0.8) : Color.red.opacity(0.7))
                         .frame(width: barWidth, height: barHeight)
                         .overlay(
                             Rectangle()
