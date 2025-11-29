@@ -131,19 +131,62 @@ struct DailyStatsView: View {
 
         return Group {
             if daysInScope > 0 {
-                Text("Du nådde ditt mål ") +
-                Text(thresholdPercentString).fontWeight(.semibold) +
-                Text(" inom intervallet 3.9–7.8 mmol/L under ") +
-                Text(daysMeetingString).fontWeight(.semibold) +
-                Text(" av de senaste ") +
-                Text(daysInScopeString).fontWeight(.semibold) +
-                Text(" dagarna. ")
+                VStack(alignment: .leading, spacing: 6) {
+                    (
+                        Text("Du nådde ditt mål ") +
+                        Text(thresholdPercentString).fontWeight(.semibold) +
+                        Text(" inom intervallet 3.9–7.8 mmol/L under ") +
+                        Text(daysMeetingString).fontWeight(.semibold) +
+                        Text(" av de senaste ") +
+                        Text(daysInScopeString).fontWeight(.semibold) +
+                        Text(" dagarna. ")
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 10)
+
+                    titrStreakBar
+                }
             } else {
                 Text("Ingen daglig statistik att visa ännu.")
             }
         }
         .font(.system(size: 14))
         .multilineTextAlignment(.leading)
+    }
+
+    /// Visar en enkel streak/gap-rad där varje dag i perioden representeras av en stapel.
+    /// Grön = dag når TITR-målet, transparent = dag under målet.
+    /// Endast dagar där vi har TITR-data (tightRangePercent != nil) ritas ut.
+    private var titrStreakBar: some View {
+        // Sortera dagar i kronologisk ordning (äldst till nyast) för vänster-till-höger-läsning
+        // och filtrera bort dagar utan TITR-data.
+        let filteredRows = viewModel.rows
+            .sorted { $0.date < $1.date }
+            .filter { $0.tightRangePercent != nil }
+
+        let barHeight: CGFloat = 15
+        let barSpacing: CGFloat = 1
+
+        return GeometryReader { geometry in
+            let count = max(filteredRows.count, 1)
+            let totalSpacing = barSpacing * CGFloat(max(count - 1, 0))
+            let barWidth = max((geometry.size.width - totalSpacing) / CGFloat(count), 2)
+
+            HStack(spacing: barSpacing) {
+                ForEach(Array(filteredRows.enumerated()), id: \.offset) { _, row in
+                    let meetsTarget = ((row.tightRangePercent ?? 0) / 100.0) >= viewModel.titrTargetThreshold
+
+                    Rectangle()
+                        .fill(meetsTarget ? Color.green.opacity(0.8) : Color.clear)
+                        .frame(width: barWidth, height: barHeight)
+                        .overlay(
+                            Rectangle()
+                                .stroke(Color.green.opacity(0.3), lineWidth: 0.5)
+                        )
+                }
+            }
+        }
+        .frame(height: barHeight)
     }
 
     private var headerRow: some View {
