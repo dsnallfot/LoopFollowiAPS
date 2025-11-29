@@ -70,7 +70,7 @@ struct GRIView: View {
         .padding(.horizontal)
         .padding(.bottom)
         .padding(.top, 8)
-        .background(Color(.systemGray5))
+        .background(Color(.systemGray5.withAlphaComponent(0.6)))
         .cornerRadius(15)
     }
 

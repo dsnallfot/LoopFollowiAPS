@@ -18,16 +18,18 @@ struct DailyStatsView: View {
     }()
 
     // Kolumnbredder för raka marginaler
-    private let dateWidth: CGFloat = 70
-        private let carbsWidth: CGFloat = 40
-        private let insulinWidth: CGFloat = 40
-        private let meanWidth: CGFloat = 40
-        private let lowWidth: CGFloat = 40
-        private let tirWidth: CGFloat = 40
-        private let stdWidth: CGFloat = 40
-        private let profileWidth: CGFloat = 40
+    private let dateWidth: CGFloat = 67
+        private let carbsWidth: CGFloat = 37
+        private let insulinWidth: CGFloat = 37
+        private let meanWidth: CGFloat = 37
+        private let lowWidth: CGFloat = 37
+        private let titrWidth: CGFloat = 37
+        private let tirWidth: CGFloat = 37
+        private let stdWidth: CGFloat = 37
+        private let profileWidth: CGFloat = 37
+        private let emptyWidth: CGFloat = 4
 
-        private let columnSpacing: CGFloat = 2
+        private let columnSpacing: CGFloat = 1
 
     var body: some View {
         NavigationStack {
@@ -53,18 +55,20 @@ struct DailyStatsView: View {
                                             HStack(spacing: columnSpacing) {
                                                 Text(dateFormatter.string(from: row.date))
                                                     .frame(width: dateWidth, alignment: .leading)
-                                                    .font(.system(size: 11).monospacedDigit())
+                                                    .font(.system(size: 10).monospacedDigit())
 
                                                 numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
                                                 numberCell(row.insulinTDD, width: insulinWidth)
                                                 meanCell(row.meanGlucoseMmol)
                                                 lowCell(row.lowPercent)
                                                 titrCell(row.tightRangePercent)
+                                                tirCell(row.timeInRangePercent)
                                                 stdDevCell(stdDev: row.stdDevMmol, mean: row.meanGlucoseMmol)
                                                 numberCell(row.profileBasal, width: profileWidth)
+                                                emptyCell(row.emptyInfo, width: emptyWidth)
                                             }
                                             .padding(.vertical, 4)
-                                            .background(index % 2 == 0 ? Color(.systemGray5) : Color.clear)
+                                            .background(index % 2 == 0 ? Color(.systemGray5.withAlphaComponent(0.6)) : Color.clear)
                                             Divider()
                                         }
                                     }
@@ -188,40 +192,76 @@ struct DailyStatsView: View {
         }
         .frame(height: barHeight)
     }
+    
+    private var tirStreakBar: some View {
+        // Sortera dagar i kronologisk ordning (äldst till nyast) för vänster-till-höger-läsning
+        // och filtrera bort dagar utan TITR-data.
+        let filteredRows = viewModel.rows
+            .sorted { $0.date < $1.date }
+            .filter { $0.timeInRangePercent != nil }
+
+        let barHeight: CGFloat = 15
+        let barSpacing: CGFloat = 1
+
+        return GeometryReader { geometry in
+            let count = max(filteredRows.count, 1)
+            let totalSpacing = barSpacing * CGFloat(max(count - 1, 0))
+            let barWidth = max((geometry.size.width - totalSpacing) / CGFloat(count), 2)
+
+            HStack(spacing: barSpacing) {
+                ForEach(Array(filteredRows.enumerated()), id: \.offset) { _, row in
+                    let meetsTarget = ((row.timeInRangePercent ?? 0) / 100.0) >= viewModel.tirTargetThreshold
+
+                    Rectangle()
+                        .fill(meetsTarget ? Color.green.opacity(0.8) : Color.clear)
+                        .frame(width: barWidth, height: barHeight)
+                        .overlay(
+                            Rectangle()
+                                .stroke(Color.green.opacity(0.3), lineWidth: 0.5)
+                        )
+                }
+            }
+        }
+        .frame(height: barHeight)
+    }
 
     private var headerRow: some View {
         HStack(spacing: columnSpacing) {
             Text("Datum")
                 .frame(width: dateWidth, alignment: .leading)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
 
             Text("KH")
                 .frame(width: carbsWidth, alignment: .trailing)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
 
             Text("TDD")
                 .frame(width: insulinWidth, alignment: .trailing)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
 
             Text("Medel")
                 .frame(width: meanWidth, alignment: .trailing)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
 
             Text("Låg")
                 .frame(width: lowWidth, alignment: .trailing)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
 
             Text("TITR")
+                .frame(width: titrWidth, alignment: .trailing)
+                .font(.system(size: 10, weight: .semibold))
+            
+            Text("TIR")
                 .frame(width: tirWidth, alignment: .trailing)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
 
             Text("Std av")
                 .frame(width: stdWidth, alignment: .trailing)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
 
             Text("Basal")
                 .frame(width: profileWidth, alignment: .trailing)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
         }
     }
 
@@ -240,6 +280,22 @@ struct DailyStatsView: View {
                 Text("—")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
+            }
+        }
+        .frame(width: width, alignment: .trailing)
+    }
+    
+    private func emptyCell(
+        _ value: String?,
+        width: CGFloat,
+        decimals: Int = 0,
+        foregroundColor: Color? = nil
+    ) -> some View {
+        Group {
+            if value != nil {
+                Text("")
+            } else {
+                Text("")
             }
         }
         .frame(width: width, alignment: .trailing)
@@ -267,6 +323,17 @@ struct DailyStatsView: View {
         if let value = value {
             let fraction = value / 100.0
             color = fraction >= viewModel.titrTargetThreshold ? .green : .red
+        } else {
+            color = .secondary
+        }
+        return numberCell(value, width: tirWidth, decimals: 0, foregroundColor: color)
+    }
+    
+    private func tirCell(_ value: Double?) -> some View {
+        let color: Color
+        if let value = value {
+            let fraction = value / 100.0
+            color = fraction >= viewModel.tirTargetThreshold ? .green : .red
         } else {
             color = .secondary
         }

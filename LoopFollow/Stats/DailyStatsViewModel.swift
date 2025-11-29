@@ -13,8 +13,10 @@ struct DailyStatRow: Identifiable {
     let meanGlucoseMmol: Double?     // mmol/L
     let lowPercent: Double?          // %
     let tightRangePercent: Double?   // %
+    let timeInRangePercent: Double?  // %
     let stdDevMmol: Double?          // mmol/L
     let profileBasal: Double?        // E (teoretisk profilbasal per 24h)
+    let emptyInfo: String?           // Trailing space
 }
 
 final class DailyStatsViewModel: ObservableObject {
@@ -25,6 +27,7 @@ final class DailyStatsViewModel: ObservableObject {
     let lowGlucoseOKThreshold: Double = 0.05
     let lowGlucoseGreatThreshold: Double = 0.03
     let titrTargetThreshold: Double = 0.5
+    let tirTargetThreshold: Double = 0.7
     let stdDevOkThreshold: Double = 3.0
     let stdDevGreatThreshold: Double = 2.5
     let bgAverageOKThreshold: Double = 8.0
@@ -34,6 +37,16 @@ final class DailyStatsViewModel: ObservableObject {
         rows.filter { row in
             if let tir = row.tightRangePercent {
                 return (tir / 100.0) >= titrTargetThreshold
+            } else {
+                return false
+            }
+        }.count
+    }
+    
+    var numberOfDaysMeetingTirTarget: Int {
+        rows.filter { row in
+            if let tir = row.timeInRangePercent {
+                return (tir / 100.0) >= tirTargetThreshold
             } else {
                 return false
             }
@@ -141,6 +154,7 @@ final class DailyStatsViewModel: ObservableObject {
             let lowThresholdMgdL = 3.9 * 18.0182
             let tightLowMgdL = 3.9 * 18.0182
             let tightHighMgdL = 7.8 * 18.0182
+            let tirHighMgdL = 10.0 * 18.0182
 
             // Bygg rader: nyaste först (offset 0 = senaste dag)
             for offset in 0 ..< self.daysBack {
@@ -153,6 +167,8 @@ final class DailyStatsViewModel: ObservableObject {
                 let dayInterval = DateInterval(start: startOfDay, end: endOfDay)
                 let dayBasalProfile = self.dataService.getBasalProfile(for: dayInterval)
                 let profileBasalValueForDay = self.calculateProgrammedBasalFromProfile(basalProfile: dayBasalProfile)
+                
+                let emptyInfo = ""
 
                 // BG för dagen
                 let bgForDay = groupedBG[startOfDay] ?? []
@@ -161,6 +177,7 @@ final class DailyStatsViewModel: ObservableObject {
                 var stdDevMmol: Double?
                 var lowPercent: Double?
                 var tightRangePercent: Double?
+                var timeInRangePercent: Double?
 
                 if !bgForDay.isEmpty {
                     // all sgv i mg/dL
@@ -183,6 +200,9 @@ final class DailyStatsViewModel: ObservableObject {
 
                     let tightCount = sgvValues.filter { $0 >= tightLowMgdL && $0 <= tightHighMgdL }.count
                     tightRangePercent = (Double(tightCount) / count) * 100.0
+                    
+                    let tirCount = sgvValues.filter { $0 >= tightLowMgdL && $0 <= tirHighMgdL }.count
+                    timeInRangePercent = (Double(tirCount) / count) * 100.0
                 }
 
                 // Kolhydrater
@@ -205,8 +225,10 @@ final class DailyStatsViewModel: ObservableObject {
                     meanGlucoseMmol: meanGlucoseMmol,
                     lowPercent: lowPercent,
                     tightRangePercent: tightRangePercent,
+                    timeInRangePercent: timeInRangePercent,
                     stdDevMmol: stdDevMmol,
-                    profileBasal: profileBasalValueForDay
+                    profileBasal: profileBasalValueForDay,
+                    emptyInfo: emptyInfo
                 )
                 rows.append(row)
             }
@@ -231,7 +253,7 @@ final class DailyStatsViewModel: ObservableObject {
         }
         
         var lines: [String] = []
-        lines.append("Date;Carbs total (g);Insulin TDD (E);Mean glucose (mmol/L);Low glucose (%);Time in tight range (%);Std dev (mmol/L);Profile basal (E)")
+        lines.append("Datum;KH tot (g);Insulin tot (E);Medel BS;Låg %;TIT 3.9-7.8;Std. Dev;Basal (teoretisk)")
         
         for row in rows.sorted(by: { $0.date < $1.date }) {
             let dateStr = dateFormatter.string(from: row.date)
