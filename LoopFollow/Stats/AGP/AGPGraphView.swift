@@ -13,7 +13,7 @@ struct AGPGraphView: UIViewRepresentable {
 
     func makeUIView(context _: Context) -> UIView {
         let containerView = NonInteractiveContainerView()
-        containerView.backgroundColor = .systemBackground
+        containerView.backgroundColor = .clear
 
         let chartView = LineChartView()
         chartView.rightAxis.enabled = true

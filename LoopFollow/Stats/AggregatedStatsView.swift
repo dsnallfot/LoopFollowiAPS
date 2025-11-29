@@ -70,6 +70,10 @@ struct AggregatedStatsView: View {
                                 .padding()
                         }
                         
+                        TIRView(viewModel: viewModel.tirStats)
+                            .padding(.horizontal)
+                            .padding(.top, 12)
+                        
                         StatsGridView(
                             simpleStats: viewModel.simpleStats,
                             showGMI: $showGMI,
@@ -85,9 +89,6 @@ struct AggregatedStatsView: View {
                             periodLabel: periodLabel(for: selectedPeriod)
                         )
                         .padding(.horizontal)
-                        
-                        TIRView(viewModel: viewModel.tirStats)
-                            .padding(.horizontal)
                         
                         AGPView(viewModel: viewModel.agpStats)
                             .padding(.horizontal)
@@ -610,7 +611,7 @@ struct StatsGridView: View {
                     }
                 }
         }
-        .padding(.top, 12)
+        //.padding(.top, 12)
     }
 
     private func formatGMI(_ value: Double?) -> String {

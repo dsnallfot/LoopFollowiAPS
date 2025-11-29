@@ -15,10 +15,10 @@ struct GRIRiskGridView: UIViewRepresentable {
 
     func makeUIView(context _: Context) -> UIView {
         let containerView = NonInteractiveContainerView()
-        containerView.backgroundColor = .systemBackground
+        containerView.backgroundColor = .clear
 
         let chartView = ScatterChartView()
-        chartView.backgroundColor = .systemBackground
+        chartView.backgroundColor = .clear
         chartView.rightAxis.enabled = false
         chartView.leftAxis.enabled = true
         chartView.legend.enabled = false

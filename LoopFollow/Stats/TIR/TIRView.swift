@@ -28,7 +28,7 @@ struct TIRView: View {
 
                     if !viewModel.tirData.isEmpty {
                         TIRGraphView(tirData: viewModel.tirData)
-                            .frame(height: 250)
+                            .frame(height: 200)
                             .allowsHitTesting(false)
                             .clipped()
                         
@@ -112,7 +112,7 @@ struct TIRLegendItem: View {
         HStack(spacing: 8) {
             Rectangle()
                 .fill(color)
-                .frame(width: 16, height: 16)
+                .frame(width: 12, height: 12)
             Text(String(format: "%.1f%%", percentage))
                 .foregroundColor(.primary)
             Text(label)

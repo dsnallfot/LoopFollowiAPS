@@ -14,10 +14,10 @@ struct TIRGraphView: UIViewRepresentable {
 
     func makeUIView(context _: Context) -> UIView {
         let containerView = NonInteractiveContainerView()
-        containerView.backgroundColor = .systemBackground
+        containerView.backgroundColor = .clear
 
         let chartView = BarChartView()
-        chartView.backgroundColor = .systemBackground
+        chartView.backgroundColor = .clear
         chartView.rightAxis.enabled = false
         chartView.leftAxis.enabled = true
         chartView.xAxis.labelPosition = .bottom
