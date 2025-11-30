@@ -18,6 +18,8 @@ struct AggregatedStatsView: View {
     @State private var selectedPeriod: Int
     @State private var isLoadingData = false
     @State private var showingDailyStats = false
+    @State private var showAllTooltips = false
+    @State private var tooltipResetToken = 0
 
     init(viewModel: AggregatedStatsViewModel) {
         self.viewModel = viewModel
@@ -78,6 +80,8 @@ struct AggregatedStatsView: View {
                             showDextroAmount: $showDextroAmount,
                             showProfileBasal: $showProfileBasal,
                             showLowPercentage: $showLowPercentage,
+                            showAllTooltips: $showAllTooltips,
+                            tooltipResetToken: $tooltipResetToken,
                             isTodayOnly: selectedPeriod == 0,
                             isOneDayOnly: selectedPeriod < 2,
                             showTrends: selectedPeriod != 90,
@@ -112,6 +116,17 @@ struct AggregatedStatsView: View {
                         }) {
                             Image(systemName: "arrow.clockwise")
                         }
+                    }
+                }
+
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: {
+                        showAllTooltips.toggle()
+                        if !showAllTooltips {
+                            tooltipResetToken += 1
+                        }
+                    }) {
+                        Image(systemName: showAllTooltips ? "ellipsis.bubble.fill" : "ellipsis.bubble")
                     }
                 }
 
@@ -188,8 +203,13 @@ struct StatCard: View {
     var tooltipCurrent: Double? = nil
     var tooltipPrevious: Double? = nil
     var periodLabel: String? = nil
+    @Binding var showAllTooltips: Bool
+    @Binding var tooltipResetToken: Int
 
     @State private var showTooltip: Bool = false
+    private var isTooltipVisible: Bool {
+        showAllTooltips || showTooltip
+    }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -234,7 +254,7 @@ struct StatCard: View {
         .background(Color(.systemGray5.withAlphaComponent(0.6)))
         .cornerRadius(15)
         .overlay {
-            if showTooltip {
+            if isTooltipVisible {
                 ZStack {
                     RoundedRectangle(cornerRadius: 15)
                         .fill(.ultraThinMaterial)
@@ -290,6 +310,9 @@ struct StatCard: View {
             withAnimation {
                 showTooltip.toggle()
             }
+        }
+        .onChange(of: tooltipResetToken) { _ in
+            showTooltip = false
         }
     }
 
@@ -350,6 +373,8 @@ struct StatsGridView: View {
     @Binding var showDextroAmount: Bool
     @Binding var showProfileBasal: Bool
     @Binding var showLowPercentage: Bool
+    @Binding var showAllTooltips: Bool
+    @Binding var tooltipResetToken: Int
     let isTodayOnly: Bool
     let isOneDayOnly: Bool
     let showTrends: Bool
@@ -405,7 +430,9 @@ struct StatsGridView: View {
                         trendArrow: arrow,
                         tooltipCurrent: showGMI ? currentGMI : currentEHb,
                         tooltipPrevious: showGMI ? previousGMI : previousEHb,
-                        periodLabel: periodLabel
+                        periodLabel: periodLabel,
+                        showAllTooltips: $showAllTooltips,
+                        tooltipResetToken: $tooltipResetToken
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -418,7 +445,9 @@ struct StatsGridView: View {
                     trendArrow: showTrends ? simpleStats.avgGlucoseTrend : nil,
                     tooltipCurrent: simpleStats.avgGlucose,
                     tooltipPrevious: simpleStats.prevAvgGlucose,
-                    periodLabel: periodLabel
+                    periodLabel: periodLabel,
+                    showAllTooltips: $showAllTooltips,
+                    tooltipResetToken: $tooltipResetToken
                 )
             }
             
@@ -438,7 +467,9 @@ struct StatsGridView: View {
                             : nil,
                         tooltipCurrent: showStdDev ? simpleStats.stdDeviation : simpleStats.coefficientOfVariation,
                         tooltipPrevious: showStdDev ? simpleStats.prevStdDeviation : simpleStats.prevCoefficientOfVariation,
-                        periodLabel: periodLabel
+                        periodLabel: periodLabel,
+                        showAllTooltips: $showAllTooltips,
+                        tooltipResetToken: $tooltipResetToken
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -452,7 +483,9 @@ struct StatsGridView: View {
                         trendArrow: showTrends ? simpleStats.realCarbRatioTrend : nil,
                         tooltipCurrent: simpleStats.realCarbRatio,
                         tooltipPrevious: simpleStats.prevRealCarbRatio,
-                        periodLabel: periodLabel
+                        periodLabel: periodLabel,
+                        showAllTooltips: $showAllTooltips,
+                        tooltipResetToken: $tooltipResetToken
                     )
                 } else {
                     Color.clear
@@ -469,7 +502,9 @@ struct StatsGridView: View {
                     trendArrow: showTrends ? simpleStats.totalDailyDoseTrend : nil,
                     tooltipCurrent: simpleStats.totalDailyDose,
                     tooltipPrevious: simpleStats.prevTotalDailyDose,
-                    periodLabel: periodLabel
+                    periodLabel: periodLabel,
+                    showAllTooltips: $showAllTooltips,
+                    tooltipResetToken: $tooltipResetToken
                 )
                 Button(action: {
                     showFPU.toggle()
@@ -484,7 +519,9 @@ struct StatsGridView: View {
                         trendArrow: showTrends ? simpleStats.avgCarbsTrend : nil,
                         tooltipCurrent: showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs,
                         tooltipPrevious: showFPU ? simpleStats.prevAvgFPUCarbs : simpleStats.prevAvgCarbs,
-                        periodLabel: periodLabel
+                        periodLabel: periodLabel,
+                        showAllTooltips: $showAllTooltips,
+                        tooltipResetToken: $tooltipResetToken
                     )
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -501,7 +538,9 @@ struct StatsGridView: View {
                         trendArrow: showTrends ? simpleStats.avgBolusTrend : nil,
                         tooltipCurrent: simpleStats.avgBolus,
                         tooltipPrevious: simpleStats.prevAvgBolus,
-                        periodLabel: periodLabel
+                        periodLabel: periodLabel,
+                        showAllTooltips: $showAllTooltips,
+                        tooltipResetToken: $tooltipResetToken
                     )
                     StatCard(
                         title: "Måltidsbolus Netto",
@@ -511,7 +550,9 @@ struct StatsGridView: View {
                         trendArrow: showTrends ? simpleStats.netMealBolusTrend : nil,
                         tooltipCurrent: simpleStats.netMealBolus,
                         tooltipPrevious: simpleStats.prevNetMealBolus,
-                        periodLabel: periodLabel
+                        periodLabel: periodLabel,
+                        showAllTooltips: $showAllTooltips,
+                        tooltipResetToken: $tooltipResetToken
                     )
                 }
             }
@@ -533,7 +574,9 @@ struct StatsGridView: View {
                                 : nil,
                             tooltipCurrent: showProfileBasal ? simpleStats.programmedBasal : simpleStats.actualBasal,
                             tooltipPrevious: showProfileBasal ? simpleStats.prevProgrammedBasal : simpleStats.prevActualBasal,
-                            periodLabel: periodLabel
+                            periodLabel: periodLabel,
+                            showAllTooltips: $showAllTooltips,
+                            tooltipResetToken: $tooltipResetToken
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -553,7 +596,9 @@ struct StatsGridView: View {
                                 : nil,
                             tooltipCurrent: showSMB ? simpleStats.avgSMB : simpleStats.avgManualBolus,
                             tooltipPrevious: showSMB ? simpleStats.prevAvgSMB : simpleStats.prevAvgManualBolus,
-                            periodLabel: periodLabel
+                            periodLabel: periodLabel,
+                            showAllTooltips: $showAllTooltips,
+                            tooltipResetToken: $tooltipResetToken
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -576,7 +621,9 @@ struct StatsGridView: View {
                                 : nil,
                             tooltipCurrent: showLowPercentage ? simpleStats.avgLowPercentage : simpleStats.avgBGCheck,
                             tooltipPrevious: showLowPercentage ? simpleStats.prevAvgLowPercentage : simpleStats.prevAvgBGCheck,
-                            periodLabel: periodLabel
+                            periodLabel: periodLabel,
+                            showAllTooltips: $showAllTooltips,
+                            tooltipResetToken: $tooltipResetToken
                         )
                         .buttonStyle(PlainButtonStyle())
                         }
@@ -600,7 +647,9 @@ struct StatsGridView: View {
                                     : nil,
                                 tooltipCurrent: showDextroAmount ? simpleStats.avgLowTreatmentAmount : simpleStats.avgLowTreatments,
                                 tooltipPrevious: showDextroAmount ? simpleStats.prevAvgLowTreatmentAmount : simpleStats.prevAvgLowTreatments,
-                                periodLabel: periodLabel
+                                periodLabel: periodLabel,
+                                showAllTooltips: $showAllTooltips,
+                                tooltipResetToken: $tooltipResetToken
                             )
                         }
                         .buttonStyle(PlainButtonStyle())
