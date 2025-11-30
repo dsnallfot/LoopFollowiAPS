@@ -44,6 +44,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     @IBOutlet weak var smallGraphHeightConstraint: NSLayoutConstraint!
     @IBOutlet weak var highStack: UIStackView!
     @IBOutlet weak var historyStack: UIStackView!
+    @IBOutlet weak var statsStack: UIStackView!
     var refreshScrollView: UIScrollView!
     var refreshControl: UIRefreshControl!
 
@@ -257,7 +258,11 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 }
             }
         
-        // 1. Enable interaction on the stack if you haven't already
+        statsStack.isUserInteractionEnabled = true
+        let tapGestureStats = UITapGestureRecognizer(target: self, action: #selector(showStatsFromStack))
+        statsStack.addGestureRecognizer(tapGestureStats)
+        
+        // 1. Enable interaction on the stack
         historyStack.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showHistoryFromStack))
         historyStack.addGestureRecognizer(tapGesture)
@@ -284,7 +289,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             circleView.centerYAnchor.constraint(equalTo: historyStack.centerYAnchor)
         ])
         
-        setupSwipeUpToStatus()
+        //setupSwipeUpToStatus()
     }
     
     deinit {
@@ -340,7 +345,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             }
         }
     }
-    
+    /*
     private func setupSwipeUpToStatus() {
         let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUpToStatsView(_:)))
         swipeUp.direction = .up
@@ -382,6 +387,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 
         present(hostingController, animated: true, completion: nil)
     }
+    */
 
     
     override func viewWillAppear(_ animated: Bool) {
@@ -872,5 +878,30 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         }
         
         present(navController, animated: true, completion: nil)
+    }
+    
+    @objc func showStatsFromStack() {
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+
+        // Build AggregatedStatsView with this MainViewController as context
+        let viewModel = AggregatedStatsViewModel(mainViewController: self)
+        let statsRootView = NavigationView {
+            if #available(iOS 26.0, *) {
+                AggregatedStatsView(viewModel: viewModel)
+            } else {
+                // Fallback on earlier versions
+            }
+        }
+
+        let hostingController = UIHostingController(rootView: statsRootView)
+        hostingController.modalPresentationStyle = .formSheet
+
+        if UserDefaultsRepository.forceDarkMode.value {
+            hostingController.overrideUserInterfaceStyle = .dark
+        }
+
+        present(hostingController, animated: true, completion: nil)
     }
 }

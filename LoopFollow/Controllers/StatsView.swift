@@ -43,7 +43,7 @@ extension MainViewController {
                 statsEstA1C.text = String(format:"%.1f", stats.a1C) + "%"
             }
 
-            statsStdDev.text = String(format:"%.2f", stats.stdDev)
+            statsStdDev.text = String(format:"%.1f", stats.stdDev)
             
             createStatsPie(pieData: stats.pie)
         }
