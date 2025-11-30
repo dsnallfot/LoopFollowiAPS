@@ -63,7 +63,14 @@ final class DailyStatsViewModel: ObservableObject {
 
     /// Endast dagar med tillräckligt många glukosvärden (för att slippa med halva dagar)
     var rowsWithSufficientGlucose: [DailyStatRow] {
-        rows.filter { row in
+        let calendar = Calendar.current
+        return rows.filter { row in
+            // Dagens datum: inkludera alltid om vi har något glukosvärde (mean != nil)
+            if calendar.isDateInToday(row.date) {
+                return row.meanGlucoseMmol != nil
+            }
+
+            // Äldre dagar: kräver minst minGlucoseReadingsPerDay värden
             if let _ = row.meanGlucoseMmol,
                let count = row.glucoseCount {
                 return count >= minGlucoseReadingsPerDay
@@ -97,6 +104,7 @@ final class DailyStatsViewModel: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async {
             let calendar = Calendar.current
 
+            // 1. Hämta alla BG-värden
             let bgAll = self.dataService.getBGData()
             guard !bgAll.isEmpty else {
                 DispatchQueue.main.async {
@@ -107,29 +115,34 @@ final class DailyStatsViewModel: ObservableObject {
                 return
             }
 
-            // Grupp BG per dag (startOfDay)
+            // 2. Grupp BG per kalenderdag (startOfDay)
             let groupedBG = Dictionary(grouping: bgAll) { reading -> Date in
                 let date = Date(timeIntervalSince1970: reading.date)
                 return calendar.startOfDay(for: date)
             }
 
-            // Senaste dagen med BG-data (≈ oftast igår)
-            guard let latestDay = groupedBG.keys.max() else {
+            guard !groupedBG.isEmpty else {
                 DispatchQueue.main.async {
                     self.rows = []
                     self.isLoading = false
-                    self.errorMessage = "Kunde inte bestämma senaste datum."
+                    self.errorMessage = "Kunde inte bestämma datum för glukosdata."
                 }
                 return
             }
 
-            // Hämta övrig data bara en gång
+            // 3. Hitta den allra tidigaste mätningen för att kunna identifiera
+            //    en potentiellt "avklippt" första dag i fönstret.
+            let earliestReading = bgAll.min(by: { $0.date < $1.date })!
+            let earliestDate = Date(timeIntervalSince1970: earliestReading.date)
+            let earliestDayStart = calendar.startOfDay(for: earliestDate)
+
+            // 4. Hämta övrig data bara en gång
             let bolusData = self.dataService.getBolusData()
             let smbData = self.dataService.getSMBData()
             let carbData = self.dataService.getCarbData()
             let dailyBasalStats = self.dataService.getDailyDeliveredBasal()
 
-            // Bygg upp dictionarier per dag
+            // 5. Bygg upp dictionarier per dag
             let basalPerDay: [Date: Double] = Dictionary(
                 grouping: dailyBasalStats,
                 by: { stat in
@@ -161,20 +174,20 @@ final class DailyStatsViewModel: ObservableObject {
                 calendar: calendar
             )
 
-            var rows: [DailyStatRow] = []
-
-            // Konstanter för beräkningar
+            // 6. Konstanter för beräkningar
             let mgToMmol = GlucoseConversion.mgDlToMmolL
             let lowThresholdMgdL = 3.9 * 18.0182
             let tightLowMgdL = 3.9 * 18.0182
             let tightHighMgdL = 7.8 * 18.0182
             let tirHighMgdL = 10.0 * 18.0182
 
-            // Bygg rader: nyaste först (offset 0 = senaste dag)
-            for offset in 0 ..< self.daysBack {
-                guard let day = calendar.date(byAdding: .day, value: -offset, to: latestDay) else { continue }
+            // 7. Bygg dagliga rader för alla dagar där vi har någon BG-data
+            //    (nyaste först), men ta bara med "fulla" dagar senare.
+            var allRows: [DailyStatRow] = []
 
-                let startOfDay = calendar.startOfDay(for: day)
+            let allDaysDescending = groupedBG.keys.sorted(by: { $0 > $1 })
+
+            for startOfDay in allDaysDescending {
                 guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { continue }
 
                 // Historisk profilbasal för just denna dag (24h, teoretisk)
@@ -195,7 +208,6 @@ final class DailyStatsViewModel: ObservableObject {
                 var glucoseCountForDay: Int?
 
                 if !bgForDay.isEmpty {
-                    // all sgv i mg/dL
                     let sgvValues = bgForDay.map { Double($0.sgv) }
                     let count = Double(sgvValues.count)
                     glucoseCountForDay = sgvValues.count
@@ -247,11 +259,47 @@ final class DailyStatsViewModel: ObservableObject {
                     emptyInfo: emptyInfo,
                     glucoseCount: glucoseCountForDay
                 )
-                rows.append(row)
+
+                allRows.append(row)
             }
 
+            // 8. Filtrera fram "fulla" dagar:
+            //    - minst minGlucoseReadingsPerDay värden
+            //    - dagens datum inkluderas alltid om det finns några värden
+            //    - inte den äldsta dagen om den uppenbart är avklippt av fönstret.
+            let fullRows: [DailyStatRow] = allRows.filter { row in
+                // Dagens datum: inkludera alltid om vi har minst ett BG-värde
+                if calendar.isDateInToday(row.date) {
+                    return (row.glucoseCount ?? 0) > 0
+                }
+
+                guard let count = row.glucoseCount,
+                      count >= self.minGlucoseReadingsPerDay else {
+                    return false
+                }
+
+                if calendar.isDate(row.date, inSameDayAs: earliestDayStart) {
+                    // Kolla om första mätningen ligger långt efter midnatt.
+                    if let dayReadings = groupedBG[row.date],
+                       let first = dayReadings.min(by: { $0.date < $1.date }) {
+                        let firstDate = Date(timeIntervalSince1970: first.date)
+                        let secondsFromMidnight = firstDate.timeIntervalSince(row.date)
+                        // Om första mätningen är mer än t.ex. 2 timmar efter midnatt
+                        // betraktar vi dagen som avklippt och hoppar över den.
+                        return secondsFromMidnight < 2 * 60 * 60
+                    } else {
+                        return false
+                    }
+                }
+
+                return true
+            }
+
+            // 9. Välj de senaste `daysBack` fulla dagarna (nyaste först)
+            let limitedRows = Array(fullRows.prefix(self.daysBack))
+
             DispatchQueue.main.async {
-                self.rows = rows
+                self.rows = limitedRows
                 self.isLoading = false
             }
         }
