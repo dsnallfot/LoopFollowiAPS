@@ -33,14 +33,11 @@ class AggregatedStatsViewModel: ObservableObject {
             dataService.isTodayOnly = true
             dataService.isOneDayOnly = false
             dataService.daysToAnalyze = 1
-        } else if days < 2 {
-            dataService.isOneDayOnly = true
-            dataService.isTodayOnly = false
-            dataService.daysToAnalyze = days
         } else {
+            // Alla andra perioder (1 d, 7 d, 14 d, 30 d, 90 d) behandlas som rullande N×24h
             dataService.isTodayOnly = false
             dataService.isOneDayOnly = false
-            dataService.daysToAnalyze = days
+            dataService.daysToAnalyze = max(days, 1)
         }
 
         if forceReload {

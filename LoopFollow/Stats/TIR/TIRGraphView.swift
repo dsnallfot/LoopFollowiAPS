@@ -74,9 +74,14 @@ struct TIRGraphView: UIViewRepresentable {
             )
             stackedEntries.append(stackedEntry)
 
-            // Label entries: place value labels at the vertical center of each segment, offest with - 5.5 for perfect center alignment.
+            // Label entries: place value labels at the vertical center of each segment,
+            // with a small upward visual offset. We clamp so att etiketten aldrig hamnar
+            // under 0-linjen eller under segmentets botten.
+            let labelOffset = 5.5
+
             // Very Low segment
-            let centerVeryLow = point.veryLow / 2.0 - 5.5
+            let rawCenterVeryLow = point.veryLow / 2.0 - labelOffset
+            let centerVeryLow = max(rawCenterVeryLow, 0)
             let veryLowLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerVeryLow,
@@ -85,17 +90,20 @@ struct TIRGraphView: UIViewRepresentable {
             veryLowLabelEntries.append(veryLowLabelEntry)
 
             // Low segment
-            let centerLow = point.veryLow + (point.low / 2.0 - 5.5)
+            let lowBottom = point.veryLow
+            let rawCenterLow = lowBottom + (point.low / 2.0) - labelOffset
+            let centerLow = max(rawCenterLow, lowBottom)
             let lowLabelEntry = BarChartDataEntry(
                 x: Double(index),
-                y: centerLow,
+                y: centerLow ,
                 data: NSNumber(value: point.low)
             )
             lowLabelEntries.append(lowLabelEntry)
 
-            // In Range segment (keep small upward offset as tidigare)
-            let belowInRange = point.veryLow + point.low
-            let centerOfInRange = belowInRange + (point.inRange / 2.0 - 5.5)
+            // In Range segment
+            let inRangeBottom = point.veryLow + point.low
+            let rawCenterOfInRange = inRangeBottom + (point.inRange / 2.0) - labelOffset
+            let centerOfInRange = max(rawCenterOfInRange, inRangeBottom + 1.0)
             let inRangeLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerOfInRange,
@@ -104,8 +112,9 @@ struct TIRGraphView: UIViewRepresentable {
             inRangeLabelEntries.append(inRangeLabelEntry)
 
             // High segment
-            let belowHigh = belowInRange + point.inRange
-            let centerHigh = belowHigh + (point.high / 2.0 - 5.5)
+            let highBottom = inRangeBottom + point.inRange
+            let rawCenterHigh = highBottom + (point.high / 2.0) - labelOffset
+            let centerHigh = max(rawCenterHigh, highBottom + 1.0)
             let highLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerHigh,
@@ -114,8 +123,9 @@ struct TIRGraphView: UIViewRepresentable {
             highLabelEntries.append(highLabelEntry)
 
             // Very High segment
-            let belowVeryHigh = belowHigh + point.high
-            let centerVeryHigh = belowVeryHigh + (point.veryHigh / 2.0 - 5.5)
+            let veryHighBottom = highBottom + point.high
+            let rawCenterVeryHigh = veryHighBottom + (point.veryHigh / 2.0) - labelOffset
+            let centerVeryHigh = max(rawCenterVeryHigh, veryHighBottom + 1.0)
             let veryHighLabelEntry = BarChartDataEntry(
                 x: Double(index),
                 y: centerVeryHigh,
