@@ -703,38 +703,68 @@ final class PumpSessionStatsViewController: UITableViewController {
 
 extension PumpHistoryViewController {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        guard let url = urls.first else { return }
+        guard let fileURL = urls.first else { return }
 
-        DispatchQueue.global(qos: .background).async {
+        // ✅ Request access for iCloud Drive / Downloads
+        if fileURL.startAccessingSecurityScopedResource() {
+            defer { fileURL.stopAccessingSecurityScopedResource() } // Always clean up access
+
+            let fileManager = FileManager.default
+            let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let destinationURL = documentsURL.appendingPathComponent("ImportedPumpHistory.json")
+
             do {
-                let data = try Data(contentsOf: url)
-                let imported = try JSONDecoder().decode([PumpChangeHistoryEntry].self, from: data)
-
-                var merged = Storage.shared.pumpChangeHistory
-
-                for entry in imported {
-                    if !merged.contains(where: { $0.date == entry.date }) {
-                        merged.append(entry)
-                    }
+                // ✅ Copy file into the app's Documents folder (bypassing permission issue)
+                if fileManager.fileExists(atPath: destinationURL.path) {
+                    try fileManager.removeItem(at: destinationURL) // Ensure it's fresh
                 }
+                try fileManager.copyItem(at: fileURL, to: destinationURL)
 
-                merged.sort { $0.date > $1.date }
-                Storage.shared.pumpChangeHistory = merged
+                // ✅ Read from the local copy
+                let jsonData = try Data(contentsOf: destinationURL)
+                let importedHistory = try JSONDecoder().decode([PumpChangeHistoryEntry].self, from: jsonData)
 
                 DispatchQueue.main.async {
-                    self.pumpHistory = merged
+                    var storedHistory = Storage.shared.pumpChangeHistory
+                    for entry in importedHistory {
+                        if !storedHistory.contains(where: { $0.date == entry.date }) {
+                            storedHistory.append(entry)
+                        }
+                    }
+
+                    storedHistory.sort { $0.date > $1.date }
+                    Storage.shared.pumpChangeHistory = storedHistory
+                    self.pumpHistory = storedHistory
                     self.tableView.reloadData()
+
+                    LogManager.shared.log(
+                        category: .treatments,
+                        message: "✅ Successfully imported pump history from local copy",
+                        isDebug: true
+                    )
                 }
             } catch {
-                DispatchQueue.main.async {
-                    LogManager.shared.log(category: .treatments, message: "❌ Failed to import pump history: \(error)", isDebug: true)
-                }
+                LogManager.shared.log(
+                    category: .treatments,
+                    message: "❌ Failed to copy or import pump history: \(error)",
+                    isDebug: true
+                )
             }
+        } else {
+            LogManager.shared.log(
+                category: .treatments,
+                message: "❌ Failed to access security-scoped resource for pump file: \(fileURL)",
+                isDebug: true
+            )
         }
     }
 
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        LogManager.shared.log(category: .treatments, message: "ℹ️ Pump history import cancelled", isDebug: true)
+        LogManager.shared.log(
+            category: .treatments,
+            message: "ℹ️ Pump history import cancelled",
+            isDebug: true
+        )
     }
 }
 
