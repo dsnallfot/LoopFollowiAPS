@@ -457,27 +457,67 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             // add more processing of the app state
         }
     }
-
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        // Sektion 0: prio-rader (LabelCellPrio)
+        // Sektion 1: normala rader (LabelCell)
+        return 2
+    }
     // Info Table Functions
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         guard let infoManager = infoManager else {
             return 0
         }
-        return infoManager.numberOfRows()
+
+        if section == 0 {
+            // Prio-rader
+            return infoManager.numberOfPriorityRows()
+        } else {
+            // Vanliga rader
+            return infoManager.numberOfRows()
+        }
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "LabelCell", for: indexPath)
-
-        if let values = infoManager.dataForIndexPath(indexPath) {
-            cell.textLabel?.text = values.name
-            cell.detailTextLabel?.text = values.value
-        } else {
-            cell.textLabel?.text = ""
-            cell.detailTextLabel?.text = ""
+        guard let infoManager = infoManager else {
+            // Borde inte hända, men ger en minimal fallback
+            return UITableViewCell(style: .value1, reuseIdentifier: "FallbackCell")
         }
 
-        return cell
+        // InfoManager bryr sig bara om row, inte section
+        let rowIndexPath = IndexPath(row: indexPath.row, section: 0)
+
+        if indexPath.section == 0 {
+            // Prio-sektion → LabelCellPrio
+            let cell = tableView.dequeueReusableCell(withIdentifier: "LabelCellPrio", for: indexPath)
+
+            if let values = infoManager.priorityDataForIndexPath(rowIndexPath) {
+                cell.textLabel?.text = values.name
+                cell.detailTextLabel?.text = values.value
+            } else {
+                cell.textLabel?.text = ""
+                cell.detailTextLabel?.text = ""
+            }
+
+            cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.3)
+
+            return cell
+        } else {
+            // Normal sektion → LabelCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "LabelCell", for: indexPath)
+
+            if let values = infoManager.dataForIndexPath(rowIndexPath) {
+                cell.textLabel?.text = values.name
+                cell.detailTextLabel?.text = values.value
+            } else {
+                cell.textLabel?.text = ""
+                cell.detailTextLabel?.text = ""
+            }
+
+            cell.backgroundColor = .clear
+
+            return cell
+        }
     }
 
     @objc func appMovedToBackground() {

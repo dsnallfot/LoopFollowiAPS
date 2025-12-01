@@ -11,8 +11,12 @@ import UIKit
 import HealthKit
 
 class InfoManager {
-    var tableData: [InfoData]
-    weak var tableView: UITableView?
+        var tableData: [InfoData]
+        weak var tableView: UITableView?
+
+        /// InfoTypes som ska visas i prio-sektionen (LabelCellPrio).
+        /// Själva värdena ligger fortfarande i `tableData` – detta styr bara *var* de visas.
+        private var priorityTypes: [InfoType] = []
 
     init(tableView: UITableView) {
         self.tableData = InfoType.allCases.map { InfoData(name: $0.name) }
@@ -87,6 +91,19 @@ class InfoManager {
         updateInfoData(type: .smbRatio, value: formattedValue, unit: nil)
     }
     
+    /// Markera en InfoType som prio eller normal.
+    /// Prio-typer visas i LabelCellPrio-sektionen.
+    func setPriority(_ isPriority: Bool, for type: InfoType) {
+        if isPriority {
+            if !priorityTypes.contains(type) {
+                priorityTypes.append(type)
+            }
+        } else {
+            priorityTypes.removeAll { $0 == type }
+        }
+        tableView?.reloadData()
+    }
+    
     func clearInfoData(type: InfoType) {
         // Prevent clearing the default value for .override
         if type == .override {
@@ -116,19 +133,67 @@ class InfoManager {
         }
         tableView?.reloadData()
     }
+    
+    func numberOfPriorityRows() -> Int {
+        let sortedAndVisibleIndexes = UserDefaultsRepository.infoSort.value
+            .filter { UserDefaultsRepository.infoVisible.value[$0] }
 
-    func numberOfRows() -> Int {
-        return UserDefaultsRepository.infoSort.value.filter { UserDefaultsRepository.infoVisible.value[$0] }.count
+        let priorityIndexes = sortedAndVisibleIndexes.filter { rawIndex in
+            guard let type = InfoType(rawValue: rawIndex) else { return false }
+            return priorityTypes.contains(type)
+        }
+
+        return priorityIndexes.count
     }
 
-    func dataForIndexPath(_ indexPath: IndexPath) -> InfoData? {
-        let sortedAndVisibleIndexes = UserDefaultsRepository.infoSort.value.filter { UserDefaultsRepository.infoVisible.value[$0] }
+    func priorityDataForIndexPath(_ indexPath: IndexPath) -> InfoData? {
+        let sortedAndVisibleIndexes = UserDefaultsRepository.infoSort.value
+            .filter { UserDefaultsRepository.infoVisible.value[$0] }
 
-        guard indexPath.row < sortedAndVisibleIndexes.count else {
+        let priorityIndexes = sortedAndVisibleIndexes.filter { rawIndex in
+            guard let type = InfoType(rawValue: rawIndex) else { return false }
+            return priorityTypes.contains(type)
+        }
+
+        guard indexPath.row < priorityIndexes.count else {
             return nil
         }
 
-        let infoIndex = sortedAndVisibleIndexes[indexPath.row]
+        let infoIndex = priorityIndexes[indexPath.row]
+
+        guard infoIndex < tableData.count else {
+            return nil
+        }
+
+        return tableData[infoIndex]
+    }
+
+    func numberOfRows() -> Int {
+        let sortedAndVisibleIndexes = UserDefaultsRepository.infoSort.value
+            .filter { UserDefaultsRepository.infoVisible.value[$0] }
+
+        let nonPriorityIndexes = sortedAndVisibleIndexes.filter { rawIndex in
+            guard let type = InfoType(rawValue: rawIndex) else { return false }
+            return !priorityTypes.contains(type)
+        }
+
+        return nonPriorityIndexes.count
+    }
+
+    func dataForIndexPath(_ indexPath: IndexPath) -> InfoData? {
+        let sortedAndVisibleIndexes = UserDefaultsRepository.infoSort.value
+            .filter { UserDefaultsRepository.infoVisible.value[$0] }
+
+        let nonPriorityIndexes = sortedAndVisibleIndexes.filter { rawIndex in
+            guard let type = InfoType(rawValue: rawIndex) else { return false }
+            return !priorityTypes.contains(type)
+        }
+
+        guard indexPath.row < nonPriorityIndexes.count else {
+            return nil
+        }
+
+        let infoIndex = nonPriorityIndexes[indexPath.row]
 
         guard infoIndex < tableData.count else {
             return nil

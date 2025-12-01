@@ -70,10 +70,13 @@ extension MainViewController {
 
                 if daysAgo >= 14 {
                     statusDot = "🔴"
+                    infoManager.setPriority(true, for: .iage)
                 } else if daysAgo >= 7 {
                     statusDot = "🟡"
+                    infoManager.setPriority(true, for: .iage)
                 } else {
                     statusDot = "🟢"
+                    infoManager.setPriority(false, for: .iage)
                 }
 
                 let displayValue = formattedDuration + " " + statusDot

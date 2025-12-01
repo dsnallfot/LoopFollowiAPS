@@ -141,10 +141,31 @@ extension MainViewController {
                 // Update reservoir data (if available)
                 if let reservoirData = lastPumpRecord["reservoir"] as? Double {
                     latestPumpVolume = reservoirData
-                    infoManager.updateInfoData(type: .pump, value: String(format: "%.0f", reservoirData) + " E 🟡")
+
+                    if reservoirData < 10 {
+                        // Röd lampa + prio
+                        infoManager.updateInfoData(type: .pump,
+                                                   value: String(format: "%.0f E 🔴", reservoirData))
+                        infoManager.setPriority(true, for: .pump)
+
+                    } else if reservoirData <= 20 {
+                        // Gul lampa + prio
+                        infoManager.updateInfoData(type: .pump,
+                                                   value: String(format: "%.0f E 🟡", reservoirData))
+                        infoManager.setPriority(true, for: .pump)
+
+                    } else {
+                        // Grön lampa + ej prio
+                        infoManager.updateInfoData(type: .pump,
+                                                   value: String(format: "%.0f E 🟢", reservoirData))
+                        infoManager.setPriority(false, for: .pump)
+                    }
+
                 } else {
+                    // Standard fallback
                     latestPumpVolume = 50.0
                     infoManager.updateInfoData(type: .pump, value: "50+E 🟢")
+                    infoManager.setPriority(false, for: .pump)
                 }
 
                 // Fetch pump status booleans from the nested "status" dictionary.
@@ -193,10 +214,13 @@ extension MainViewController {
                         batteryStatus = " ⚡"
                     } else if upbat >= 50 {
                         batteryStatus = " 🟢"
+                        infoManager.setPriority(false, for: .battery)
                     } else if upbat >= 20 {
                         batteryStatus = " 🟡"
+                        infoManager.setPriority(true, for: .battery)
                     } else {
                         batteryStatus = " 🔴"
+                        infoManager.setPriority(true, for: .battery)
                     }
                     
                     let batteryDisplay = String(format: "%.0f", upbat) + " %" + batteryStatus
@@ -262,10 +286,13 @@ extension MainViewController {
             var formattedTime = Localizer.formatTimestampToLocalString(createdAtTime)
             if ageSeconds < 340 {
                 formattedTime += " 🟢"
+                infoManager.setPriority(false, for: .updated)
             } else if ageSeconds < 640 {
                 formattedTime += " 🟡"
+                infoManager.setPriority(true, for: .updated)
             } else {
                 formattedTime += " 🔴"
+                infoManager.setPriority(true, for: .updated)
             }
             infoManager.updateInfoData(type: .updated, value: formattedTime)
         } else {

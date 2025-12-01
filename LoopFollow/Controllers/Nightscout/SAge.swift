@@ -83,10 +83,13 @@ extension MainViewController {
 
                 if remainingSeconds < 0 {
                     statusDot = "🔴"
+                    infoManager.setPriority(true, for: .sage)
                 } else if remainingSeconds <= 86400 {
                     statusDot = "🟡"
+                    infoManager.setPriority(true, for: .sage)
                 } else {
                     statusDot = "🟢"
+                    infoManager.setPriority(false, for: .sage)
                 }
 
                 let countdown = remainingSeconds < 0 ? "-\(formattedDuration) \(statusDot)" : "\(formattedDuration) \(statusDot)"
