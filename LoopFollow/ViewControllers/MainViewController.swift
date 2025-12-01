@@ -499,7 +499,34 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 cell.detailTextLabel?.text = ""
             }
 
-            cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.4)
+            // Se till att själva cellen är transparent
+            cell.backgroundColor = .clear
+            cell.contentView.backgroundColor = .clear
+
+            // Lägg till (eller återanvänd) en highlight-view bakom innehållet
+            let highlightTag = 999
+            let highlightView: UIView
+
+            if let existing = cell.contentView.viewWithTag(highlightTag) {
+                highlightView = existing
+            } else {
+                let view = UIView()
+                view.tag = highlightTag
+                view.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.insertSubview(view, at: 0)
+
+                NSLayoutConstraint.activate([
+                    // inre bredd = samma som layoutmarginalerna (där dina “stödlinjer” är +4p)
+                    view.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor, constant: -5),
+                    view.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor, constant: 5),
+                    view.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
+                    view.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor)
+                ])
+
+                highlightView = view
+            }
+
+            highlightView.backgroundColor = UIColor.systemRed.withAlphaComponent(0.4)
 
             return cell
         } else {
