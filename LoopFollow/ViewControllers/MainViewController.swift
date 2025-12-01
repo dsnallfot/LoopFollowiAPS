@@ -516,9 +516,9 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 cell.contentView.insertSubview(view, at: 0)
 
                 NSLayoutConstraint.activate([
-                    // inre bredd = samma som layoutmarginalerna (där dina “stödlinjer” är +4p)
+                    // inre bredd = samma som layoutmarginalerna (där dina “stödlinjer” är +6p)
                     view.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor, constant: -5),
-                    view.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor, constant: 5),
+                    view.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor, constant: 4),
                     view.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
                     view.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor)
                 ])
@@ -526,7 +526,11 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 highlightView = view
             }
 
-            highlightView.backgroundColor = UIColor.systemRed.withAlphaComponent(0.4)
+            // Rounded corners only on the leading (left) side for the red highlight
+            highlightView.layer.cornerRadius = 5
+            highlightView.layer.masksToBounds = true
+
+            highlightView.backgroundColor = UIColor.systemPurple.withAlphaComponent(0.35)
 
             return cell
         } else {
