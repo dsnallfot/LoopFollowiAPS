@@ -599,7 +599,7 @@ final class SensorSessionStatsViewController: UITableViewController {
         let histSet = ScatterChartDataSet(entries: histEntries, label: "")
         histSet.setColors(histColors, alpha: 1)
         histSet.setScatterShape(.circle)
-        histSet.scatterShapeSize = 10
+        histSet.scatterShapeSize = 6
         histSet.drawValuesEnabled = false
         histSet.highlightEnabled = false
 
@@ -615,7 +615,7 @@ final class SensorSessionStatsViewController: UITableViewController {
             let ongoingSet = ScatterChartDataSet(entries: [ongoingEntry], label: "")
             ongoingSet.setColor(.systemBlue)
             ongoingSet.setScatterShape(.circle)
-            ongoingSet.scatterShapeSize = 10
+            ongoingSet.scatterShapeSize = 6
             ongoingSet.drawValuesEnabled = false
             ongoingSet.highlightEnabled = false
             dataSets.append(ongoingSet)

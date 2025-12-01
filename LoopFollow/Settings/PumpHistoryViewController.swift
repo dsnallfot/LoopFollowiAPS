@@ -1,4 +1,24 @@
 import UIKit
+import Charts
+
+
+struct PumpSessionBuckets {
+    // Counts
+    var lt1h: Int = 0        // < 1 h
+    var h1to50: Int = 0      // 1 - 50 h
+    var h50to70: Int = 0     // 50 - 70 h
+    var gt70: Int = 0        // > 70 h
+
+    // Total hours per bucket (for averages)
+    var hrs_lt1h: Int = 0
+    var hrs_h1to50: Int = 0
+    var hrs_h50to70: Int = 0
+    var hrs_gt70: Int = 0
+
+    // Overall totals
+    var total: Int { lt1h + h1to50 + h50to70 + gt70 }
+    var hrs_total: Int { hrs_lt1h + hrs_h1to50 + hrs_h50to70 + hrs_gt70 }
+}
 
 class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
@@ -41,8 +61,15 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
             action: #selector(doneTapped)
         )
 
+        let statsBtn = UIBarButtonItem(
+            image: UIImage(systemName: "info"),
+            style: .plain,
+            target: self,
+            action: #selector(showPumpSessionStats)
+        )
+
         navigationItem.leftBarButtonItem = addBtn
-        navigationItem.rightBarButtonItem = doneBtn
+        navigationItem.rightBarButtonItems = [doneBtn, statsBtn]
     }
 
     private func setupTableView() {
@@ -75,6 +102,16 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
         present(nav, animated: true)
     }
 
+    @objc private func showPumpSessionStats() {
+        let history = Storage.shared.pumpChangeHistory.sorted { $0.date > $1.date }
+        guard !history.isEmpty else { return }
+
+        let buckets = computePumpSessionBuckets(from: history)
+        let statsVC = PumpSessionStatsViewController(buckets: buckets, history: history)
+        let nav = UINavigationController(rootViewController: statsVC)
+        present(nav, animated: true)
+    }
+
     // MARK: - Storage
 
     private func loadPumpHistoryFromStorage() {
@@ -94,7 +131,7 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
         guard Storage.shared.pumpChangeHistory.isEmpty else { return }
 
         let now = Date()
-        guard let since = Calendar.current.date(byAdding: .day, value: -90, to: now) else { return }
+        guard let since = Calendar.current.date(byAdding: .day, value: -200, to: now) else { return }
 
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime]
@@ -136,6 +173,40 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
     }
 
     // MARK: - Helpers – sessionstid
+
+    private func computePumpSessionBuckets(from history: [PumpChangeHistoryEntry]) -> PumpSessionBuckets {
+        var buckets = PumpSessionBuckets()
+
+        // Vi behöver minst två byten för att kunna definiera en avslutad pumppass-session
+        guard history.count > 1 else { return buckets }
+
+        // history förväntas vara sorterad DESC (0 = nyast)
+        for i in 1..<history.count {
+            let start = Date(timeIntervalSince1970: history[i].date)
+            let end = Date(timeIntervalSince1970: history[i - 1].date)
+            var interval = end.timeIntervalSince(start)
+            if interval < 0 { interval = 0 }
+            let hours = Int(interval / 3600)
+            let clamped = min(hours, 80) // klipp vid 80h (72h + 8h grace)
+
+            switch hours {
+            case ..<1:
+                buckets.lt1h += 1
+                buckets.hrs_lt1h += clamped
+            case 1..<50:
+                buckets.h1to50 += 1
+                buckets.hrs_h1to50 += clamped
+            case 50..<70:
+                buckets.h50to70 += 1
+                buckets.hrs_h50to70 += clamped
+            default:
+                buckets.gt70 += 1
+                buckets.hrs_gt70 += clamped
+            }
+        }
+
+        return buckets
+    }
 
     private func sessionColor(for hours: Int, isOngoing: Bool) -> UIColor {
         if isOngoing { return .systemBlue }
@@ -195,7 +266,7 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
         let composed = NSMutableAttributedString()
         composed.append(NSAttributedString(string: dateString, attributes: attrsBase))
         composed.append(NSAttributedString(string: " \(sessionInfo.text)\n", attributes: sessionAttrs))
-        composed.append(NSAttributedString(string: "Pumpbyte", attributes: attrsBase))
+        composed.append(NSAttributedString(string: "Omnipod Dash startades", attributes: attrsBase))
 
         cell.textLabel?.numberOfLines = 0
         cell.textLabel?.attributedText = composed
@@ -267,3 +338,293 @@ extension PumpHistoryViewController: AddManualPumpDelegate {
         tableView.reloadData()
     }
 }
+
+
+final class PumpSessionStatsViewController: UITableViewController {
+    private let buckets: PumpSessionBuckets
+    private let history: [PumpChangeHistoryEntry]
+    private let chartView: ScatterChartView = {
+        let v = ScatterChartView()
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        // Interaction & zoom
+        v.pinchZoomEnabled = false      // avoid diagonal zoom; we'll zoom X only
+        v.doubleTapToZoomEnabled = true // double-tap zooms X
+        v.scaleXEnabled = true          // allow horizontal zoom
+        v.scaleYEnabled = false         // lock vertical scale (0–80 stays)
+        v.dragEnabled = true            // allow horizontal pan after zoom
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1_000_000
+        return v
+    }()
+
+    init(buckets: PumpSessionBuckets, history: [PumpChangeHistoryEntry]) {
+        self.buckets = buckets
+        self.history = history
+        super.init(style: .insetGrouped)
+    }
+
+    // Helper for formatting average hours as "X h"
+    private func avgText(count: Int, totalHours: Int) -> String {
+        guard count > 0 else { return "–" }
+        let avg = totalHours / count
+        return "\(avg) h"
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Sessionstid pumpar"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissSelf)
+        )
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        setupChartHeader()
+        loadChartData()
+    }
+
+    private func setupChartHeader() {
+        let container = UIView()
+        container.addSubview(chartView)
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 260)
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            chartView.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+        ])
+        tableView.tableHeaderView = container
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let header = tableView.tableHeaderView {
+            let targetSize = CGSize(width: tableView.bounds.width, height: 260)
+            if header.frame.size != targetSize {
+                header.frame.size = targetSize
+                tableView.tableHeaderView = header
+            }
+        }
+    }
+
+    private func loadChartData() {
+        guard history.count > 1 else { return }
+        var histEntries: [ChartDataEntry] = []
+        var histColors: [NSUIColor] = []
+        // history ska vara sorterad DESC (0 = nyast)
+        for i in stride(from: history.count - 1, through: 1, by: -1) {
+            let start = Date(timeIntervalSince1970: history[i].date)
+            let end = Date(timeIntervalSince1970: history[i - 1].date)
+            var interval = end.timeIntervalSince(start)
+            if interval < 0 { interval = 0 }
+            let hours = Int(interval / 3600)
+            let clampedHours = min(hours, 80) // klipp vid 80h
+            let y = Double(clampedHours)
+
+            // X = datum (starttid), Y = sessionslängd i timmar (0–80)
+            histEntries.append(ChartDataEntry(x: start.timeIntervalSince1970, y: y))
+
+            let color: NSUIColor
+            if hours > 70 {
+                color = .systemGreen
+            } else if hours >= 50 {
+                color = .systemOrange
+            } else {
+                color = .systemRed
+            }
+            histColors.append(color)
+        }
+
+        let histSet = ScatterChartDataSet(entries: histEntries, label: "")
+        histSet.setColors(histColors, alpha: 1)
+        histSet.setScatterShape(.circle)
+        histSet.scatterShapeSize = 6
+        histSet.drawValuesEnabled = false
+        histSet.highlightEnabled = false
+
+        // Add a single blue point for the ongoing session (index 0)
+        var dataSets: [ChartDataSetProtocol] = [histSet]
+        if let first = history.first {
+            let start = Date(timeIntervalSince1970: first.date)
+            var interval = Date().timeIntervalSince(start)
+            if interval < 0 { interval = 0 }
+            let hours = Int(interval / 3600)
+            let clampedHours = min(hours, 80)
+            let y = Double(clampedHours)
+
+            let ongoingEntry = ChartDataEntry(x: start.timeIntervalSince1970, y: y)
+            let ongoingSet = ScatterChartDataSet(entries: [ongoingEntry], label: "")
+            ongoingSet.setColor(.systemBlue)
+            ongoingSet.setScatterShape(.circle)
+            ongoingSet.scatterShapeSize = 6
+            ongoingSet.drawValuesEnabled = false
+            ongoingSet.highlightEnabled = false
+            dataSets.append(ongoingSet)
+        }
+
+        chartView.data = ScatterChartData(dataSets: dataSets)
+        chartView.autoScaleMinMaxEnabled = false
+        chartView.notifyDataSetChanged()
+
+        // X-axel = datumintervall för avslutade sessioners starttider (utan pågående)
+        let oldestStart = Date(timeIntervalSince1970: history.last!.date)
+        let newestEnd = Date(timeIntervalSince1970: history[0].date)
+        let xAxis = chartView.xAxis
+        xAxis.axisMinimum = oldestStart.timeIntervalSince1970
+        let rightPad: TimeInterval = 168 * 3600 // add seven days of padding so the last point isn't clipped
+        xAxis.axisMaximum = newestEnd.timeIntervalSince1970 + rightPad
+        xAxis.labelPosition = .bottom
+        xAxis.granularity = 24 * 3600 // daglig
+        xAxis.granularityEnabled = true
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyMMdd"
+        xAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
+            return df.string(from: Date(timeIntervalSince1970: value))
+        })
+        xAxis.setLabelCount(6, force: false)
+
+        // Y-axel = sessionslängd i timmar (0–80)
+        let yAxis = chartView.leftAxis
+        yAxis.axisMinimum = 0
+        yAxis.axisMaximum = 80
+        yAxis.granularity = 10
+        yAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
+            let iv = Int(round(value))
+            if iv % 20 == 0 { // visa 0,20,40,60,80
+                return "\(iv)h"
+            }
+            return ""
+        })
+        yAxis.granularityEnabled = true
+
+        // 🔹 Make X and Y grid lines dashed/dotted and more subtle
+        let gridLineColor = NSUIColor.lightGray.withAlphaComponent(0.5)
+
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        chartView.rightAxis.enabled = false
+        chartView.setNeedsDisplay()
+    }
+
+    @objc private func dismissSelf() { dismiss(animated: true) }
+
+    private enum Section: Int, CaseIterable { case counts, avgs }
+    private enum CountRow: Int, CaseIterable { case header, all, lt1, h1to50, h50to70, gt70 }
+    private enum AvgRow: Int, CaseIterable { case header, all, allExclLt1, lt1, h1to50, h50to70, gt70 }
+
+    override func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        switch Section(rawValue: section)! {
+        case .counts: return CountRow.allCases.count
+        case .avgs:   return AvgRow.allCases.count
+        }
+    }
+
+    private func percent(_ count: Int) -> String {
+        let total = max(1, buckets.total)
+        let p = Double(count) * 100.0 / Double(total)
+        return String(format: "%.0f%%", p)
+    }
+
+    private func rightText(count: Int) -> String { "\(count) st (\(percent(count)))" }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: "cell")
+        cell.selectionStyle = .none
+        switch Section(rawValue: indexPath.section)! {
+        case .counts:
+            let row = CountRow(rawValue: indexPath.row)!
+            switch row {
+            case .header:
+                cell.textLabel?.text = "Sessionstid"
+                cell.detailTextLabel?.text = "Antal (Andel)"
+                cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+                cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+                cell.detailTextLabel?.textColor = .label
+            case .all:
+                cell.textLabel?.text = "Alla pumpar"
+                cell.detailTextLabel?.text = "\(buckets.total) st (100%)"
+                cell.detailTextLabel?.textColor = .label
+            case .lt1:
+                cell.textLabel?.text = "< 1 h"
+                cell.textLabel?.textColor = .systemRed
+                cell.detailTextLabel?.text = rightText(count: buckets.lt1h)
+                cell.detailTextLabel?.textColor = .systemRed
+            case .h1to50:
+                cell.textLabel?.text = "1 - 50 h"
+                cell.textLabel?.textColor = .systemRed
+                cell.detailTextLabel?.text = rightText(count: buckets.h1to50)
+                cell.detailTextLabel?.textColor = .systemRed
+            case .h50to70:
+                cell.textLabel?.text = "50 - 70 h"
+                cell.textLabel?.textColor = .systemOrange
+                cell.detailTextLabel?.text = rightText(count: buckets.h50to70)
+                cell.detailTextLabel?.textColor = .systemOrange
+            case .gt70:
+                cell.textLabel?.text = "> 70 h"
+                cell.textLabel?.textColor = .systemGreen
+                cell.detailTextLabel?.text = rightText(count: buckets.gt70)
+                cell.detailTextLabel?.textColor = .systemGreen
+            }
+        case .avgs:
+            let row = AvgRow(rawValue: indexPath.row)!
+            switch row {
+            case .header:
+                cell.textLabel?.text = "Sessionstid"
+                cell.detailTextLabel?.text = "Medelvärde"
+                cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+                cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+                cell.detailTextLabel?.textColor = .label
+            case .all:
+                cell.textLabel?.text = "Alla pumpar"
+                cell.detailTextLabel?.text = avgText(count: buckets.total, totalHours: buckets.hrs_total)
+                cell.detailTextLabel?.textColor = .label
+            case .allExclLt1:
+                cell.textLabel?.text = "Alla utom < 1"
+                let count = buckets.h1to50 + buckets.h50to70 + buckets.gt70
+                let hours = buckets.hrs_h1to50 + buckets.hrs_h50to70 + buckets.hrs_gt70
+                cell.detailTextLabel?.text = avgText(count: count, totalHours: hours)
+                cell.detailTextLabel?.textColor = .label
+            case .lt1:
+                cell.textLabel?.text = "< 1 h"
+                cell.textLabel?.textColor = .systemRed
+                cell.detailTextLabel?.text = avgText(count: buckets.lt1h, totalHours: buckets.hrs_lt1h)
+                cell.detailTextLabel?.textColor = .systemRed
+            case .h1to50:
+                cell.textLabel?.text = "1 - 50 h"
+                cell.textLabel?.textColor = .systemRed
+                cell.detailTextLabel?.text = avgText(count: buckets.h1to50, totalHours: buckets.hrs_h1to50)
+                cell.detailTextLabel?.textColor = .systemRed
+            case .h50to70:
+                cell.textLabel?.text = "50 - 70 h"
+                cell.textLabel?.textColor = .systemOrange
+                cell.detailTextLabel?.text = avgText(count: buckets.h50to70, totalHours: buckets.hrs_h50to70)
+                cell.detailTextLabel?.textColor = .systemOrange
+            case .gt70:
+                cell.textLabel?.text = "> 70 h"
+                cell.textLabel?.textColor = .systemGreen
+                cell.detailTextLabel?.text = avgText(count: buckets.gt70, totalHours: buckets.hrs_gt70)
+                cell.detailTextLabel?.textColor = .systemGreen
+            }
+        }
+        return cell
+    }
+}
+
