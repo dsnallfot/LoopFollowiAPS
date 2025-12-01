@@ -44,6 +44,8 @@
 		6545DD2B2D6F03A0007B0D70 /* LineChartWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */; };
 		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
+		655B23052EDE2A420092DBDE /* AddManualPumpViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23042EDE2A3F0092DBDE /* AddManualPumpViewController.swift */; };
+		655B23072EDE2A640092DBDE /* PumpHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23062EDE2A610092DBDE /* PumpHistoryViewController.swift */; };
 		6574FFFA2ED8689E00DEF7D0 /* StatsTrendCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */; };
 		6577653B2ED9C96C001D1AC7 /* DailyStatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */; };
 		6577653D2ED9C99B001D1AC7 /* DailyStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6577653C2ED9C995001D1AC7 /* DailyStatsView.swift */; };
@@ -370,6 +372,8 @@
 		6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineChartWrapper.swift; sourceTree = "<group>"; };
 		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
+		655B23042EDE2A3F0092DBDE /* AddManualPumpViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddManualPumpViewController.swift; sourceTree = "<group>"; };
+		655B23062EDE2A610092DBDE /* PumpHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PumpHistoryViewController.swift; sourceTree = "<group>"; };
 		6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsTrendCalculator.swift; sourceTree = "<group>"; };
 		6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStatsViewModel.swift; sourceTree = "<group>"; };
 		6577653C2ED9C995001D1AC7 /* DailyStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStatsView.swift; sourceTree = "<group>"; };
@@ -772,6 +776,8 @@
 		65BB9A402D43CA9C00FCFCA8 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				655B23062EDE2A610092DBDE /* PumpHistoryViewController.swift */,
+				655B23042EDE2A3F0092DBDE /* AddManualPumpViewController.swift */,
 				6582C4B62ED23B490047658C /* GlucoseView.swift */,
 				6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */,
 				65CDBDCE2DBD1A8900587289 /* NightscoutCache.swift */,
@@ -1613,6 +1619,7 @@
 				651C9D282ED5D22E0077D40A /* ChartContainerView.swift in Sources */,
 				DD7FFAFD2A72953000C3A304 /* EKEventStore+Extensions.swift in Sources */,
 				65BFAF1E2DA6E8FE00947A66 /* SyncNewSensorView.swift in Sources */,
+				655B23052EDE2A420092DBDE /* AddManualPumpViewController.swift in Sources */,
 				FCC6886724898F8000A0279D /* UserDefaultsValue.swift in Sources */,
 				651C9D4E2ED5D3C90077D40A /* AGPViewModel.swift in Sources */,
 				DDF699942C555B310058A8D9 /* ViewControllerManager.swift in Sources */,
@@ -1752,6 +1759,7 @@
 				FC97881A2485969B00A7906C /* SceneDelegate.swift in Sources */,
 				651C9D2A2ED5D2460077D40A /* SimpleStatsViewModel.swift in Sources */,
 				DD0C0C662C46E54C00DBADDF /* InfoDataSeparator.swift in Sources */,
+				655B23072EDE2A640092DBDE /* PumpHistoryViewController.swift in Sources */,
 				DD58171C2D299F940041FB98 /* BluetoothDevice.swift in Sources */,
 				DD7E198A2ACDA62600DBD158 /* SensorStart.swift in Sources */,
 				FCD49B6C24AA536E007879DC /* DebugViewController.swift in Sources */,

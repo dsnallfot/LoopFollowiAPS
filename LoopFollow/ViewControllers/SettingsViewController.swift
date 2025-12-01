@@ -89,6 +89,18 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                     onDismiss: nil
                 )
             }
+        
+        <<< ButtonRow() {
+                $0.title = "Pumphistorik"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let pumpHistoryVC = PumpHistoryViewController()
+                        return UINavigationController(rootViewController: pumpHistoryVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        
         <<< ButtonRow() {
             $0.title = "Användarinställningar"
             $0.presentationMode = .show(

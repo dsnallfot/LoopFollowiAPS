@@ -90,6 +90,15 @@ struct SensorStartHistoryEntry: Codable, Equatable {
     }
 }
 
+struct PumpChangeHistoryEntry: Codable, Equatable {
+    /// Unix timestamp (seconds since 1970) for when the pump was changed.
+    var date: TimeInterval
+
+    static func == (lhs: PumpChangeHistoryEntry, rhs: PumpChangeHistoryEntry) -> Bool {
+        return lhs.date == rhs.date
+    }
+}
+
 extension Storage {
     var sensorStartNotes: [SensorStartHistoryEntry] {
         get {
@@ -111,6 +120,36 @@ extension Storage {
                 UserDefaults.standard.set(encodedData, forKey: "sensorStartNotes")
             } catch {
                 LogManager.shared.log(category: .bluetooth, message: "Failed to encode sensorStartNotes: \(error)")
+            }
+        }
+    }
+    
+    var pumpChangeHistory: [PumpChangeHistoryEntry] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "pumpChangeHistory") else {
+                return []
+            }
+            do {
+                let decoded = try JSONDecoder().decode([PumpChangeHistoryEntry].self, from: storedData)
+                return decoded
+            } catch {
+                LogManager.shared.log(
+                    category: .treatments,
+                    message: "Failed to decode pumpChangeHistory, resetting to empty array: \(error)"
+                )
+                UserDefaults.standard.removeObject(forKey: "pumpChangeHistory")
+                return []
+            }
+        }
+        set {
+            do {
+                let encoded = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encoded, forKey: "pumpChangeHistory")
+            } catch {
+                LogManager.shared.log(
+                    category: .treatments,
+                    message: "Failed to encode pumpChangeHistory: \(error)"
+                )
             }
         }
     }
