@@ -499,6 +499,20 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 cell.detailTextLabel?.text = ""
             }
 
+            if let type = infoManager.infoTypeForPriorityRow(rowIndexPath) {
+                switch type {
+                case .iob:
+                    cell.textLabel?.textColor = .systemBlue
+                    cell.detailTextLabel?.textColor = .systemBlue
+                case .cob:
+                    cell.textLabel?.textColor = .systemOrange
+                    cell.detailTextLabel?.textColor = .systemOrange
+                default:
+                    cell.textLabel?.textColor = .label
+                    cell.detailTextLabel?.textColor = .label
+                }
+            }
+
             // Se till att själva cellen är transparent
             cell.backgroundColor = .clear
             cell.contentView.backgroundColor = .clear
@@ -543,6 +557,20 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             } else {
                 cell.textLabel?.text = ""
                 cell.detailTextLabel?.text = ""
+            }
+
+            if let type = infoManager.infoTypeForRow(rowIndexPath) {
+                switch type {
+                case .iob:
+                    cell.textLabel?.textColor = .systemBlue
+                    cell.detailTextLabel?.textColor = .systemBlue
+                case .cob:
+                    cell.textLabel?.textColor = .systemOrange
+                    cell.detailTextLabel?.textColor = .systemOrange
+                default:
+                    cell.textLabel?.textColor = .label
+                    cell.detailTextLabel?.textColor = .secondaryLabel
+                }
             }
 
             cell.backgroundColor = .clear

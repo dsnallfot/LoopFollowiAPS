@@ -167,6 +167,24 @@ class InfoManager {
 
         return tableData[infoIndex]
     }
+    
+    /// Returns the InfoType for a given row in the priority section.
+    func infoTypeForPriorityRow(_ indexPath: IndexPath) -> InfoType? {
+        let sortedAndVisibleIndexes = UserDefaultsRepository.infoSort.value
+            .filter { UserDefaultsRepository.infoVisible.value[$0] }
+
+        let priorityIndexes = sortedAndVisibleIndexes.filter { rawIndex in
+            guard let type = InfoType(rawValue: rawIndex) else { return false }
+            return priorityTypes.contains(type)
+        }
+
+        guard indexPath.row < priorityIndexes.count else {
+            return nil
+        }
+
+        let infoIndex = priorityIndexes[indexPath.row]
+        return InfoType(rawValue: infoIndex)
+    }
 
     func numberOfRows() -> Int {
         let sortedAndVisibleIndexes = UserDefaultsRepository.infoSort.value
@@ -200,5 +218,23 @@ class InfoManager {
         }
 
         return tableData[infoIndex]
+    }
+    
+    /// Returns the InfoType for a given row in the normal (non-priority) section.
+    func infoTypeForRow(_ indexPath: IndexPath) -> InfoType? {
+        let sortedAndVisibleIndexes = UserDefaultsRepository.infoSort.value
+            .filter { UserDefaultsRepository.infoVisible.value[$0] }
+
+        let nonPriorityIndexes = sortedAndVisibleIndexes.filter { rawIndex in
+            guard let type = InfoType(rawValue: rawIndex) else { return false }
+            return !priorityTypes.contains(type)
+        }
+
+        guard indexPath.row < nonPriorityIndexes.count else {
+            return nil
+        }
+
+        let infoIndex = nonPriorityIndexes[indexPath.row]
+        return InfoType(rawValue: infoIndex)
     }
 }
