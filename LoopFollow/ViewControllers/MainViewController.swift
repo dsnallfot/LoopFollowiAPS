@@ -518,7 +518,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 NSLayoutConstraint.activate([
                     // inre bredd = samma som layoutmarginalerna (där dina “stödlinjer” är +6p)
                     view.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor, constant: -5),
-                    view.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor, constant: 4),
+                    view.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor, constant: 3),
                     view.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
                     view.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor)
                 ])
