@@ -130,6 +130,7 @@ extension MainViewController {
         // If no override was found (or note was nil), reset to 1.0
         if !foundOverride {
             sharedOverrideFactor = 1.0
+            percentageString = "100 %"
         }
 
         infoManager.updateInfoData(type: .overridePercentage, value: percentageString)
