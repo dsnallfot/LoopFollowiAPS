@@ -1,5 +1,6 @@
 import UIKit
 import Charts
+import UniformTypeIdentifiers
 
 
 struct PumpSessionBuckets {
@@ -20,7 +21,7 @@ struct PumpSessionBuckets {
     var hrs_total: Int { hrs_lt1h + hrs_h1to50 + hrs_h50to70 + hrs_gt70 }
 }
 
-class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIDocumentPickerDelegate {
 
     private var pumpHistory: [PumpChangeHistoryEntry] = []
     private let tableView: UITableView = {
@@ -48,11 +49,36 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
     // MARK: - UI setup
 
     private func setupNavigationBar() {
-        let addBtn = UIBarButtonItem(
-            barButtonSystemItem: .add,
-            target: self,
-            action: #selector(addManualPumpChange)
-        )
+        // --- Left side: custom stack with controlled spacing and 2pt inset from the bubble edge ---
+        let addBtn = UIButton(type: .system)
+        addBtn.setImage(UIImage(systemName: "plus"), for: .normal)
+        addBtn.tintColor = .label
+        addBtn.addTarget(self, action: #selector(addManualPumpChange), for: .touchUpInside)
+
+        let shareBtn = UIButton(type: .system)
+        shareBtn.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
+        shareBtn.tintColor = .label
+        shareBtn.addTarget(self, action: #selector(exportPumpHistory), for: .touchUpInside)
+
+        let importBtn = UIButton(type: .system)
+        importBtn.setImage(UIImage(systemName: "square.and.arrow.down"), for: .normal)
+        importBtn.tintColor = .label
+        importBtn.addTarget(self, action: #selector(importPumpHistory), for: .touchUpInside)
+
+        // Tighten spacing between icons but keep 2pt leading margin from the nav bar's liquid glass edge
+        let leftStack = UIStackView(arrangedSubviews: [addBtn, shareBtn, importBtn])
+        leftStack.axis = .horizontal
+        leftStack.alignment = .center
+        leftStack.spacing = 9 // tighten icon-to-icon spacing
+        leftStack.isLayoutMarginsRelativeArrangement = true
+        leftStack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 2, bottom: 0, trailing: 0) // 2pt from edge
+
+        // Ensure tappable area is comfortable
+        [addBtn, shareBtn, importBtn].forEach { btn in
+            btn.contentEdgeInsets = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+        }
+
+        let leftItem = UIBarButtonItem(customView: leftStack)
 
         let doneBtn = UIBarButtonItem(
             title: "Klar",
@@ -68,7 +94,7 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
             action: #selector(showPumpSessionStats)
         )
 
-        navigationItem.leftBarButtonItem = addBtn
+        navigationItem.leftBarButtonItem = leftItem
         navigationItem.rightBarButtonItems = [doneBtn, statsBtn]
     }
 
@@ -110,6 +136,51 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
         let statsVC = PumpSessionStatsViewController(buckets: buckets, history: history)
         let nav = UINavigationController(rootViewController: statsVC)
         present(nav, animated: true)
+    }
+    
+    // MARK: - Export Pump History
+
+    @objc private func exportPumpHistory() {
+        // Exportera det som ligger i storage (inte bara aktuell filterad tabell)
+        let historyToExport = Storage.shared.pumpChangeHistory
+
+        DispatchQueue.global(qos: .background).async {
+            do {
+                let jsonData = try JSONEncoder().encode(historyToExport)
+
+                if let jsonString = String(data: jsonData, encoding: .utf8) {
+                    LogManager.shared.log(category: .treatments, message: "📤 Exporting pump JSON: \(jsonString)", isDebug: true)
+                }
+
+                let fileManager = FileManager.default
+                let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+                let exportURL = documentsURL.appendingPathComponent("PumpHistory.json")
+
+                try jsonData.write(to: exportURL, options: .atomic)
+
+                DispatchQueue.main.async {
+                    if fileManager.fileExists(atPath: exportURL.path) {
+                        let activityVC = UIActivityViewController(activityItems: [exportURL], applicationActivities: nil)
+                        self.present(activityVC, animated: true)
+                    } else {
+                        LogManager.shared.log(category: .treatments, message: "❌ Pump JSON file does not exist at \(exportURL.path)", isDebug: true)
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    LogManager.shared.log(category: .treatments, message: "❌ Failed to export pump history: \(error)", isDebug: true)
+                }
+            }
+        }
+    }
+
+    // MARK: - Import Pump History
+
+    @objc private func importPumpHistory() {
+        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.json])
+        documentPicker.delegate = self
+        documentPicker.allowsMultipleSelection = false
+        present(documentPicker, animated: true)
     }
 
     // MARK: - Storage
@@ -625,6 +696,45 @@ final class PumpSessionStatsViewController: UITableViewController {
             }
         }
         return cell
+    }
+}
+
+// MARK: - UIDocumentPickerDelegate
+
+extension PumpHistoryViewController {
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+
+        DispatchQueue.global(qos: .background).async {
+            do {
+                let data = try Data(contentsOf: url)
+                let imported = try JSONDecoder().decode([PumpChangeHistoryEntry].self, from: data)
+
+                var merged = Storage.shared.pumpChangeHistory
+
+                for entry in imported {
+                    if !merged.contains(where: { $0.date == entry.date }) {
+                        merged.append(entry)
+                    }
+                }
+
+                merged.sort { $0.date > $1.date }
+                Storage.shared.pumpChangeHistory = merged
+
+                DispatchQueue.main.async {
+                    self.pumpHistory = merged
+                    self.tableView.reloadData()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    LogManager.shared.log(category: .treatments, message: "❌ Failed to import pump history: \(error)", isDebug: true)
+                }
+            }
+        }
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        LogManager.shared.log(category: .treatments, message: "ℹ️ Pump history import cancelled", isDebug: true)
     }
 }
 
