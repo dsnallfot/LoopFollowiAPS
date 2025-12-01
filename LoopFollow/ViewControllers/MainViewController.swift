@@ -499,7 +499,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 cell.detailTextLabel?.text = ""
             }
 
-            cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.3)
+            cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.4)
 
             return cell
         } else {
