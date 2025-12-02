@@ -624,8 +624,13 @@ final class NightscoutDayReportViewController: UIViewController, WKNavigationDel
         let calendar = Calendar.current
         let today = Date()
 
-        currentEndDate = today
-        currentStartDate = calendar.date(byAdding: .day, value: -13, to: today)
+        // Använd det datum som valdes i DailyStats (reportDate) som slutdatum om det finns,
+        // annars fall tillbaka till idag. Klampa för säkerhets skull så vi inte hamnar i framtiden.
+        let baseEndDate = reportDate ?? today
+        let effectiveEndDate = min(baseEndDate, today)
+
+        currentEndDate = effectiveEndDate
+        currentStartDate = calendar.date(byAdding: .day, value: -13, to: effectiveEndDate)
 
         currentReportType = "glucosedistribution"
         reloadNightscoutPage(startDate: currentStartDate, endDate: currentEndDate)
