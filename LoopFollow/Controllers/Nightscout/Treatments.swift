@@ -32,8 +32,20 @@ extension MainViewController {
             switch result {
             case .success(let data):
                 if let entries = data as? [[String: AnyObject]] {
+                    // Uppdatera appens behandlingstillstånd på main-tråden som tidigare
                     DispatchQueue.main.async {
                         self.updateTreatments(entries: entries)
+                    }
+                    
+                    // Skriv samma behandlingsdata till NightscoutCache i bakgrunden.
+                    // Detta gör att TreatmentsTableView (och andra vyer som läser via NightscoutCache)
+                    // får löpande uppdaterade 90-dagarsfiler utan extra nattliga fetchar.
+                    DispatchQueue.global(qos: .utility).async {
+                        for entry in entries {
+                            NightscoutCache.upsertTreatment(from: entry as [String: Any])
+                        }
+                        // Rensa gamla filer efter att vi lagt till nya entries (best-effort).
+                        NightscoutCache.purgeOldFiles()
                     }
                 } else {
                     LogManager.shared.log(category: .nightscout, message: "WebLoadNSTreatments, Unexpected data structure")
@@ -205,5 +217,9 @@ extension MainViewController {
                 clearOldPump()
             }
         }
+        
+        // Uppdatera statistik-cache efter att alla behandlings-arrayer uppdaterats
+        self.updateStats()
+        self.stats_saveToCache()
     }
 }

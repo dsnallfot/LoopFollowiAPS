@@ -149,7 +149,8 @@ struct AggregatedStatsView: View {
             .onAppear {
                 isLoadingData = true
                 DispatchQueue.main.async {
-                    viewModel.updatePeriod(selectedPeriod, forceReload: true) {
+                    // Använd cache i första hand; StatsDataService avgör själv om nätverksfetch behövs.
+                    viewModel.updatePeriod(selectedPeriod) {
                         isLoadingData = false
                     }
                 }

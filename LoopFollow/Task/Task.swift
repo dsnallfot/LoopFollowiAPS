@@ -57,8 +57,9 @@ extension MainViewController {
             // Create a temporary StatsDataService bound to this MainViewController.
             let statsService = StatsDataService(mainViewController: self)
 
-            // Kör samma logik som "Ladda om"-knappen: 48h-refetch + cache-save via ensureDataAvailable/reloadAllData.
-            statsService.reloadAllData(onProgress: {
+            // Använd samma logik som vid öppning av statistik: säkerställ att det finns färska data,
+            // och fyll upp till 90 dagar endast om det saknas eller är "stale".
+            statsService.ensureDataAvailable(onProgress: {
                 // We keep this empty for now; could log progress if needed.
             }, completion: {
                 LogManager.shared.log(
@@ -71,7 +72,6 @@ extension MainViewController {
                 DispatchQueue.main.async {
                     self.scheduleStatsPrefetchTask()
                 }
-            })
-        }
+            })        }
     }
 }

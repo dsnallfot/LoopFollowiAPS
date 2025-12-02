@@ -322,10 +322,11 @@ extension MainViewController {
             
             let entries = self.bgData
             if entries.count < 2 { return } // Protect index out of bounds
-            
+
             self.updateBGGraph()
             self.updateStats()
-            
+            self.stats_saveToCache()
+
             let latestEntryIndex = entries.count - 1
             let latestBGEntry = entries[latestEntryIndex]
             let latestBG = latestBGEntry.sgv

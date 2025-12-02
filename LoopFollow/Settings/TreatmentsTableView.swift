@@ -471,51 +471,17 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         loadTreatments(for: selectedDate)
     }
 
-    /// Load treatments for a full calendar day from NightscoutCache
+    /// Load treatments for a full calendar day from NightscoutCache or fall back to dynamic fetch
     private func loadTreatments(for date: Date) {
-        let cal    = Calendar.current
-        let start  = cal.startOfDay(for: date)
-        let now    = Date()
-
-        // If the user picked today, fetch live 24‑h treatments
-        if cal.isDate(date, inSameDayAs: now) {
-            // Show loading UI
-            showRefreshIndicator()
-
-            // Fetch the last 24 hours (UTC) so events from yesterday are included
-            let since = now.addingTimeInterval(-24 * 60 * 60)
-            let iso = ISO8601DateFormatter()
-            iso.formatOptions = [.withInternetDateTime]
-            iso.timeZone = TimeZone(secondsFromGMT: 0)
-            let params: [String: String] = [
-                "find[created_at][$gte]": iso.string(from: since),
-                "find[created_at][$lte]": iso.string(from: now)
-            ]
-
-            NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
-                if case .success(let raw) = result,
-                   let entries = raw as? [[String: AnyObject]] {
-                    let fetched = entries.compactMap { Treatment(dictionary: $0) }
-                    DispatchQueue.main.async {
-                        self.treatments = fetched.sorted { $0.timestamp > $1.timestamp }
-                        self.tableView.reloadData()
-                        self.hideRefreshIndicator()
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        self.hideRefreshIndicator()
-                    }
-                }
-            }
-            return
-        }
-
-        // Otherwise, fall back to the cache-based day loader:
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
         let end = cal.date(byAdding: .day, value: 1, to: start)!
-
-        // Show loading UI before async task
+        
+        // Visa alltid någon form av "loading" medan vi läser cachen.
         showRefreshIndicator()
+        
         Task {
+            // För alla datum (inkl. idag) försöker vi först läsa från NightscoutCache.
             let (_, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
             let newTreatments = treatsJSON.compactMap { tjson in
                 Treatment(dictionary: [
@@ -534,24 +500,62 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     "duration": tjson.tempBasalDuration as AnyObject
                 ])
             }
-
+            
             DispatchQueue.main.async {
-                if newTreatments.isEmpty {
-                    // If cache is empty for that day, fall back to live fetch
-                    self.fetchDynamicTreatments(for: date)
-                } else {
+                if !newTreatments.isEmpty {
+                    // Cache-data fanns – visa den och avsluta.
                     self.treatments = newTreatments.sorted { $0.timestamp > $1.timestamp }
                     self.tableView.reloadData()
                     self.hideRefreshIndicator()
+                } else {
+                    // Ingen cache-data för den här dagen: fall back till live-fetch.
+                    // Stäng av nuvarande indikator, fallback-metoderna sköter sin egen show/hide.
+                    self.hideRefreshIndicator()
+                    
+                    if cal.isDate(date, inSameDayAs: Date()) {
+                        // För "idag" använder vi en 24h-fönster-fall-back (som tidigare implementation).
+                        self.fetchDynamicTreatmentsForToday24h()
+                    } else {
+                        // För andra dagar hämtar vi ett lokalt kalenderdygn.
+                        self.fetchDynamicTreatments(for: date)
+                    }
                 }
+            }
+        }
+    }
+
+    /// Fallback: hämta de senaste 24 timmarna för dagens datum direkt från Nightscout
+    /// (används bara om cachen saknar data för idag).
+    private func fetchDynamicTreatmentsForToday24h() {
+        // Visa loading-indikator för nätverksanropet.
+        showRefreshIndicator()
+        
+        let now = Date()
+        let since = now.addingTimeInterval(-24 * 60 * 60)
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+        iso.timeZone = TimeZone(secondsFromGMT: 0)
+        
+        let params: [String: String] = [
+            "find[created_at][$gte]": iso.string(from: since),
+            "find[created_at][$lte]": iso.string(from: now)
+        ]
+        
+        NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
+            DispatchQueue.main.async {
+                if case .success(let raw) = result,
+                   let entries = raw as? [[String: AnyObject]] {
+                    let fetched = entries.compactMap { Treatment(dictionary: $0) }
+                    self.treatments = fetched.sorted { $0.timestamp > $1.timestamp }
+                }
+                self.tableView.reloadData()
+                self.hideRefreshIndicator()
             }
         }
     }
 
     /// Fetch treatments dynamically for a specific calendar date (fallback if cache empty)
     private func fetchDynamicTreatments(for date: Date) {
-        // Show loading UI
-        showRefreshIndicator()
         let cal = Calendar.current
         let start = cal.startOfDay(for: date)
         let end = cal.date(byAdding: .day, value: 1, to: start)!
@@ -571,7 +575,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                     self.treatments = fetched.sorted { $0.timestamp > $1.timestamp }
                 }
                 self.tableView.reloadData()
-                self.hideRefreshIndicator()
+                // Ingen hideRefreshIndicator här – det sköts av loadTreatments(for:)
             }
         }
     }

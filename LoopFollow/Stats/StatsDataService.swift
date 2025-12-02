@@ -185,6 +185,18 @@ private class StatsCacheManager {
     }
 }
 
+extension MainViewController {
+    /// Ladda statistikcache (om den finns) in i denna MainViewController.
+    func stats_loadFromCacheIfAvailable() {
+        StatsCacheManager.shared.loadInto(mainVC: self)
+    }
+
+    /// Spara aktuella stats-arrayer från denna MainViewController till cache.
+    func stats_saveToCache() {
+        StatsCacheManager.shared.saveFrom(mainVC: self)
+    }
+}
+
 class StatsDataService {
     weak var mainViewController: MainViewController?
 
@@ -208,7 +220,7 @@ class StatsDataService {
 
         // Ladda ev. cache direkt in i MainViewController när tjänsten skapas
         if let mainVC = mainViewController {
-            StatsCacheManager.shared.loadInto(mainVC: mainVC)
+            mainVC.stats_loadFromCacheIfAvailable()
         }
 
         // Ladda historisk profilbasal för statistik (upp till maxStatsDays)
@@ -312,12 +324,12 @@ class StatsDataService {
                     self.dataFetcher.fetchTreatmentsData(days: self.maxStatsDays) {
                         DispatchQueue.main.async {
                             onProgress()
-                            StatsCacheManager.shared.saveFrom(mainVC: mainVC)
+                            mainVC.stats_saveToCache()
                             completion()
                         }
                     }
                 } else {
-                    StatsCacheManager.shared.saveFrom(mainVC: mainVC)
+                    mainVC.stats_saveToCache()
                     completion()
                 }
             }
@@ -326,7 +338,7 @@ class StatsDataService {
             dataFetcher.fetchTreatmentsData(days: maxStatsDays) {
                 DispatchQueue.main.async {
                     onProgress()
-                    StatsCacheManager.shared.saveFrom(mainVC: mainVC)
+                    mainVC.stats_saveToCache()
                     completion()
                 }
             }
@@ -348,7 +360,7 @@ class StatsDataService {
                     DispatchQueue.main.async {
                         onProgress()
                         if let mainVC = self.mainViewController {
-                            StatsCacheManager.shared.saveFrom(mainVC: mainVC)
+                            mainVC.stats_saveToCache()
                         }
                         completion()
                     }
