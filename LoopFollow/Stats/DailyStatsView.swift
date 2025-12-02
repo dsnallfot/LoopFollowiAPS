@@ -72,7 +72,7 @@ struct DailyStatsView: View {
                                                 numberCell(row.profileBasal, width: profileWidth)
                                                 emptyCell(row.emptyInfo, width: emptyWidth)
                                             }
-                                            .padding(.vertical, 4)
+                                            .padding(.vertical, 8)
                                             .background(index % 2 == 0 ? Color(.systemGray5.withAlphaComponent(0.6)) : Color.clear)
                                             .contentShape(Rectangle())
                                             .onTapGesture {

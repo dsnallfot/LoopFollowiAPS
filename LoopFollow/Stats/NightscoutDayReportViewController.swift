@@ -290,7 +290,7 @@ final class NightscoutDayReportViewController: UIViewController, WKNavigationDel
         <!DOCTYPE html>
         <html style=\"background:transparent; height:100%;\">
           <head>
-            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=3.0, user-scalable=yes\"/>
             <style>
               html, body { height: 100%; margin: 0; background: transparent; overflow: hidden; }
               #wrap { position: relative; width: 100%; height: 100%; background: transparent; }
@@ -359,4 +359,3 @@ final class NightscoutDayReportViewController: UIViewController, WKNavigationDel
         }
     }
 }
-
