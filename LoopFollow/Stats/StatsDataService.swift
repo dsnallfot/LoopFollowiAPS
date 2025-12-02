@@ -159,6 +159,17 @@ private class StatsCacheManager {
             .filter { $0.date >= cutoff }
             .map { CachedBasal(basalRate: $0.basalRate, date: $0.date) }
 
+        // Skriv inte över en befintlig cachefil med en helt tom cache.
+        // Detta kan hända tidigt i appens livscykel innan statistikdatan hunnit fyllas upp.
+        if bg.isEmpty && bgChecks.isEmpty && bolus.isEmpty && smb.isEmpty && carbs.isEmpty && basal.isEmpty {
+            LogManager.shared.log(
+                category: .analysis,
+                message: "StatsCacheManager - skipping save (all stats arrays are empty)",
+                isDebug: true
+            )
+            return
+        }
+
         let cache = Cache(
             lastUpdated: now,
             bg: bg,
