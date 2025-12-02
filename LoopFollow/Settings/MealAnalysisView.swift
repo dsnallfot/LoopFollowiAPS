@@ -345,7 +345,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
 
         recalcEndTimeBasedOnDuration()
         updateTotals()
-        fetchBG24h()
+        fetchBGData()
         // — Pull additional days from NightscoutCache (if any) —
         loadCachedData()
 
@@ -366,6 +366,22 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             target: self,
             action: #selector(dismissSelf)
         )
+    }
+    
+    /// Fetch BG data for the current window.
+    /// - If fönstret överlappar de senaste 24 timmarna använder vi befintlig 24h‑fetchen för “live” data.
+    /// - Oavsett, komplettera med BG‑värden från NightscoutCache så att äldre måltider får kurvor.
+    private func fetchBGData() {
+        let now = Date()
+        let dayAgo = now.addingTimeInterval(-24 * 60 * 60)
+
+        // Behåll befintligt beteende för “nära nu” (senaste 24h)
+        if endTime > dayAgo {
+            fetchBG24h()
+        }
+
+        // Komplettera med BG-data från NightscoutCache för hela analysfönstret.
+        loadBGFromCache()
     }
 
     @objc private func dismissSelf() {
@@ -845,6 +861,45 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         }
         return row
     }
+    /// Laddar BG‑värden från NightscoutCache för det aktuella analysfönstret
+    /// och merge:ar dem in i `bgEntries`. Detta gör att äldre måltider (även >10 dagar)
+    /// får glukoskurva så länge de finns i 90‑dagarscachen.
+    private func loadBGFromCache() {
+        let windowStart = startTime
+        let windowEnd   = endTime
+
+        Task {
+            // NightscoutCache returnerar både sgv och treatments; här bryr vi oss bara om sgv.
+            let (sgvPoints, _) = await NightscoutCache.loadWindow(from: windowStart, to: windowEnd)
+
+            // Mappa cachepunkter till BGEntry i mmol/L.
+            // Antag att `sgv` är i mg/dL, samma faktor som i övriga appen.
+            let factor = 18.0182
+            let cachedBG: [BGEntry] = sgvPoints.map { point in
+                let mmol = Double(point.sgv) / factor
+                return BGEntry(date: Date(timeIntervalSince1970: point.date), mmol: mmol)
+            }
+
+            // Merge befintliga BG‑punkter (t.ex. från 24h‑fetchen) med cachepunkter.
+            // Nyckla på tidsstämpel för att undvika dubbletter.
+            var merged: [TimeInterval: BGEntry] = [:]
+            for entry in self.bgEntries {
+                merged[entry.date.timeIntervalSince1970] = entry
+            }
+            for entry in cachedBG {
+                merged[entry.date.timeIntervalSince1970] = entry
+            }
+
+            let mergedArray = Array(merged.values)
+
+            await MainActor.run {
+                self.bgEntries = mergedArray
+                self.refreshBGChart()
+                self.updateBGLabels()
+            }
+        }
+    }
+
     // MARK: - BG chart helpers
     private func setupBGChart() {
         bgChartView.delegate = self
