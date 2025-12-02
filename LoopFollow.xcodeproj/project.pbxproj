@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */; };
+		6508DEBE2EDF1419009F84FE /* NightscoutDayReportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6508DEBD2EDF1416009F84FE /* NightscoutDayReportViewController.swift */; };
 		650F09262EDADB6700EFCD98 /* StatsProfileBasalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650F09252EDADB6200EFCD98 /* StatsProfileBasalEngine.swift */; };
 		6517B66C2ED73011003360A4 /* StatsBasalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6517B66B2ED72FFF003360A4 /* StatsBasalEngine.swift */; };
 		651C9D242ED5D1DA0077D40A /* AggregatedStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D232ED5D1D00077D40A /* AggregatedStatsView.swift */; };
@@ -336,6 +337,7 @@
 
 /* Begin PBXFileReference section */
 		059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.release.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.release.xcconfig"; sourceTree = "<group>"; };
+		6508DEBD2EDF1416009F84FE /* NightscoutDayReportViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutDayReportViewController.swift; sourceTree = "<group>"; };
 		650F09252EDADB6200EFCD98 /* StatsProfileBasalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsProfileBasalEngine.swift; sourceTree = "<group>"; };
 		6517B66B2ED72FFF003360A4 /* StatsBasalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsBasalEngine.swift; sourceTree = "<group>"; };
 		651C9D232ED5D1D00077D40A /* AggregatedStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AggregatedStatsView.swift; sourceTree = "<group>"; };
@@ -699,6 +701,7 @@
 				651C9D252ED5D2100077D40A /* AggregatedStatsViewModel.swift */,
 				6577653C2ED9C995001D1AC7 /* DailyStatsView.swift */,
 				6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */,
+				6508DEBD2EDF1416009F84FE /* NightscoutDayReportViewController.swift */,
 			);
 			path = Stats;
 			sourceTree = "<group>";
@@ -1654,6 +1657,7 @@
 				654454D12D6E8AC00015BC5E /* ProfileSchedulesView.swift in Sources */,
 				DD9ACA042D32821400415D8A /* DeviceStatusTask.swift in Sources */,
 				FC16A97D24996747003D6245 /* Alarms.swift in Sources */,
+				6508DEBE2EDF1419009F84FE /* NightscoutDayReportViewController.swift in Sources */,
 				DDFD5C532CB167DA00D3FD68 /* TRCCommandType.swift in Sources */,
 				DD16AF112C997B4600FB655A /* LoadingButtonView.swift in Sources */,
 				DD5817172D2710E90041FB98 /* BLEDeviceSelectionView.swift in Sources */,
