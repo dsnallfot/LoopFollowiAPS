@@ -319,11 +319,13 @@ extension MainViewController {
     func viewUpdateNSBG(sourceName: String) {
         DispatchQueue.main.async {
             TaskScheduler.shared.rescheduleTask(id: .minAgoUpdate, to: Date())
-            
+
             let entries = self.bgData
             if entries.count < 2 { return } // Protect index out of bounds
 
             self.updateBGGraph()
+            // Spegla live-BG till statistikens BG-array (senaste ~2 dygnen)
+            self.stats_syncBGFromLive()
             self.updateStats()
             self.stats_saveToCache()
 

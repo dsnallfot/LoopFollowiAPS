@@ -217,8 +217,9 @@ extension MainViewController {
                 clearOldPump()
             }
         }
-        
-        // Uppdatera statistik-cache efter att alla behandlings-arrayer uppdaterats
+
+        // Synka statistik-arrayerna med de senaste behandlingsdatan och spara cache
+        self.stats_syncTreatmentsFromLive()
         self.updateStats()
         self.stats_saveToCache()
     }

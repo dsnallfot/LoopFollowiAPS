@@ -40,7 +40,9 @@ class AggregatedStatsViewModel: ObservableObject {
             dataService.daysToAnalyze = max(days, 1)
         }
 
-        if forceReload {
+        let shouldForceReload = forceReload
+
+        if shouldForceReload {
             dataService.reloadAllData(
                 onProgress: {},
                 completion: {

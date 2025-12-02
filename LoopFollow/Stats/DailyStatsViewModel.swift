@@ -104,8 +104,15 @@ final class DailyStatsViewModel: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async {
             let calendar = Calendar.current
 
-            // 1. Hämta alla BG-värden
-            let bgAll = self.dataService.getBGData()
+            // Bestäm analysintervall för DailyStats baserat på nuvarande period i StatsDataService
+            // (1, 7, 14, 30 eller 90 dagar), så att vyn alltid speglar vald period.
+            let now = Date()
+            let daysBack = self.dataService.daysToAnalyze
+            let start = now.addingTimeInterval(-Double(daysBack) * 24 * 60 * 60)
+            let analysisInterval = DateInterval(start: start, end: now)
+
+            // 1. Hämta alla BG-värden inom detta intervall
+            let bgAll = self.dataService.getBGData(in: analysisInterval)
             guard !bgAll.isEmpty else {
                 DispatchQueue.main.async {
                     self.rows = []
@@ -136,10 +143,10 @@ final class DailyStatsViewModel: ObservableObject {
             let earliestDate = Date(timeIntervalSince1970: earliestReading.date)
             let earliestDayStart = calendar.startOfDay(for: earliestDate)
 
-            // 4. Hämta övrig data bara en gång
-            let bolusData = self.dataService.getBolusData()
-            let smbData = self.dataService.getSMBData()
-            let carbData = self.dataService.getCarbData()
+            // 4. Hämta övrig data bara en gång, inom samma analysintervall
+            let bolusData = self.dataService.getBolusData(in: analysisInterval)
+            let smbData = self.dataService.getSMBData(in: analysisInterval)
+            let carbData = self.dataService.getCarbData(in: analysisInterval)
             let dailyBasalStats = self.dataService.getDailyDeliveredBasal()
 
             // 5. Bygg upp dictionarier per dag
@@ -296,7 +303,7 @@ final class DailyStatsViewModel: ObservableObject {
             }
 
             // 9. Välj de senaste `daysBack` fulla dagarna (nyaste först)
-            let limitedRows = Array(fullRows.prefix(self.daysBack))
+            let limitedRows = Array(fullRows.prefix(daysBack))
 
             DispatchQueue.main.async {
                 self.rows = limitedRows
