@@ -15,7 +15,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     private var bgEntries: [BGEntry] = []
     
     // How many days back the backfill refresh should fetch
-    private let backfillDays = 30
+    private let backfillDays = 14
 
     // Selected day for table
     private var selectedDate: Date = Date()
