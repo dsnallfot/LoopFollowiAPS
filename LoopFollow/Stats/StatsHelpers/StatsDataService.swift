@@ -108,7 +108,10 @@ private class StatsCacheManager {
             mainVC.statsSMBData = smb
             mainVC.statsCarbData = carbs
             mainVC.statsBasalData = basal
-
+            
+            // Spara senaste uppdateringstid från cachen
+            mainVC.statsCacheLastUpdated = cache.lastUpdated
+            
             LogManager.shared.log(
                 category: .analysis,
                 message: "StatsCacheManager - cache loaded: bg=\(bg.count), bgChecks=\(bgChecks.count), bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)",
@@ -216,6 +219,10 @@ private class StatsCacheManager {
             encoder.outputFormatting = [.prettyPrinted]
             let data = try encoder.encode(cache)
             try data.write(to: cacheURL, options: [.atomic])
+            
+            // Uppdatera senast-uppdaterad-tid i MainViewController
+                mainVC.statsCacheLastUpdated = now
+            
             LogManager.shared.log(
                 category: .analysis,
                 message: "StatsCacheManager - cache saved: bg=\(mergedBG.count), bgChecks=\(mergedBGChecks.count), bolus=\(mergedBolus.count), smb=\(mergedSMB.count), carbs=\(mergedCarbs.count), basal=\(mergedBasal.count)",

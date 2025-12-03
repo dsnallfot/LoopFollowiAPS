@@ -15,6 +15,7 @@ struct DailyStatsView: View {
     @State private var selectedDateForReport: Date?
     @State private var showNightscoutAlert: Bool = false
     @State private var showNightscoutReport: Bool = false
+    @State private var showDatabaseInfo: Bool = false
 
     private let dateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -38,124 +39,207 @@ struct DailyStatsView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if viewModel.isLoading && viewModel.rows.isEmpty {
-                    ProgressView("Beräknar daglig statistik…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    VStack(alignment: .leading, spacing: 0) {
-                        summarySection
-                            .padding(.horizontal, 10)
-                            .padding(.top, 8)
+            coreContent
+                .navigationTitle("Daglig statistik")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        HStack {
+                            Button {
+                                if let url = viewModel.writeCSVToDisk() {
+                                    exportURL = url
+                                }
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                            Button {
+                                showDatabaseInfo = true
+                            } label: {
+                                Image(systemName: "memorychip")
+                            }
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Klar") {
+                            dismiss()
+                        }
+                    }
+                }
+                .onAppear {
+                    viewModel.loadDailyStats()
+                }
+                .sheet(
+                    isPresented: Binding(
+                        get: { exportURL != nil },
+                        set: { isPresented in
+                            if !isPresented {
+                                exportURL = nil
+                            }
+                        }
+                    )
+                ) {
+                    if let url = exportURL {
+                        ActivityView(activityItems: [url])
+                    }
+                }
+                .sheet(isPresented: $showDatabaseInfo) {
+                    databaseInfoContent
+                }
+                .fullScreenCover(isPresented: $showNightscoutReport) {
+                    if let date = selectedDateForReport {
+                        NightscoutDayReportView(date: date)
+                    }
+                }
+                .alert("Fel", isPresented: .constant(viewModel.errorMessage != nil), actions: {
+                    Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+                }, message: {
+                    Text(viewModel.errorMessage ?? "")
+                })
+                .overlay(nightscoutAlertOverlay)
+        }
+    }
 
-                        ScrollView(.horizontal) {
-                            VStack(alignment: .leading, spacing: 0) {
-                                headerRow
-                                    .padding(.vertical, 6)
-                                Divider()
+    @ViewBuilder
+    private var coreContent: some View {
+        Group {
+            if viewModel.isLoading && viewModel.rows.isEmpty {
+                ProgressView("Beräknar daglig statistik…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    summarySection
+                        .padding(.horizontal, 10)
+                        .padding(.top, 8)
 
-                                ScrollView(.vertical) {
-                                    VStack(alignment: .leading, spacing: 0) {
-                                        ForEach(Array(viewModel.rowsWithSufficientGlucose.filter { $0.tightRangePercent != nil }.enumerated()), id: \.element.id) { index, row in
-                                            HStack(spacing: columnSpacing) {
-                                                Text(dateFormatter.string(from: row.date))
-                                                    .frame(width: dateWidth, alignment: .leading)
-                                                    .font(.system(size: 10).monospacedDigit())
+                    ScrollView(.horizontal) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            headerRow
+                                .padding(.vertical, 6)
+                            Divider()
 
-                                                numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
-                                                numberCell(row.insulinTDD, width: insulinWidth)
-                                                meanCell(row.meanGlucoseMmol)
-                                                lowCell(row.lowPercent)
-                                                titrCell(row.tightRangePercent)
-                                                tirCell(row.timeInRangePercent)
-                                                stdDevCell(stdDev: row.stdDevMmol, mean: row.meanGlucoseMmol)
-                                                numberCell(row.profileBasal, width: profileWidth)
-                                                emptyCell(row.emptyInfo, width: emptyWidth)
-                                            }
-                                            .padding(.vertical, 8)
-                                            .background(index % 2 == 0 ? Color(.systemGray5.withAlphaComponent(0.6)) : Color.clear)
-                                            .contentShape(Rectangle())
-                                            .onTapGesture {
-                                                selectedDateForReport = row.date
-                                                showNightscoutAlert = true
-                                            }
-                                            Divider()
+                            ScrollView(.vertical) {
+                                VStack(alignment: .leading, spacing: 0) {
+                                    ForEach(Array(viewModel.rowsWithSufficientGlucose.filter { $0.tightRangePercent != nil }.enumerated()), id: \.element.id) { index, row in
+                                        HStack(spacing: columnSpacing) {
+                                            Text(dateFormatter.string(from: row.date))
+                                                .frame(width: dateWidth, alignment: .leading)
+                                                .font(.system(size: 10).monospacedDigit())
+
+                                            numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
+                                            numberCell(row.insulinTDD, width: insulinWidth)
+                                            meanCell(row.meanGlucoseMmol)
+                                            lowCell(row.lowPercent)
+                                            titrCell(row.tightRangePercent)
+                                            tirCell(row.timeInRangePercent)
+                                            stdDevCell(stdDev: row.stdDevMmol, mean: row.meanGlucoseMmol)
+                                            numberCell(row.profileBasal, width: profileWidth)
+                                            emptyCell(row.emptyInfo, width: emptyWidth)
                                         }
+                                        .padding(.vertical, 8)
+                                        .background(index % 2 == 0 ? Color(.systemGray5.withAlphaComponent(0.6)) : Color.clear)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            selectedDateForReport = row.date
+                                            showNightscoutAlert = true
+                                        }
+                                        Divider()
                                     }
                                 }
                             }
-                            .padding(.horizontal, 10)
-                            .padding(.top, 12)
-                            //.padding(.bottom, 12)
                         }
+                        .padding(.horizontal, 10)
+                        .padding(.top, 12)
                     }
                 }
             }
-            .navigationTitle("Daglig statistik")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        if let url = viewModel.writeCSVToDisk() {
-                            exportURL = url
-                        }
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        dismiss()
-                    }
-                }
-            }
-            .onAppear {
-                viewModel.loadDailyStats()
-            }
-            .sheet(
-                isPresented: Binding(
-                    get: { exportURL != nil },
-                    set: { isPresented in
-                        if !isPresented {
-                            exportURL = nil
-                        }
-                    }
-                )
-            ) {
-                if let url = exportURL {
-                    ActivityView(activityItems: [url])
-                }
-            }
-            .fullScreenCover(isPresented: $showNightscoutReport) {
-                if let date = selectedDateForReport {
-                    NightscoutDayReportView(date: date)
-                }
-            }
-            .alert("Fel", isPresented: .constant(viewModel.errorMessage != nil), actions: {
-                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
-            }, message: {
-                Text(viewModel.errorMessage ?? "")
-            })
-            .overlay(
-                Color.clear
-                    .allowsHitTesting(false)
-                    .alert(
-                        "Visa dagsrapport i Nightscout?",
-                        isPresented: $showNightscoutAlert
-                    ) {
-                        Button("Avbryt", role: .cancel) { }
-                        Button("Fortsätt") {
-                            showNightscoutReport = true
-                        }
-                    } message: {
-                        if let date = selectedDateForReport {
-                            Text("Datum: \(dateFormatter.string(from: date))")
-                        } else {
-                            Text("Visa daglig Nightscout-rapport.")
-                        }
-                    }
-            )
         }
+    }
+
+    private var nightscoutAlertOverlay: some View {
+        Color.clear
+            .allowsHitTesting(false)
+            .alert(
+                "Visa dagsrapport i Nightscout?",
+                isPresented: $showNightscoutAlert
+            ) {
+                Button("Avbryt", role: .cancel) { }
+                Button("Fortsätt") {
+                    showNightscoutReport = true
+                }
+            } message: {
+                if let date = selectedDateForReport {
+                    Text("Datum: \(dateFormatter.string(from: date))")
+                } else {
+                    Text("Visa daglig Nightscout-rapport.")
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var databaseInfoContent: some View {
+        VStack(spacing: 16) {
+            Text("Databasens innehåll")
+                .font(.title2)
+                .padding(.top)
+
+            let dateTimeFormatter: DateFormatter = {
+                let df = DateFormatter()
+                df.dateFormat = "yyyy-MM-dd HH:mm"
+                return df
+            }()
+
+                    if let mainVC = viewModel.mainViewController {
+                if let lastUpdated = mainVC.statsCacheLastUpdated {
+                    Text("Databas uppdaterad: \(dateTimeFormatter.string(from: lastUpdated))")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                } else {
+                    Text("Databas uppdaterad: —")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+
+                let oldestBG = mainVC.statsBGData.min(by: { $0.date < $1.date })?.date
+                let oldestBolus = mainVC.statsBolusData.min(by: { $0.date < $1.date })?.date
+                let oldestSMB = mainVC.statsSMBData.min(by: { $0.date < $1.date })?.date
+                let oldestCarb = mainVC.statsCarbData.min(by: { $0.date < $1.date })?.date
+                let oldestBasal = mainVC.statsBasalData.min(by: { $0.date < $1.date })?.date
+                let oldestBGCheck = mainVC.statsBGCheckData.min()
+
+                let oldestTimestamp = [oldestBG, oldestBolus, oldestSMB, oldestCarb, oldestBasal, oldestBGCheck]
+                    .compactMap { $0 }
+                    .min()
+
+                if let oldest = oldestTimestamp {
+                    let oldestDate = Date(timeIntervalSince1970: oldest)
+                    Text("Äldsta post: \(dateTimeFormatter.string(from: oldestDate))")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                } else {
+                    Text("Äldsta post: —")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+
+                Divider()
+
+                Text("Blodsockervärden: \(mainVC.statsBGData.count) poster")
+                Text("Fingerstick: \(mainVC.statsBGCheckData.count) poster")
+                Text("Manuell bolus: \(mainVC.statsBolusData.count) poster")
+                Text("SMB: \(mainVC.statsSMBData.count) poster")
+                Text("Kolhydrater: \(mainVC.statsCarbData.count) poster")
+                Text("Temp basal: \(mainVC.statsBasalData.count) poster")
+            } else {
+                Text("Ingen data tillgänglig.")
+            }
+
+            Spacer()
+            Button("Stäng") {
+                showDatabaseInfo = false
+            }
+            .padding(.bottom)
+        }
+        .padding()
     }
 
     // MARK: - Subviews

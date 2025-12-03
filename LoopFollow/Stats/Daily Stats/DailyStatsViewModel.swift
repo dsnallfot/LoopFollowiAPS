@@ -23,6 +23,12 @@ struct DailyStatRow: Identifiable {
 }
 
 final class DailyStatsViewModel: ObservableObject {
+    private let dataService: StatsDataService
+
+        var mainViewController: MainViewController? {
+            dataService.mainViewController
+        }
+    
     @Published var rows: [DailyStatRow] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
@@ -86,7 +92,6 @@ final class DailyStatsViewModel: ObservableObject {
         return Double(numberOfDaysMeetingTitrTarget) / Double(scope)
     }
 
-    private let dataService: StatsDataService
     private let daysBack: Int
 
     init(dataService: StatsDataService, daysBack: Int = 90) {

@@ -141,6 +141,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     var statsSMBData: [bolusGraphStruct] = []
     var statsCarbData: [carbGraphStruct] = []
     var statsBasalData: [basalGraphStruct] = []
+    var statsCacheLastUpdated: Date?
 
     // share
     var bgDataShare: [ShareGlucoseData] = []
