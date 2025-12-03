@@ -207,26 +207,22 @@ extension MainViewController {
         StatsCacheManager.shared.saveFrom(mainVC: self)
     }
 
-    /// Synka statistikens BG-array med live-BG från huvudgrafen.
-    /// Design:
-    ///  - Äldre historik (äldre än ~2 dygn) kommer från StatsDataFetcher (upp till 90 dagar).
-    ///  - Senaste ~2 dygnen hämtas från `bgData` (real-time) och merge:as in här.
     func stats_syncBGFromLive() {
         let now = Date().timeIntervalSince1970
         let horizonDays: Double = 90          // ska matcha StatsDataFetcher.maxCachedDays
-        let reloadWindowDays: Double = 2      // ska matcha StatsDataFetcher.reloadWindowDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
-        let recentCutoff = now - reloadWindowDays * 24 * 60 * 60
 
-        // 1. Behåll äldre historik från statsBGData inom [horizonCutoff, recentCutoff)
-        var merged: [ShareGlucoseData] = statsBGData.filter { $0.date >= horizonCutoff && $0.date < recentCutoff }
+        // 1. Trimma bort riktigt gammal historik (äldre än 90 dagar)
+        statsBGData.removeAll { $0.date < horizonCutoff }
+
+        // 2. Börja med befintlig historik inom fönstret
+        var merged: [ShareGlucoseData] = statsBGData
         var existing = Set(merged.map { Int($0.date) })
 
-        // 2. Lägg till senaste BG från live-grafen inom [recentCutoff, now]
+        // 3. Lägg till live-BG från huvudgrafen inom [horizonCutoff, now]
         for reading in bgData {
             let t = reading.date
             if t < horizonCutoff || t > now { continue }
-            if t < recentCutoff { continue } // äldre del hanteras av historikdelen ovan
 
             let key = Int(t)
             if !existing.contains(key) {
@@ -239,27 +235,19 @@ extension MainViewController {
         statsBGData = merged
     }
 
-    /// Synka statistikens behandlings-arrayer (bolus, SMB, kolhydrater, basal och BG-checks)
-    /// med de live-arrayer som används för graferna i huvudvyn.
-    /// Design:
-    ///  - Äldre historik (äldre än ~2 dygn) kommer från StatsDataFetcher (upp till 90 dagar).
-    ///  - Senaste ~2 dygnen hämtas från bolusData/smbData/carbData/basalData/bgCheckData
-    ///    och merge:as in utan dubbletter.
     func stats_syncTreatmentsFromLive() {
         let now = Date().timeIntervalSince1970
         let horizonDays: Double = 90          // ska matcha StatsDataFetcher.maxCachedDays
-        let reloadWindowDays: Double = 2      // ska matcha StatsDataFetcher.reloadWindowDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
-        let recentCutoff = now - reloadWindowDays * 24 * 60 * 60
 
         // MARK: Bolus
-        var mergedBolus = statsBolusData.filter { $0.date >= horizonCutoff && $0.date < recentCutoff }
+        statsBolusData.removeAll { $0.date < horizonCutoff }
+        var mergedBolus = statsBolusData
         var existingBolus = Set(mergedBolus.map { Int($0.date) })
 
         for b in bolusData {
             let t = b.date
             if t < horizonCutoff || t > now { continue }
-            if t < recentCutoff { continue }
 
             let key = Int(t)
             if !existingBolus.contains(key) {
@@ -271,13 +259,13 @@ extension MainViewController {
         statsBolusData = mergedBolus
 
         // MARK: SMB
-        var mergedSMB = statsSMBData.filter { $0.date >= horizonCutoff && $0.date < recentCutoff }
+        statsSMBData.removeAll { $0.date < horizonCutoff }
+        var mergedSMB = statsSMBData
         var existingSMB = Set(mergedSMB.map { Int($0.date) })
 
         for s in smbData {
             let t = s.date
             if t < horizonCutoff || t > now { continue }
-            if t < recentCutoff { continue }
 
             let key = Int(t)
             if !existingSMB.contains(key) {
@@ -289,13 +277,13 @@ extension MainViewController {
         statsSMBData = mergedSMB
 
         // MARK: Carbs
-        var mergedCarbs = statsCarbData.filter { $0.date >= horizonCutoff && $0.date < recentCutoff }
+        statsCarbData.removeAll { $0.date < horizonCutoff || $0.date > now }
+        var mergedCarbs = statsCarbData
         var existingCarbs = Set(mergedCarbs.map { Int($0.date) })
 
         for c in carbData {
             let t = c.date
             if t < horizonCutoff || t > now { continue }
-            if t < recentCutoff { continue }
 
             let key = Int(t)
             if !existingCarbs.contains(key) {
@@ -307,13 +295,13 @@ extension MainViewController {
         statsCarbData = mergedCarbs
 
         // MARK: Basal
-        var mergedBasal = statsBasalData.filter { $0.date >= horizonCutoff && $0.date < recentCutoff }
+        statsBasalData.removeAll { $0.date < horizonCutoff }
+        var mergedBasal = statsBasalData
         var existingBasal = Set(mergedBasal.map { Int($0.date) })
 
         for b in basalData {
             let t = b.date
             if t < horizonCutoff || t > now { continue }
-            if t < recentCutoff { continue }
 
             let key = Int(t)
             if !existingBasal.contains(key) {
@@ -325,13 +313,13 @@ extension MainViewController {
         statsBasalData = mergedBasal
 
         // MARK: BG Checks
-        var mergedBGChecks = statsBGCheckData.filter { $0 >= horizonCutoff && $0 < recentCutoff }
+        statsBGCheckData.removeAll { $0 < horizonCutoff }
+        var mergedBGChecks = statsBGCheckData
         var existingBGChecks = Set(mergedBGChecks.map { Int($0) })
 
         for check in bgCheckData {
             let t = check.date
             if t < horizonCutoff || t > now { continue }
-            if t < recentCutoff { continue }
 
             let key = Int(t)
             if !existingBGChecks.contains(key) {

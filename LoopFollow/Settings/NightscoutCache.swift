@@ -99,13 +99,15 @@ final class NightscoutCache {
 
         while day <= last {
             if let dayData = try? readDay(day) {
-                allSGV        += dayData.sgv
+                let normalizedSGV = normalizeAndDedupeSGV(dayData.sgv)
+                allSGV        += normalizedSGV
                 allTreatments += dayData.treatments
             } else if let gapHandler = gapHandler {
                 // Ask the app to fetch this missing day, await it, then retry read
                 await gapHandler(day)
                 if let dayData = try? readDay(day) {
-                    allSGV        += dayData.sgv
+                    let normalizedSGV = normalizeAndDedupeSGV(dayData.sgv)
+                    allSGV        += normalizedSGV
                     allTreatments += dayData.treatments
                 }
             }
@@ -141,6 +143,36 @@ final class NightscoutCache {
                 try? FileManager.default.removeItem(at: url)
             }
         }
+    }
+
+    /// Normalize SGV timestamps so they are always stored/handled in **seconds** since 1970
+    /// and deduplicate entries with the same timestamp (last one wins).
+    /// Some older cache files may have `date` in milliseconds; this helper converts those
+    /// on-the-fly when reading so that mixed second/ms data does not cause partial days
+    /// or dropped entries in statistics.
+    private static func normalizeAndDedupeSGV(_ sgv: [SGVJSON]) -> [SGVJSON] {
+        guard !sgv.isEmpty else { return [] }
+
+        var byTimestamp: [TimeInterval: Int] = [:]
+
+        for entry in sgv {
+            let raw = entry.date
+            // Heuristic: if the value is larger than ~year 2100 in seconds,
+            // assume it is stored in milliseconds and convert to seconds.
+            let seconds: TimeInterval
+            if raw > 4_000_000_000 { // ~2100-02-07 in seconds
+                seconds = raw / 1000.0
+            } else {
+                seconds = raw
+            }
+            byTimestamp[seconds] = entry.sgv
+        }
+
+        let normalized = byTimestamp.map { (ts, value) in
+            SGVJSON(date: ts, sgv: value)
+        }
+
+        return normalized.sorted { $0.date < $1.date }
     }
 
     // MARK: private -----------------------------------------------------------
