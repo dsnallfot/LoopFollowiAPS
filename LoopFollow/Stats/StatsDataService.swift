@@ -121,28 +121,37 @@ private class StatsCacheManager {
     }
 
     /// Spara aktuella stats-arrayer från MainViewController till disk (endast de senaste 90 dagarna).
+    ///
+    /// Viktigt:
+    ///  • Vi MERGAR alltid mot befintlig cache om den finns, så att en tillfällig 24h-fetch
+    ///    inte kan skriva över ett tidigare 30–90-dagarsfönster.
+    ///  • För treatments (bolus/SMB/kolhydrater/basal/BG-checks) behandlas de senaste 24 timmarna
+    ///    som en "sanningskälla" från Nightscout – vi slänger cache-data i det fönstret och ersätter
+    ///    med ny snapshot varje gång, för att fånga raderade/ändrade events.
     func saveFrom(mainVC: MainViewController) {
         let now = Date()
-        let cutoff = now.addingTimeInterval(-90 * 24 * 60 * 60).timeIntervalSince1970
+        let horizonCutoff = now.addingTimeInterval(-90 * 24 * 60 * 60).timeIntervalSince1970
+        let recentCutoff = now.addingTimeInterval(-24 * 60 * 60).timeIntervalSince1970
 
-        let bg = mainVC.statsBGData
-            .filter { $0.date >= cutoff }
+        // 1) Bygg upp "nya" arrayer från MainViewController (begränsade till 90 dagar bakåt)
+        let newBG = mainVC.statsBGData
+            .filter { $0.date >= horizonCutoff }
             .map { CachedBG(sgv: $0.sgv, date: $0.date, direction: $0.direction) }
 
-        let bgChecks = mainVC.statsBGCheckData
-            .filter { $0 >= cutoff }
+        let newBGChecks = mainVC.statsBGCheckData
+            .filter { $0 >= horizonCutoff }
             .map { CachedBGCheck(date: $0) }
 
-        let bolus = mainVC.statsBolusData
-            .filter { $0.date >= cutoff }
+        let newBolus = mainVC.statsBolusData
+            .filter { $0.date >= horizonCutoff }
             .map { CachedBolus(value: $0.value, date: $0.date, sgv: $0.sgv) }
 
-        let smb = mainVC.statsSMBData
-            .filter { $0.date >= cutoff }
+        let newSMB = mainVC.statsSMBData
+            .filter { $0.date >= horizonCutoff }
             .map { CachedBolus(value: $0.value, date: $0.date, sgv: $0.sgv) }
 
-        let carbs = mainVC.statsCarbData
-            .filter { $0.date >= cutoff }
+        let newCarbs = mainVC.statsCarbData
+            .filter { $0.date >= horizonCutoff }
             .map {
                 CachedCarb(
                     value: $0.value,
@@ -155,13 +164,13 @@ private class StatsCacheManager {
                 )
             }
 
-        let basal = mainVC.statsBasalData
-            .filter { $0.date >= cutoff }
+        let newBasal = mainVC.statsBasalData
+            .filter { $0.date >= horizonCutoff }
             .map { CachedBasal(basalRate: $0.basalRate, date: $0.date) }
 
-        // Skriv inte över en befintlig cachefil med en helt tom cache.
-        // Detta kan hända tidigt i appens livscykel innan statistikdatan hunnit fyllas upp.
-        if bg.isEmpty && bgChecks.isEmpty && bolus.isEmpty && smb.isEmpty && carbs.isEmpty && basal.isEmpty {
+        // Om ALL ny data är tom, spara inte – skriv inte över en ev. befintlig cache
+        // med en helt tom snapshot.
+        if newBG.isEmpty && newBGChecks.isEmpty && newBolus.isEmpty && newSMB.isEmpty && newCarbs.isEmpty && newBasal.isEmpty {
             LogManager.shared.log(
                 category: .analysis,
                 message: "StatsCacheManager - skipping save (all stats arrays are empty)",
@@ -170,14 +179,36 @@ private class StatsCacheManager {
             return
         }
 
+        // 2) Läs in befintlig cache om den finns, så vi kan MERGA 24h-fönster in i ett
+        // redan uppbyggt 30–90-dagarsfönster.
+        var existingCache: Cache?
+        do {
+            let data = try Data(contentsOf: cacheURL)
+            let decoder = JSONDecoder()
+            existingCache = try decoder.decode(Cache.self, from: data)
+        } catch {
+            existingCache = nil
+        }
+
+        // 3) Slå ihop gammal och ny data per timestamp.
+        //    • BG: klassisk merge, ny data vinner, behåll upp till 90 dagar.
+        //    • Treatments/BG-checks: behåll gammal historik äldre än 24h, men ersätt
+        //      allt inom de senaste 24h med ny snapshot.
+        let mergedBG = mergeBG(old: existingCache?.bg ?? [], new: newBG, horizonCutoff: horizonCutoff)
+        let mergedBGChecks = mergeBGChecks(old: existingCache?.bgChecks ?? [], new: newBGChecks, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
+        let mergedBolus = mergeBolus(old: existingCache?.bolus ?? [], new: newBolus, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
+        let mergedSMB = mergeBolus(old: existingCache?.smb ?? [], new: newSMB, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
+        let mergedCarbs = mergeCarbs(old: existingCache?.carbs ?? [], new: newCarbs, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
+        let mergedBasal = mergeBasal(old: existingCache?.basal ?? [], new: newBasal, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
+
         let cache = Cache(
             lastUpdated: now,
-            bg: bg,
-            bgChecks: bgChecks,
-            bolus: bolus,
-            smb: smb,
-            carbs: carbs,
-            basal: basal
+            bg: mergedBG,
+            bgChecks: mergedBGChecks,
+            bolus: mergedBolus,
+            smb: mergedSMB,
+            carbs: mergedCarbs,
+            basal: mergedBasal
         )
 
         do {
@@ -187,12 +218,115 @@ private class StatsCacheManager {
             try data.write(to: cacheURL, options: [.atomic])
             LogManager.shared.log(
                 category: .analysis,
-                message: "StatsCacheManager - cache saved: bg=\(bg.count), bgChecks=\(bgChecks.count), bolus=\(bolus.count), smb=\(smb.count), carbs=\(carbs.count), basal=\(basal.count)",
+                message: "StatsCacheManager - cache saved: bg=\(mergedBG.count), bgChecks=\(mergedBGChecks.count), bolus=\(mergedBolus.count), smb=\(mergedSMB.count), carbs=\(mergedCarbs.count), basal=\(mergedBasal.count)",
                 isDebug: true
             )
         } catch {
             LogManager.shared.log(category: .analysis, message: "StatsCacheManager - failed to save cache: \(error.localizedDescription)", isDebug: true)
         }
+    }
+
+    // MARK: - Merge helpers
+
+    /// Slår ihop BG från befintlig cache och ny snapshot. Ny data vinner på samma timestamp.
+    private func mergeBG(old: [CachedBG], new: [CachedBG], horizonCutoff: Double) -> [CachedBG] {
+        var dict: [Int: CachedBG] = [:]
+
+        // Behåll upp till 90 dagar från befintlig cache
+        for item in old where item.date >= horizonCutoff {
+            dict[Int(item.date)] = item
+        }
+        // Mergas in med ny data (vinner vid krock)
+        for item in new where item.date >= horizonCutoff {
+            dict[Int(item.date)] = item
+        }
+
+        return dict.values.sorted { $0.date < $1.date }
+    }
+
+    /// Slår ihop BG-kontroller från befintlig cache och ny snapshot.
+    /// Äldre än 24h: behåll cache + lägg till ev. nya.
+    /// Senaste 24h: byggs helt från ny snapshot.
+    private func mergeBGChecks(old: [CachedBGCheck], new: [CachedBGCheck], horizonCutoff: Double, recentCutoff: Double) -> [CachedBGCheck] {
+        var set: Set<Int> = []
+        var merged: [CachedBGCheck] = []
+
+        // Behåll bara äldre än 24h men inom 90-dagarsfönstret från cache
+        for item in old where item.date >= horizonCutoff && item.date < recentCutoff {
+            let key = Int(item.date)
+            if !set.contains(key) {
+                set.insert(key)
+                merged.append(item)
+            }
+        }
+
+        // Lägg till all ny data inom 90 dagar (inklusive senaste 24h)
+        for item in new where item.date >= horizonCutoff {
+            let key = Int(item.date)
+            if !set.contains(key) {
+                set.insert(key)
+                merged.append(item)
+            }
+        }
+
+        return merged.sorted { $0.date < $1.date }
+    }
+
+    /// Slår ihop bolus/SMB-data (samma struktur) från befintlig cache och ny snapshot.
+    /// Äldre än 24h: behåll cache + lägg till ev. nya.
+    /// Senaste 24h: byggs helt från ny snapshot.
+    private func mergeBolus(old: [CachedBolus], new: [CachedBolus], horizonCutoff: Double, recentCutoff: Double) -> [CachedBolus] {
+        var dict: [Int: CachedBolus] = [:]
+
+        // Behåll bara äldre än 24h men inom 90-dagarsfönstret från cache
+        for item in old where item.date >= horizonCutoff && item.date < recentCutoff {
+            dict[Int(item.date)] = item
+        }
+
+        // Lägg till all ny data inom 90 dagar (inklusive senaste 24h)
+        for item in new where item.date >= horizonCutoff {
+            dict[Int(item.date)] = item // ny data vinner vid krock
+        }
+
+        return dict.values.sorted { $0.date < $1.date }
+    }
+
+    /// Slår ihop kolhydratdata från befintlig cache och ny snapshot.
+    /// Äldre än 24h: behåll cache + lägg till ev. nya.
+    /// Senaste 24h: byggs helt från ny snapshot.
+    private func mergeCarbs(old: [CachedCarb], new: [CachedCarb], horizonCutoff: Double, recentCutoff: Double) -> [CachedCarb] {
+        var dict: [Int: CachedCarb] = [:]
+
+        // Behåll bara äldre än 24h men inom 90-dagarsfönstret från cache
+        for item in old where item.date >= horizonCutoff && item.date < recentCutoff {
+            dict[Int(item.date)] = item
+        }
+
+        // Lägg till all ny data inom 90 dagar (inklusive senaste 24h)
+        for item in new where item.date >= horizonCutoff {
+            dict[Int(item.date)] = item
+        }
+
+        return dict.values.sorted { $0.date < $1.date }
+    }
+
+    /// Slår ihop basaldata från befintlig cache och ny snapshot.
+    /// Äldre än 24h: behåll cache + lägg till ev. nya.
+    /// Senaste 24h: byggs helt från ny snapshot.
+    private func mergeBasal(old: [CachedBasal], new: [CachedBasal], horizonCutoff: Double, recentCutoff: Double) -> [CachedBasal] {
+        var dict: [Int: CachedBasal] = [:]
+
+        // Behåll bara äldre än 24h men inom 90-dagarsfönstret från cache
+        for item in old where item.date >= horizonCutoff && item.date < recentCutoff {
+            dict[Int(item.date)] = item
+        }
+
+        // Lägg till all ny data inom 90 dagar (inklusive senaste 24h)
+        for item in new where item.date >= horizonCutoff {
+            dict[Int(item.date)] = item
+        }
+
+        return dict.values.sorted { $0.date < $1.date }
     }
 }
 
