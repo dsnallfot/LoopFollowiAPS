@@ -43,23 +43,23 @@ struct DailyStatsView: View {
                 .navigationTitle("Daglig statistik")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        HStack {
-                            Button {
-                                if let url = viewModel.writeCSVToDisk() {
-                                    exportURL = url
-                                }
-                            } label: {
-                                Image(systemName: "square.and.arrow.up")
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            if let url = viewModel.writeCSVToDisk() {
+                                exportURL = url
                             }
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                        ToolbarItem(placement: .topBarLeading) {
                             Button {
                                 showDatabaseInfo = true
                             } label: {
-                                Image(systemName: "memorychip")
+                                Image(systemName: "internaldrive")
                             }
                         }
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    ToolbarItem(placement: .topBarTrailing) {
                         Button("Klar") {
                             dismiss()
                         }
@@ -182,58 +182,106 @@ struct DailyStatsView: View {
                 .font(.title2)
                 .padding(.top)
 
-            let dateTimeFormatter: DateFormatter = {
-                let df = DateFormatter()
-                df.dateFormat = "yyyy-MM-dd HH:mm"
-                return df
-            }()
+            if let mainVC = viewModel.mainViewController {
+                // Formatter for date/time rows
+                let dateTimeFormatter: DateFormatter = {
+                    let df = DateFormatter()
+                    df.dateFormat = "yyyy-MM-dd HH:mm"
+                    return df
+                }()
 
-                    if let mainVC = viewModel.mainViewController {
-                if let lastUpdated = mainVC.statsCacheLastUpdated {
-                    Text("Databas uppdaterad: \(dateTimeFormatter.string(from: lastUpdated))")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                } else {
-                    Text("Databas uppdaterad: —")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
+                // Precompute texts to keep the view tree simple
+                let lastUpdatedText: String = {
+                    if let lastUpdated = mainVC.statsCacheLastUpdated {
+                        return dateTimeFormatter.string(from: lastUpdated)
+                    } else {
+                        return "—"
+                    }
+                }()
+
+                let oldestTimestamp: TimeInterval? = {
+                    let oldestBG = mainVC.statsBGData.min(by: { $0.date < $1.date })?.date
+                    let oldestBolus = mainVC.statsBolusData.min(by: { $0.date < $1.date })?.date
+                    let oldestSMB = mainVC.statsSMBData.min(by: { $0.date < $1.date })?.date
+                    let oldestCarb = mainVC.statsCarbData.min(by: { $0.date < $1.date })?.date
+                    let oldestBasal = mainVC.statsBasalData.min(by: { $0.date < $1.date })?.date
+                    let oldestBGCheck = mainVC.statsBGCheckData.min()
+
+                    return [oldestBG, oldestBolus, oldestSMB, oldestCarb, oldestBasal, oldestBGCheck]
+                        .compactMap { $0 }
+                        .min()
+                }()
+
+                let oldestEntryText: String = {
+                    if let oldest = oldestTimestamp {
+                        let oldestDate = Date(timeIntervalSince1970: oldest)
+                        return dateTimeFormatter.string(from: oldestDate)
+                    } else {
+                        return "—"
+                    }
+                }()
+
+                // Metadata rows
+                Group {
+                    HStack {
+                        Text("Databas uppdaterad:")
+                        Spacer()
+                        Text(lastUpdatedText)
+                            .foregroundColor(.secondary)
+                    }
+
+                    HStack {
+                        Text("Äldsta post:")
+                        Spacer()
+                        Text(oldestEntryText)
+                            .foregroundColor(.secondary)
+                    }
                 }
-
-                let oldestBG = mainVC.statsBGData.min(by: { $0.date < $1.date })?.date
-                let oldestBolus = mainVC.statsBolusData.min(by: { $0.date < $1.date })?.date
-                let oldestSMB = mainVC.statsSMBData.min(by: { $0.date < $1.date })?.date
-                let oldestCarb = mainVC.statsCarbData.min(by: { $0.date < $1.date })?.date
-                let oldestBasal = mainVC.statsBasalData.min(by: { $0.date < $1.date })?.date
-                let oldestBGCheck = mainVC.statsBGCheckData.min()
-
-                let oldestTimestamp = [oldestBG, oldestBolus, oldestSMB, oldestCarb, oldestBasal, oldestBGCheck]
-                    .compactMap { $0 }
-                    .min()
-
-                if let oldest = oldestTimestamp {
-                    let oldestDate = Date(timeIntervalSince1970: oldest)
-                    Text("Äldsta post: \(dateTimeFormatter.string(from: oldestDate))")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                } else {
-                    Text("Äldsta post: —")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
+                .font(.footnote)
 
                 Divider()
+                    .padding(.vertical, 4)
 
-                Text("Blodsockervärden: \(mainVC.statsBGData.count) poster")
-                Text("Fingerstick: \(mainVC.statsBGCheckData.count) poster")
-                Text("Manuell bolus: \(mainVC.statsBolusData.count) poster")
-                Text("SMB: \(mainVC.statsSMBData.count) poster")
-                Text("Kolhydrater: \(mainVC.statsCarbData.count) poster")
-                Text("Temp basal: \(mainVC.statsBasalData.count) poster")
+                // Content rows with leading label and trailing value
+                Group {
+                    HStack {
+                        Text("Blodsockervärden:")
+                        Spacer()
+                        Text("\(mainVC.statsBGData.count)")
+                    }
+                    HStack {
+                        Text("Fingerstick:")
+                        Spacer()
+                        Text("\(mainVC.statsBGCheckData.count)")
+                    }
+                    HStack {
+                        Text("Manuell bolus:")
+                        Spacer()
+                        Text("\(mainVC.statsBolusData.count)")
+                    }
+                    HStack {
+                        Text("SMB:")
+                        Spacer()
+                        Text("\(mainVC.statsSMBData.count)")
+                    }
+                    HStack {
+                        Text("Kolhydrater:")
+                        Spacer()
+                        Text("\(mainVC.statsCarbData.count)")
+                    }
+                    HStack {
+                        Text("Temp basal:")
+                        Spacer()
+                        Text("\(mainVC.statsBasalData.count)")
+                    }
+                }
+                .font(.body)
             } else {
                 Text("Ingen data tillgänglig.")
             }
 
             Spacer()
+
             Button("Stäng") {
                 showDatabaseInfo = false
             }
