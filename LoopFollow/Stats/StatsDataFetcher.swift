@@ -55,8 +55,8 @@ class StatsDataFetcher {
                     let horizonCutoff = now - horizonDays * 24 * 60 * 60
                     let reloadCutoff = now - self.reloadWindowDays * 24 * 60 * 60
 
-                    // Behåll bara data inom [now - horizonDays, now - reloadWindowDays)
-                    mainVC.statsBGData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
+                    // Behåll bara data inom [now - horizonDays)
+                    mainVC.statsBGData.removeAll { $0.date < horizonCutoff }
 
                     let existingDates = Set(mainVC.statsBGData.map { Int($0.date) })
                     for reading in nsData2 {
@@ -141,8 +141,8 @@ class StatsDataFetcher {
             }
         }
 
-        // Behåll bara data inom [now - horizonDays, now - reloadWindowDays)
-        mainVC.statsBGCheckData.removeAll { $0 < horizonCutoff || $0 >= reloadCutoff }
+        // Behåll bara data inom [now - horizonDays)
+        mainVC.statsBGCheckData.removeAll { $0 < horizonCutoff }
 
         let existingDates = Set(mainVC.statsBGCheckData.map { Int($0) })
 
@@ -183,8 +183,8 @@ class StatsDataFetcher {
             }
         }
 
-        // Behåll bara data inom [now - horizonDays, now - reloadWindowDays)
-        mainVC.statsBolusData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
+        // Behåll bara data inom [now - horizonDays)
+        mainVC.statsBolusData.removeAll { $0.date < horizonCutoff }
 
         let existingDates = Set(mainVC.statsBolusData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -236,8 +236,8 @@ class StatsDataFetcher {
             }
         }
 
-        // Behåll bara data inom [now - horizonDays, now - reloadWindowDays)
-        mainVC.statsSMBData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
+        // Behåll bara data inom [now - horizonDays)
+        mainVC.statsSMBData.removeAll { $0.date < horizonCutoff }
 
         let existingDates = Set(mainVC.statsSMBData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -284,8 +284,8 @@ class StatsDataFetcher {
             }
         }
 
-        // Behåll bara data inom [now - horizonDays, now - reloadWindowDays), och aldrig framtida datapunkter
-        mainVC.statsCarbData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff || $0.date > now }
+        // Behåll bara data inom [now - horizonDays), och aldrig framtida datapunkter
+        mainVC.statsCarbData.removeAll { $0.date < horizonCutoff || $0.date > now }
 
         let existingDates = Set(mainVC.statsCarbData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -359,8 +359,8 @@ class StatsDataFetcher {
             }
         }
 
-        // Behåll bara data inom [now - horizonDays, now - reloadWindowDays)
-        mainVC.statsBasalData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
+        // Behåll bara data inom [now - horizonDays)
+        mainVC.statsBasalData.removeAll { $0.date < horizonCutoff }
 
         let existingDates = Set(mainVC.statsBasalData.map { Int($0.date) })
         var tempArray = basalEntries

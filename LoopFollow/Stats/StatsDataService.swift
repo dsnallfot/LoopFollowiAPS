@@ -416,6 +416,13 @@ class StatsDataService {
             .filter { $0.date >= cutoffTime && $0.date <= now }
             .min(by: { $0.date < $1.date })?.date
 
+        // Äldsta treatment-datum inom analysfönstret (bolus/kolhydrat/basal).
+        let oldestTreatmentInScope = min(
+            oldestBolus ?? .greatestFiniteMagnitude,
+            oldestCarb ?? .greatestFiniteMagnitude,
+            oldestBasal ?? .greatestFiniteMagnitude
+        )
+
         let bgDataCount = mainVC.statsBGData
             .filter { $0.date >= cutoffTime && $0.date <= now }
             .count
@@ -444,21 +451,25 @@ class StatsDataService {
 
         LogManager.shared.log(
             category: .analysis,
-            message: "StatsDataService - freshness BG: isStale=\(isBGStale), newestBG=\(String(describing: newestBG)); treatments: isStale=\(isTreatmentStale), newestTreatment=\(newestTreatment))",
+            message: "StatsDataService - freshness BG: isStale=\(isBGStale), newestBG=\(String(describing: newestBG)); treatments: isStale=\(isTreatmentStale), newestTreatment=\(newestTreatment), oldestTreatmentInScope=\(oldestTreatmentInScope), cutoffTime=\(cutoffTime))",
             isDebug: true
         )
 
         let minExpectedBGEntries = max(daysToAnalyze * 6, 12)
         let hasEnoughBGData = !isBGStale &&
-            bgDataCount >= minExpectedBGEntries &&
-            (oldestBG ?? now) <= cutoffTime + (24 * 60 * 60)
+            bgDataCount >= minExpectedBGEntries
 
         let minExpectedTreatmentEntries = max(daysToAnalyze, 1)
+
+        // Kräv att vi både har "färska" treatments OCH att den äldsta
+        // inom stats-fönstret faktiskt ligger ungefär vid cutoff eller tidigare.
+        // Annars har vi bara de sista dagarna, och saknar äldre historik.
+        let windowSlack: TimeInterval = 6 * 60 * 60 // tillåt t.ex. upp till 6h lucka från exakt cutoff
+        let coversFullWindow = oldestTreatmentInScope <= (cutoffTime + windowSlack)
+
         let hasEnoughTreatmentData = !isTreatmentStale &&
-            (bolusDataCount + carbDataCount + basalDataCount) >= minExpectedTreatmentEntries &&
-            (oldestBolus ?? now) <= cutoffTime + (24 * 60 * 60) &&
-            (oldestCarb ?? now) <= cutoffTime + (24 * 60 * 60) &&
-            (oldestBasal ?? now) <= cutoffTime + (24 * 60 * 60)
+            coversFullWindow &&
+            (bolusDataCount + carbDataCount + basalDataCount) >= minExpectedTreatmentEntries
 
         if !hasEnoughBGData {
             // Bootstrap med upp till 90 dagars data i cachen.
