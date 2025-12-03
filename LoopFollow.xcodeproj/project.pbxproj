@@ -689,19 +689,19 @@
 		650A60712EE0D17A00EF4C93 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				655B23062EDE2A610092DBDE /* PumpHistoryViewController.swift */,
 				655B23042EDE2A3F0092DBDE /* AddManualPumpViewController.swift */,
-				6582C4B62ED23B490047658C /* GlucoseView.swift */,
-				6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */,
-				6540979D2DB79FF600983772 /* MealAnalysisView.swift */,
-				65BFAF1D2DA6E8FB00947A66 /* SyncNewSensorView.swift */,
-				65EBBB522DA5526000212D5C /* TrioOrefView.swift */,
-				65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */,
 				6540EF952D7DD4C5008BC98D /* AddManualSensorNoteViewController.swift */,
-				6540EF932D7DCDD4008BC98D /* SensorHistoryViewController.swift */,
-				659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */,
+				6582C4B62ED23B490047658C /* GlucoseView.swift */,
+				6540979D2DB79FF600983772 /* MealAnalysisView.swift */,
 				654454D02D6E8ABE0015BC5E /* ProfileSchedulesView.swift */,
 				654454D22D6E8AD90015BC5E /* ProfileSchedulesViewModel.swift */,
+				655B23062EDE2A610092DBDE /* PumpHistoryViewController.swift */,
+				6540EF932D7DCDD4008BC98D /* SensorHistoryViewController.swift */,
+				6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */,
+				65BFAF1D2DA6E8FB00947A66 /* SyncNewSensorView.swift */,
+				659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */,
+				65EBBB522DA5526000212D5C /* TrioOrefView.swift */,
+				65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */,
 				654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */,
 				654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */,
 			);
@@ -721,6 +721,7 @@
 		650A60752EE0DE0D00EF4C93 /* StatsHelpers */ = {
 			isa = PBXGroup;
 			children = (
+				651C9D272ED5D22C0077D40A /* ChartContainerView.swift */,
 				6517B66B2ED72FFF003360A4 /* StatsBasalEngine.swift */,
 				651C9D2B2ED5D2560077D40A /* StatsDataFetcher.swift */,
 				651C9D2D2ED5D2680077D40A /* StatsDataService.swift */,
@@ -734,14 +735,13 @@
 			isa = PBXGroup;
 			children = (
 				650A60752EE0DE0D00EF4C93 /* StatsHelpers */,
-				650A60742EE0DDE600EF4C93 /* Daily Stats */,
 				651C9D442ED5D35D0077D40A /* AGP */,
+				650A60742EE0DDE600EF4C93 /* Daily Stats */,
 				651C9D3A2ED5D2F90077D40A /* GRI */,
 				651C9D2F2ED5D2850077D40A /* TIR */,
-				651C9D292ED5D23E0077D40A /* SimpleStatsViewModel.swift */,
-				651C9D272ED5D22C0077D40A /* ChartContainerView.swift */,
 				651C9D232ED5D1D00077D40A /* AggregatedStatsView.swift */,
 				651C9D252ED5D2100077D40A /* AggregatedStatsViewModel.swift */,
+				651C9D292ED5D23E0077D40A /* SimpleStatsViewModel.swift */,
 			);
 			path = Stats;
 			sourceTree = "<group>";
@@ -1258,29 +1258,29 @@
 		FC8DEEE32485D1680075863F /* LoopFollow */ = {
 			isa = PBXGroup;
 			children = (
-				651C9D222ED5D1CA0077D40A /* Stats */,
-				65304F7C2ED3A0D800B457AC /* Shortcuts */,
-				DD2C2E522D3C36A8006413A5 /* Dexcom */,
-				DD2C2E4D2D3B8ACF006413A5 /* Nightscout */,
-				DD9ED0C62D355225000D2A63 /* Log */,
-				DDEF503D2D32753A00999A5D /* Task */,
+				FC16A97624995FEE003D6245 /* Application */,
 				DDFF3D792D140F1800BF9D9E /* BackgroundRefresh */,
 				DD50C74D2D0828250057AE6F /* Contact */,
+				FC16A9782499657E003D6245 /* Controllers */,
+				DD2C2E522D3C36A8006413A5 /* Dexcom */,
+				DD98F54224BCEF190007425A /* Extensions */,
+				FCC688542489367300A0279D /* Helpers */,
 				DD5334252C61667700062F9D /* InfoDisplaySettings */,
-				DD0C0C6E2C4AFFB800DBADDF /* Remote */,
-				DD0C0C692C4852A100DBADDF /* Metric */,
 				DD13BC732C3FD60E0062313B /* InfoTable */,
-				FCC688702489A57C00A0279D /* Loop Follow.entitlements */,
-				FC8DEEE62485D1ED0075863F /* Info.plist */,
+				DD9ED0C62D355225000D2A63 /* Log */,
+				DD0C0C692C4852A100DBADDF /* Metric */,
+				DD2C2E4D2D3B8ACF006413A5 /* Nightscout */,
+				DD0C0C6E2C4AFFB800DBADDF /* Remote */,
 				FC7CE59A248D334B001F83B8 /* Resources */,
 				65BB9A402D43CA9C00FCFCA8 /* Settings */,
+				651C9D222ED5D1CA0077D40A /* Stats */,
+				65304F7C2ED3A0D800B457AC /* Shortcuts */,
+				FCC688512489363F00A0279D /* Storage */,
+				DDEF503D2D32753A00999A5D /* Task */,
 				650A60712EE0D17A00EF4C93 /* Views */,
 				FCC68871248A736700A0279D /* ViewControllers */,
-				DD98F54224BCEF190007425A /* Extensions */,
-				FC16A9782499657E003D6245 /* Controllers */,
-				FCC688542489367300A0279D /* Helpers */,
-				FCC688512489363F00A0279D /* Storage */,
-				FC16A97624995FEE003D6245 /* Application */,
+				FCC688702489A57C00A0279D /* Loop Follow.entitlements */,
+				FC8DEEE62485D1ED0075863F /* Info.plist */,
 			);
 			path = LoopFollow;
 			sourceTree = "<group>";
@@ -1356,14 +1356,14 @@
 		FCC68871248A736700A0279D /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
-				FC97881B2485969B00A7906C /* MainViewController.swift */,
-				FC97881D2485969B00A7906C /* NightScoutViewController.swift */,
-				FCD49B6B24AA536E007879DC /* DebugViewController.swift */,
-				FCFEECA1248857A600402A7F /* SettingsViewController.swift */,
 				FCC6884F248935D800A0279D /* AlarmViewController.swift */,
-				FC7CE59E248D8D23001F83B8 /* SnoozeViewController.swift */,
+				FCD49B6B24AA536E007879DC /* DebugViewController.swift */,
 				DDCF979524C1443C002C9752 /* GeneralSettingsViewController.swift */,
 				DDCF979724C1489C002C9752 /* GraphSettingsViewController.swift */,
+				FC97881B2485969B00A7906C /* MainViewController.swift */,
+				FC97881D2485969B00A7906C /* NightScoutViewController.swift */,
+				FCFEECA1248857A600402A7F /* SettingsViewController.swift */,
+				FC7CE59E248D8D23001F83B8 /* SnoozeViewController.swift */,
 				DDCF979924C14DB4002C9752 /* WatchSettingsViewController.swift */,
 			);
 			path = ViewControllers;
