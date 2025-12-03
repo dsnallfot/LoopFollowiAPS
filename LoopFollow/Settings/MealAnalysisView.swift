@@ -861,6 +861,48 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         }
         return row
     }
+    /// Normalizes and merges BG entries by timestamp, removes duplicates, and gap-fills 5‑min intervals.
+    private func normalizedMergedBG(existing: [BGEntry], new: [BGEntry]) -> [BGEntry] {
+        let cal = Calendar.current
+        var merged: [TimeInterval: BGEntry] = [:]
+
+        for e in existing {
+            merged[e.date.timeIntervalSince1970] = e
+        }
+        for e in new {
+            merged[e.date.timeIntervalSince1970] = e
+        }
+
+        // Sort
+        let sorted = merged.values.sorted { $0.date < $1.date }
+        guard !sorted.isEmpty else { return [] }
+
+        // Gap-fill 5‑min slots if >6min gaps
+        var out: [BGEntry] = []
+        out.reserveCapacity(sorted.count)
+
+        for i in 0..<sorted.count {
+            let curr = sorted[i]
+            out.append(curr)
+
+            if i < sorted.count - 1 {
+                let next = sorted[i+1]
+                let gap = next.date.timeIntervalSince(curr.date)
+                if gap > 360 {
+                    let missing = Int(floor((gap - 360)/300)) + 1
+                    if missing > 0 {
+                        for k in 1...missing {
+                            let d = curr.date.addingTimeInterval(Double(k)*300)
+                            let filler = BGEntry(date: d, mmol: curr.mmol)
+                            out.append(filler)
+                        }
+                    }
+                }
+            }
+        }
+        return out
+    }
+
     /// Laddar BG‑värden från NightscoutCache för det aktuella analysfönstret
     /// och merge:ar dem in i `bgEntries`. Detta gör att äldre måltider (även >10 dagar)
     /// får glukoskurva så länge de finns i 90‑dagarscachen.
@@ -869,31 +911,27 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
         let windowEnd   = endTime
 
         Task {
-            // NightscoutCache returnerar både sgv och treatments; här bryr vi oss bara om sgv.
-            let (sgvPoints, _) = await NightscoutCache.loadWindow(from: windowStart, to: windowEnd)
+            let cal = Calendar.current
+            // Use a ±12h buffer to avoid clipping SGVs just outside the visible window
+            // (e.g. when the window starts/ends near midnight), then trim locally.
+            let bufferedStart = cal.date(byAdding: .hour, value: -12, to: windowStart) ?? windowStart
+            let bufferedEnd   = cal.date(byAdding: .hour, value: 12, to: windowEnd)   ?? windowEnd
 
-            // Mappa cachepunkter till BGEntry i mmol/L.
-            // Antag att `sgv` är i mg/dL, samma faktor som i övriga appen.
+            // NightscoutCache returns both sgv and treatments; here we only care about sgv.
+            let (sgvPoints, _) = await NightscoutCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+
+            // Map cache points to BGEntry in mmol/L and clamp them back to [windowStart, windowEnd].
             let factor = 18.0182
             let cachedBG: [BGEntry] = sgvPoints.map { point in
                 let mmol = Double(point.sgv) / factor
                 return BGEntry(date: Date(timeIntervalSince1970: point.date), mmol: mmol)
             }
+            .filter { $0.date >= windowStart && $0.date <= windowEnd }
 
-            // Merge befintliga BG‑punkter (t.ex. från 24h‑fetchen) med cachepunkter.
-            // Nyckla på tidsstämpel för att undvika dubbletter.
-            var merged: [TimeInterval: BGEntry] = [:]
-            for entry in self.bgEntries {
-                merged[entry.date.timeIntervalSince1970] = entry
-            }
-            for entry in cachedBG {
-                merged[entry.date.timeIntervalSince1970] = entry
-            }
-
-            let mergedArray = Array(merged.values)
+            let merged = self.normalizedMergedBG(existing: self.bgEntries, new: cachedBG)
 
             await MainActor.run {
-                self.bgEntries = mergedArray
+                self.bgEntries = merged
                 self.refreshBGChart()
                 self.updateBGLabels()
             }
@@ -1269,10 +1307,8 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                 BGEntry(date: Date(timeIntervalSince1970: $0.date),
                         mmol: Double($0.sgv) / 18.0182)
             }
-            // Merge with existing entries without duplicates
-            let existingTimes = Set(self.bgEntries.map { $0.date.timeIntervalSince1970 })
-            self.bgEntries += newBG.filter { !existingTimes.contains($0.date.timeIntervalSince1970) }
-            self.bgEntries.sort { $0.date < $1.date }
+            let merged = self.normalizedMergedBG(existing: self.bgEntries, new: newBG)
+            self.bgEntries = merged
             
             // Update UI
             self.updateBGLabels()
@@ -1347,9 +1383,8 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
                 LogManager.shared.log(category: .analysis, message: "Cache ▸ existing bgEntries.count = \(self.bgEntries.count)", isDebug: true)
                 LogManager.shared.log(category: .analysis, message: "Cache ▸ extraBG.count = \(extraBG.count)", isDebug: true)
                 // BG merge
-                let existingBGTS = Set(self.bgEntries.map { $0.date.timeIntervalSince1970 })
-                self.bgEntries += extraBG.filter { !existingBGTS.contains($0.date.timeIntervalSince1970) }
-                self.bgEntries.sort { $0.date < $1.date }
+                let merged = self.normalizedMergedBG(existing: self.bgEntries, new: extraBG)
+                self.bgEntries = merged
                 LogManager.shared.log(category: .analysis, message: "Cache ▸ merged bgEntries.count = \(self.bgEntries.count)", isDebug: true)
 
                 // Event merge

@@ -252,13 +252,14 @@ extension MainViewController {
         
         // Process data for graph display.
         bgData.removeAll()
+        var sgvBatchForCache: [SGVJSON] = []
         
         for i in 0..<data.count {
             let dateString = data[data.count - 1 - i].date
             let readingTimestamp = data[data.count - 1 - i].date
             if readingTimestamp >= dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) {
                 let sgvValue = data[data.count - 1 - i].sgv
-                
+
                 // Skip outlier values (e.g. first reading of a new sensor might be abnormally high).
                 if sgvValue > 600 {
                     LogManager.shared.log(category: .nightscout,
@@ -266,9 +267,21 @@ extension MainViewController {
                                           isDebug: true)
                     continue
                 }
-                
+
                 let reading = ShareGlucoseData(sgv: sgvValue, date: readingTimestamp, direction: data[data.count - 1 - i].direction)
                 bgData.append(reading)
+                // Collect SGVs for NightscoutCache (seconds since 1970 already)
+                let sgvEntry = SGVJSON(date: reading.date, sgv: reading.sgv)
+                sgvBatchForCache.append(sgvEntry)
+            }
+        }
+
+        // Persist recent BG data into NightscoutCache on a background queue.
+        // This keeps the per‑day cache files in sync with live BG without extra nightly fetches.
+        if !sgvBatchForCache.isEmpty {
+            let batchCopy = sgvBatchForCache
+            DispatchQueue.global(qos: .utility).async {
+                NightscoutCache.mergeSGVBatch(batchCopy)
             }
         }
         

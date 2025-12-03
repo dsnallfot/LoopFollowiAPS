@@ -13,6 +13,9 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
 
     // MARK: - Glucose data (same source as MealAnalysisView)
     private var bgEntries: [BGEntry] = []
+    
+    // How many days back the backfill refresh should fetch
+    private let backfillDays = 30
 
     // Selected day for table
     private var selectedDate: Date = Date()
@@ -182,12 +185,23 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         datePicker.date = selectedDate
         datePicker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
 
+        // Debug: list cached day files whenever entering GlucoseView
+        NightscoutCache.debugListSegments()
+        print("NightscoutCache dir:", NightscoutCache.dir.path)
+
         // Initial load for today
         loadBG(for: selectedDate)
     }
 
     // MARK: - Navigation bar
     private func setupNavigationBar() {
+        let reload = UIBarButtonItem(
+                image: UIImage(systemName: "arrow.clockwise"),
+                style: .plain,
+                target: self,
+                action: #selector(refreshButtonTapped)
+            )
+        
         // Day-stepper chevrons (top-left)
         let back = UIBarButtonItem(
             image: UIImage(systemName: "chevron.left"),
@@ -201,7 +215,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
             target: self,
             action: #selector(nextDayTapped)
         )
-        navigationItem.leftBarButtonItems = [back, forward]
+        navigationItem.leftBarButtonItems = [reload, back, forward]
 
         // Optional close button to mirror other modal logs
         let done = UIBarButtonItem(
@@ -224,6 +238,43 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
 
     @objc private func doneTapped() {
         dismiss(animated: true, completion: nil)
+    }
+    
+    @objc private func refreshButtonTapped() {
+        showRefreshIndicator()
+        Task {
+            await backfillLastDays(backfillDays)
+            DispatchQueue.main.async {
+                self.loadBG(for: self.selectedDate)
+            }
+        }
+    }
+    
+    /// Fetches X days back from Nightscout and writes them into the cache.
+    /// Overwrites existing cached days only if needed.
+    private func backfillLastDays(_ days: Int) async {
+        let cal = Calendar.current
+        let now = Date()
+        let start = cal.date(byAdding: .day, value: -days, to: now)!
+
+        print("🔄 Backfilling \(days) days: \(start) → \(now)")
+
+        // 1) Hämta SGVs för fönstret och merg:a in i cachen
+        let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
+        if !sgvBatch.isEmpty {
+            NightscoutCache.mergeSGVBatch(sgvBatch)
+        }
+
+        // 2) Hämta treatments för samma fönster och upsert:a i cachen
+        let treatmentDicts = await NightscoutUtils.fetchTreatmentsWindow(from: start, to: now)
+        if !treatmentDicts.isEmpty {
+            for dict in treatmentDicts {
+                NightscoutCache.upsertTreatment(from: dict)
+            }
+            NightscoutCache.purgeOldFiles()
+        }
+
+        print("✅ Backfill completed.")
     }
 
     @objc private func toggleMissingOnly() {
@@ -310,6 +361,23 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
 
     // MARK: - Loading
 
+    /// Normalizes and merges BG entries by timestamp, removes duplicates, and sorts. No gap-fill.
+    private func normalizedMergedBG(existing: [BGEntry], new: [BGEntry]) -> [BGEntry] {
+        let cal = Calendar.current
+        var merged: [TimeInterval: BGEntry] = [:]
+
+        for e in existing {
+            merged[e.date.timeIntervalSince1970] = e
+        }
+        for e in new {
+            merged[e.date.timeIntervalSince1970] = e
+        }
+
+        // No gap‑fill in GlucoseView — only merge & sort
+        let sorted = merged.values.sorted { $0.date < $1.date }
+        return sorted
+    }
+
     /// Load BG for a calendar day. Uses live 24h fetch for today, otherwise uses NightscoutCache.
     private func loadBG(for date: Date) {
         let cal = Calendar.current
@@ -329,8 +397,8 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                     // Replace today-window entries, keep older cached ones
                     let startToday = cal.startOfDay(for: now)
                     self.bgEntries.removeAll { $0.date >= startToday }
-                    self.bgEntries.append(contentsOf: newBG)
-                    self.bgEntries.sort { $0.date < $1.date }
+                    let merged = self.normalizedMergedBG(existing: self.bgEntries, new: newBG)
+                    self.bgEntries = merged
                     self.tableView.reloadData()
                     self.updateStatsLabel()
                     self.hideRefreshIndicator()
@@ -344,17 +412,28 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         let end = cal.date(byAdding: .day, value: 1, to: start)!
 
         Task {
-            let (sgvJSON, _) = await NightscoutCache.loadWindow(from: start, to: end)
+            // Expand the cache window with a ±12h buffer to avoid missing SGVs
+            // that fall just outside the calendar-day boundaries (e.g. around midnight),
+            // then filter back to exactly [start, end) locally.
+            let bufferedStart = Calendar.current.date(byAdding: .hour, value: -12, to: start) ?? start
+            let bufferedEnd   = Calendar.current.date(byAdding: .hour, value: 12, to: end)   ?? end
+
+            let (sgvJSON, _) = await NightscoutCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+
             let cachedBG: [BGEntry] = sgvJSON.map {
-                BGEntry(date: Date(timeIntervalSince1970: $0.date),
-                        mmol: Double($0.sgv) / 18.0182)
+                BGEntry(
+                    date: Date(timeIntervalSince1970: $0.date),
+                    mmol: Double($0.sgv) / 18.0182
+                )
             }
+            // Keep only the entries that actually belong to the selected calendar day.
+            .filter { $0.date >= start && $0.date < end }
 
             DispatchQueue.main.async {
                 // Remove any existing entries inside that day and replace them
                 self.bgEntries.removeAll { $0.date >= start && $0.date < end }
-                self.bgEntries.append(contentsOf: cachedBG)
-                self.bgEntries.sort { $0.date < $1.date }
+                let merged = self.normalizedMergedBG(existing: self.bgEntries, new: cachedBG)
+                self.bgEntries = merged
                 self.tableView.reloadData()
                 self.updateStatsLabel()
                 self.hideRefreshIndicator()

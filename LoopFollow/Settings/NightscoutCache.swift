@@ -158,6 +158,61 @@ final class NightscoutCache {
         return d
     }()
 
+    /// Merge a batch of SGVJSON entries into the per‑day cache files.
+    /// - Note: Best‑effort only; errors are silently ignored.
+    static func mergeSGVBatch(_ batch: [SGVJSON]) {
+        guard !batch.isEmpty else { return }
+
+        let cal = Calendar.current
+
+        // Group incoming readings per calendar day (UTC/local calendar startOfDay)
+        var perDay: [Date: [SGVJSON]] = [:]
+        for s in batch {
+            let day = cal.startOfDay(for: Date(timeIntervalSince1970: s.date))
+            perDay[day, default: []].append(s)
+        }
+
+        for (day, newItems) in perDay {
+            do {
+                var payload: DayPayload
+                if let existing = try? readDay(day) {
+                    payload = existing
+                    // Remove any existing SGV with the same timestamp as in the new items
+                    let newTimestamps = Set(newItems.map { $0.date })
+                    payload.sgv.removeAll { newTimestamps.contains($0.date) }
+                    payload.sgv.append(contentsOf: newItems)
+                } else {
+                    payload = DayPayload(sgv: newItems, treatments: [])
+                }
+
+                // Keep SGVs sorted by time, oldest first
+                payload.sgv.sort { $0.date < $1.date }
+
+                try writeDay(date: day, sgv: payload.sgv, treatments: payload.treatments)
+            } catch {
+                // Cache is best‑effort only; ignore write errors.
+            }
+        }
+    }
+    
+    /// Debug: List all cached day files and their sizes.
+    static func debugListSegments() {
+        do {
+            let urls = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles])
+            print("📦 NightscoutCache — Cached segments:")
+            if urls.isEmpty {
+                print("   (no cached day files)")
+            }
+            for url in urls.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                let attrs = try? url.resourceValues(forKeys: [.fileSizeKey])
+                let size = attrs?.fileSize ?? 0
+                print("   • \(url.lastPathComponent) — \(size) bytes")
+            }
+        } catch {
+            print("❌ NightscoutCache.debugListSegments error:", error.localizedDescription)
+        }
+    }
+
     private static func fileURL(for date: Date) -> URL {
         let dayStr = isoFormatter.string(from: Calendar.current.startOfDay(for: date))
         return dir.appendingPathComponent(dayStr).appendingPathExtension("json")

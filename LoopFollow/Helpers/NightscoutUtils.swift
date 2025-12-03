@@ -242,6 +242,107 @@ class NightscoutUtils {
         }
         task.resume()
     }
+    
+    // MARK: - Window helpers for backfill (SGV + Treatments)
+
+    /// Fetch SGV readings from Nightscout entries API for an arbitrary time window
+    /// and convert them into lightweight `SGVJSON` structs (seconds since 1970).
+    static func fetchSGVWindow(from start: Date, to end: Date) async -> [SGVJSON] {
+        await withCheckedContinuation { continuation in
+            // Grov uppskattning: 12 värden per timme + liten buffert
+            let hours = max(1, Int(ceil(end.timeIntervalSince(start) / 3600)))
+            var params: [String: String] = [:]
+
+            let iso = ISO8601DateFormatter()
+            params["find[dateString][$gte]"] = iso.string(from: start)
+            params["find[dateString][$lte]"] = iso.string(from: end)
+            params["find[type][$ne]"] = "cal"
+            params["count"] = "\(hours * 12 + 12)"
+
+            executeRequest(eventType: .sgv, parameters: params) { (result: Result<[ShareGlucoseData], Error>) in
+                switch result {
+                case .success(let rawEntries):
+                    var seen = Set<TimeInterval>()
+                    var batch: [SGVJSON] = []
+
+                    let startSec = start.timeIntervalSince1970
+                    let endSec = end.timeIntervalSince1970
+
+                    for var e in rawEntries {
+                        // Nightscout returnerar normalt ms → normalisera till sekunder
+                        var ts = e.date
+                        if ts > 10_000_000_000 {    // enkel ms-guard
+                            ts /= 1000
+                        }
+                        ts.round()
+
+                        // Håll oss inom fönstret
+                        if ts < startSec || ts > endSec {
+                            continue
+                        }
+                        // Undvik dubletter på samma timestamp
+                        if seen.contains(ts) {
+                            continue
+                        }
+                        seen.insert(ts)
+
+                        batch.append(SGVJSON(date: ts, sgv: e.sgv))
+                    }
+
+                    continuation.resume(returning: batch)
+                case .failure(let error):
+                    LogManager.shared.log(
+                        category: .nightscout,
+                        message: "⚠️ fetchSGVWindow error: \(error.localizedDescription)",
+                        isDebug: true
+                    )
+                    continuation.resume(returning: [])
+                }
+            }
+        }
+    }
+
+    /// Fetch all treatments within the given window as raw Nightscout dictionaries.
+    /// Callers can then feed them into `NightscoutCache.upsertTreatment(from:)`.
+    static func fetchTreatmentsWindow(from start: Date, to end: Date) async -> [[String: Any]] {
+        await withCheckedContinuation { continuation in
+            let iso = ISO8601DateFormatter()
+            let startStr = iso.string(from: start)
+            let endStr = iso.string(from: end)
+
+            // Heuristiskt tak, rejält tilltaget för tät SMB/tempbasal
+            let estimatedCount = 20_000
+
+            let params: [String: String] = [
+                "find[created_at][$gte]": startStr,
+                "find[created_at][$lte]": endStr,
+                "count": "\(estimatedCount)"
+            ]
+
+            executeDynamicRequest(eventType: .treatments, parameters: params) { result in
+                switch result {
+                case .success(let payload):
+                    if let array = payload as? [[String: Any]] {
+                        continuation.resume(returning: array)
+                    } else {
+                        LogManager.shared.log(
+                            category: .nightscout,
+                            message: "⚠️ fetchTreatmentsWindow unexpected payload type",
+                            isDebug: true
+                        )
+                        continuation.resume(returning: [])
+                    }
+                case .failure(let error):
+                    LogManager.shared.log(
+                        category: .nightscout,
+                        message: "⚠️ fetchTreatmentsWindow error: \(error.localizedDescription)",
+                        isDebug: true
+                    )
+                    continuation.resume(returning: [])
+                }
+            }
+        }
+    }
 
     static func createURLRequest(url: String, token: String?, path: String) -> URLRequest? {
         var requestURLString = "\(url)\(path)"
