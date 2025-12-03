@@ -145,7 +145,7 @@ final class DailyStatsViewModel: ObservableObject {
             let bolusData = self.dataService.getBolusData(in: analysisInterval)
             let smbData = self.dataService.getSMBData(in: analysisInterval)
             let carbData = self.dataService.getCarbData(in: analysisInterval)
-            let dailyBasalStats = self.dataService.getDailyDeliveredBasal()
+            let dailyBasalStats = self.dataService.getDailyDeliveredBasal(in: analysisInterval)
 
             // 4. Bygg upp dictionarier per dag
             let basalPerDay: [Date: Double] = Dictionary(

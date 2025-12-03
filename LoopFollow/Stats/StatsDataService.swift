@@ -579,12 +579,14 @@ class StatsDataService {
     func getDailyDeliveredBasal(in interval: DateInterval) -> [DailyBasalStat] {
         guard let mainVC = mainViewController else { return [] }
 
+        let calendar = Calendar.current
         let startDate = interval.start
         let endDate = interval.end
+
         let cutoffTime = startDate.timeIntervalSince1970
         let endTime = endDate.timeIntervalSince1970
 
-        // Ta ut basalstege upp till endTime och inkludera sista punkt före start
+        // Ta ut basalstege upp till endTime och inkludera även sista punkt före startDate
         let allBasal = mainVC.statsBasalData
             .filter { $0.date <= endTime }
             .sorted { $0.date < $1.date }
@@ -605,14 +607,32 @@ class StatsDataService {
             )
         }
 
-        let sim = StatsBasalEngine.simulateDeliveredBasal(
-            events: events,
-            in: interval,
-            pulseSize: 0.05,
-            carryOverUndeliveredBasals: false
-        )
+        // Dela upp i kalenderdagar inom intervallet och simulera per dag.
+        var results: [DailyBasalStat] = []
 
-        return [DailyBasalStat(dayStart: startDate, totalUnits: sim.totalUnits)]
+        var currentDayStart = calendar.startOfDay(for: startDate)
+        let finalDayStart = calendar.startOfDay(for: endDate)
+
+        while currentDayStart <= finalDayStart {
+            guard let nextDayStart = calendar.date(byAdding: .day, value: 1, to: currentDayStart) else { break }
+
+            let intervalEnd = min(nextDayStart, endDate)
+            let dayInterval = DateInterval(start: currentDayStart, end: intervalEnd)
+
+            let sim = StatsBasalEngine.simulateDeliveredBasal(
+                events: events,
+                in: dayInterval,
+                pulseSize: 0.05,
+                carryOverUndeliveredBasals: false
+            )
+
+            results.append(DailyBasalStat(dayStart: currentDayStart,
+                                          totalUnits: sim.totalUnits))
+
+            currentDayStart = nextDayStart
+        }
+
+        return results
     }
     
     func getBGData() -> [ShareGlucoseData] {
