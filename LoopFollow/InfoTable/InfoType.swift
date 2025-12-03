@@ -9,7 +9,7 @@
 import Foundation
 
 enum InfoType: Int, CaseIterable {
-    case iob, cob, basal, override, battery, pump, sage, cage, recBolus, minMax, carbsToday, autosens, profile, target, isf, carbRatio, updated, tdd, iage, carbReq, af, smbRatio, pumpStatus, smbStatus, SMBUAMmin, autosensMinMax, maxSMB, overridePercentage, bgi, dev
+    case iob, cob, basal, override, battery, pump, sage, cage, recBolus, minMax, carbsToday, autosens, profile, target, isf, carbRatio, updated, tdd, iage, carbReq, af, smbRatio, pumpStatus, smbStatus, SMBUAMmin, autosensMinMax, maxSMB, overridePercentage, bgi, dev, totIob
 
     var name: String {
         switch self {
@@ -43,6 +43,7 @@ enum InfoType: Int, CaseIterable {
         case .overridePercentage: return "Profil procent"
         case .bgi: return "BGI (5m)"
         case .dev: return "Dev (30m)"
+        case .totIob: return "IOB + Basal IOB"
         }
     }
 

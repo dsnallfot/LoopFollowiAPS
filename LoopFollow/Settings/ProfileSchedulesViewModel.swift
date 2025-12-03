@@ -23,6 +23,7 @@ class ProfileSchedulesViewModel: ObservableObject {
     @Published var csfEntries: [ScheduleEntry] = []
     @Published var minCarbsEntries: [ScheduleEntry] = []
     @Published var smbEntries: [ScheduleEntry] = []
+    @Published var basalIOBEntries: [ScheduleEntry] = []
     
     private var minCarbImpact: Double = 8 // Default value, will be fetched
 
@@ -39,7 +40,34 @@ class ProfileSchedulesViewModel: ObservableObject {
                     
                     // Fetch and format basal schedule
                     self.basalEntries = self.calculateBasalSchedule(basalSchedule: profile.basalSchedule)
+                    
+                    // Efter att du satt self.basalEntries
+                    let basalIOBTimeValues = BasalIOBCalculator.computeBasalIOBTimeValues(
+                        from: profile.basalSchedule
+                    )
 
+                    // Om du vill visa det i din ProfileSchedulesView:
+                    var basalIOBEntries: [ScheduleEntry] = basalIOBTimeValues.map { entry in
+                        ScheduleEntry(
+                            time: self.formatTime(entry.timeAsSeconds),
+                            value: String(format: "%.2f", entry.value)
+                        )
+                    }
+
+                    // Lägg till medelvärde längst ned
+                    let totalIOB = basalIOBTimeValues.reduce(0.0) { partial, entry in
+                        partial + entry.value
+                    }
+                    let averageIOB = basalIOBTimeValues.isEmpty ? 0.0 : totalIOB / Double(basalIOBTimeValues.count)
+                    basalIOBEntries.append(
+                        ScheduleEntry(
+                            time: "Medel BasalIOB/h",
+                            value: String(format: "%.2f", averageIOB)
+                        )
+                    )
+
+                    self.basalIOBEntries = basalIOBEntries
+                    
                     // Fetch and format carb ratio schedule
                     self.carbRatioEntries = profile.carbRatioSchedule.map { entry in
                         ScheduleEntry(time: self.formatTime(entry.timeAsSeconds), value: "\(Int(entry.value))")
@@ -123,7 +151,7 @@ class ProfileSchedulesViewModel: ObservableObject {
             }
 
             // Append total daily basal row
-            basalEntries.append(ScheduleEntry(time: "Total Daily Basal", value: String(format: "%.2f", totalDailyBasal)))
+            basalEntries.append(ScheduleEntry(time: "Total Daglig Basal", value: String(format: "%.2f", totalDailyBasal)))
 
             return basalEntries
         }
@@ -201,7 +229,7 @@ class ProfileSchedulesViewModel: ObservableObject {
             }
 
             let averageMinCarbs = totalMinCarbs / 24
-            minCarbsEntries.append(ScheduleEntry(time: "Average", value: String(format: "%.0f", averageMinCarbs)))
+            minCarbsEntries.append(ScheduleEntry(time: "Medelvärde", value: String(format: "%.0f", averageMinCarbs)))
 
             return minCarbsEntries
         }

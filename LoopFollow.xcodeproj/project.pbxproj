@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */; };
 		6508DEBE2EDF1419009F84FE /* NightscoutDayReportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6508DEBD2EDF1416009F84FE /* NightscoutDayReportViewController.swift */; };
+		650A60732EE0D1C800EF4C93 /* BasalIOBCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650A60722EE0D1C300EF4C93 /* BasalIOBCalculator.swift */; };
 		650F09262EDADB6700EFCD98 /* StatsProfileBasalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650F09252EDADB6200EFCD98 /* StatsProfileBasalEngine.swift */; };
 		6517B66C2ED73011003360A4 /* StatsBasalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6517B66B2ED72FFF003360A4 /* StatsBasalEngine.swift */; };
 		651C9D242ED5D1DA0077D40A /* AggregatedStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651C9D232ED5D1D00077D40A /* AggregatedStatsView.swift */; };
@@ -338,6 +339,7 @@
 /* Begin PBXFileReference section */
 		059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.release.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.release.xcconfig"; sourceTree = "<group>"; };
 		6508DEBD2EDF1416009F84FE /* NightscoutDayReportViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutDayReportViewController.swift; sourceTree = "<group>"; };
+		650A60722EE0D1C300EF4C93 /* BasalIOBCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasalIOBCalculator.swift; sourceTree = "<group>"; };
 		650F09252EDADB6200EFCD98 /* StatsProfileBasalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsProfileBasalEngine.swift; sourceTree = "<group>"; };
 		6517B66B2ED72FFF003360A4 /* StatsBasalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsBasalEngine.swift; sourceTree = "<group>"; };
 		651C9D232ED5D1D00077D40A /* AggregatedStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AggregatedStatsView.swift; sourceTree = "<group>"; };
@@ -684,6 +686,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		650A60712EE0D17A00EF4C93 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		651C9D222ED5D1CA0077D40A /* Stats */ = {
 			isa = PBXGroup;
 			children = (
@@ -1249,6 +1258,7 @@
 				FC8DEEE62485D1ED0075863F /* Info.plist */,
 				FC7CE59A248D334B001F83B8 /* Resources */,
 				65BB9A402D43CA9C00FCFCA8 /* Settings */,
+				650A60712EE0D17A00EF4C93 /* Views */,
 				FCC68871248A736700A0279D /* ViewControllers */,
 				DD98F54224BCEF190007425A /* Extensions */,
 				FC16A9782499657E003D6245 /* Controllers */,
@@ -1303,6 +1313,7 @@
 		FCC688542489367300A0279D /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
+				650A60722EE0D1C300EF4C93 /* BasalIOBCalculator.swift */,
 				DDF6999C2C5AAA4C0058A8D9 /* Views */,
 				FCC6886E2489A53800A0279D /* AppConstants.swift */,
 				FCC6886A24898FD800A0279D /* ObservationToken.swift */,
@@ -1701,6 +1712,7 @@
 				FC16A97F249969E2003D6245 /* Graphs.swift in Sources */,
 				651C9D422ED5D33B0077D40A /* GRIViewModel.swift in Sources */,
 				FC8589BF252B54F500C8FC73 /* Mobileprovision.swift in Sources */,
+				650A60732EE0D1C800EF4C93 /* BasalIOBCalculator.swift in Sources */,
 				DD4878052C7B2C970048F05C /* Storage.swift in Sources */,
 				651C9D352ED5D2C30077D40A /* TIRGraphView.swift in Sources */,
 				DD493AE12ACF22FE009A6922 /* Profile.swift in Sources */,

@@ -67,6 +67,15 @@ struct ProfileSchedulesView: View {
     
     var multiChartData: [(data: [ChartDataEntry], label: String)] {
         switch selectedSection {
+        case .basal:
+            let basalData = extractChartData(from: viewModel.basalEntries, skipLast: true)
+            let basalIOBData = extractChartData(from: viewModel.basalIOBEntries, skipLast: true)
+
+            return [
+                (data: basalData, label: "Basal"),
+                (data: basalIOBData, label: "Basal IOB")
+            ]
+
         case .smb:
             let smbValues = viewModel.smbEntries.compactMap { entry -> (x: Double, smb: Double, uam: Double)? in
                 guard let hour = Double(entry.time.prefix(2)) else { return nil }
@@ -154,7 +163,12 @@ struct ProfileSchedulesView: View {
                                 scheduleRow(entry, isBold: entry.time == "Total daglig basal")
                             }
                         }
+                    Section(header: Text("Basal IOB (E aktiv/h)")) {
+                        ForEach(viewModel.basalIOBEntries) { entry in
+                            scheduleRow(entry, isBold: entry.time == "Medel Basal IOB/h")
+                        }
                     }
+                }
                     
                     if selectedSection == .cr {
                         Section(header: Text("Insulinkvoter CR (g/E)")) {

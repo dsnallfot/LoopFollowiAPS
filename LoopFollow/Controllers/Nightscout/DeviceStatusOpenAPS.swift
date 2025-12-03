@@ -237,13 +237,33 @@ extension MainViewController {
                 sharedCRValue = String(format: "%.1f", profileCR)
             }
 
-            // IOB
-            if let iobMetric = InsulinMetric(from: lastLoopRecord["iob"], key: "iob") {
-                infoManager.updateInfoData(type: .iob, value: iobMetric, unit: "E")
-                latestIOB = iobMetric
-                // Convert `latestIOB` to a string
-                sharedLatestIOB = String(format: "%.2f E", latestIOB?.value ?? 0.00)
-            }
+        // IOB
+        if let iobMetric = InsulinMetric(from: lastLoopRecord["iob"], key: "iob") {
+            // Klassisk Loop/OpenAPS-IOB (dvs över profilbasal)
+            infoManager.updateInfoData(type: .iob, value: iobMetric, unit: "E")
+            latestIOB = iobMetric
+            sharedLatestIOB = String(format: "%.2f E", latestIOB?.value ?? 0.00)
+
+            // Beräkna teoretisk basal-IOB för nuvarande klockslag
+            let profile = ProfileManager.shared
+            let basalIOBNow = BasalIOBCalculator.basalIOBNow(from: profile.basalSchedule)
+
+            // Total IOB = Basal IOB + Loop/OpenAPS IOB
+            let loopIOBValue = iobMetric.value
+            let totalIOBValue = loopIOBValue + basalIOBNow
+            let totalIOBString = String(format: "%.2f", totalIOBValue)
+
+            infoManager.updateInfoData(type: .totIob, value: totalIOBString, unit: "E")
+
+            LogManager.shared.log(
+                category: .deviceStatus,
+                message: String(
+                    format: "Total IOB updated: LoopIOB=%.2f, BasalIOB=%.2f, Total=%.2f",
+                    loopIOBValue, basalIOBNow, totalIOBValue
+                ),
+                isDebug: true
+            )
+        }
 
             // COB
             if let cobMetric = CarbMetric(from: enactedOrSuggested, key: "COB") {
