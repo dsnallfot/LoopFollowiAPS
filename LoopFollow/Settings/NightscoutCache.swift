@@ -256,6 +256,41 @@ final class NightscoutCache {
         return try JSONDecoder().decode(DayPayload.self, from: data)
     }
     
+    /// Refresh cached treatments within a time window, replacing treatments in that window with the given entries.
+    static func refreshTreatmentsWindow(from start: Date, to end: Date, entries: [[String: Any]]) {
+        let treatments = entries.compactMap { TreatmentJSON(dict: $0) }
+            .filter { $0.created_at >= start && $0.created_at <= end }
+
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: treatments) { calendar.startOfDay(for: $0.created_at) }
+
+        var day = calendar.startOfDay(for: start)
+        let lastDay = calendar.startOfDay(for: end)
+
+        while day <= lastDay {
+            do {
+                var payload = (try? readDay(day)) ?? DayPayload(sgv: [], treatments: [])
+
+                // Remove treatments in the payload that lie between start and end inclusive
+                payload.treatments.removeAll { $0.created_at >= start && $0.created_at <= end }
+
+                if let incoming = grouped[day] {
+                    let incomingIDs = Set(incoming.map { $0._id })
+                    // Remove any existing treatments with the same _id as incoming
+                    payload.treatments.removeAll { incomingIDs.contains($0._id) }
+                    payload.treatments.append(contentsOf: incoming)
+                    payload.treatments.sort { $0.created_at < $1.created_at }
+                }
+
+                try writeDay(date: day, sgv: payload.sgv, treatments: payload.treatments)
+            } catch {
+                // Silently ignore errors
+            }
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = nextDay
+        }
+    }
+    
     /// Insert or replace a single treatment in the cache based on its Nightscout dictionary.
     /// If the day file exists, the treatment with the same _id is replaced; otherwise a new day file is created.
     static func upsertTreatment(from dict: [String: Any]) {

@@ -41,11 +41,20 @@ extension MainViewController {
                     // Detta gör att TreatmentsTableView (och andra vyer som läser via NightscoutCache)
                     // får löpande uppdaterade 90-dagarsfiler utan extra nattliga fetchar.
                     DispatchQueue.global(qos: .utility).async {
-                        for entry in entries {
-                            NightscoutCache.upsertTreatment(from: entry as [String: Any])
+                        if let startDate = NightscoutUtils.parseDate(startTimeString),
+                           let endDate = NightscoutUtils.parseDate(currentTimeString) {
+                            NightscoutCache.refreshTreatmentsWindow(
+                                from: startDate,
+                                to: endDate,
+                                entries: entries.map { $0 as [String: Any] }
+                            )
+                            NightscoutCache.purgeOldFiles()
+                        } else {
+                            for entry in entries {
+                                NightscoutCache.upsertTreatment(from: entry as [String: Any])
+                            }
+                            NightscoutCache.purgeOldFiles()
                         }
-                        // Rensa gamla filer efter att vi lagt till nya entries (best-effort).
-                        NightscoutCache.purgeOldFiles()
                     }
                 } else {
                     LogManager.shared.log(category: .nightscout, message: "WebLoadNSTreatments, Unexpected data structure")
