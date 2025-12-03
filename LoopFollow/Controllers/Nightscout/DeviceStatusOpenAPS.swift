@@ -418,28 +418,53 @@ extension MainViewController {
         // Insulin Required
         if let insulinReqMetric = InsulinMetric(from: enactedOrSuggested, key: "insulinReq") {
             let unitForInfo = insulinReqMetric.value > 0 ? "E 🔵" : "E"
+            if insulinReqMetric.value > 0 {
+                infoManager.setPriority(true, for: .recBolus)
+            }
+            else {
+                infoManager.setPriority(false, for: .recBolus)
+            }
             infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: unitForInfo)
             UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
             sharedLatestInsulinReq = String(format: "%.2f E", insulinReqMetric.value)
         } else {
             UserDefaultsRepository.deviceRecBolus.value = 0
             sharedLatestInsulinReq = "0 E"
+            infoManager.setPriority(false, for: .recBolus)
         }
         
         // Daniel: Carbs Required
         if let carbsReq = enactedOrSuggested["carbsReq"] as? Double {
-            let latestCarbReq = String(format: "%.0f", carbsReq)
-            let unitForInfo = carbsReq > 0 ? "g 🟡" : "g"
+            let adjustedCarbs = carbsReq * 0.5                                   // 👈 multiplikation
+            let latestCarbReq = String(format: "%.0f", adjustedCarbs)            // avrundat
+            let unitForInfo = adjustedCarbs > 0 ? "g 🟡" : "g"
+            if adjustedCarbs > 0 {
+                infoManager.setPriority(true, for: .carbReq)
+            }
+            else {
+                infoManager.setPriority(false, for: .carbReq)
+            }
+
             infoManager.updateInfoData(type: .carbReq, value: latestCarbReq, unit: unitForInfo)
             sharedLatestCarbReq = "\(latestCarbReq) g"
-            
-            LogManager.shared.log(category: .deviceStatus, message: "Carbs Required updated: \(latestCarbReq)", isDebug: true)
+
+            LogManager.shared.log(
+                category: .deviceStatus,
+                message: "Carbs Required updated: original=\(carbsReq), adjusted=\(latestCarbReq)",
+                isDebug: true
+            )
+
         } else {
             let defaultCarbReq = "0"
             infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq, unit: "g")
+            infoManager.setPriority(false, for: .carbReq)
             sharedLatestCarbReq = "\(defaultCarbReq) g"
-            
-            LogManager.shared.log(category: .deviceStatus, message: "Carbs Required not available, using default: \(defaultCarbReq)", isDebug: true)
+
+            LogManager.shared.log(
+                category: .deviceStatus,
+                message: "Carbs Required not available, using default: \(defaultCarbReq)",
+                isDebug: true
+            )
         }
         
         // Autosens
