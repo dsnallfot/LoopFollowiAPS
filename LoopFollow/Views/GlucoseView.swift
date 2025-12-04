@@ -532,14 +532,16 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     // MARK: - Trio Decision Popup for BG Points
 
     /// Hämtar Trio-beslutsreason för en BG-timestamp och visar som alert.
-    private func showTrioDecisionAlert(for timestamp: TimeInterval) {
-        // `timestamp` kommer från entry.date.timeIntervalSince1970
+    private func showTrioDecisionAlert(for timestamp: TimeInterval, onDismiss: @escaping () -> Void) {
         let bgDate = Date(timeIntervalSince1970: timestamp)
-        // +180s-offset pga eftersläpning device status vs bg-värden
         let adjustedTimestamp = bgDate.addingTimeInterval(180)
 
         NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: adjustedTimestamp) { [weak self] result in
             guard let self = self else { return }
+
+            let handler = { (_: UIAlertAction) in
+                onDismiss()
+            }
 
             switch result {
             case .success(let reason):
@@ -549,7 +551,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                     message: formattedReason,
                     preferredStyle: .alert
                 )
-                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: handler))
                 self.present(alert, animated: true, completion: nil)
 
             case .failure(let error):
@@ -558,7 +560,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                     message: error.localizedDescription,
                     preferredStyle: .alert
                 )
-                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: handler))
                 self.present(alert, animated: true, completion: nil)
             }
         }
@@ -661,7 +663,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         }
 
         cell.accessoryType = .none
-        cell.selectionStyle = .none
+        cell.selectionStyle = .default
         return cell
     }
 
@@ -674,12 +676,16 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         let row = filteredRows[indexPath.row]
         switch row {
         case .glucose(let entry):
-            // Använd BG-entryns timestamp för Trio-popupen
             let timestamp = entry.date.timeIntervalSince1970
-            showTrioDecisionAlert(for: timestamp)
+            showTrioDecisionAlert(for: timestamp) {
+                DispatchQueue.main.async {
+                    tableView.deselectRow(at: indexPath, animated: true)
+                }
+            }
         case .missing:
-            // Ingen Trio-popup för saknade värden
-            break
+            DispatchQueue.main.async {
+                tableView.deselectRow(at: indexPath, animated: true)
+            }
         }
     }
 }
