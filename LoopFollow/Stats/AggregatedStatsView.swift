@@ -162,7 +162,8 @@ struct AggregatedStatsView: View {
                     DailyStatsView(
                         viewModel: DailyStatsViewModel(
                             dataService: viewModel.dataService,
-                            daysBack: 90
+                            daysBack: 90,
+                            todayTDDOverride: selectedPeriod == 0 ? viewModel.simpleStats.totalDailyDose : nil
                         )
                     )
                 } else {

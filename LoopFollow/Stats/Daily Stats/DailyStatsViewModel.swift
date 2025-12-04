@@ -24,6 +24,7 @@ struct DailyStatRow: Identifiable {
 
 final class DailyStatsViewModel: ObservableObject {
     private let dataService: StatsDataService
+    private let todayTDDOverride: Double?
 
         var mainViewController: MainViewController? {
             dataService.mainViewController
@@ -94,8 +95,9 @@ final class DailyStatsViewModel: ObservableObject {
 
     private let daysBack: Int
 
-    init(dataService: StatsDataService, daysBack: Int = 90) {
+    init(dataService: StatsDataService, daysBack: Int = 90, todayTDDOverride: Double? = nil) {
         self.dataService = dataService
+        self.todayTDDOverride = todayTDDOverride
         self.daysBack = daysBack
     }
 
@@ -257,7 +259,13 @@ final class DailyStatsViewModel: ObservableObject {
                 let basalDelivered = basalPerDay[dayStart] ?? 0.0
 
                 let insulinTDD = (manualBolus + smb + basalDelivered)
-                let insulinTDDValue: Double? = insulinTDD > 0 ? insulinTDD : nil
+                var insulinTDDValue: Double? = insulinTDD > 0 ? insulinTDD : nil
+
+                // För dagens datum kan vi använda samma TDD-beräkning som i AggregatedStatsView
+                // (SimpleStatsViewModel.totalDailyDose), om ett override-värde har skickats in.
+                if calendar.isDateInToday(dayStart), let override = self.todayTDDOverride {
+                    insulinTDDValue = override
+                }
 
                 let row = DailyStatRow(
                     date: dayStart,
