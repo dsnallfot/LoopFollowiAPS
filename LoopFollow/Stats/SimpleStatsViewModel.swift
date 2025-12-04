@@ -221,6 +221,57 @@ class SimpleStatsViewModel: ObservableObject {
 
         // Fingerstick (BG Check) – count of BG Check treatments per dag
         let bgCheckDates = dataService.getBGCheckDates()
+
+        if !bgCheckDates.isEmpty {
+            let daysInPeriod: Double
+            if dataService.isTodayOnly {
+                // När vi är i “Idag”-läge: räkna per dag (dvs 1 dag)
+                daysInPeriod = 1.0
+            } else {
+                // Övriga perioder: 1, 7, 14, 30, 90 dagar
+                daysInPeriod = Double(max(dataService.daysToAnalyze, 1))
+            }
+
+            avgBGCheck = daysInPeriod > 0 ? Double(bgCheckDates.count) / daysInPeriod : nil
+        } else {
+            avgBGCheck = nil
+        }
+        
+        // Hypo-behandlingar (Dextro): foodType innehåller minst en "🍬"
+        let lowTreatmentCarbEntries = carbData
+            .filter { ($0.foodType ?? "").contains("🍬") }
+
+        let lowTreatmentDates = lowTreatmentCarbEntries
+            .map { $0.date }
+            .filter { $0 >= cutoffTime && $0 <= now }
+
+        if !lowTreatmentDates.isEmpty {
+            // Medel per dag i hela analysfönstret (inte bara dagar med Dextro)
+            let daysInPeriod: Double
+            if dataService.isTodayOnly {
+                daysInPeriod = 1.0
+            } else {
+                daysInPeriod = Double(max(dataService.daysToAnalyze, 1))
+            }
+
+            // Antal Dextro-tillfällen per dag
+            avgLowTreatments = Double(lowTreatmentDates.count) / daysInPeriod
+
+            // Total mängd Dextro (g) i perioden, baserat på carb-värdet
+            let totalLowTreatmentCarbsInPeriod = lowTreatmentCarbEntries
+                .filter { $0.date >= cutoffTime && $0.date <= now }
+                .reduce(0.0) { $0 + $1.value }
+
+            // g Dextro per dag
+            avgLowTreatmentAmount = totalLowTreatmentCarbsInPeriod / daysInPeriod
+        } else {
+            avgLowTreatments = nil
+            avgLowTreatmentAmount = nil
+        }
+        
+        /*
+        // Fingerstick (BG Check) – count of BG Check treatments per dag
+        let bgCheckDates = dataService.getBGCheckDates()
         if !bgCheckDates.isEmpty {
             let actualDaysWithBGChecks = calculateActualDaysCovered(
                 dates: bgCheckDates,
@@ -234,6 +285,7 @@ class SimpleStatsViewModel: ObservableObject {
         } else {
             avgBGCheck = nil
         }
+        
 
         // Hypo-behandlingar (Dextro): foodType innehåller minst en "🍬"
         let lowTreatmentCarbEntries = carbData
@@ -268,6 +320,7 @@ class SimpleStatsViewModel: ObservableObject {
             avgLowTreatments = nil
             avgLowTreatmentAmount = nil
         }
+         */
 
         let dailyBasalStats = dataService.getDailyDeliveredBasal()
 
@@ -455,6 +508,62 @@ class SimpleStatsViewModel: ObservableObject {
             prevAvgCarbs = prevAvgCarbsPerDay
             prevAvgFPUCarbs = prevAvgFPUPerDay
 
+            // Fingerstick / BG Check – trendberäkning
+            let prevBGChecks = dataService.getBGCheckDates(in: prevInterval)
+
+            let prevDaysInPeriod: Double
+            if dataService.isTodayOnly {
+                prevDaysInPeriod = 1.0
+            } else {
+                prevDaysInPeriod = Double(max(dataService.daysToAnalyze, 1))
+            }
+
+            let prevAvgBGChecksPerDay = prevDaysInPeriod > 0
+                ? Double(prevBGChecks.count) / prevDaysInPeriod
+                : nil
+
+            avgBGCheckTrend = StatsTrendCalculator.arrow(
+                current: avgBGCheck,
+                previous: prevAvgBGChecksPerDay
+            )
+
+            prevAvgBGCheck = prevAvgBGChecksPerDay
+            
+            // Hypo-behandlingar (Dextro) – föregående period
+            let prevLowTreatmentEntries = prevCarbsData.filter { ($0.foodType ?? "").contains("🍬") }
+            let prevLowTreatmentCount = prevLowTreatmentEntries.count
+            let prevLowTreatmentCarbs = prevLowTreatmentEntries.reduce(0.0) { $0 + $1.value }
+
+            // Samma dagar-logik som för nuvarande period
+            let prevDexDaysInPeriod: Double
+            if dataService.isTodayOnly {
+                prevDexDaysInPeriod = 1.0
+            } else {
+                prevDexDaysInPeriod = Double(max(dataService.daysToAnalyze, 1))
+            }
+
+            let prevAvgLowTreatmentsPerDay = prevDexDaysInPeriod > 0
+                ? Double(prevLowTreatmentCount) / prevDexDaysInPeriod
+                : 0
+
+            let prevAvgLowTreatmentAmountPerDay = prevDexDaysInPeriod > 0
+                ? prevLowTreatmentCarbs / prevDexDaysInPeriod
+                : 0
+
+            avgLowTreatmentsTrend = StatsTrendCalculator.arrow(
+                current: avgLowTreatments,
+                previous: prevAvgLowTreatmentsPerDay
+            )
+
+            avgLowTreatmentAmountTrend = StatsTrendCalculator.arrow(
+                current: avgLowTreatmentAmount,
+                previous: prevAvgLowTreatmentAmountPerDay
+            )
+
+            prevAvgLowTreatments = prevAvgLowTreatmentsPerDay
+            prevAvgLowTreatmentAmount = prevAvgLowTreatmentAmountPerDay
+            
+            /*
             // Fingerstick / BG Check
             let prevBGChecks = dataService.getBGCheckDates(in: prevInterval)
             let prevAvgBGChecksPerDay = Double(prevBGChecks.count) / periodDays
@@ -475,7 +584,8 @@ class SimpleStatsViewModel: ObservableObject {
             
             prevAvgLowTreatments = prevAvgLowTreatmentsPerDay
             prevAvgLowTreatmentAmount = prevAvgLowTreatmentAmountPerDay
-
+             */
+            
             // Medel bolus (manuell + SMB) + uppdelning
             let prevAvgBolusPerDay = prevTotalBolus / periodDays
             avgBolusTrend = StatsTrendCalculator.arrow(current: avgBolus, previous: prevAvgBolusPerDay)
