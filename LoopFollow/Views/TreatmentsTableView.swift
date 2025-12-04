@@ -375,12 +375,21 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     // MARK: - Refresh Button Action
     
     @objc private func refreshButtonTapped() {
+        // Trigger the same global refresh logic used in MainViewController
+        NotificationCenter.default.post(name: NSNotification.Name("refresh"), object: nil)
+
+        // Show local loading indicator
+        showRefreshIndicator()
+
         // Reset picker to today
         selectedDate = Date()
         datePicker.setDate(selectedDate, animated: true)
-        // Refresh treatments for today
-        showRefreshIndicator()
-        loadTreatments(for: selectedDate)
+
+        // Reload treatments after refresh has been triggered
+        // (MainViewController will refresh Nightscout data; then we reload from cache)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.loadTreatments(for: self.selectedDate)
+        }
     }
     
     private func showRefreshIndicator() {

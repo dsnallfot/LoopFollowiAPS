@@ -15,7 +15,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     private var bgEntries: [BGEntry] = []
     
     // How many days back the backfill refresh should fetch
-    private let backfillDays = 14
+    private let backfillDays = 7
 
     // Selected day for table
     private var selectedDate: Date = Date()
@@ -166,7 +166,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Glukoslogg"
+        title = "BG logg"
         view.backgroundColor = .systemBackground
 
         setupNavigationBar()
@@ -194,13 +194,16 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     }
 
     // MARK: - Navigation bar
+    private var reloadButton: UIBarButtonItem?
+    private var reloadIndicator: UIActivityIndicatorView?
     private func setupNavigationBar() {
         let reload = UIBarButtonItem(
-                image: UIImage(systemName: "arrow.clockwise"),
-                style: .plain,
-                target: self,
-                action: #selector(refreshButtonTapped)
-            )
+            image: UIImage(systemName: "arrow.clockwise"),
+            style: .plain,
+            target: self,
+            action: #selector(refreshButtonTapped)
+        )
+        self.reloadButton = reload
         
         // Day-stepper chevrons (top-left)
         let back = UIBarButtonItem(
@@ -442,17 +445,37 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     }
 
     private func showRefreshIndicator() {
-        if activityIndicator == nil {
-            let ind = UIActivityIndicatorView(style: .medium)
-            ind.startAnimating()
-            activityIndicator = ind
-            navigationItem.titleView = ind
+        guard reloadIndicator == nil, let reloadButton = reloadButton else { return }
+
+        let ind = UIActivityIndicatorView(style: .medium)
+        ind.startAnimating()
+        reloadIndicator = ind
+
+        let indicatorItem = UIBarButtonItem(customView: ind)
+
+        if var items = navigationItem.leftBarButtonItems {
+            if let idx = items.firstIndex(of: reloadButton) {
+                items[idx] = indicatorItem
+                navigationItem.leftBarButtonItems = items
+            }
         }
     }
 
     private func hideRefreshIndicator() {
-        navigationItem.titleView = nil
-        activityIndicator = nil
+        guard let reloadButton = reloadButton else { return }
+
+        if let ind = reloadIndicator {
+            ind.stopAnimating()
+            reloadIndicator = nil
+        }
+
+        if var items = navigationItem.leftBarButtonItems {
+            // Replace indicator with reload button
+            if let idx = items.firstIndex(where: { ($0.customView as? UIActivityIndicatorView) != nil }) {
+                items[idx] = reloadButton
+                navigationItem.leftBarButtonItems = items
+            }
+        }
     }
     
     private func updateStatsLabel() {
@@ -506,6 +529,97 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         updateStatsLabel()
     }
 
+    // MARK: - Trio Decision Popup for BG Points
+
+    /// Hämtar Trio-beslutsreason för en BG-timestamp och visar som alert.
+    private func showTrioDecisionAlert(for timestamp: TimeInterval) {
+        // `timestamp` kommer från entry.date.timeIntervalSince1970
+        let bgDate = Date(timeIntervalSince1970: timestamp)
+        // +180s-offset pga eftersläpning device status vs bg-värden
+        let adjustedTimestamp = bgDate.addingTimeInterval(180)
+
+        NightscoutUtils.fetchDeviceStatusReasonBeforeTimestamp(timestamp: adjustedTimestamp) { [weak self] result in
+            guard let self = self else { return }
+
+            switch result {
+            case .success(let reason):
+                let formattedReason = self.formatGraphReason(reason)
+                let alert = UIAlertController(
+                    title: "Trio behandlingsbeslut",
+                    message: formattedReason,
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                self.present(alert, animated: true, completion: nil)
+
+            case .failure(let error):
+                let alert = UIAlertController(
+                    title: "Fel",
+                    message: error.localizedDescription,
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                self.present(alert, animated: true, completion: nil)
+            }
+        }
+    }
+
+    /// Formatterar reason-strängen ungefär som i MainView/Graphs för BG-popupen.
+    private func formatGraphReason(_ reason: String) -> String {
+        var formatted = reason
+
+        // 1. Hantera AF och SMB Ratio innan övriga ersättningar.
+        let patternAFSMB = "AF:\\s([0-9]\\.[0-9]{1,2})(?:,\\sSMB Ratio:\\s([0-9]\\.[0-9]{1,2}))?;"
+        if let regexAFSMB = try? NSRegularExpression(pattern: patternAFSMB, options: []) {
+            let range = NSRange(location: 0, length: formatted.utf16.count)
+            let matches = regexAFSMB.matches(in: formatted, options: [], range: range)
+            for match in matches.reversed() {
+                let fullRange = match.range(at: 0)
+                let afValue = (formatted as NSString).substring(with: match.range(at: 1))
+                var replacement = "AF: \(afValue)\n"
+                if match.numberOfRanges > 2, match.range(at: 2).location != NSNotFound {
+                    let smbValue = (formatted as NSString).substring(with: match.range(at: 2))
+                    if !smbValue.isEmpty {
+                        replacement += "• SMB Ratio: \(smbValue)\n"
+                    }
+                }
+                replacement += "\n👉  OREF SLUTSATS:\n•"
+                formatted = (formatted as NSString).replacingCharacters(in: fullRange, with: replacement)
+            }
+        }
+
+        // 2. Byt alla kommatecken mot radbrytning + punktlista.
+        formatted = formatted.replacingOccurrences(of: ",", with: "\n•")
+
+        // 3. Mer specifika ersättningar.
+        formatted = formatted.replacingOccurrences(of: "SMB INAKTIVERADE!", with: "SMB Inaktiverade 🚫")
+        formatted = formatted.replacingOccurrences(of: "Mikrobolus:", with: "🔹 Mikrobolus:")
+        formatted = formatted.replacingOccurrences(of: ". ;", with: "\n• ")
+        formatted = formatted.replacingOccurrences(of: "E. ", with: "E\n")
+        formatted = formatted.replacingOccurrences(of: "U. ", with: "E\n")
+        formatted = formatted.replacingOccurrences(of: "E/h. ", with: "E/h\n")
+        formatted = formatted.replacingOccurrences(of: "temp.", with: "temp.\n")
+        formatted = formatted.replacingOccurrences(of: ". ", with: "")
+        formatted = formatted.replacingOccurrences(of: "; ", with: "\n• ")
+
+        // 4. Ersätt "TDD: <number> U" med kompakt variant.
+        if let regexTDD = try? NSRegularExpression(pattern: "TDD:\\s(\\d+(?:\\.\\d{1,2})?)\\sU", options: []) {
+            let range = NSRange(location: 0, length: formatted.utf16.count)
+            formatted = regexTDD.stringByReplacingMatches(
+                in: formatted,
+                options: [],
+                range: range,
+                withTemplate: "TDD: $1E"
+            )
+        }
+
+        // 5. HTML-encodeade < och >.
+        formatted = formatted.replacingOccurrences(of: "&lt;", with: "<")
+        formatted = formatted.replacingOccurrences(of: "&gt;", with: ">")
+
+        return formatted
+    }
+
     // MARK: - UITableViewDataSource
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return filteredRows.count
@@ -554,5 +668,18 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     // MARK: - UITableViewDelegate
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 44
+    }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let row = filteredRows[indexPath.row]
+        switch row {
+        case .glucose(let entry):
+            // Använd BG-entryns timestamp för Trio-popupen
+            let timestamp = entry.date.timeIntervalSince1970
+            showTrioDecisionAlert(for: timestamp)
+        case .missing:
+            // Ingen Trio-popup för saknade värden
+            break
+        }
     }
 }
