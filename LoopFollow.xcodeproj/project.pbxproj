@@ -38,6 +38,7 @@
 		65304F852ED3A39A00B457AC /* EnableMuteAllIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F842ED3A38D00B457AC /* EnableMuteAllIntent.swift */; };
 		65304F872ED3A3B800B457AC /* DisableMuteAllIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F862ED3A3B500B457AC /* DisableMuteAllIntent.swift */; };
 		65304F892ED3A3D200B457AC /* LoopFollowShortcutsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F882ED3A3D000B457AC /* LoopFollowShortcutsProvider.swift */; };
+		6530969A2EE1996300117528 /* BGCheckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653096992EE1996100117528 /* BGCheckView.swift */; };
 		6540979E2DB79FF800983772 /* MealAnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6540979D2DB79FF600983772 /* MealAnalysisView.swift */; };
 		6540EF942D7DCDD6008BC98D /* SensorHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6540EF932D7DCDD4008BC98D /* SensorHistoryViewController.swift */; };
 		6540EF962D7DD4C7008BC98D /* AddManualSensorNoteViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6540EF952D7DD4C5008BC98D /* AddManualSensorNoteViewController.swift */; };
@@ -368,6 +369,7 @@
 		65304F842ED3A38D00B457AC /* EnableMuteAllIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnableMuteAllIntent.swift; sourceTree = "<group>"; };
 		65304F862ED3A3B500B457AC /* DisableMuteAllIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisableMuteAllIntent.swift; sourceTree = "<group>"; };
 		65304F882ED3A3D000B457AC /* LoopFollowShortcutsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopFollowShortcutsProvider.swift; sourceTree = "<group>"; };
+		653096992EE1996100117528 /* BGCheckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGCheckView.swift; sourceTree = "<group>"; };
 		6540979D2DB79FF600983772 /* MealAnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealAnalysisView.swift; sourceTree = "<group>"; };
 		6540EF932D7DCDD4008BC98D /* SensorHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorHistoryViewController.swift; sourceTree = "<group>"; };
 		6540EF952D7DD4C5008BC98D /* AddManualSensorNoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddManualSensorNoteViewController.swift; sourceTree = "<group>"; };
@@ -691,6 +693,7 @@
 			children = (
 				655B23042EDE2A3F0092DBDE /* AddManualPumpViewController.swift */,
 				6540EF952D7DD4C5008BC98D /* AddManualSensorNoteViewController.swift */,
+				653096992EE1996100117528 /* BGCheckView.swift */,
 				6582C4B62ED23B490047658C /* GlucoseView.swift */,
 				6540979D2DB79FF600983772 /* MealAnalysisView.swift */,
 				654454D02D6E8ABE0015BC5E /* ProfileSchedulesView.swift */,
@@ -1753,6 +1756,7 @@
 				FC97881C2485969B00A7906C /* MainViewController.swift in Sources */,
 				DD6A935E2BFA6FA2003FFB8E /* DeviceStatusOpenAPS.swift in Sources */,
 				DD493AD52ACF2109009A6922 /* ResumePump.swift in Sources */,
+				6530969A2EE1996300117528 /* BGCheckView.swift in Sources */,
 				DDCF979624C1443C002C9752 /* GeneralSettingsViewController.swift in Sources */,
 				FCC0FAC224922A22003E610E /* DictionaryKeyPath.swift in Sources */,
 				DD493AD72ACF2139009A6922 /* SuspendPump.swift in Sources */,

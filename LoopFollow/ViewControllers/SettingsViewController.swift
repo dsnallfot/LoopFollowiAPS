@@ -80,6 +80,16 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 )
             }
         <<< ButtonRow() {
+                $0.title = "Fingersticklogg"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let bgCheckVC = BGCheckView()
+                        return UINavigationController(rootViewController: bgCheckVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        <<< ButtonRow() {
                 $0.title = "Sensorhistorik"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
