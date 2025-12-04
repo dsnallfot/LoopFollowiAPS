@@ -290,9 +290,61 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
         rightLabel.sizeToFit()
         cell.accessoryView = rightLabel
 
-        cell.selectionStyle = .none
+        cell.selectionStyle = .default
         cell.accessoryType = .none
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let entry = entries[indexPath.row]
+        let startDate = entry.date
+
+        // Låt raden highlightas kort enligt default-beteende
+        tableView.deselectRow(at: indexPath, animated: true)
+
+        // Hitta MainViewController via root UITabBarController för att få events,
+        // men presentera modalen härifrån så vi kommer tillbaka hit när den stängs.
+
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+            let tabBar = window.rootViewController as? UITabBarController,
+            let tabViewControllers = tabBar.viewControllers
+        else {
+            return
+        }
+
+        var mainVC: MainViewController?
+
+        for (index, vc) in tabViewControllers.enumerated() {
+            if let nav = vc as? UINavigationController {
+
+                if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = candidate
+                    break
+                }
+            } else if let candidate = vc as? MainViewController {
+                mainVC = candidate
+                break
+            }
+        }
+
+        guard let mainVC else {
+            return
+        }
+
+        // Bygg events via MainViewController, men presentera modalen härifrån.
+        let events = mainVC.buildEventsForMealAnalysis()
+
+        let analysisVC = MealAnalysisView(
+            events: events,
+            initialStart: startDate,
+            modalWithTimestamp: true,
+            modalTitleString: "Utfall efter Stick"
+        )
+        let nav = UINavigationController(rootViewController: analysisVC)
+        nav.modalPresentationStyle = .formSheet
+        self.present(nav, animated: true)
     }
 
     // MARK: - UITableViewDelegate

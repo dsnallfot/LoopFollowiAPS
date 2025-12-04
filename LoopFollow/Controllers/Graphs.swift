@@ -237,17 +237,18 @@ extension MainViewController {
     
     // MARK: - Meal Analysis helpers for graph taps
 
-    private enum MealAnalysisSource {
+    enum MealAnalysisSource {
         case override
         case meal
         case bgCheck
         case pumpChange
         case sensorChange
+        case lowTreatment
     }
 
     /// Bygger ett minimalt events-array för MealAnalysisView baserat på de
     /// inlästa graf-dataseten (SMB, Bolus, Kolhydrater, BG Check + Temp Basal).
-    private func buildEventsForMealAnalysis() -> [Event] {
+    func buildEventsForMealAnalysis() -> [Event] {
         var events: [Event] = []
 
         // SMB events (auto micro-boluser)
@@ -343,7 +344,7 @@ extension MainViewController {
     }
 
     /// Öppnar MealAnalysisView i en formSheet med given starttid och källa.
-    private func presentMealAnalysis(for start: Date, source: MealAnalysisSource) {
+    func presentMealAnalysis(for start: Date, source: MealAnalysisSource) {
         let events = buildEventsForMealAnalysis()
 
         let title: String
@@ -358,6 +359,8 @@ extension MainViewController {
             title = "Utfall efter Pumpbyte"
         case .sensorChange:
             title = "Utfall efter Sensorbyte"
+        case .lowTreatment:
+            title = "Utfall efter Dextro"
         }
 
         let analysisVC = MealAnalysisView(
