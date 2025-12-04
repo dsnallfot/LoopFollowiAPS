@@ -387,7 +387,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
 
         // Reload treatments after refresh has been triggered
         // (MainViewController will refresh Nightscout data; then we reload from cache)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             self.loadTreatments(for: self.selectedDate)
         }
     }
