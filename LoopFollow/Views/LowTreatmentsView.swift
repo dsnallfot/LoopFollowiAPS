@@ -372,8 +372,8 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
         var title: String {
             switch self {
-            case .count: return "Antal"
-            case .grams: return "Gram"
+            case .count: return "Behandlingar"
+            case .grams: return "Mängd (g)"
             }
         }
     }
@@ -646,7 +646,34 @@ final class LowTreatmentsStatsViewController: UITableViewController {
     private var daysWithTreatments: Int { selectedCounts.filter { $0 > 0 }.count }
     private var totalTreatments: Int { selectedTreatmentDates.count }
     private var totalGrams: Double { selectedTreatmentGrams.reduce(0, +) }
-    private var maxGramsPerTreatment: Double { selectedTreatmentGrams.max() ?? 0 }
+
+    // Fördelning på antal dextro per behandling, baserat på gram kh
+    // 1 dextro ≈ 0–3 g, 2 dextro ≈ 4–6 g, 3+ dextro > 6 g
+    private var oneDextroCount: Int {
+        selectedTreatmentGrams.filter { $0 >= 0 && $0 <= 3 }.count
+    }
+
+    private var twoDextroCount: Int {
+        selectedTreatmentGrams.filter { $0 > 3 && $0 <= 6 }.count
+    }
+
+    private var threePlusDextroCount: Int {
+        selectedTreatmentGrams.filter { $0 > 6 }.count
+    }
+
+    // Nattetid definieras som 22:00–06:00
+    private var nightTreatmentCount: Int {
+        guard !selectedTreatmentDates.isEmpty else { return 0 }
+        let cal = Calendar.current
+        var count = 0
+        for date in selectedTreatmentDates {
+            let hour = cal.component(.hour, from: date)
+            if hour >= 22 || hour < 6 {
+                count += 1
+            }
+        }
+        return count
+    }
 
     private func longestStreakWithoutTreatmentHours() -> Int {
         guard selectedTreatmentDates.count >= 2 else {
@@ -663,10 +690,10 @@ final class LowTreatmentsStatsViewController: UITableViewController {
     }
 
     private func percentageString(_ numerator: Int, _ denominator: Int) -> String {
-        guard denominator > 0 else { return "0%"
+        guard denominator > 0 else { return "0 %"
         }
         let p = Double(numerator) * 100.0 / Double(denominator)
-        return String(format: "%.0f%%", p)
+        return String(format: "%.0f% %", p)
     }
 
     // MARK: - Table view
@@ -675,8 +702,11 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         case totalTreatments
         case avgTreatmentsPerDay
         case daysWithTreatmentsShare
-        case avgGramsPerTreatment
-        case maxGramsPerTreatment
+        case oneDextroShare
+        case twoDextroShare
+        case threePlusDextroShare
+        case nightTreatmentsCount
+        case nightTreatmentsShare
         case longestNoTreatmentStreak
     }
 
@@ -695,11 +725,11 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         let row = Row(rawValue: indexPath.row)!
         switch row {
         case .totalTreatments:
-            cell.textLabel?.text = "Totalt antal lågbehandlingar"
+            cell.textLabel?.text = "Dextrobehandlingar totalt"
             cell.detailTextLabel?.text = "\(totalTreatments) st"
 
         case .avgTreatmentsPerDay:
-            cell.textLabel?.text = "Medel lågbehandlingar per dag"
+            cell.textLabel?.text = "Medel behandlingar per dag"
             if totalDays > 0 {
                 let avg = Double(totalTreatments) / Double(totalDays)
                 cell.detailTextLabel?.text = String(format: "%.1f st", avg)
@@ -708,24 +738,31 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             }
 
         case .daysWithTreatmentsShare:
-            cell.textLabel?.text = "Andel dagar med lågbehandling"
+            cell.textLabel?.text = "Andel dagar med dextro"
             cell.detailTextLabel?.text = percentageString(daysWithTreatments, totalDays)
 
-        case .avgGramsPerTreatment:
-            cell.textLabel?.text = "Medel gram kh per lågbehandling"
-            if totalTreatments > 0 {
-                let avg = totalGrams / Double(totalTreatments)
-                cell.detailTextLabel?.text = String(format: "%.0f g", avg)
-            } else {
-                cell.detailTextLabel?.text = "–"
-            }
+        case .oneDextroShare:
+            cell.textLabel?.text = "Behandling med 1 dextro"
+            cell.detailTextLabel?.text = percentageString(oneDextroCount, totalTreatments)
 
-        case .maxGramsPerTreatment:
-            cell.textLabel?.text = "Högsta mängd kh per lågbehandling"
-            cell.detailTextLabel?.text = String(format: "%.0f g", maxGramsPerTreatment)
+        case .twoDextroShare:
+            cell.textLabel?.text = "Behandling med 2 dextro"
+            cell.detailTextLabel?.text = percentageString(twoDextroCount, totalTreatments)
+
+        case .threePlusDextroShare:
+            cell.textLabel?.text = "Behandling med 3+ dextro"
+            cell.detailTextLabel?.text = percentageString(threePlusDextroCount, totalTreatments)
+
+        case .nightTreatmentsCount:
+            cell.textLabel?.text = "Dextrobehandlingar natt (22–06)"
+            cell.detailTextLabel?.text = "\(nightTreatmentCount) st"
+
+        case .nightTreatmentsShare:
+            cell.textLabel?.text = "Andel natt av total (22–06)"
+            cell.detailTextLabel?.text = percentageString(nightTreatmentCount, totalTreatments)
 
         case .longestNoTreatmentStreak:
-            cell.textLabel?.text = "Längsta streak utan lågbehandling"
+            cell.textLabel?.text = "Längsta streak utan dextro"
             let hours = longestStreakWithoutTreatmentHours()
             cell.detailTextLabel?.text = "\(hours) h"
         }

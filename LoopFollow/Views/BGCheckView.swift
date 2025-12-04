@@ -611,9 +611,9 @@ final class BGCheckStatsViewController: UITableViewController {
     }
 
     private func percentageString(_ numerator: Int, _ denominator: Int) -> String {
-        guard denominator > 0 else { return "0%" }
+        guard denominator > 0 else { return "0 %" }
         let p = Double(numerator) * 100.0 / Double(denominator)
-        return String(format: "%.0f%%", p)
+        return String(format: "%.0f% %", p)
     }
 
     // MARK: - Table view
