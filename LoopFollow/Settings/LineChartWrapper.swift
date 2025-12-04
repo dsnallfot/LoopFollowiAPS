@@ -64,7 +64,7 @@ struct LineChartWrapper: UIViewRepresentable {
 
             // Stil: tjock linje för primär, dashad för IOB
             if item.label.lowercased().contains("iob") {
-                dataSet.lineWidth = 2.0
+                dataSet.lineWidth = 3.0
                 dataSet.lineDashLengths = [2, 2]
             } else {
                 dataSet.lineWidth = 3.0
@@ -74,7 +74,7 @@ struct LineChartWrapper: UIViewRepresentable {
             if item.label.lowercased().contains("uam") {
                 dataSet.setColor(.systemBlue)
             } else if item.label.lowercased().contains("iob") {
-                dataSet.setColor(.systemTeal)
+                dataSet.setColor(.systemBlue)
             } else {
                 dataSet.setColor(.systemPurple)
             }

@@ -150,7 +150,7 @@ struct ProfileSchedulesView: View {
 
                 List {
                     if selectedSection == .targets {
-                        Section(header: Text("Mål")) {
+                        Section(header: Text("🟪 Mål (mmol/L)")) {
                             ForEach(viewModel.targetEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -158,20 +158,20 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .basal {
-                        Section(header: Text("Basal (E/h)")) {
+                        Section(header: Text("🟪 Basal (E/h)")) {
                             ForEach(viewModel.basalEntries) { entry in
                                 scheduleRow(entry, isBold: entry.time == "Total daglig basal")
                             }
                         }
-                    Section(header: Text("Basal IOB (E aktiv/h)")) {
+                    Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
                         ForEach(viewModel.basalIOBEntries) { entry in
-                            scheduleRow(entry, isBold: entry.time == "Medel Basal IOB/h")
+                            scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
                         }
                     }
                 }
                     
                     if selectedSection == .cr {
-                        Section(header: Text("Insulinkvoter CR (g/E)")) {
+                        Section(header: Text("🟪 Insulinkvoter CR (g/E)")) {
                             ForEach(viewModel.carbRatioEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -179,7 +179,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .isf {
-                        Section(header: Text("Insulinkänslighet ISF (mmol/L/E)")) {
+                        Section(header: Text("🟪 Insulinkänslighet ISF (mmol/L/E)")) {
                             ForEach(viewModel.isfEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -187,7 +187,7 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .csf {
-                        Section(header: Text("Kolhydratskänslighet CSF (mmol/L/g)")) {
+                        Section(header: Text("🟪 Kh-känslighet CSF (mmol/L/g)")) {
                             ForEach(viewModel.csfEntries) { entry in
                                 scheduleRow(entry)
                             }
@@ -195,14 +195,14 @@ struct ProfileSchedulesView: View {
                     }
                     
                     if selectedSection == .cHr {
-                        Section(header: Text("Minsta absorption kh (g/h))")) {
+                        Section(header: Text("🟪 Minsta absorption Kh (g/h)")) {
                             ForEach(viewModel.minCarbsEntries) { entry in
                                 scheduleRow(entry, isBold: entry.time == "Medelvärde")
                             }
                         }
                     }
                     if selectedSection == .smb {
-                        Section(header: Text("Maxgränser SMB / UAMSMB (E/SMB)")) {
+                        Section(header: Text("🟦 Maxgräns SMB / UAMSMB (E/SMB)")) {
                             ForEach(viewModel.smbEntries) { entry in
                                 scheduleRow(entry)
                             }

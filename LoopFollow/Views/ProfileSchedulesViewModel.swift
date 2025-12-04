@@ -61,7 +61,7 @@ class ProfileSchedulesViewModel: ObservableObject {
                     let averageIOB = basalIOBTimeValues.isEmpty ? 0.0 : totalIOB / Double(basalIOBTimeValues.count)
                     basalIOBEntries.append(
                         ScheduleEntry(
-                            time: "Medel Basal IOB/h",
+                            time: "Medel basal IOB/h",
                             value: String(format: "%.2f", averageIOB)
                         )
                     )
@@ -151,7 +151,7 @@ class ProfileSchedulesViewModel: ObservableObject {
             }
 
             // Append total daily basal row
-            basalEntries.append(ScheduleEntry(time: "Total Daglig Basal", value: String(format: "%.2f", totalDailyBasal)))
+            basalEntries.append(ScheduleEntry(time: "Total daglig basal", value: String(format: "%.2f", totalDailyBasal)))
 
             return basalEntries
         }
