@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */; };
+		650543F62EE1B35700C38C06 /* LowTreatmentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650543F52EE1B34F00C38C06 /* LowTreatmentsView.swift */; };
 		6508DEBE2EDF1419009F84FE /* NightscoutDayReportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6508DEBD2EDF1416009F84FE /* NightscoutDayReportViewController.swift */; };
 		650A60732EE0D1C800EF4C93 /* BasalIOBCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650A60722EE0D1C300EF4C93 /* BasalIOBCalculator.swift */; };
 		650F09262EDADB6700EFCD98 /* StatsProfileBasalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650F09252EDADB6200EFCD98 /* StatsProfileBasalEngine.swift */; };
@@ -339,6 +340,7 @@
 
 /* Begin PBXFileReference section */
 		059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LoopFollow.release.xcconfig"; path = "Target Support Files/Pods-LoopFollow/Pods-LoopFollow.release.xcconfig"; sourceTree = "<group>"; };
+		650543F52EE1B34F00C38C06 /* LowTreatmentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LowTreatmentsView.swift; sourceTree = "<group>"; };
 		6508DEBD2EDF1416009F84FE /* NightscoutDayReportViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutDayReportViewController.swift; sourceTree = "<group>"; };
 		650A60722EE0D1C300EF4C93 /* BasalIOBCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasalIOBCalculator.swift; sourceTree = "<group>"; };
 		650F09252EDADB6200EFCD98 /* StatsProfileBasalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsProfileBasalEngine.swift; sourceTree = "<group>"; };
@@ -695,6 +697,7 @@
 				6540EF952D7DD4C5008BC98D /* AddManualSensorNoteViewController.swift */,
 				653096992EE1996100117528 /* BGCheckView.swift */,
 				6582C4B62ED23B490047658C /* GlucoseView.swift */,
+				650543F52EE1B34F00C38C06 /* LowTreatmentsView.swift */,
 				6540979D2DB79FF600983772 /* MealAnalysisView.swift */,
 				654454D02D6E8ABE0015BC5E /* ProfileSchedulesView.swift */,
 				654454D22D6E8AD90015BC5E /* ProfileSchedulesViewModel.swift */,
@@ -1669,6 +1672,7 @@
 				654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */,
 				65B3E5CF2D3FFB3000622194 /* CustomActionViewController.swift in Sources */,
 				65B3E5D02D3FFB3000622194 /* RemoteSettingsViewController.swift in Sources */,
+				650543F62EE1B35700C38C06 /* LowTreatmentsView.swift in Sources */,
 				65B3E5D12D3FFB3000622194 /* SMSRemoteViewController.swift in Sources */,
 				65B3E5D22D3FFB3000622194 /* OverrideViewController.swift in Sources */,
 				65B3E5D32D3FFB3000622194 /* MealViewController.swift in Sources */,

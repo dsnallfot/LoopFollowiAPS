@@ -90,6 +90,16 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 )
             }
         <<< ButtonRow() {
+                $0.title = "Dextrologg"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let lowTreatVC = LowTreatmentsView()
+                        return UINavigationController(rootViewController: lowTreatVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        <<< ButtonRow() {
                 $0.title = "Sensorhistorik"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
