@@ -267,8 +267,45 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
 
 final class BGCheckStatsViewController: UITableViewController {
 
-    private let days: [Date]
-    private let counts: [Int]
+    // Full data set (upp till t.ex. 90 dagar)
+    private let allDays: [Date]
+    private let allCounts: [Int]
+
+    // Aktuell vy (styrd av segmented control)
+    private var selectedDays: [Date] = []
+    private var selectedCounts: [Int] = []
+
+    private enum PeriodOption: CaseIterable {
+        case d7, d14, d30, d90
+
+        var days: Int {
+            switch self {
+            case .d7:  return 7
+            case .d14: return 14
+            case .d30: return 30
+            case .d90: return 90
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .d7:  return "7 d"
+            case .d14: return "14 d"
+            case .d30: return "30 d"
+            case .d90: return "90 d"
+            }
+        }
+    }
+
+    private var selectedPeriod: PeriodOption = .d90
+
+    private lazy var periodControl: UISegmentedControl = {
+        let items = PeriodOption.allCases.map { $0.title }
+        let sc = UISegmentedControl(items: items)
+        sc.selectedSegmentIndex = PeriodOption.allCases.firstIndex(of: selectedPeriod) ?? (items.count - 1)
+        sc.addTarget(self, action: #selector(periodChanged(_:)), for: .valueChanged)
+        return sc
+    }()
 
     private let chartView: BarChartView = {
         let v = BarChartView()
@@ -289,13 +326,49 @@ final class BGCheckStatsViewController: UITableViewController {
     }()
 
     init(days: [Date], counts: [Int]) {
-        self.days = days
-        self.counts = counts
+        self.allDays = days
+        self.allCounts = counts
         super.init(style: .insetGrouped)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func defaultPeriod() -> PeriodOption {
+        let count = allDays.count
+        if count >= 90 { return .d90 }
+        if count >= 30 { return .d30 }
+        if count >= 14 { return .d14 }
+        if count >= 7  { return .d7 }
+        return .d7
+    }
+
+    private func applyPeriod(_ period: PeriodOption) {
+        selectedPeriod = period
+        let total = allDays.count
+        guard total > 0 else {
+            selectedDays = []
+            selectedCounts = []
+            chartView.data = nil
+            tableView.reloadData()
+            return
+        }
+
+        let n = min(period.days, total)
+        let startIndex = max(0, total - n)
+        selectedDays = Array(allDays[startIndex..<total])
+        selectedCounts = Array(allCounts[startIndex..<total])
+
+        loadChartData()
+        tableView.reloadData()
+    }
+
+    @objc private func periodChanged(_ sender: UISegmentedControl) {
+        let index = sender.selectedSegmentIndex
+        guard index >= 0 && index < PeriodOption.allCases.count else { return }
+        let period = PeriodOption.allCases[index]
+        applyPeriod(period)
     }
 
     override func viewDidLoad() {
@@ -309,30 +382,48 @@ final class BGCheckStatsViewController: UITableViewController {
         )
 
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "BGStatsCell")
+
+        // Välj en rimlig defaultperiod baserat på hur många dagar vi har
+        let initialPeriod = defaultPeriod()
+        selectedPeriod = initialPeriod
+        if let idx = PeriodOption.allCases.firstIndex(of: initialPeriod) {
+            periodControl.selectedSegmentIndex = idx
+        }
+
         setupChartHeader()
-        loadChartData()
+        applyPeriod(initialPeriod)
     }
 
     // MARK: - Chart header
 
     private func setupChartHeader() {
         let container = UIView()
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 300)
+
+        container.addSubview(periodControl)
         container.addSubview(chartView)
-        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 260)
+
+        periodControl.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
+
         NSLayoutConstraint.activate([
+            periodControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            periodControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            periodControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            chartView.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 12),
             chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            chartView.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
             chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
         ])
+
         tableView.tableHeaderView = container
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if let header = tableView.tableHeaderView {
-            let targetSize = CGSize(width: tableView.bounds.width, height: 260)
+            let targetSize = CGSize(width: tableView.bounds.width, height: 300)
             if header.frame.size != targetSize {
                 header.frame.size = targetSize
                 tableView.tableHeaderView = header
@@ -341,13 +432,17 @@ final class BGCheckStatsViewController: UITableViewController {
     }
 
     private func loadChartData() {
-        guard days.count == counts.count, !days.isEmpty else { return }
+        guard selectedDays.count == selectedCounts.count, !selectedDays.isEmpty else {
+            chartView.data = nil
+            chartView.setNeedsDisplay()
+            return
+        }
 
         var entries: [BarChartDataEntry] = []
-        entries.reserveCapacity(days.count)
+        entries.reserveCapacity(selectedDays.count)
 
         var maxCount = 0
-        for (idx, count) in counts.enumerated() {
+        for (idx, count) in selectedCounts.enumerated() {
             entries.append(BarChartDataEntry(x: Double(idx), y: Double(count)))
             if count > maxCount { maxCount = count }
         }
@@ -366,7 +461,7 @@ final class BGCheckStatsViewController: UITableViewController {
         df.locale = Locale(identifier: "sv_SE")
         df.dateFormat = "MM-dd"
 
-        let labels = days.map { df.string(from: $0) }
+        let labels = selectedDays.map { df.string(from: $0) }
         let xAxis = chartView.xAxis
         xAxis.labelPosition = .bottom
         xAxis.granularity = 1
@@ -401,15 +496,15 @@ final class BGCheckStatsViewController: UITableViewController {
 
     // MARK: - Stats helpers
 
-    private var totalDays: Int { days.count }
-    private var daysWithSticks: Int { counts.filter { $0 > 0 }.count }
-    private var totalSticks: Int { counts.reduce(0, +) }
-    private var maxSticksPerDay: Int { counts.max() ?? 0 }
+    private var totalDays: Int { selectedDays.count }
+    private var daysWithSticks: Int { selectedCounts.filter { $0 > 0 }.count }
+    private var totalSticks: Int { selectedCounts.reduce(0, +) }
+    private var maxSticksPerDay: Int { selectedCounts.max() ?? 0 }
 
     private func longestStreakWithoutSticks() -> Int {
         var best = 0
         var current = 0
-        for c in counts {
+        for c in selectedCounts {
             if c == 0 {
                 current += 1
                 if current > best { best = current }
@@ -430,6 +525,7 @@ final class BGCheckStatsViewController: UITableViewController {
 
     private enum Row: Int, CaseIterable {
         case daysWithSticks
+        case avgPerDay
         case avgPerStickDay
         case maxPerStickDay
         case longestNoStickStreak
@@ -452,6 +548,16 @@ final class BGCheckStatsViewController: UITableViewController {
         case .daysWithSticks:
             cell.textLabel?.text = "Andel dagar med stick"
             cell.detailTextLabel?.text = "\(percentageString(daysWithSticks, totalDays))"
+
+        case .avgPerDay:
+            cell.textLabel?.text = "Medel stick per dag"
+            if totalDays > 0 {
+                let avg = Double(totalSticks) / Double(totalDays)
+                cell.detailTextLabel?.text = String(format: "%.1f st", avg)
+            } else {
+                cell.detailTextLabel?.text = "–"
+            }
+            
         case .avgPerStickDay:
             cell.textLabel?.text = "Medel stick per stick-dag"
             if daysWithSticks > 0 {
@@ -460,6 +566,7 @@ final class BGCheckStatsViewController: UITableViewController {
             } else {
                 cell.detailTextLabel?.text = "–"
             }
+
         case .maxPerStickDay:
             cell.textLabel?.text = "Högsta antal stick per stick-dag"
             cell.detailTextLabel?.text = "\(maxSticksPerDay) st"
