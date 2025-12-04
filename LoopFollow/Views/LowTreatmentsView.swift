@@ -245,7 +245,7 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
         let gramsString = gramsFormatter.string(from: NSNumber(value: entry.grams)) ?? String(format: "%.0f", entry.grams)
 
         // Leading SF Symbol + text "Låg behandling xx g"
-        cell.textLabel?.text = " Dextro  (\(gramsString) g)"
+        cell.textLabel?.text = " Dextro • \(gramsString) g"
         cell.textLabel?.font = .systemFont(ofSize: 17)
 
         cell.imageView?.image = UIImage(systemName: "pill")
