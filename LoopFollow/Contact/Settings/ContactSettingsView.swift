@@ -21,7 +21,7 @@ struct ContactSettingsView: View {
         NavigationView {
             Form {
                 Section(header: Text("Kontaktintegration")) {
-                    Text("Lägg till kontakter som heter '\(viewModel.contactName)' till din APple Watch för att visa aktuellt BG och andra värden i realtid. Se till att ge appen full access till dina kontakter på telefonen när du tillfrågas.")
+                    Text("Lägg till kontakter som heter '\(viewModel.contactName)' till din Apple Watch för att visa aktuellt BG och andra värden i realtid. Se till att ge appen full access till dina kontakter på telefonen när du tillfrågas.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding(.vertical, 4)
