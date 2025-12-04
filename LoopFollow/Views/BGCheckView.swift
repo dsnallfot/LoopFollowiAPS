@@ -1,4 +1,5 @@
 import UIKit
+import Charts
 
 /// Enkel loggvy för fingerstick / BG Check, inspirerad av GlucoseView.
 final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDelegate {
@@ -67,7 +68,15 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
             target: self,
             action: #selector(doneTapped)
         )
-        navigationItem.rightBarButtonItem = done
+
+        let statsBtn = UIBarButtonItem(
+            image: UIImage(systemName: "info"),
+            style: .plain,
+            target: self,
+            action: #selector(showBGCheckStats)
+        )
+
+        navigationItem.rightBarButtonItems = [done, statsBtn]
     }
 
     @objc private func doneTapped() {
@@ -76,6 +85,49 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
 
     @objc private func refreshTapped() {
         loadBGChecks()
+    }
+
+    @objc private func showBGCheckStats() {
+        let calendar = Calendar.current
+        let now = Date()
+        let daysBack = min(NightscoutCache.retentionDays, 90)
+
+        // Startdatum = början av dagen (daysBack-1) dagar bakåt
+        guard let startDay = calendar.date(byAdding: .day, value: -(daysBack - 1), to: calendar.startOfDay(for: now)) else {
+            return
+        }
+
+        // Bygg en array av alla dagar i intervallet, med default 0 stick per dag
+        var days: [Date] = []
+        var counts: [Int] = []
+        days.reserveCapacity(daysBack)
+        counts.reserveCapacity(daysBack)
+
+        for offset in 0..<daysBack {
+            if let day = calendar.date(byAdding: .day, value: offset, to: startDay) {
+                days.append(day)
+                counts.append(0)
+            }
+        }
+
+        // Snabb lookup för dag -> index i counts
+        var indexByDay: [Date: Int] = [:]
+        for (idx, day) in days.enumerated() {
+            indexByDay[calendar.startOfDay(for: day)] = idx
+        }
+
+        // Räkna fingerstick per dag inom perioden
+        for entry in entries {
+            if entry.date < startDay || entry.date > now { continue }
+            let dayStart = calendar.startOfDay(for: entry.date)
+            if let idx = indexByDay[dayStart] {
+                counts[idx] += 1
+            }
+        }
+
+        let statsVC = BGCheckStatsViewController(days: days, counts: counts)
+        let nav = UINavigationController(rootViewController: statsVC)
+        present(nav, animated: true)
     }
 
     // MARK: - Setup table
@@ -210,5 +262,213 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 44
+    }
+}
+
+final class BGCheckStatsViewController: UITableViewController {
+
+    private let days: [Date]
+    private let counts: [Int]
+
+    private let chartView: BarChartView = {
+        let v = BarChartView()
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1000000
+        return v
+    }()
+
+    init(days: [Date], counts: [Int]) {
+        self.days = days
+        self.counts = counts
+        super.init(style: .insetGrouped)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Stickstatistik"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissSelf)
+        )
+
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "BGStatsCell")
+        setupChartHeader()
+        loadChartData()
+    }
+
+    // MARK: - Chart header
+
+    private func setupChartHeader() {
+        let container = UIView()
+        container.addSubview(chartView)
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 260)
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            chartView.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+        ])
+        tableView.tableHeaderView = container
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let header = tableView.tableHeaderView {
+            let targetSize = CGSize(width: tableView.bounds.width, height: 260)
+            if header.frame.size != targetSize {
+                header.frame.size = targetSize
+                tableView.tableHeaderView = header
+            }
+        }
+    }
+
+    private func loadChartData() {
+        guard days.count == counts.count, !days.isEmpty else { return }
+
+        var entries: [BarChartDataEntry] = []
+        entries.reserveCapacity(days.count)
+
+        var maxCount = 0
+        for (idx, count) in counts.enumerated() {
+            entries.append(BarChartDataEntry(x: Double(idx), y: Double(count)))
+            if count > maxCount { maxCount = count }
+        }
+
+        let dataSet = BarChartDataSet(entries: entries, label: "")
+        dataSet.setColor(.systemRed)
+        dataSet.drawValuesEnabled = false
+
+        let data = BarChartData(dataSet: dataSet)
+        chartView.data = data
+        chartView.autoScaleMinMaxEnabled = false
+        chartView.notifyDataSetChanged()
+
+        // X-axis labels = datum (kompakt format) för varje index
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "MM-dd"
+
+        let labels = days.map { df.string(from: $0) }
+        let xAxis = chartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.granularity = 1
+        xAxis.granularityEnabled = true
+        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
+        xAxis.setLabelCount(min(6, labels.count), force: false)
+
+        // Y-axel – dynamiskt max utifrån högsta antal stick på en dag
+        let yAxis = chartView.leftAxis
+        yAxis.axisMinimum = 0
+        let maxY = max(1, maxCount)
+        yAxis.axisMaximum = Double(maxY) * 1.2
+        yAxis.granularity = 1
+        yAxis.granularityEnabled = true
+
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        chartView.rightAxis.enabled = false
+        chartView.setNeedsDisplay()
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+
+    // MARK: - Stats helpers
+
+    private var totalDays: Int { days.count }
+    private var daysWithSticks: Int { counts.filter { $0 > 0 }.count }
+    private var totalSticks: Int { counts.reduce(0, +) }
+    private var maxSticksPerDay: Int { counts.max() ?? 0 }
+
+    private func longestStreakWithoutSticks() -> Int {
+        var best = 0
+        var current = 0
+        for c in counts {
+            if c == 0 {
+                current += 1
+                if current > best { best = current }
+            } else {
+                current = 0
+            }
+        }
+        return best
+    }
+
+    private func percentageString(_ numerator: Int, _ denominator: Int) -> String {
+        guard denominator > 0 else { return "0%" }
+        let p = Double(numerator) * 100.0 / Double(denominator)
+        return String(format: "%.0f%%", p)
+    }
+
+    // MARK: - Table view
+
+    private enum Row: Int, CaseIterable {
+        case daysWithSticks
+        case avgPerStickDay
+        case maxPerStickDay
+        case longestNoStickStreak
+    }
+
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return Row.allCases.count
+    }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: "BGStatsCell")
+        cell.selectionStyle = .none
+
+        let row = Row(rawValue: indexPath.row)!
+        switch row {
+        case .daysWithSticks:
+            cell.textLabel?.text = "Andel dagar med stick"
+            cell.detailTextLabel?.text = "\(percentageString(daysWithSticks, totalDays))"
+        case .avgPerStickDay:
+            cell.textLabel?.text = "Medel stick per stick-dag"
+            if daysWithSticks > 0 {
+                let avg = Double(totalSticks) / Double(daysWithSticks)
+                cell.detailTextLabel?.text = String(format: "%.1f st", avg)
+            } else {
+                cell.detailTextLabel?.text = "–"
+            }
+        case .maxPerStickDay:
+            cell.textLabel?.text = "Högsta antal stick per stick-dag"
+            cell.detailTextLabel?.text = "\(maxSticksPerDay) st"
+        case .longestNoStickStreak:
+            cell.textLabel?.text = "Längsta streak utan stick"
+            let streak = longestStreakWithoutSticks()
+            cell.detailTextLabel?.text = "\(streak) dagar"
+        }
+
+        return cell
     }
 }
