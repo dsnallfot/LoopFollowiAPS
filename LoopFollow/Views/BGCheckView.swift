@@ -9,6 +9,7 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
     struct BGCheckEntry {
         let date: Date
         let mmol: Double
+        let hasDextroNearby: Bool
     }
 
     private var entries: [BGCheckEntry] = []
@@ -100,13 +101,16 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
         // Bygg en array av alla dagar i intervallet, med default 0 stick per dag
         var days: [Date] = []
         var counts: [Int] = []
+        var dextroCounts: [Int] = []
         days.reserveCapacity(daysBack)
         counts.reserveCapacity(daysBack)
+        dextroCounts.reserveCapacity(daysBack)
 
         for offset in 0..<daysBack {
             if let day = calendar.date(byAdding: .day, value: offset, to: startDay) {
                 days.append(day)
                 counts.append(0)
+                dextroCounts.append(0)
             }
         }
 
@@ -116,16 +120,19 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
             indexByDay[calendar.startOfDay(for: day)] = idx
         }
 
-        // Räkna fingerstick per dag inom perioden
+        // Räkna fingerstick per dag inom perioden och dextro per dag
         for entry in entries {
             if entry.date < startDay || entry.date > now { continue }
             let dayStart = calendar.startOfDay(for: entry.date)
             if let idx = indexByDay[dayStart] {
                 counts[idx] += 1
+                if entry.hasDextroNearby {
+                    dextroCounts[idx] += 1
+                }
             }
         }
 
-        let statsVC = BGCheckStatsViewController(days: days, counts: counts)
+        let statsVC = BGCheckStatsViewController(days: days, counts: counts, dextroCounts: dextroCounts)
         let nav = UINavigationController(rootViewController: statsVC)
         present(nav, animated: true)
     }
@@ -173,6 +180,7 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
     }
 
     /// Hämtar alla BG Check-treatments från cachen och mappar till BGCheckEntry.
+    /// Hämtar alla BG Check-treatments från cachen och mappar till BGCheckEntry.
     private func loadBGChecks() {
         showActivity()
 
@@ -190,6 +198,20 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
             // Antag att NightscoutCache.loadWindow(from:to:) returnerar (sgv, treatments)
             let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
 
+            // 1) Plocka ut alla "dextro-treatments":
+            //    • eventType == "Carb Correction"
+            //    • carbs > 0
+            //    • notes innehåller minst en "🍬"
+            let dextroTreatments: [TreatmentJSON] = treatments.filter { t in
+                guard t.eventType == "Carb Correction" else { return false }
+                guard let carbs = t.carbs, carbs > 0 else { return false }
+                guard let notes = t.notes, notes.contains("🍬") else { return false }
+                return true
+            }
+
+            let windowSeconds: TimeInterval = 10 * 60 // ±10 min
+
+            // 2) Bygg BGCheckEntry och sätt hasDextroNearby om vi hittar en dextro inom ±10 min
             let bgChecks: [BGCheckEntry] = treatments.compactMap { (t) -> BGCheckEntry? in
                 guard t.eventType == "BG Check" else { return nil }
 
@@ -208,7 +230,16 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
                     mmol = raw / 18.0182
                 }
 
-                return BGCheckEntry(date: date, mmol: mmol)
+                // Finns det en dextro-treatment inom ±10 minuter?
+                let hasDextroNearby = dextroTreatments.contains { dextro in
+                    abs(dextro.created_at.timeIntervalSince(date)) <= windowSeconds
+                }
+
+                return BGCheckEntry(
+                    date: date,
+                    mmol: mmol,
+                    hasDextroNearby: hasDextroNearby
+                )
             }
             .sorted { $0.date > $1.date } // nyast överst
 
@@ -237,14 +268,20 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
 
         // Leading SF Symbol + värde i mmol/L
         let mmolString = valueFormatter.string(from: NSNumber(value: entry.mmol)) ?? String(format: "%.1f", entry.mmol)
-        cell.textLabel?.text = " \(mmolString) mmol/L"
+
+        var text = " \(mmolString) mmol/L"
+        if entry.hasDextroNearby {
+            text += "  ⇢  🍬"   // 👈 markera fingerstick med dextro inom ±10 min
+        }
+
+        cell.textLabel?.text = text
         cell.textLabel?.font = .systemFont(ofSize: 17)
 
         // SF-symbol i imageView (leading)
         cell.imageView?.image = UIImage(systemName: "drop.fill")
         cell.imageView?.tintColor = .systemRed
 
-        // Right‑aligned full date + time
+        // Right-aligned full date + time
         let rightLabel = UILabel()
         rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
         rightLabel.font = .systemFont(ofSize: 15)
@@ -270,10 +307,12 @@ final class BGCheckStatsViewController: UITableViewController {
     // Full data set (upp till t.ex. 90 dagar)
     private let allDays: [Date]
     private let allCounts: [Int]
+    private let allDextroCounts: [Int]
 
     // Aktuell vy (styrd av segmented control)
     private var selectedDays: [Date] = []
     private var selectedCounts: [Int] = []
+    private var selectedDextroCounts: [Int] = []
 
     private enum PeriodOption: CaseIterable {
         case d7, d14, d30, d90
@@ -325,9 +364,10 @@ final class BGCheckStatsViewController: UITableViewController {
         return v
     }()
 
-    init(days: [Date], counts: [Int]) {
+    init(days: [Date], counts: [Int], dextroCounts: [Int]) {
         self.allDays = days
         self.allCounts = counts
+        self.allDextroCounts = dextroCounts
         super.init(style: .insetGrouped)
     }
 
@@ -350,6 +390,7 @@ final class BGCheckStatsViewController: UITableViewController {
         guard total > 0 else {
             selectedDays = []
             selectedCounts = []
+            selectedDextroCounts = []
             chartView.data = nil
             tableView.reloadData()
             return
@@ -359,6 +400,7 @@ final class BGCheckStatsViewController: UITableViewController {
         let startIndex = max(0, total - n)
         selectedDays = Array(allDays[startIndex..<total])
         selectedCounts = Array(allCounts[startIndex..<total])
+        selectedDextroCounts = Array(allDextroCounts[startIndex..<total])
 
         loadChartData()
         tableView.reloadData()
@@ -499,6 +541,7 @@ final class BGCheckStatsViewController: UITableViewController {
     private var totalDays: Int { selectedDays.count }
     private var daysWithSticks: Int { selectedCounts.filter { $0 > 0 }.count }
     private var totalSticks: Int { selectedCounts.reduce(0, +) }
+    private var totalDextroSticks: Int { selectedDextroCounts.reduce(0, +) }
     private var maxSticksPerDay: Int { selectedCounts.max() ?? 0 }
 
     private func longestStreakWithoutSticks() -> Int {
@@ -524,11 +567,13 @@ final class BGCheckStatsViewController: UITableViewController {
     // MARK: - Table view
 
     private enum Row: Int, CaseIterable {
-        case daysWithSticks
+        case totalSticks
         case avgPerDay
+        case daysWithSticks
         case avgPerStickDay
         case maxPerStickDay
         case longestNoStickStreak
+        case dextroShare
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -545,9 +590,9 @@ final class BGCheckStatsViewController: UITableViewController {
 
         let row = Row(rawValue: indexPath.row)!
         switch row {
-        case .daysWithSticks:
-            cell.textLabel?.text = "Andel dagar med stick"
-            cell.detailTextLabel?.text = "\(percentageString(daysWithSticks, totalDays))"
+        case .totalSticks:
+            cell.textLabel?.text = "Totalt antal stick"
+            cell.detailTextLabel?.text = "\(totalSticks) st"
 
         case .avgPerDay:
             cell.textLabel?.text = "Medel stick per dag"
@@ -557,6 +602,10 @@ final class BGCheckStatsViewController: UITableViewController {
             } else {
                 cell.detailTextLabel?.text = "–"
             }
+            
+        case .daysWithSticks:
+            cell.textLabel?.text = "Andel dagar med stick"
+            cell.detailTextLabel?.text = "\(percentageString(daysWithSticks, totalDays))"
             
         case .avgPerStickDay:
             cell.textLabel?.text = "Medel stick per stick-dag"
@@ -574,6 +623,13 @@ final class BGCheckStatsViewController: UITableViewController {
             cell.textLabel?.text = "Längsta streak utan stick"
             let streak = longestStreakWithoutSticks()
             cell.detailTextLabel?.text = "\(streak) dagar"
+        case .dextroShare:
+            cell.textLabel?.text = "Andel stick ⇢ 🍬"
+            if totalSticks > 0 {
+                cell.detailTextLabel?.text = percentageString(totalDextroSticks, totalSticks)
+            } else {
+                cell.detailTextLabel?.text = "–"
+            }
         }
 
         return cell
