@@ -16,6 +16,10 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
 
     private var entries: [LowTreatmentEntry] = []
 
+    // BG Check-data för statistik (hela cachefönstret)
+    private var bgCheckDatesForStats: [Date] = []
+    private var bgCheckMmolForStats: [Double] = []
+
     // MARK: - UI
 
     private let tableView = UITableView(frame: .zero, style: .plain)
@@ -146,7 +150,9 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
             gramsPerDay: gramsPerDay,
             treatmentDates: treatmentDates,
             treatmentGrams: treatmentGrams,
-            treatmentHasBGCheck: treatmentHasBGCheck
+            treatmentHasBGCheck: treatmentHasBGCheck,
+            bgCheckDates: bgCheckDatesForStats,
+            bgCheckMmol: bgCheckMmolForStats
         )
         let nav = UINavigationController(rootViewController: statsVC)
         present(nav, animated: true)
@@ -212,10 +218,24 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
             // Antag att NightscoutCache.loadWindow(from:to:) returnerar (sgv, treatments)
             let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
             
-            // Plocka ut alla BG Check-datum (för korsning mot dextro)
-            let bgCheckDates: [Date] = treatments.compactMap { t in
-                guard t.eventType == "BG Check" else { return nil }
-                return t.created_at
+            // Plocka ut alla BG Check-datum (för korsning mot dextro) samt mmol-värde
+            var bgCheckDates: [Date] = []
+            var bgCheckMmol: [Double] = []
+            for t in treatments {
+                guard t.eventType == "BG Check" else { continue }
+                let date = t.created_at
+                guard let raw = t.glucose else { continue }
+
+                let mmol: Double
+                if let units = t.units, units.lowercased().contains("mmol") {
+                    mmol = raw
+                } else {
+                    // mg/dL -> mmol/L
+                    mmol = raw / 18.0182
+                }
+
+                bgCheckDates.append(date)
+                bgCheckMmol.append(mmol)
             }
 
             let windowSeconds: TimeInterval = 15 * 60 // ±15 min
@@ -243,6 +263,8 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
 
             await MainActor.run {
                 self.entries = lowTreatments
+                self.bgCheckDatesForStats = bgCheckDates
+                self.bgCheckMmolForStats = bgCheckMmol
                 self.tableView.reloadData()
                 self.hideActivity()
             }
@@ -362,6 +384,10 @@ final class LowTreatmentsStatsViewController: UITableViewController {
     private let allTreatmentGrams: [Double]
     private let allTreatmentHasBGCheck: [Bool]
 
+    // Underliggande BG Check-data (globala för cachefönstret)
+    private let allBGCheckDates: [Date]
+    private let allBGCheckMmol: [Double]
+
     // Aktuell vy (styrd av period/antal-gram)
     private var selectedDays: [Date] = []
     private var selectedCounts: [Int] = []
@@ -370,6 +396,9 @@ final class LowTreatmentsStatsViewController: UITableViewController {
     private var selectedTreatmentDates: [Date] = []
     private var selectedTreatmentGrams: [Double] = []
     private var selectedTreatmentHasBGCheck: [Bool] = []
+
+    private var selectedBGCheckDates: [Date] = []
+    private var selectedBGCheckMmol: [Double] = []
 
     private enum PeriodOption: CaseIterable {
         case d7, d14, d30, d90
@@ -396,11 +425,13 @@ final class LowTreatmentsStatsViewController: UITableViewController {
     private enum ModeOption: CaseIterable {
         case count
         case grams
+        case lowAndBg
 
         var title: String {
             switch self {
             case .count: return "Behandlingar"
             case .grams: return "Mängd (g)"
+            case .lowAndBg: return "Dextro & Stick"
             }
         }
     }
@@ -441,6 +472,23 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         v.maxVisibleCount = 1000000
         return v
     }()
+    
+    private let lineChartView: LineChartView = {
+        let v = LineChartView()
+        v.chartDescription.enabled = false
+        v.legend.enabled = true
+        v.minOffset = 8
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.rightAxis.enabled = true
+        return v
+    }()
 
     init(
         days: [Date],
@@ -448,7 +496,9 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         gramsPerDay: [Double],
         treatmentDates: [Date],
         treatmentGrams: [Double],
-        treatmentHasBGCheck: [Bool]
+        treatmentHasBGCheck: [Bool],
+        bgCheckDates: [Date],
+        bgCheckMmol: [Double]
     ) {
         self.allDays = days
         self.allCounts = counts
@@ -456,6 +506,8 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         self.allTreatmentDates = treatmentDates
         self.allTreatmentGrams = treatmentGrams
         self.allTreatmentHasBGCheck = treatmentHasBGCheck
+        self.allBGCheckDates = bgCheckDates
+        self.allBGCheckMmol = bgCheckMmol
         super.init(style: .insetGrouped)
     }
 
@@ -492,7 +544,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         selectedCounts = Array(allCounts[startIndex..<total])
         selectedGramsPerDay = Array(allGramsPerDay[startIndex..<total])
 
-        // Begränsa behandlingar till vald period (mellan första/sista dagen)
+        // Begränsa behandlingar och BG Check till vald period
         if let firstDay = selectedDays.first, let lastDay = selectedDays.last {
             let cal = Calendar.current
             let periodStart = cal.startOfDay(for: firstDay)
@@ -513,13 +565,31 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             selectedTreatmentDates = dates
             selectedTreatmentGrams = grams
             selectedTreatmentHasBGCheck = hasBG
+
+            var bgDates: [Date] = []
+            var bgMmol: [Double] = []
+            for idx in allBGCheckDates.indices {
+                let d = allBGCheckDates[idx]
+                if d >= periodStart && d < periodEnd {
+                    bgDates.append(d)
+                    bgMmol.append(allBGCheckMmol[idx])
+                }
+            }
+            selectedBGCheckDates = bgDates
+            selectedBGCheckMmol = bgMmol
         } else {
             selectedTreatmentDates = []
             selectedTreatmentGrams = []
             selectedTreatmentHasBGCheck = []
+            selectedBGCheckDates = []
+            selectedBGCheckMmol = []
         }
 
-        loadChartData()
+        if selectedMode == .lowAndBg {
+            loadLowAndBgChartData()
+        } else {
+            loadChartData()
+        }
         tableView.reloadData()
     }
 
@@ -534,7 +604,15 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         let index = sender.selectedSegmentIndex
         guard index >= 0 && index < ModeOption.allCases.count else { return }
         selectedMode = ModeOption.allCases[index]
-        loadChartData()
+
+        chartView.isHidden = (selectedMode == .lowAndBg)
+        lineChartView.isHidden = (selectedMode != .lowAndBg)
+
+        if selectedMode == .lowAndBg {
+            loadLowAndBgChartData()
+        } else {
+            loadChartData()
+        }
     }
 
     override func viewDidLoad() {
@@ -568,10 +646,12 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         container.addSubview(periodControl)
         container.addSubview(modeControl)
         container.addSubview(chartView)
+        container.addSubview(lineChartView)
 
         periodControl.translatesAutoresizingMaskIntoConstraints = false
         modeControl.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
+        lineChartView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             periodControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
@@ -585,8 +665,17 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             chartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
             chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24),
+
+            lineChartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
+            lineChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            lineChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            lineChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
         ])
+
+        // Utgångsläge: bar-chart visas, line-chart göms
+        chartView.isHidden = selectedMode == .lowAndBg
+        lineChartView.isHidden = selectedMode != .lowAndBg
 
         tableView.tableHeaderView = container
     }
@@ -617,6 +706,10 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             yValues = selectedCounts.map { Double($0) }
         case .grams:
             yValues = selectedGramsPerDay
+        case .lowAndBg:
+            // Ska normalt inte visas i bar-chart-läget,
+            // men vi faller tillbaka till antal behandlingar för säkerhets skull.
+            yValues = selectedCounts.map { Double($0) }
         }
 
         var entries: [BarChartDataEntry] = []
@@ -629,7 +722,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         }
 
         let dataSet = BarChartDataSet(entries: entries, label: "")
-        dataSet.setColor(.systemRed)
+        dataSet.setColor(.systemOrange)
         dataSet.drawValuesEnabled = false
 
         let data = BarChartData(dataSet: dataSet)
@@ -669,6 +762,113 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
         chartView.rightAxis.enabled = false
         chartView.setNeedsDisplay()
+    }
+    
+    /// Formatterar x-värden (timmar från periodens start) till datumsträngar på x-axeln.
+    private final class DateAxisFormatter: AxisValueFormatter {
+        private let referenceDate: Date
+        private let dateFormatter: DateFormatter
+
+        init(referenceDate: Date) {
+            self.referenceDate = referenceDate
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "sv_SE")
+            df.dateFormat = "MM-dd"
+            self.dateFormatter = df
+        }
+
+        func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+            // value = antal timmar från periodens start
+            let seconds = value * 3600.0
+            let date = referenceDate.addingTimeInterval(seconds)
+            return dateFormatter.string(from: date)
+        }
+    }
+
+    private func loadLowAndBgChartData() {
+        guard !selectedDays.isEmpty else {
+            lineChartView.data = nil
+            lineChartView.setNeedsDisplay()
+            return
+        }
+
+        let cal = Calendar.current
+        // Referens = periodens första dag kl 00:00
+        let referenceStart = cal.startOfDay(for: selectedDays.first!)
+
+        // Dextro-punkter: vänster y-axel (g)
+        var dextroEntries: [ChartDataEntry] = []
+        var maxGrams: Double = 0
+        for (date, grams) in zip(selectedTreatmentDates, selectedTreatmentGrams) {
+            // x = antal timmar sedan periodens start (ger granularitet ner på minuter)
+            let hoursSinceStart = date.timeIntervalSince(referenceStart) / 3600.0
+            dextroEntries.append(ChartDataEntry(x: hoursSinceStart, y: grams))
+            if grams > maxGrams { maxGrams = grams }
+        }
+
+        // Stick-punkter: höger y-axel (mmol/L)
+        var bgEntries: [ChartDataEntry] = []
+        var maxMmol: Double = 0
+        for (date, mmol) in zip(selectedBGCheckDates, selectedBGCheckMmol) {
+            let hoursSinceStart = date.timeIntervalSince(referenceStart) / 3600.0
+            bgEntries.append(ChartDataEntry(x: hoursSinceStart, y: mmol))
+            if mmol > maxMmol { maxMmol = mmol }
+        }
+
+        let dextroSet = LineChartDataSet(entries: dextroEntries, label: "Dextro (g)  ")
+        dextroSet.axisDependency = .left
+        dextroSet.setColor(.systemOrange)
+        dextroSet.setCircleColor(.label)
+        dextroSet.circleRadius = 3
+        dextroSet.drawCirclesEnabled = true
+        dextroSet.drawValuesEnabled = false
+        dextroSet.lineWidth = 0
+
+        let bgSet = LineChartDataSet(entries: bgEntries, label: "Fingerstick (mmol/L)")
+        bgSet.axisDependency = .right
+        bgSet.setColor(.systemRed)
+        bgSet.setCircleColor(.systemRed)
+        bgSet.circleRadius = 3
+        bgSet.drawCirclesEnabled = true
+        bgSet.drawValuesEnabled = false
+        bgSet.lineWidth = 0
+
+        let data = LineChartData(dataSets: [dextroSet, bgSet])
+        lineChartView.data = data
+
+        // X-axel: värden i timmar från periodens start, formatteras till datum
+        let xAxis = lineChartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.granularity = 24.0   // ca en etikett per dygn
+        xAxis.granularityEnabled = true
+        xAxis.valueFormatter = DateAxisFormatter(referenceDate: referenceStart)
+        xAxis.setLabelCount(min(6, selectedDays.count), force: false)
+
+        let leftAxis = lineChartView.leftAxis
+        leftAxis.axisMinimum = 0
+        let maxYLeft = max(1, maxGrams)
+        leftAxis.axisMaximum = maxYLeft * 1.2
+
+        let rightAxis = lineChartView.rightAxis
+        rightAxis.enabled = true
+        rightAxis.axisMinimum = 0
+        let maxYRight = max(1, maxMmol)
+        rightAxis.axisMaximum = maxYRight * 1.2
+
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+
+        leftAxis.gridColor = .clear//gridLineColor
+        leftAxis.gridLineWidth = 0.5
+        leftAxis.gridLineDashLengths = [2, 2]
+        
+        rightAxis.gridColor = gridLineColor//.clear
+        rightAxis.gridLineWidth = 0.5
+        rightAxis.gridLineDashLengths = [2, 2]
+
+        lineChartView.setNeedsDisplay()
     }
 
     @objc private func dismissSelf() {
