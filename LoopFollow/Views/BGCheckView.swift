@@ -429,8 +429,8 @@ final class BGCheckStatsViewController: UITableViewController {
     
     private func defaultPeriod() -> PeriodOption {
         let count = allDays.count
-        if count >= 90 { return .d90 }
-        if count >= 30 { return .d30 }
+        // Defaulta till 14 dagar om möjligt,
+        // annars falla tillbaka till kortare perioder vid behov.
         if count >= 14 { return .d14 }
         if count >= 7  { return .d7 }
         return .d7
@@ -544,6 +544,8 @@ final class BGCheckStatsViewController: UITableViewController {
         let dataSet = BarChartDataSet(entries: entries, label: "")
         dataSet.setColor(.systemRed)
         dataSet.drawValuesEnabled = false
+        dataSet.barBorderColor = .black
+        dataSet.barBorderWidth = 0.5
 
         let data = BarChartData(dataSet: dataSet)
         chartView.data = data

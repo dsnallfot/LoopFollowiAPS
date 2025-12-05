@@ -436,8 +436,23 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         }
     }
 
+    private enum TimeFilterOption: CaseIterable {
+        case allTime
+        case dayTime
+        case nightTime
+
+        var title: String {
+            switch self {
+            case .allTime:  return "Alla"
+            case .dayTime:  return "Dag (06–22)"
+            case .nightTime: return "Natt (22–06)"
+            }
+        }
+    }
+
     private var selectedPeriod: PeriodOption = .d14
     private var selectedMode: ModeOption = .count
+    private var selectedTimeFilter: TimeFilterOption = .allTime
 
     private lazy var periodControl: UISegmentedControl = {
         let items = PeriodOption.allCases.map { $0.title }
@@ -452,6 +467,14 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         let sc = UISegmentedControl(items: items)
         sc.selectedSegmentIndex = ModeOption.allCases.firstIndex(of: selectedMode) ?? 0
         sc.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
+        return sc
+    }()
+
+    private lazy var timeFilterControl: UISegmentedControl = {
+        let items = TimeFilterOption.allCases.map { $0.title }
+        let sc = UISegmentedControl(items: items)
+        sc.selectedSegmentIndex = TimeFilterOption.allCases.firstIndex(of: selectedTimeFilter) ?? 0
+        sc.addTarget(self, action: #selector(timeFilterChanged(_:)), for: .valueChanged)
         return sc
     }()
 
@@ -517,8 +540,8 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
     private func defaultPeriod() -> PeriodOption {
         let count = allDays.count
-        if count >= 90 { return .d90 }
-        if count >= 30 { return .d30 }
+        // Defaulta till 14 dagar om möjligt,
+        // annars falla tillbaka till kortare perioder vid behov.
         if count >= 14 { return .d14 }
         if count >= 7  { return .d7 }
         return .d7
@@ -632,6 +655,10 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         if let idx = PeriodOption.allCases.firstIndex(of: initialPeriod) {
             periodControl.selectedSegmentIndex = idx
         }
+        // Time filter default
+        if let filterIdx = TimeFilterOption.allCases.firstIndex(of: selectedTimeFilter) {
+            timeFilterControl.selectedSegmentIndex = filterIdx
+        }
 
         setupChartHeader()
         applyPeriod(initialPeriod)
@@ -645,11 +672,13 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
         container.addSubview(periodControl)
         container.addSubview(modeControl)
+        container.addSubview(timeFilterControl)
         container.addSubview(chartView)
         container.addSubview(scatterChartView)
 
         periodControl.translatesAutoresizingMaskIntoConstraints = false
         modeControl.translatesAutoresizingMaskIntoConstraints = false
+        timeFilterControl.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
         scatterChartView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -662,12 +691,16 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             modeControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             modeControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
-            chartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
+            timeFilterControl.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 8),
+            timeFilterControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            timeFilterControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            chartView.topAnchor.constraint(equalTo: timeFilterControl.bottomAnchor, constant: 12),
             chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
             chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24),
 
-            scatterChartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
+            scatterChartView.topAnchor.constraint(equalTo: timeFilterControl.bottomAnchor, constant: 12),
             scatterChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             scatterChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
             scatterChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
@@ -678,6 +711,32 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         scatterChartView.isHidden = selectedMode != .lowAndBg
 
         tableView.tableHeaderView = container
+    }
+    @objc private func timeFilterChanged(_ sender: UISegmentedControl) {
+        let index = sender.selectedSegmentIndex
+        guard index >= 0 && index < TimeFilterOption.allCases.count else { return }
+        selectedTimeFilter = TimeFilterOption.allCases[index]
+
+        if selectedMode == .lowAndBg {
+            loadLowAndBgChartData()
+        } else {
+            // För närvarande filtrerar vi bara scatter-grafen,
+            // men om du vill kan vi även låta stapeldiagrammet påverkas här.
+            loadChartData()
+        }
+    }
+
+    private func passesTimeFilter(_ date: Date) -> Bool {
+        switch selectedTimeFilter {
+        case .allTime:
+            return true
+        case .dayTime:
+            let hour = Calendar.current.component(.hour, from: date)
+            return hour >= 6 && hour < 22   // 06:00–21:59
+        case .nightTime:
+            let hour = Calendar.current.component(.hour, from: date)
+            return hour >= 22 || hour < 6   // 22:00–05:59
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -692,26 +751,56 @@ final class LowTreatmentsStatsViewController: UITableViewController {
     }
 
     private func loadChartData() {
-        guard selectedDays.count == selectedCounts.count,
-              selectedDays.count == selectedGramsPerDay.count,
-              !selectedDays.isEmpty else {
+        // Vi utgår nu bara från vald period + underliggande behandlingar,
+        // och räknar om per dag utifrån selectedTimeFilter.
+        guard !selectedDays.isEmpty else {
             chartView.data = nil
             chartView.setNeedsDisplay()
             return
         }
 
-        let yValues: [Double]
-        switch selectedMode {
-        case .count:
-            yValues = selectedCounts.map { Double($0) }
-        case .grams:
-            yValues = selectedGramsPerDay
-        case .lowAndBg:
-            // Ska normalt inte visas i bar-chart-läget,
-            // men vi faller tillbaka till antal behandlingar för säkerhets skull.
-            yValues = selectedCounts.map { Double($0) }
+        let cal = Calendar.current
+
+        // startOfDay -> dagindex i selectedDays
+        var indexByDayStart: [Date: Int] = [:]
+        for (idx, day) in selectedDays.enumerated() {
+            let dayStart = cal.startOfDay(for: day)
+            indexByDayStart[dayStart] = idx
         }
 
+        // Grundarrayen för staplarna (en stapel per dag)
+        var yValues = Array(repeating: 0.0, count: selectedDays.count)
+
+        switch selectedMode {
+        case .count, .lowAndBg:
+            // Räkna antal behandlingar per dag (filtrerat på dag/natt/allTime)
+            for date in selectedTreatmentDates {
+                guard passesTimeFilter(date) else { continue }
+                let dayStart = cal.startOfDay(for: date)
+                if let idx = indexByDayStart[dayStart] {
+                    yValues[idx] += 1.0
+                }
+            }
+
+        case .grams:
+            // Summera gram per dag (filtrerat på dag/natt/allTime)
+            for (date, grams) in zip(selectedTreatmentDates, selectedTreatmentGrams) {
+                guard passesTimeFilter(date) else { continue }
+                let dayStart = cal.startOfDay(for: date)
+                if let idx = indexByDayStart[dayStart] {
+                    yValues[idx] += grams
+                }
+            }
+        }
+
+        // Om allt är noll → töm grafen
+        if yValues.allSatisfy({ $0 == 0 }) {
+            chartView.data = nil
+            chartView.setNeedsDisplay()
+            return
+        }
+
+        // Bygg BarChartDataEntries
         var entries: [BarChartDataEntry] = []
         entries.reserveCapacity(selectedDays.count)
 
@@ -732,7 +821,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         chartView.autoScaleMinMaxEnabled = false
         chartView.notifyDataSetChanged()
 
-        // X-axis labels = datum (kompakt format) för varje index
+        // X-axis labels = datum (kompakt format) för varje dag i selectedDays
         let df = DateFormatter()
         df.locale = Locale(identifier: "sv_SE")
         df.dateFormat = "dd/MM"
@@ -745,7 +834,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
         xAxis.setLabelCount(min(6, labels.count), force: false)
 
-        // Y-axel – dynamiskt max utifrån högsta antal/summa gram per dag
+        // Y-axel – dynamiskt max
         let yAxis = chartView.leftAxis
         yAxis.axisMinimum = 0
         let maxY = max(1, maxValue)
@@ -810,6 +899,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         var dextroEntries: [ChartDataEntry] = []
         var maxGrams: Double = 0
         for (date, grams) in sortedDextro {
+            guard passesTimeFilter(date) else { continue }
             // x = antal timmar sedan periodens start (ger granularitet ner på minuter)
             let hoursSinceStart = date.timeIntervalSince(referenceStart) / 3600.0
             dextroEntries.append(ChartDataEntry(x: hoursSinceStart, y: grams))
@@ -820,6 +910,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         var bgEntries: [ChartDataEntry] = []
         var maxMmol: Double = 0
         for (date, mmol) in sortedBG {
+            guard passesTimeFilter(date) else { continue }
             let hoursSinceStart = date.timeIntervalSince(referenceStart) / 3600.0
             bgEntries.append(ChartDataEntry(x: hoursSinceStart, y: mmol))
             if mmol > maxMmol { maxMmol = mmol }
@@ -853,6 +944,22 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
         let data = ScatterChartData(dataSets: [dextroSet, bgSet])
         scatterChartView.data = data
+
+        // --- Custom legend --- //
+        let legend = scatterChartView.legend
+        legend.enabled = true
+
+        let dextroLegendEntry = LegendEntry(label: "Dextro (g)")
+        dextroLegendEntry.form = .circle
+        dextroLegendEntry.formSize = 8
+        dextroLegendEntry.formColor = .white
+
+        let bgLegendEntry = LegendEntry(label: "Fingerstick (mmol/L)")
+        bgLegendEntry.form = .circle
+        bgLegendEntry.formSize = 8
+        bgLegendEntry.formColor = .systemRed
+
+        legend.setCustom(entries: [dextroLegendEntry, bgLegendEntry])
 
         // X-axel: värden i timmar från periodens start, formatteras till datum
         let xAxis = scatterChartView.xAxis
