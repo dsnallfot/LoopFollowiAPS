@@ -436,7 +436,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         }
     }
 
-    private var selectedPeriod: PeriodOption = .d90
+    private var selectedPeriod: PeriodOption = .d14
     private var selectedMode: ModeOption = .count
 
     private lazy var periodControl: UISegmentedControl = {
@@ -817,7 +817,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
         let dextroSet = LineChartDataSet(entries: dextroEntries, label: "Dextro (g)  ")
         dextroSet.axisDependency = .left
-        dextroSet.setColor(.systemOrange)
+        dextroSet.setColor(.label)
         dextroSet.setCircleColor(.label)
         dextroSet.circleRadius = 3
         dextroSet.drawCirclesEnabled = true
