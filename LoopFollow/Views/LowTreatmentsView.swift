@@ -295,8 +295,8 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
         cell.textLabel?.text = text
         cell.textLabel?.font = .systemFont(ofSize: 17)
 
-        cell.imageView?.image = UIImage(systemName: "pill")
-        cell.imageView?.tintColor = .systemRed
+        cell.imageView?.image = UIImage(systemName: "pill.fill")
+        cell.imageView?.tintColor = .label
 
         // Right-aligned full date + time
         let rightLabel = UILabel()
@@ -473,8 +473,8 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         return v
     }()
     
-    private let lineChartView: LineChartView = {
-        let v = LineChartView()
+    private let scatterChartView: ScatterChartView = {
+        let v = ScatterChartView()
         v.chartDescription.enabled = false
         v.legend.enabled = true
         v.minOffset = 8
@@ -606,7 +606,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         selectedMode = ModeOption.allCases[index]
 
         chartView.isHidden = (selectedMode == .lowAndBg)
-        lineChartView.isHidden = (selectedMode != .lowAndBg)
+        scatterChartView.isHidden = (selectedMode != .lowAndBg)
 
         if selectedMode == .lowAndBg {
             loadLowAndBgChartData()
@@ -646,12 +646,12 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         container.addSubview(periodControl)
         container.addSubview(modeControl)
         container.addSubview(chartView)
-        container.addSubview(lineChartView)
+        container.addSubview(scatterChartView)
 
         periodControl.translatesAutoresizingMaskIntoConstraints = false
         modeControl.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
-        lineChartView.translatesAutoresizingMaskIntoConstraints = false
+        scatterChartView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             periodControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
@@ -667,15 +667,15 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
             chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24),
 
-            lineChartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
-            lineChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
-            lineChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            lineChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+            scatterChartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
+            scatterChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            scatterChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            scatterChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
         ])
 
         // Utgångsläge: bar-chart visas, line-chart göms
         chartView.isHidden = selectedMode == .lowAndBg
-        lineChartView.isHidden = selectedMode != .lowAndBg
+        scatterChartView.isHidden = selectedMode != .lowAndBg
 
         tableView.tableHeaderView = container
     }
@@ -722,8 +722,10 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         }
 
         let dataSet = BarChartDataSet(entries: entries, label: "")
-        dataSet.setColor(.label)
+        dataSet.setColor(.white)
         dataSet.drawValuesEnabled = false
+        dataSet.barBorderColor = .black
+        dataSet.barBorderWidth = 0.5
 
         let data = BarChartData(dataSet: dataSet)
         chartView.data = data
@@ -733,7 +735,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         // X-axis labels = datum (kompakt format) för varje index
         let df = DateFormatter()
         df.locale = Locale(identifier: "sv_SE")
-        df.dateFormat = "MM-dd"
+        df.dateFormat = "dd/MM"
 
         let labels = selectedDays.map { df.string(from: $0) }
         let xAxis = chartView.xAxis
@@ -773,7 +775,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             self.referenceDate = referenceDate
             let df = DateFormatter()
             df.locale = Locale(identifier: "sv_SE")
-            df.dateFormat = "MM-dd"
+            df.dateFormat = "dd/MM"
             self.dateFormatter = df
         }
 
@@ -787,8 +789,8 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
     private func loadLowAndBgChartData() {
         guard !selectedDays.isEmpty else {
-            lineChartView.data = nil
-            lineChartView.setNeedsDisplay()
+            scatterChartView.data = nil
+            scatterChartView.setNeedsDisplay()
             return
         }
 
@@ -796,10 +798,18 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         // Referens = periodens första dag kl 00:00
         let referenceStart = cal.startOfDay(for: selectedDays.first!)
 
+        // Sortera Dextro-behandlingar kronologiskt (äldst -> nyast)
+        let sortedDextro = zip(selectedTreatmentDates, selectedTreatmentGrams)
+            .sorted { $0.0 < $1.0 }
+
+        // Sortera BG Checks kronologiskt (äldst -> nyast)
+        let sortedBG = zip(selectedBGCheckDates, selectedBGCheckMmol)
+            .sorted { $0.0 < $1.0 }
+
         // Dextro-punkter: vänster y-axel (g)
         var dextroEntries: [ChartDataEntry] = []
         var maxGrams: Double = 0
-        for (date, grams) in zip(selectedTreatmentDates, selectedTreatmentGrams) {
+        for (date, grams) in sortedDextro {
             // x = antal timmar sedan periodens start (ger granularitet ner på minuter)
             let hoursSinceStart = date.timeIntervalSince(referenceStart) / 3600.0
             dextroEntries.append(ChartDataEntry(x: hoursSinceStart, y: grams))
@@ -809,7 +819,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         // Stick-punkter: höger y-axel (mmol/L)
         var bgEntries: [ChartDataEntry] = []
         var maxMmol: Double = 0
-        for (date, mmol) in zip(selectedBGCheckDates, selectedBGCheckMmol) {
+        for (date, mmol) in sortedBG {
             let hoursSinceStart = date.timeIntervalSince(referenceStart) / 3600.0
             bgEntries.append(ChartDataEntry(x: hoursSinceStart, y: mmol))
             if mmol > maxMmol { maxMmol = mmol }
@@ -817,64 +827,58 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
         // Om det inte finns några datapunkter alls
         if dextroEntries.isEmpty && bgEntries.isEmpty {
-            lineChartView.data = nil
-            lineChartView.setNeedsDisplay()
+            scatterChartView.data = nil
+            scatterChartView.setNeedsDisplay()
             return
         }
 
-        // Samlad X-range för båda dataset (för att undvika mismatch vid zoom)
-        let allXValues = (dextroEntries + bgEntries).map { $0.x }
-        let minX = allXValues.min() ?? 0
-        let maxX = allXValues.max() ?? (minX + 1)
-
-        let dextroSet = LineChartDataSet(entries: dextroEntries, label: "Dextro (g)")
+        let dextroSet = ScatterChartDataSet(entries: dextroEntries, label: "Dextro (g)")
         dextroSet.axisDependency = .left
-        dextroSet.setColor(.label)
-        dextroSet.setCircleColor(.label)
-        dextroSet.circleRadius = 3
-        dextroSet.drawCirclesEnabled = true
+        dextroSet.setColor(.black)
+        dextroSet.setScatterShape(.circle)
+        dextroSet.scatterShapeSize = 7
         dextroSet.drawValuesEnabled = false
-        dextroSet.lineWidth = 0
+        dextroSet.scatterShapeHoleRadius = 3
+        dextroSet.scatterShapeHoleColor = .white
+        
 
-        let bgSet = LineChartDataSet(entries: bgEntries, label: "Fingerstick (mmol/L)")
+        let bgSet = ScatterChartDataSet(entries: bgEntries, label: "Fingerstick (mmol/L)")
         bgSet.axisDependency = .right
-        bgSet.setColor(.systemRed)
-        bgSet.setCircleColor(.systemRed)
-        bgSet.circleRadius = 3
-        bgSet.drawCirclesEnabled = true
+        bgSet.setColor(.black)
+        bgSet.setScatterShape(.circle)
+        bgSet.scatterShapeSize = 7
         bgSet.drawValuesEnabled = false
-        bgSet.lineWidth = 0
+        bgSet.scatterShapeHoleRadius = 3
+        bgSet.scatterShapeHoleColor = .systemRed
 
-        let data = LineChartData(dataSets: [dextroSet, bgSet])
-        lineChartView.data = data
+        let data = ScatterChartData(dataSets: [dextroSet, bgSet])
+        scatterChartView.data = data
 
         // X-axel: värden i timmar från periodens start, formatteras till datum
-        let xAxis = lineChartView.xAxis
+        let xAxis = scatterChartView.xAxis
         xAxis.labelPosition = .bottom
         xAxis.granularity = 24.0   // ca en etikett per dygn
         xAxis.granularityEnabled = true
-        xAxis.axisMinimum = minX
-        xAxis.axisMaximum = maxX
         xAxis.valueFormatter = DateAxisFormatter(referenceDate: referenceStart)
         xAxis.setLabelCount(min(6, selectedDays.count), force: false)
 
-        let leftAxis = lineChartView.leftAxis
+        let leftAxis = scatterChartView.leftAxis
         leftAxis.axisMinimum = 0
         let maxYLeft = max(1, maxGrams)
         leftAxis.axisMaximum = maxYLeft * 1.2
-        // Lägg till enhets-suffix på vänster y-axel (gram)
+        // Enhet på vänster y-axel
         leftAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
             String(format: "%.0f g", value)
         }
 
-        let rightAxis = lineChartView.rightAxis
+        let rightAxis = scatterChartView.rightAxis
         rightAxis.enabled = true
         rightAxis.axisMinimum = 0
         let maxYRight = max(1, maxMmol)
         rightAxis.axisMaximum = maxYRight * 1.2
-        // Lägg till enhets-suffix på höger y-axel (mmol/L)
+        // Enhet på höger y-axel
         rightAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
-            String(format: "%.0f mm", value)
+            String(format: "%.0f mmol", value)
         }
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
@@ -890,7 +894,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         rightAxis.gridLineWidth = 0.5
         rightAxis.gridLineDashLengths = [2, 2]
 
-        lineChartView.setNeedsDisplay()
+        scatterChartView.setNeedsDisplay()
     }
 
     @objc private func dismissSelf() {

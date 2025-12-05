@@ -553,7 +553,7 @@ final class BGCheckStatsViewController: UITableViewController {
         // X-axis labels = datum (kompakt format) för varje index
         let df = DateFormatter()
         df.locale = Locale(identifier: "sv_SE")
-        df.dateFormat = "MM-dd"
+        df.dateFormat = "dd/MM"
 
         let labels = selectedDays.map { df.string(from: $0) }
         let xAxis = chartView.xAxis
