@@ -340,7 +340,7 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
             events: events,
             initialStart: startDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utfall efter Stick"
+            modalTitleString: "Utv. efter Stick"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

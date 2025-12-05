@@ -334,7 +334,7 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
             events: events,
             initialStart: startDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utfall efter Dextro"
+            modalTitleString: "Utv. efter Dextro"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

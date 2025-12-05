@@ -350,17 +350,17 @@ extension MainViewController {
         let title: String
         switch source {
         case .override:
-            title = "Utfall efter Override"
+            title = "Utv. efter Override"
         case .meal:
-            title = "Utfall efter Måltid"
+            title = "Utv. efter Måltid"
         case .bgCheck:
-            title = "Utfall efter Stick"
+            title = "Utv. efter Stick"
         case .pumpChange:
-            title = "Utfall efter Pumpbyte"
+            title = "Utv. efter Pumpbyte"
         case .sensorChange:
-            title = "Utfall efter Sensorbyte"
+            title = "Utv. efter Sensorbyte"
         case .lowTreatment:
-            title = "Utfall efter Dextro"
+            title = "Utv. efter Dextro"
         }
 
         let analysisVC = MealAnalysisView(
