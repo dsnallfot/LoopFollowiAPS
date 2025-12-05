@@ -722,7 +722,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         }
 
         let dataSet = BarChartDataSet(entries: entries, label: "")
-        dataSet.setColor(.systemOrange)
+        dataSet.setColor(.label)
         dataSet.drawValuesEnabled = false
 
         let data = BarChartData(dataSet: dataSet)
@@ -815,7 +815,19 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             if mmol > maxMmol { maxMmol = mmol }
         }
 
-        let dextroSet = LineChartDataSet(entries: dextroEntries, label: "Dextro (g)  ")
+        // Om det inte finns några datapunkter alls
+        if dextroEntries.isEmpty && bgEntries.isEmpty {
+            lineChartView.data = nil
+            lineChartView.setNeedsDisplay()
+            return
+        }
+
+        // Samlad X-range för båda dataset (för att undvika mismatch vid zoom)
+        let allXValues = (dextroEntries + bgEntries).map { $0.x }
+        let minX = allXValues.min() ?? 0
+        let maxX = allXValues.max() ?? (minX + 1)
+
+        let dextroSet = LineChartDataSet(entries: dextroEntries, label: "Dextro (g)")
         dextroSet.axisDependency = .left
         dextroSet.setColor(.label)
         dextroSet.setCircleColor(.label)
@@ -841,6 +853,8 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         xAxis.labelPosition = .bottom
         xAxis.granularity = 24.0   // ca en etikett per dygn
         xAxis.granularityEnabled = true
+        xAxis.axisMinimum = minX
+        xAxis.axisMaximum = maxX
         xAxis.valueFormatter = DateAxisFormatter(referenceDate: referenceStart)
         xAxis.setLabelCount(min(6, selectedDays.count), force: false)
 
@@ -848,23 +862,31 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         leftAxis.axisMinimum = 0
         let maxYLeft = max(1, maxGrams)
         leftAxis.axisMaximum = maxYLeft * 1.2
+        // Lägg till enhets-suffix på vänster y-axel (gram)
+        leftAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            String(format: "%.0f g", value)
+        }
 
         let rightAxis = lineChartView.rightAxis
         rightAxis.enabled = true
         rightAxis.axisMinimum = 0
         let maxYRight = max(1, maxMmol)
         rightAxis.axisMaximum = maxYRight * 1.2
+        // Lägg till enhets-suffix på höger y-axel (mmol/L)
+        rightAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            String(format: "%.0f mm", value)
+        }
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
         xAxis.gridColor = gridLineColor
         xAxis.gridLineWidth = 0.5
         xAxis.gridLineDashLengths = [2, 2]
 
-        leftAxis.gridColor = .clear//gridLineColor
+        leftAxis.gridColor = .clear
         leftAxis.gridLineWidth = 0.5
         leftAxis.gridLineDashLengths = [2, 2]
-        
-        rightAxis.gridColor = gridLineColor//.clear
+
+        rightAxis.gridColor = gridLineColor
         rightAxis.gridLineWidth = 0.5
         rightAxis.gridLineDashLengths = [2, 2]
 
