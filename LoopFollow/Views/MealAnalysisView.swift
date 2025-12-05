@@ -159,13 +159,34 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             title = "Utv. vald tid"
         }
 
+        let calendar = Calendar.current
+
         // When opened without a linked meal, default to "Dag" (today 00:00–now)
         if !modalWithTimestamp {
             durationControl.selectedSegmentIndex = 7   // "Dag"
             let now = Date()
-            startTime = Calendar.current.startOfDay(for: now)
+            startTime = calendar.startOfDay(for: now)
             endTime = now
         }
+        // When opened with an exact-midnight timestamp (00:00), treat it as a full-day report.
+        else if let override = initialStartOverride {
+            let dayStart = calendar.startOfDay(for: override)
+            // "modalWithExactMidnight": start time is exactly at this day's 00:00
+            let isExactMidnight = calendar.compare(override, to: dayStart, toGranularity: .minute) == .orderedSame
+            if isExactMidnight {
+                durationControl.selectedSegmentIndex = 7   // "Dag"
+                startTime = dayStart
+                if calendar.isDateInToday(dayStart) {
+                    // För idag: 00:00 → nu
+                    endTime = Date()
+                } else {
+                    // För tidigare dagar: fulla 24h
+                    endTime = calendar.date(byAdding: .day, value: 1, to: dayStart)
+                        ?? dayStart.addingTimeInterval(24 * 60 * 60)
+                }
+            }
+        }
+
         view.backgroundColor = .systemBackground
 
         // Configure picker limits (now‒24h ... ∞) and initial value
