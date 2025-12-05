@@ -60,7 +60,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         return true
     }
-    
+/* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Get root tab bar controller
         if let tabBar = window?.rootViewController as? UITabBarController,
@@ -76,6 +76,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             )
         }
     }
+ */
 
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         return orientationLock

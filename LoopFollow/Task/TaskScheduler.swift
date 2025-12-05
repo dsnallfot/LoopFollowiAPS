@@ -56,16 +56,25 @@ class TaskScheduler {
             guard var existingTask = self.tasks[id] else { return }
             existingTask.nextRun = newRunDate
             self.tasks[id] = existingTask
+            self.checkTasksNow() // Lagt tillbaka enligt nedan
+/* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
             // IMPORTANT: rescheduleTask is called by frequent timers (e.g. minAgoUpdate).
             // Don't fire overdue tasks here; only update the scheduler timer.
             self.rescheduleTimer()
+ */
         }
     }
 
     func checkTasksNow() {
+        queue.async {  // Lagt tillbaka enligt nedan
+            self.fireOverdueTasks()  // Lagt tillbaka enligt nedan
+            self.rescheduleTimer()  // Lagt tillbaka enligt nedan
+        }  // Lagt tillbaka enligt nedan
+/* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
         // Public "poke" to run due tasks now (used by heartbeats).
         fireOverdueTasks()
         rescheduleTimer()
+ */
     }
 
     // MARK: - Private
@@ -94,8 +103,11 @@ class TaskScheduler {
     }
     
     private func fireOverdueTasks() {
+        BackgroundAlertManager.shared.scheduleBackgroundAlert() // Lagt tillbaka enligt nedan
         let now = Date()
+/* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
         var didExecuteAnyTask = false
+*/
         let tasksToSkipAlarmCheck: Set<TaskID> = [.deviceStatus, .treatments, .fetchBG, .statsPrefetch]
         
         for taskID in TaskID.allCases {
@@ -122,16 +134,20 @@ class TaskScheduler {
             tasks[taskID] = updatedTask
 
             LogManager.shared.log(category: .taskScheduler, message: "Executing task \(taskID)", isDebug: true)
+/* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
             didExecuteAnyTask = true
+*/
 
             DispatchQueue.main.async {
                 task.action()
             }
         }
+/* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
         // Only reschedule background alerts if we actually executed something.
         if didExecuteAnyTask {
             BackgroundAlertManager.shared.scheduleBackgroundAlert()
         }
+ */
     }
 
     private func formatTime(_ date: Date) -> String {

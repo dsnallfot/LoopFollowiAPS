@@ -17,8 +17,9 @@ extension MainViewController {
             self.minAgoTaskAction()
         }
     }
-
     func minAgoTaskAction() {
+        
+/* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
         // MinAgo is UI-only. Avoid frequent work when backgrounded.
         let appState = UIApplication.shared.applicationState
         if appState == .background {
@@ -27,6 +28,7 @@ extension MainViewController {
                                                 to: Date().addingTimeInterval(300))
             return
         }
+*/
 
         guard bgData.count > 0, let lastBG = bgData.last else {
             DispatchQueue.main.async { [weak self] in
