@@ -11,6 +11,7 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
     struct LowTreatmentEntry {
         let date: Date
         let grams: Double
+        let hasBGCheckNearby: Bool
     }
 
     private var entries: [LowTreatmentEntry] = []
@@ -137,13 +138,15 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
         // Underliggande lista med enskilda behandlingar (för medel/max/streak-beräkningar)
         let treatmentDates = filteredEntries.map { $0.date }
         let treatmentGrams = filteredEntries.map { $0.grams }
+        let treatmentHasBGCheck = filteredEntries.map { $0.hasBGCheckNearby }
 
         let statsVC = LowTreatmentsStatsViewController(
             days: days,
             counts: counts,
             gramsPerDay: gramsPerDay,
             treatmentDates: treatmentDates,
-            treatmentGrams: treatmentGrams
+            treatmentGrams: treatmentGrams,
+            treatmentHasBGCheck: treatmentHasBGCheck
         )
         let nav = UINavigationController(rootViewController: statsVC)
         present(nav, animated: true)
@@ -208,6 +211,14 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
 
             // Antag att NightscoutCache.loadWindow(from:to:) returnerar (sgv, treatments)
             let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
+            
+            // Plocka ut alla BG Check-datum (för korsning mot dextro)
+            let bgCheckDates: [Date] = treatments.compactMap { t in
+                guard t.eventType == "BG Check" else { return nil }
+                return t.created_at
+            }
+
+            let windowSeconds: TimeInterval = 15 * 60 // ±15 min
 
             let lowTreatments: [LowTreatmentEntry] = treatments.compactMap { t -> LowTreatmentEntry? in
                 // Endast Carb Correction med carbs > 0 och minst en 🍬 i notes
@@ -216,7 +227,17 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
                 guard let notes = t.notes, notes.contains("🍬") else { return nil }
 
                 let date = t.created_at
-                return LowTreatmentEntry(date: date, grams: carbs)
+
+                // Finns det ett fingerstick (BG Check) inom ±15 minuter?
+                let hasBGCheckNearby = bgCheckDates.contains { bgDate in
+                    abs(bgDate.timeIntervalSince(date)) <= windowSeconds
+                }
+
+                return LowTreatmentEntry(
+                    date: date,
+                    grams: carbs,
+                    hasBGCheckNearby: hasBGCheckNearby
+                )
             }
             .sorted { $0.date > $1.date } // nyast överst
 
@@ -244,8 +265,12 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
         let entry = entries[indexPath.row]
         let gramsString = gramsFormatter.string(from: NSNumber(value: entry.grams)) ?? String(format: "%.0f", entry.grams)
 
-        // Leading SF Symbol + text "Låg behandling xx g"
-        cell.textLabel?.text = " Dextro • \(gramsString) g"
+        // Leading SF Symbol + text "Dextro • xx g" + ev. markering om fingerstick inom ±15 min
+        var text = " Dextro • \(gramsString) g"
+        if entry.hasBGCheckNearby {
+            text += " 🩸"
+        }
+        cell.textLabel?.text = text
         cell.textLabel?.font = .systemFont(ofSize: 17)
 
         cell.imageView?.image = UIImage(systemName: "pill")
@@ -335,6 +360,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
     // Underliggande enskilda behandlingar
     private let allTreatmentDates: [Date]
     private let allTreatmentGrams: [Double]
+    private let allTreatmentHasBGCheck: [Bool]
 
     // Aktuell vy (styrd av period/antal-gram)
     private var selectedDays: [Date] = []
@@ -343,6 +369,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
     private var selectedTreatmentDates: [Date] = []
     private var selectedTreatmentGrams: [Double] = []
+    private var selectedTreatmentHasBGCheck: [Bool] = []
 
     private enum PeriodOption: CaseIterable {
         case d7, d14, d30, d90
@@ -420,13 +447,15 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         counts: [Int],
         gramsPerDay: [Double],
         treatmentDates: [Date],
-        treatmentGrams: [Double]
+        treatmentGrams: [Double],
+        treatmentHasBGCheck: [Bool]
     ) {
         self.allDays = days
         self.allCounts = counts
         self.allGramsPerDay = gramsPerDay
         self.allTreatmentDates = treatmentDates
         self.allTreatmentGrams = treatmentGrams
+        self.allTreatmentHasBGCheck = treatmentHasBGCheck
         super.init(style: .insetGrouped)
     }
 
@@ -471,17 +500,23 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
             var dates: [Date] = []
             var grams: [Double] = []
-            for (d, g) in zip(allTreatmentDates, allTreatmentGrams) {
+            var hasBG: [Bool] = []
+
+            for idx in allTreatmentDates.indices {
+                let d = allTreatmentDates[idx]
                 if d >= periodStart && d < periodEnd {
                     dates.append(d)
-                    grams.append(g)
+                    grams.append(allTreatmentGrams[idx])
+                    hasBG.append(allTreatmentHasBGCheck[idx])
                 }
             }
             selectedTreatmentDates = dates
             selectedTreatmentGrams = grams
+            selectedTreatmentHasBGCheck = hasBG
         } else {
             selectedTreatmentDates = []
             selectedTreatmentGrams = []
+            selectedTreatmentHasBGCheck = []
         }
 
         loadChartData()
@@ -675,6 +710,10 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         return count
     }
 
+private var dextroWithFingerstickCount: Int {
+    selectedTreatmentHasBGCheck.filter { $0 }.count
+}
+
     private func longestStreakWithoutTreatmentHours() -> Int {
         guard selectedTreatmentDates.count >= 2 else {
             return 0
@@ -698,17 +737,18 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
     // MARK: - Table view
 
-    private enum Row: Int, CaseIterable {
-        case totalTreatments
-        case avgTreatmentsPerDay
-        case daysWithTreatmentsShare
-        case oneDextroShare
-        case twoDextroShare
-        case threePlusDextroShare
-        case nightTreatmentsCount
-        case nightTreatmentsShare
-        case longestNoTreatmentStreak
-    }
+private enum Row: Int, CaseIterable {
+    case totalTreatments
+    case avgTreatmentsPerDay
+    case daysWithTreatmentsShare
+    case oneDextroShare
+    case twoDextroShare
+    case threePlusDextroShare
+    case nightTreatmentsCount
+    case nightTreatmentsShare
+    case longestNoTreatmentStreak
+    case dextroWithFingerstickShare
+}
 
     override func numberOfSections(in tableView: UITableView) -> Int {
         return 1
@@ -765,6 +805,10 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             cell.textLabel?.text = "Längsta streak utan dextro"
             let hours = longestStreakWithoutTreatmentHours()
             cell.detailTextLabel?.text = "\(hours) h"
+
+        case .dextroWithFingerstickShare:
+            cell.textLabel?.text = "Andel dextro med fingerstick"
+            cell.detailTextLabel?.text = percentageString(dextroWithFingerstickCount, totalTreatments)
         }
 
         return cell

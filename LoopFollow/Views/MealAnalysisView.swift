@@ -156,7 +156,7 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             //title = "Utfall efter måltid"
             title = modalTitleString
         } else {
-            title = "Utveckling under vald tid"
+            title = "Utv. vald tid"
         }
 
         // When opened without a linked meal, default to "Dag" (today 00:00–now)
