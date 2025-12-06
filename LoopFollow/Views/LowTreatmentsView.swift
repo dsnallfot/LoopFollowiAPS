@@ -842,6 +842,18 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         yAxis.granularity = maxY <= 10 ? 1 : max(1, floor(maxY / 5))
         yAxis.granularityEnabled = true
 
+        // Enhet på vänster y-axel beroende på läge
+        switch selectedMode {
+        case .count, .lowAndBg:
+            yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+                String(format: "%.0f st", value)
+            }
+        case .grams:
+            yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+                String(format: "%.0f g", value)
+            }
+        }
+
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
         xAxis.gridColor = gridLineColor
         xAxis.gridLineWidth = 0.5
@@ -987,6 +999,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         rightAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
             String(format: "%.0f mmol", value)
         }
+        rightAxis.labelTextColor = .systemRed
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
         xAxis.gridColor = gridLineColor

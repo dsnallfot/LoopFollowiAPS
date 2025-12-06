@@ -572,6 +572,9 @@ final class BGCheckStatsViewController: UITableViewController {
         yAxis.axisMaximum = Double(maxY) * 1.2
         yAxis.granularity = 1
         yAxis.granularityEnabled = true
+        yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            String(format: "%.0f st", value)
+        }
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
         xAxis.gridColor = gridLineColor
