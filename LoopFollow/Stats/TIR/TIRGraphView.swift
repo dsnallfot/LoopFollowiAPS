@@ -74,10 +74,10 @@ struct TIRGraphView: UIViewRepresentable {
             )
             stackedEntries.append(stackedEntry)
 
-            // Label entries: place value labels at the vertical center of each segment,
-            // with a small upward visual offset. We clamp so att etiketten aldrig hamnar
-            // under 0-linjen eller under segmentets botten.
-            let labelOffset = 5.5
+            // Label entries: place value labels near the visual center of each segment.
+            // Charts ritar texten lite ovanför den matematiska y-koordinaten, så vi kompenserar
+            // med en hårdkodad offset i procent-enheter.
+            let labelOffset: Double = 5.5
 
             // Very Low segment
             let rawCenterVeryLow = point.veryLow / 2.0 - labelOffset
@@ -95,7 +95,7 @@ struct TIRGraphView: UIViewRepresentable {
             let centerLow = max(rawCenterLow, lowBottom)
             let lowLabelEntry = BarChartDataEntry(
                 x: Double(index),
-                y: centerLow ,
+                y: centerLow,
                 data: NSNumber(value: point.low)
             )
             lowLabelEntries.append(lowLabelEntry)
@@ -221,13 +221,13 @@ class InRangeValueFormatter: ValueFormatter {
         if let number = entry.data as? NSNumber {
             let inRange = number.doubleValue
             // Hide labels for very small segments to avoid clutter
-            if inRange < 5.0 {
+            if inRange < 10.0 {
                 return ""
             }
             return String(format: "%.0f %%", inRange)
         } else {
             // Fallback to the raw value if data is missing
-            if value < 5.0 {
+            if value < 10.0 {
                 return ""
             }
             return String(format: "%.0f %%", value)
