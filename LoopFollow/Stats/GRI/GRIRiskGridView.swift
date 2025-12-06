@@ -9,6 +9,21 @@ struct GRIRiskGridView: UIViewRepresentable {
     let hyperComponent: Double
     let gri: Double
 
+    /// Färg för hålet i den aktuella GRI-punkten, med samma zontrösklar som i GRIView.griColor(_:)
+    private func griHoleColor(for gri: Double) -> NSUIColor {
+        if gri <= 20 {
+            return NSUIColor.systemGreen
+        } else if gri <= 40 {
+            return NSUIColor.systemYellow
+        } else if gri <= 60 {
+            return NSUIColor.systemOrange
+        } else if gri <= 80 {
+            return NSUIColor.systemRed.withAlphaComponent(0.8)
+        } else {
+            return NSUIColor.systemRed
+        }
+    }
+
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
@@ -108,11 +123,11 @@ struct GRIRiskGridView: UIViewRepresentable {
 
         let currentPoint = ChartDataEntry(x: hypoComponent, y: hyperComponent)
         let currentDataSet = ScatterChartDataSet(entries: [currentPoint], label: "Current GRI")
-        currentDataSet.setColor(NSUIColor.label)
+        currentDataSet.setColor(NSUIColor.black)
         currentDataSet.scatterShapeSize = 12
         currentDataSet.setScatterShape(.circle)
         currentDataSet.scatterShapeHoleRadius = 4
-        currentDataSet.scatterShapeHoleColor = .blue.withAlphaComponent(0.8)
+        currentDataSet.scatterShapeHoleColor = griHoleColor(for: gri)
         currentDataSet.drawValuesEnabled = false
 
         let data = ScatterChartData()
