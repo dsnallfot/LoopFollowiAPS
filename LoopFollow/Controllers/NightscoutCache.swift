@@ -131,15 +131,24 @@ final class NightscoutCache {
         try data.write(to: fileURL(for: date), options: .atomic)
     }
 
-    /// Delete cached files older than `retentionDays`.
+    /// Delete cached files older than `retentionDays` calendar days.
+    /// Uses startOfDay in the current calendar to avoid off‑by‑one errors due to time-of-day/UTC.
     static func purgeOldFiles() {
-        let cutoff = Calendar.current.date(byAdding: .day,
-                                           value: -retentionDays,
-                                           to: Date())!
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: Date())
+        // Oldest day we want to keep = todayStart - (retentionDays - 1) days
+        // Example: retentionDays = 90 → keep 90 hela kalenderdagar inklusive idag.
+        let oldestToKeep = calendar.date(byAdding: .day,
+                                         value: -retentionDays + 1,
+                                         to: todayStart)!
+
         for url in (try? FileManager.default.contentsOfDirectory(at: dir,
                                                                  includingPropertiesForKeys: nil)) ?? [] {
-            if let day = isoFormatter.date(from: url.deletingPathExtension().lastPathComponent),
-               day < cutoff {
+            guard let dayDate = isoFormatter.date(from: url.deletingPathExtension().lastPathComponent) else {
+                continue
+            }
+            let localDayStart = calendar.startOfDay(for: dayDate)
+            if localDayStart < oldestToKeep {
                 try? FileManager.default.removeItem(at: url)
             }
         }

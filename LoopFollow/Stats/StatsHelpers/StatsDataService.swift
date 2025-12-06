@@ -683,10 +683,27 @@ class StatsDataService {
     // MARK: - Interval-baserade getters för trendberäkningar
 
     func getBGData(in interval: DateInterval) -> [ShareGlucoseData] {
-        guard let mainVC = mainViewController else { return [] }
+        guard let mainVC = mainViewController else {
+            LogManager.shared.log(
+                category: .analysis,
+                message: "getBGData(in:) – mainVC was nil",
+                isDebug: false
+            )
+            return []
+        }
+
         let start = interval.start.timeIntervalSince1970
         let end = interval.end.timeIntervalSince1970
-        return mainVC.statsBGData.filter { $0.date >= start && $0.date <= end }
+
+        let filtered = mainVC.statsBGData.filter { $0.date >= start && $0.date <= end }
+
+        LogManager.shared.log(
+            category: .analysis,
+            message: "getBGData(in:) – interval start=\(interval.start), end=\(interval.end), count=\(filtered.count)",
+            isDebug: false
+        )
+
+        return filtered
     }
 
     func getBGCheckDates(in interval: DateInterval) -> [TimeInterval] {

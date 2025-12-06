@@ -68,10 +68,15 @@ final class DailyStatsViewModel: ObservableObject {
         rowsWithSufficientGlucose.count
     }
 
-    /// Endast dagar med tillräckligt många glukosvärden (för att slippa med halva dagar)
+    /// Endast dagar med tillräckligt många glukosvärden (för att slippa med halva dagar).
+    /// För dagens datum är vi mer tillåtande (så fort vi har ett medelvärde).
+    /// Om inga dagar alls uppfyller kraven (t.ex. p.g.a. för få värden per dag),
+    /// faller vi tillbaka till att visa alla dagar som har ett medelvärde.
     var rowsWithSufficientGlucose: [DailyStatRow] {
         let calendar = Calendar.current
-        return rows.filter { row in
+
+        // Primär, strikt filtrering
+        let strict = rows.filter { row in
             // Dagens datum: inkludera alltid om vi har något glukosvärde (mean != nil)
             if calendar.isDateInToday(row.date) {
                 return row.meanGlucoseMmol != nil
@@ -85,6 +90,15 @@ final class DailyStatsViewModel: ObservableObject {
                 return false
             }
         }
+
+        if !strict.isEmpty {
+            return strict
+        }
+
+        // Fallback: om den strikta filtreringen inte gav några dagar alls,
+        // visa hellre alla dagar som har ett medelvärde beräknat.
+        let fallback = rows.filter { $0.meanGlucoseMmol != nil }
+        return fallback
     }
 
     var percentageOfDaysMeetingTarget: Double {
@@ -133,6 +147,11 @@ final class DailyStatsViewModel: ObservableObject {
 
             // 1. Hämta alla BG-värden inom detta intervall
             let bgAll = self.dataService.getBGData(in: analysisInterval)
+            LogManager.shared.log(
+                category: .analysis,
+                message: "DailyStatsViewModel.loadDailyStats - daysToShow=\(daysToShow), periodStart=\(periodStart), endOfToday=\(endOfToday), bgAllCount=\(bgAll.count)",
+                isDebug: false
+            )
             if bgAll.isEmpty {
                 DispatchQueue.main.async {
                     self.rows = []
