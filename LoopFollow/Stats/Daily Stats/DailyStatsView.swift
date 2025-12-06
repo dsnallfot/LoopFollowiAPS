@@ -98,9 +98,43 @@ struct DailyStatsView: View {
                 .overlay(nightscoutAlertOverlay)
         }
     }
+    
+    struct HighlightInfo {
+        let bestID: AnyHashable?
+        let worstID: AnyHashable?
+    }
 
     @ViewBuilder
     private var coreContent: some View {
+        // För-highlighting av bästa/sämsta dag baserat på aktuell TITR/TIR-vy
+        let daysInScope = viewModel.numberOfDaysInScope
+        
+        // Samma filtrering som tabellen använder (endast dagar med tightRangePercent)
+        let filteredRowsForHighlight = viewModel.rowsWithSufficientGlucose
+            .filter { $0.tightRangePercent != nil }
+        
+        let highlightInfo: HighlightInfo = {
+            // Endast highlight om vi har fler än 1 dag (dvs 7, 14, 30, 90 – inte "Idag"/1 dag)
+            guard daysInScope > 1 else {
+                return HighlightInfo(bestID: nil, worstID: nil)
+            }
+            
+            // Välj rätt procent att optimera på: TITR eller TIR beroende på showingTitrSummary
+            let metricRows: [(AnyHashable, Double)] = filteredRowsForHighlight.compactMap { row in
+                let metric = showingTitrSummary ? row.tightRangePercent : row.timeInRangePercent
+                guard let metric else { return nil }
+                return (AnyHashable(row.id), metric)
+            }
+            
+            guard metricRows.count > 1 else {
+                return HighlightInfo(bestID: nil, worstID: nil)
+            }
+            
+            let best = metricRows.max(by: { $0.1 < $1.1 })
+            let worst = metricRows.min(by: { $0.1 < $1.1 })
+            
+            return HighlightInfo(bestID: best?.0, worstID: worst?.0)
+        }()
         Group {
             if viewModel.isLoading && viewModel.rows.isEmpty {
                 ProgressView("Beräknar daglig statistik…")
@@ -119,7 +153,7 @@ struct DailyStatsView: View {
 
                             ScrollView(.vertical) {
                                 VStack(alignment: .leading, spacing: 0) {
-                                    ForEach(Array(viewModel.rowsWithSufficientGlucose.filter { $0.tightRangePercent != nil }.enumerated()), id: \.element.id) { index, row in
+                                    ForEach(Array(filteredRowsForHighlight.enumerated()), id: \.element.id) { index, row in
                                         HStack(spacing: columnSpacing) {
                                             Text(dateFormatter.string(from: row.date))
                                                 .frame(width: dateWidth, alignment: .leading)
@@ -136,7 +170,24 @@ struct DailyStatsView: View {
                                             emptyCell(row.emptyInfo, width: emptyWidth)
                                         }
                                         .padding(.vertical, 8)
-                                        .background(index % 2 == 0 ? Color(.systemGray5.withAlphaComponent(0.6)) : Color.clear)
+                                        .background({
+                                            // Bas: varannan rad ljusgrå
+                                            let baseColor: Color = index % 2 == 0
+                                            ? Color(.systemGray5.withAlphaComponent(0.5))
+                                            : Color.clear
+                                            
+                                            // Highlight: bästa / sämsta dag enligt aktuell TITR/TIR-vy
+                                            let isBest = highlightInfo.bestID != nil && AnyHashable(row.id) == highlightInfo.bestID
+                                            let isWorst = highlightInfo.worstID != nil && AnyHashable(row.id) == highlightInfo.worstID
+                                            
+                                            if isBest {
+                                                return Color.green.opacity(0.25)
+                                            } else if isWorst {
+                                                return Color.red.opacity(0.25)
+                                            } else {
+                                                return baseColor
+                                            }
+                                        }())
                                         .contentShape(Rectangle())
                                         .onTapGesture {
                                             selectedDateForReport = row.date
