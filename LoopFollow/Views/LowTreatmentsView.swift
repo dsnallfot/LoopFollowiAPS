@@ -846,7 +846,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         switch selectedMode {
         case .count, .lowAndBg:
             yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
-                String(format: "%.0f st", value)
+                String(format: "%.0f ggr", value)
             }
         case .grams:
             yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
