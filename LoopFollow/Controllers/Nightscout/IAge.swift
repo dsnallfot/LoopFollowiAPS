@@ -71,7 +71,7 @@ extension MainViewController {
                 if daysAgo >= 14 {
                     statusDot = "🔴"
                     infoManager.setPriority(true, for: .iage)
-                } else if daysAgo >= 7 {
+                } else if daysAgo >= 9 {
                     statusDot = "🟡"
                     infoManager.setPriority(true, for: .iage)
                 } else {
