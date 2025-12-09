@@ -147,40 +147,42 @@ struct TIRGraphView: UIViewRepresentable {
         ]
         stackedSet.stackLabels = ["Very Low", "Low", "In Range", "High", "Very High"]
         stackedSet.drawValuesEnabled = false
+        stackedSet.barBorderColor = .black
+        stackedSet.barBorderWidth = 0.5
 
         // Transparent datasets used only for drawing centered percentage labels per segment
         let veryLowLabelSet = BarChartDataSet(entries: veryLowLabelEntries, label: "")
         veryLowLabelSet.colors = [UIColor.clear]
         veryLowLabelSet.drawValuesEnabled = true
-        veryLowLabelSet.valueFont = .systemFont(ofSize: 9, weight: .semibold)
+        veryLowLabelSet.valueFont = .systemFont(ofSize: 9, weight: .bold)
         veryLowLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
         veryLowLabelSet.valueFormatter = InRangeValueFormatter()
 
         let lowLabelSet = BarChartDataSet(entries: lowLabelEntries, label: "")
         lowLabelSet.colors = [UIColor.clear]
         lowLabelSet.drawValuesEnabled = true
-        lowLabelSet.valueFont = .systemFont(ofSize: 9, weight: .semibold)
+        lowLabelSet.valueFont = .systemFont(ofSize: 9, weight: .bold)
         lowLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
         lowLabelSet.valueFormatter = InRangeValueFormatter()
 
         let inRangeLabelSet = BarChartDataSet(entries: inRangeLabelEntries, label: "")
         inRangeLabelSet.colors = [UIColor.clear]
         inRangeLabelSet.drawValuesEnabled = true
-        inRangeLabelSet.valueFont = .systemFont(ofSize: 9, weight: .semibold)
+        inRangeLabelSet.valueFont = .systemFont(ofSize: 9, weight: .bold)
         inRangeLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
         inRangeLabelSet.valueFormatter = InRangeValueFormatter()
 
         let highLabelSet = BarChartDataSet(entries: highLabelEntries, label: "")
         highLabelSet.colors = [UIColor.clear]
         highLabelSet.drawValuesEnabled = true
-        highLabelSet.valueFont = .systemFont(ofSize: 9, weight: .semibold)
+        highLabelSet.valueFont = .systemFont(ofSize: 9, weight: .bold)
         highLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
         highLabelSet.valueFormatter = InRangeValueFormatter()
 
         let veryHighLabelSet = BarChartDataSet(entries: veryHighLabelEntries, label: "")
         veryHighLabelSet.colors = [UIColor.clear]
         veryHighLabelSet.drawValuesEnabled = true
-        veryHighLabelSet.valueFont = .systemFont(ofSize: 9, weight: .semibold)
+        veryHighLabelSet.valueFont = .systemFont(ofSize: 9, weight: .bold)
         veryHighLabelSet.valueTextColor = .white.withAlphaComponent(0.8)
         veryHighLabelSet.valueFormatter = InRangeValueFormatter()
 
