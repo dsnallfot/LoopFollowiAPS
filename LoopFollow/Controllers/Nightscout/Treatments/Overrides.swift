@@ -135,7 +135,7 @@ extension MainViewController {
 
         infoManager.updateInfoData(type: .overridePercentage, value: percentageString)
         LogManager.shared.log(category: .general, message: "Override percentage updated: \(percentageString)", isDebug: true)
-        LogManager.shared.log(category: .general, message: "Override factor updated: \(sharedOverrideFactor)", isDebug: true)
+        //LogManager.shared.log(category: .general, message: "Override factor updated: \(sharedOverrideFactor)", isDebug: true)
         
         if UserDefaultsRepository.graphOtherTreatments.value {
             updateOverrideGraph()

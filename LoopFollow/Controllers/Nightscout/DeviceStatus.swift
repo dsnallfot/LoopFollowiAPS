@@ -270,7 +270,7 @@ extension MainViewController {
                     
                     let autosensMinMaxString = "\(autosensMin)/\(autosensMax)"
                     infoManager.updateInfoData(type: .autosensMinMax, value: autosensMinMaxString)
-                    LogManager.shared.log(category: .deviceStatus, message: "Autosens Min/Max updated from additional info: \(autosensMinMaxString)", isDebug: true)
+                    //LogManager.shared.log(category: .deviceStatus, message: "Autosens Min/Max updated from additional info: \(autosensMinMaxString)", isDebug: true)
                 } else {
                     LogManager.shared.log(category: .deviceStatus, message: "Additional info not available or in unexpected format.")
                 }

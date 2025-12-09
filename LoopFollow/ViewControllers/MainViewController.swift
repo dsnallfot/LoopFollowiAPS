@@ -249,6 +249,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         
         refreshScrollView.delegate = self
         NotificationCenter.default.addObserver(self, selector: #selector(refresh), name: NSNotification.Name("refresh"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleTreatmentsCacheRefreshRequest(_:)), name: NSNotification.Name("RefreshTreatmentsCacheForDay"), object: nil)
         
         // Check UserDefaults and change text color if needed
             if UserDefaultsRepository.colorBGText.value {
@@ -295,9 +296,22 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     
     deinit {
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name("refresh"), object: nil)
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name("RefreshTreatmentsCacheForDay"), object: nil)
     }
     
     // Clean all timers and start new ones when refreshing
+    @objc private func handleTreatmentsCacheRefreshRequest(_ notification: Notification) {
+        guard UserDefaultsRepository.downloadTreatments.value,
+              IsNightscoutEnabled() else { return }
+
+        guard let day = notification.userInfo?["day"] as? Date else { return }
+
+        // Use the existing cache helper to fetch and update treatments cache for this day only
+        WebLoadNSTreatmentsCache(forDay: day) {
+            // No-op completion; TreatmentsTableView listens for the
+            // "TreatmentsCacheUpdated" notification to reload its UI.
+        }
+    }
     @objc func refresh() {
         LogManager.shared.log(category: .general, message: "Refreshing")
 

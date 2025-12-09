@@ -172,14 +172,35 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         datePicker.date = selectedDate
         setupConstraints()
         
-        // Initial load for today
+        // Initial load for today (from cache if available, else fallback fetch)
         loadTreatments(for: selectedDate)
+
+        // Listen for cache updates so we can refresh the table when new
+        // treatments for the selected day have been written to NightscoutCache.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleTreatmentsCacheUpdated(_:)),
+            name: NSNotification.Name("TreatmentsCacheUpdated"),
+            object: nil
+        )
         
         // Register observers for shortcut callback notifications
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutSuccess), name: NSNotification.Name("ShortcutSuccess"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutError), name: NSNotification.Name("ShortcutError"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutCancel), name: NSNotification.Name("ShortcutCancel"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
+
+        // Ask MainViewController to perform a lightweight, treatments-only
+        // refresh for the currently selected calendar day. It will fetch
+        // treatments from Nightscout and update NightscoutCache, which in
+        // turn triggers a "TreatmentsCacheUpdated" notification.
+        //let cal = Calendar.current
+        let dayStart = cal.startOfDay(for: selectedDate)
+        NotificationCenter.default.post(
+            name: NSNotification.Name("RefreshTreatmentsCacheForDay"),
+            object: nil,
+            userInfo: ["day": dayStart]
+        )
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -192,6 +213,18 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func handleTreatmentsCacheUpdated(_ notification: Notification) {
+        // Only react if the updated day matches the currently selected day
+        guard let updatedDayStart = notification.userInfo?["dayStart"] as? Date else { return }
+        let cal = Calendar.current
+        let selectedDayStart = cal.startOfDay(for: selectedDate)
+        guard cal.isDate(updatedDayStart, inSameDayAs: selectedDayStart) else { return }
+
+        // Reload treatments from cache for the selected date now that
+        // NightscoutCache has been refreshed.
+        loadTreatments(for: selectedDate)
     }
     
     // MARK: - Navigation Bar Setup

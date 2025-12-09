@@ -695,7 +695,8 @@ class StatsDataService {
         let start = interval.start.timeIntervalSince1970
         let end = interval.end.timeIntervalSince1970
 
-        let filtered = mainVC.statsBGData.filter { $0.date >= start && $0.date <= end }
+        //let filtered = mainVC.statsBGData.filter { $0.date >= start && $0.date <= end }
+        let filtered = mainVC.statsBGData.filter { $0.date >= start && $0.date < end }
 
         LogManager.shared.log(
             category: .analysis,

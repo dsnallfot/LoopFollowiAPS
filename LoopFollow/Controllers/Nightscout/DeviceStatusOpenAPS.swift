@@ -199,7 +199,7 @@ extension MainViewController {
                         let formattedMinPredBGString = String(format: "%.1f", minPredBG)
                         sharedMinPredBG = minPredBG
                         sharedRawMinPredBG = formattedMinPredBGString
-                        LogManager.shared.log(category: .deviceStatus, message: "Extracted MinPredBG from reason: \(formattedMinPredBGString)", isDebug: true)
+                        //LogManager.shared.log(category: .deviceStatus, message: "Extracted MinPredBG from reason: \(formattedMinPredBGString)", isDebug: true)
                     } else {
                         LogManager.shared.log(category: .deviceStatus, message: "Failed to convert extracted MinPredBG to Double: \(minPredBGString)", isDebug: true)
                     }
@@ -306,7 +306,7 @@ extension MainViewController {
                     let bgiString = "\(formattedBGI)"
                     
                     infoManager.updateInfoData(type: .bgi, value: bgiString, unit: "mmol/L")
-                    LogManager.shared.log(category: .deviceStatus, message: "Extracted BGI: \(bgiString)", isDebug: true)
+                    //LogManager.shared.log(category: .deviceStatus, message: "Extracted BGI: \(bgiString)", isDebug: true)
                 } else {
                     LogManager.shared.log(category: .deviceStatus, message: "Failed to convert BGI value to Double.", isDebug: true)
                 }
@@ -329,7 +329,7 @@ extension MainViewController {
                     let devString = "\(formattedDev)"
 
                     infoManager.updateInfoData(type: .dev, value: devString, unit: "mmol/L")
-                    LogManager.shared.log(category: .deviceStatus, message: "Extracted Dev: \(devString)", isDebug: true)
+                    //LogManager.shared.log(category: .deviceStatus, message: "Extracted Dev: \(devString)", isDebug: true)
                 } else {
                     LogManager.shared.log(category: .deviceStatus, message: "Failed to convert Dev value to Double.", isDebug: true)
                 }
@@ -349,7 +349,7 @@ extension MainViewController {
                 
                 if let afValue = Double(afValueString) {
                     infoManager.updateInfoDataForAF(value: afValue)
-                    LogManager.shared.log(category: .deviceStatus, message: "Extracted AF: \(afValue)", isDebug: true)
+                    //LogManager.shared.log(category: .deviceStatus, message: "Extracted AF: \(afValue)", isDebug: true)
                 } else {
                     LogManager.shared.log(category: .deviceStatus, message: "Invalid AF value extracted from reason string: \(afValueString)", isDebug: true)
                 }
@@ -369,7 +369,7 @@ extension MainViewController {
                 
                 if let smbRatioValue = Double(smbRatioValueString) {
                     infoManager.updateInfoDataForSMBRatio(value: smbRatioValue)
-                    LogManager.shared.log(category: .deviceStatus, message: "Extracted SMB Ratio: \(smbRatioValue)", isDebug: true)
+                    //LogManager.shared.log(category: .deviceStatus, message: "Extracted SMB Ratio: \(smbRatioValue)", isDebug: true)
                 } else {
                     LogManager.shared.log(category: .deviceStatus, message: "Invalid SMB Ratio value extracted from reason string: \(smbRatioValueString)", isDebug: true)
                     infoManager.updateInfoDataForSMBRatio(value: 0.50) // Default to 0.50 if parsing fails
@@ -399,7 +399,7 @@ extension MainViewController {
                         value: formattedValue,
                         unit: unitForInfo
                     )
-                    LogManager.shared.log(category: .deviceStatus, message: "Extracted MaxSMB: \(formattedValue) \(unitForInfo)", isDebug: true)
+                    //LogManager.shared.log(category: .deviceStatus, message: "Extracted MaxSMB: \(formattedValue) \(unitForInfo)", isDebug: true)
                 } else {
                     LogManager.shared.log(category: .deviceStatus, message: "Invalid MaxSMB value extracted: \(maxSmbValueString), defaulting to N/A", isDebug: true)
                     infoManager.updateInfoData(
@@ -431,7 +431,7 @@ extension MainViewController {
                 
                 infoManager.updateInfoData(type: .smbStatus, value: smbStatusString)
                 
-                LogManager.shared.log(category: .deviceStatus, message: "SMB Status Updated: \(smbStatusString)", isDebug: true)
+                //LogManager.shared.log(category: .deviceStatus, message: "SMB Status Updated: \(smbStatusString)", isDebug: true)
             }
         }
         
@@ -511,10 +511,10 @@ extension MainViewController {
 
             if let formattedSensLimit = formattedSensLimit {
                 infoManager.updateInfoData(type: .autosens, value: formattedSensLimit)
-                LogManager.shared.log(category: .deviceStatus, message: "Sensitivity Ratio (limit) updated: \(formattedSensLimit)", isDebug: true)
+                //LogManager.shared.log(category: .deviceStatus, message: "Sensitivity Ratio (limit) updated: \(formattedSensLimit)", isDebug: true)
             } else {
                 infoManager.updateInfoData(type: .autosens, value: formattedSens)
-                LogManager.shared.log(category: .deviceStatus, message: "Sensitivity Ratio updated: \(formattedSens)", isDebug: true)
+                //LogManager.shared.log(category: .deviceStatus, message: "Sensitivity Ratio updated: \(formattedSens)", isDebug: true)
             }
         } else {
             LogManager.shared.log(category: .deviceStatus, message: "Missing or invalid sensitivityRatio in enactedOrSuggested.", isDebug: true)

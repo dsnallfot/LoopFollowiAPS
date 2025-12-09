@@ -77,6 +77,13 @@ extension MainViewController {
             displayText = formattedDuration + " min sedan"
         }
 
+        // Debug logging for minAgo calculation
+        /*LogManager.shared.log(
+            category: .analysis,
+            message: "[MinAgo] lastBG.ts=\(bgSeconds), secondsAgo=\(secondsAgo), latestMinAgoString='\(latestMinAgoString)', newDisplayText='\(displayText)'",
+            isDebug: true
+        )
+         */
         // Update UI only if the display text has changed
         if displayText != latestMinAgoString {
             DispatchQueue.main.async { [weak self] in

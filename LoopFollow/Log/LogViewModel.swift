@@ -1,10 +1,4 @@
-//
-//  LogViewModel.swift
-//  LoopFollow
-//
-//  Created by Jonas Björkert on 2025-01-13.
-//  Copyright © 2025 Jon Fawcett. All rights reserved.
-//
+// LogViewModel.swift
 
 import Foundation
 import Combine
@@ -24,6 +18,10 @@ class LogViewModel: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
 
+    /// Hårt tak för hur många loggrader vi visar (nyaste först).
+    /// Du kan justera den här uppåt/nedåt om du vill.
+    private let maxDisplayedLines = 5000
+
     init() {
         let defaults = UserDefaults.standard
 
@@ -41,8 +39,10 @@ class LogViewModel: ObservableObject {
         // Restore highlight mode (defaults to false if key missing)
         searchResultsIsHighlighted = defaults.bool(forKey: DefaultsKeys.searchResultsIsHighlighted)
 
+        // När kategori / söktext / highlight ändras → filtrera om och persistera
         Publishers.CombineLatest3($selectedCategory, $searchText, $searchResultsIsHighlighted)
             .sink { [weak self] category, search, isHighlighted in
+                guard let self = self else { return }
                 let defaults = UserDefaults.standard
 
                 // Persist selected category (or clear if nil)
@@ -58,27 +58,31 @@ class LogViewModel: ObservableObject {
                 // Persist highlight mode
                 defaults.set(isHighlighted, forKey: DefaultsKeys.searchResultsIsHighlighted)
 
-                self?.filterLogs(category: category, searchText: search, searchResultsIsHighlighted: isHighlighted)
+                self.filterLogs(category: category,
+                                searchText: search,
+                                searchResultsIsHighlighted: isHighlighted)
             }
             .store(in: &cancellables)
-        
-        // Daniel: Test to subscribe to log updates from LogManager instead of using timer
-                LogManager.shared.logUpdateSubject
-                    .receive(on: DispatchQueue.main)
-                    .sink { [weak self] in
-                        self?.loadLogEntries()
-                    }
-                    .store(in: &cancellables)
 
+        // ⚡️ Throttle/debounce logguppdateringar så vi inte läser filen 50 ggr/sek
+        LogManager.shared.logUpdateSubject
+            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
+            .sink { [weak self] in
+                self?.loadLogEntries()
+            }
+            .store(in: &cancellables)
+
+        // Initial inläsning
         loadLogEntries()
-/*
+        /*
+        // Gamla timer-lösningen (behövs inte längre):
         Timer.publish(every: 5.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.loadLogEntries()
             }
             .store(in: &cancellables)
- */
+        */
     }
 
     func loadLogEntries() {
@@ -97,17 +101,33 @@ class LogViewModel: ObservableObject {
 
             do {
                 let logContent = try String(contentsOf: logFileURL, encoding: .utf8)
-                var logLines = logContent.components(separatedBy: .newlines)
-                logLines = logLines.filter { !$0.isEmpty }
 
-                // Reverse the log lines to have newest first
-                logLines.reverse()
+                // Splitta upp i rader + behåll originalindex (0 = äldsta raden i filen)
+                // så att vi kan använda indexet som stabilt ID.
+                var enumeratedLines = logContent
+                    .components(separatedBy: .newlines)
+                    .enumerated()
+                    .filter { !$0.element.isEmpty }   // släng tomma
 
-                let uniqueLogEntries = logLines.map { LogEntry(id: UUID(), text: $0) }
+                // Behåll bara de senaste maxDisplayedLines raderna (baserat på filens naturliga ordning)
+                if enumeratedLines.count > maxDisplayedLines {
+                    enumeratedLines = Array(enumeratedLines.suffix(maxDisplayedLines))
+                }
+
+                // Bygg LogEntry med stabila IDs = radindex i filen.
+                // entriesForward = äldst → nyast, vi vänder sen till nyast → äldst.
+                let entriesForward: [LogEntry] = enumeratedLines.map { (index, line) in
+                    LogEntry(id: index, text: line)
+                }
+
+                let newestFirst = Array(entriesForward.reversed())
 
                 DispatchQueue.main.async {
-                    self.allLogEntries = uniqueLogEntries
-                    self.filterLogs(category: self.selectedCategory, searchText: self.searchText, searchResultsIsHighlighted: self.searchResultsIsHighlighted)
+                    self.allLogEntries = newestFirst
+                    // Kör om filtreringen med nuvarande inställningar
+                    self.filterLogs(category: self.selectedCategory,
+                                    searchText: self.searchText,
+                                    searchResultsIsHighlighted: self.searchResultsIsHighlighted)
                 }
             } catch {
                 print("Error reading log file: \(error)")
@@ -119,7 +139,9 @@ class LogViewModel: ObservableObject {
         }
     }
 
-    private func filterLogs(category: LogManager.Category?, searchText: String, searchResultsIsHighlighted: Bool) {
+    private func filterLogs(category: LogManager.Category?,
+                            searchText: String,
+                            searchResultsIsHighlighted: Bool) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             var filtered = self.allLogEntries
@@ -127,20 +149,27 @@ class LogViewModel: ObservableObject {
             // Filter by category and remove category tag
             if let category = category {
                 let categoryTag = "[\(category.rawValue)] "
-                filtered = filtered.filter { $0.text.contains(categoryTag) }
+                filtered = filtered
+                    .filter { $0.text.contains(categoryTag) }
                     .map { logEntry in
                         var text = logEntry.text
                         if let range = text.range(of: categoryTag) {
                             text.removeSubrange(range)
                         }
-                        return LogEntry(id: logEntry.id, text: text.trimmingCharacters(in: .whitespaces))
+                        return LogEntry(id: logEntry.id,
+                                        text: text.trimmingCharacters(in: .whitespaces))
                     }
             }
 
             // Filter by search text only when not in highlight mode
             if !searchText.isEmpty && !searchResultsIsHighlighted {
-                filtered = filtered.filter { $0.text.localizedCaseInsensitiveContains(searchText) }
+                filtered = filtered.filter {
+                    $0.text.localizedCaseInsensitiveContains(searchText)
+                }
             }
+
+            // (Valfri extra-säkerhet: om du vill ha annat max-tak efter filtrering)
+            // let limited = filtered.prefix(self.maxDisplayedLines)
 
             DispatchQueue.main.async {
                 self.filteredLogEntries = filtered

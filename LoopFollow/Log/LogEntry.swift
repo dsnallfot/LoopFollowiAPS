@@ -9,6 +9,9 @@
 import Foundation
 
 struct LogEntry: Identifiable {
-    let id: UUID
-    let text: String
+/// Stabilt ID baserat på radens index i loggfilen (från början av filen).
+/// Äldre rader får lägre index, nyare får högre. Detta ändras inte mellan
+/// omladdningar så länge filen bara får nya rader appended.
+let id: Int
+let text: String
 }
