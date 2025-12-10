@@ -248,6 +248,13 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         refreshScrollView.alwaysBounceVertical = true
         
         refreshScrollView.delegate = self
+        // Tap on BGText area to trigger DexcomFollow shortcut
+        let bgTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleBGTapOnBGText(_:)))
+        bgTapGesture.numberOfTapsRequired = 2
+        bgTapGesture.numberOfTouchesRequired = 1
+        bgTapGesture.cancelsTouchesInView = false // don't interfere with pull-to-refresh
+        refreshScrollView.addGestureRecognizer(bgTapGesture)
+
         NotificationCenter.default.addObserver(self, selector: #selector(refresh), name: NSNotification.Name("refresh"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleTreatmentsCacheRefreshRequest(_:)), name: NSNotification.Name("RefreshTreatmentsCacheForDay"), object: nil)
         
@@ -358,6 +365,19 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             } else {
                 BGText.transform = CGAffineTransform.identity
             }
+        }
+    }
+
+    @objc private func handleBGTapOnBGText(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+
+        let urlString = "shortcuts://run-shortcut?name=DexcomFollow"
+        if let url = URL(string: urlString) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
     }
     /*
