@@ -440,7 +440,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         let container = UIView()
         container.tag = popupTag
         container.translatesAutoresizingMaskIntoConstraints = false
-        container.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.85)
+        container.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.9)
         container.layer.cornerRadius = 16
         container.layer.masksToBounds = false
         container.layer.shadowColor = UIColor.black.cgColor
