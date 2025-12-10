@@ -479,8 +479,24 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         bgLabel.translatesAutoresizingMaskIntoConstraints = false
         bgLabel.font = UIFont.systemFont(ofSize: 60, weight: .heavy)
         bgLabel.textAlignment = .center
-        bgLabel.textColor = .white
-        bgLabel.text = bgString
+
+        // Check if reading is older than 6 minutes
+        let isStale = Date().timeIntervalSince(timestamp) > 6 * 60
+
+        if isStale {
+            // Gray, strikethrough to indicate missed reading
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: bgLabel.font as Any,
+                .foregroundColor: UIColor.white,
+                .strikethroughStyle: NSUnderlineStyle.single.rawValue,
+                .strikethroughColor: UIColor.systemGray
+            ]
+            bgLabel.attributedText = NSAttributedString(string: bgString, attributes: attributes)
+        } else {
+            // Normal, fresh reading
+            bgLabel.textColor = .white
+            bgLabel.text = bgString
+        }
 
         let directionLabel = UILabel()
         directionLabel.translatesAutoresizingMaskIntoConstraints = false
