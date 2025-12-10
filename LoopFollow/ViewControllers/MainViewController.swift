@@ -440,7 +440,15 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         let container = UIView()
         container.tag = popupTag
         container.translatesAutoresizingMaskIntoConstraints = false
-        container.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.9)
+
+        // Dexcom-grön bakgrund
+        container.backgroundColor = UIColor(
+            red: 76.0/255.0,
+            green: 179.0/255.0,
+            blue: 72.0/255.0,
+            alpha: 1.0
+        )
+
         container.layer.cornerRadius = 16
         container.layer.masksToBounds = false
         container.layer.shadowColor = UIColor.black.cgColor
@@ -448,18 +456,23 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         container.layer.shadowRadius = 8
         container.layer.shadowOffset = CGSize(width: 0, height: 4)
 
+        // 3 px kantlinje, label-färgad
+        container.layer.borderWidth = 3
+        container.layer.borderColor = UIColor.white.cgColor
+
         // Title label
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = UIFont.preferredFont(forTextStyle: .caption2)
-        titleLabel.textColor = .label
+        titleLabel.textColor = .white
         titleLabel.textAlignment = .center
-        titleLabel.text = "Senaste Dexcom Follow"
+        titleLabel.text = "Dexcom Follow"
 
         let bgLabel = UILabel()
         bgLabel.translatesAutoresizingMaskIntoConstraints = false
-        bgLabel.font = UIFont.systemFont(ofSize: 90, weight: .bold)
+        bgLabel.font = UIFont.systemFont(ofSize: 60, weight: .bold)
         bgLabel.textAlignment = .center
+        bgLabel.textColor = .white
         bgLabel.text = bgString
 
         let formatter = DateFormatter()
@@ -468,28 +481,34 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         let timeLabel = UILabel()
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
         timeLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 15, weight: .semibold)
-        timeLabel.textColor = .label
+        timeLabel.textColor = .white
         timeLabel.textAlignment = .center
         let timeString = formatter.string(from: timestamp)
 
         // Build attributed string with image + spacing + text
         let attachment = NSTextAttachment()
         attachment.image = UIImage(named: "dexcomFollow")
-        // Set size to 15×15
-        attachment.bounds = CGRect(x: 0, y: (timeLabel.font.capHeight - 15) / 2, width: 15, height: 15)
+        attachment.bounds = CGRect(
+            x: 0,
+            y: (timeLabel.font.capHeight - 15) / 2,
+            width: 15,
+            height: 15
+        )
 
         let imageString = NSAttributedString(attachment: attachment)
-        let spacer = NSAttributedString(string: "  ") // two spaces ≈ 6–7p depending on font
-        let textString = NSAttributedString(string: timeString, attributes: [
-            .font: timeLabel.font!,
-            .foregroundColor: timeLabel.textColor!
-        ])
+        let spacer = NSAttributedString(string: "  ") // ~6–7p
+        let textString = NSAttributedString(
+            string: timeString,
+            attributes: [
+                .font: timeLabel.font!,
+                .foregroundColor: timeLabel.textColor!
+            ]
+        )
 
         let combined = NSMutableAttributedString()
         combined.append(imageString)
         combined.append(spacer)
         combined.append(textString)
-
         timeLabel.attributedText = combined
 
         container.addSubview(titleLabel)
@@ -499,24 +518,22 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 
         NSLayoutConstraint.activate([
             // Position popup centered on BGText
-            container.centerXAnchor.constraint(equalTo: BGText.centerXAnchor),
-            //container.centerYAnchor.constraint(equalTo: BGText.centerYAnchor),
+            container.centerXAnchor.constraint(equalTo: BGText.centerXAnchor, constant: 10),
             container.topAnchor.constraint(equalTo: BGText.topAnchor),
-            container.widthAnchor.constraint(greaterThanOrEqualToConstant: 180),
+            container.widthAnchor.constraint(equalToConstant: 150),
             container.heightAnchor.constraint(greaterThanOrEqualToConstant: 230),
 
-            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 0),
+            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
             titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
-            bgLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 0),
+            bgLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
             bgLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             bgLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
-            timeLabel.topAnchor.constraint(equalTo: bgLabel.bottomAnchor, constant: 4),
+            timeLabel.topAnchor.constraint(equalTo: bgLabel.bottomAnchor, constant: 12),
             timeLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             timeLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            //timeLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12)
         ])
 
         container.alpha = 0
