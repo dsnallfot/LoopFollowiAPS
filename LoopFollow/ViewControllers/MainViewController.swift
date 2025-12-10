@@ -452,7 +452,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = UIFont.preferredFont(forTextStyle: .caption2)
-        titleLabel.textColor = .secondaryLabel
+        titleLabel.textColor = .label
         titleLabel.textAlignment = .center
         titleLabel.text = "Senaste Dexcom Follow"
 
@@ -467,10 +467,30 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 
         let timeLabel = UILabel()
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
-        timeLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 14, weight: .medium)
-        timeLabel.textColor = .secondaryLabel
+        timeLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 15, weight: .semibold)
+        timeLabel.textColor = .label
         timeLabel.textAlignment = .center
-        timeLabel.text = formatter.string(from: timestamp)
+        let timeString = formatter.string(from: timestamp)
+
+        // Build attributed string with image + spacing + text
+        let attachment = NSTextAttachment()
+        attachment.image = UIImage(named: "dexcomFollow")
+        // Set size to 15×15
+        attachment.bounds = CGRect(x: 0, y: (timeLabel.font.capHeight - 15) / 2, width: 15, height: 15)
+
+        let imageString = NSAttributedString(attachment: attachment)
+        let spacer = NSAttributedString(string: "  ") // two spaces ≈ 6–7p depending on font
+        let textString = NSAttributedString(string: timeString, attributes: [
+            .font: timeLabel.font!,
+            .foregroundColor: timeLabel.textColor!
+        ])
+
+        let combined = NSMutableAttributedString()
+        combined.append(imageString)
+        combined.append(spacer)
+        combined.append(textString)
+
+        timeLabel.attributedText = combined
 
         container.addSubview(titleLabel)
         container.addSubview(bgLabel)
@@ -485,11 +505,11 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             container.widthAnchor.constraint(greaterThanOrEqualToConstant: 180),
             container.heightAnchor.constraint(greaterThanOrEqualToConstant: 230),
 
-            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 0),
             titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
-            bgLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            bgLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 0),
             bgLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             bgLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
