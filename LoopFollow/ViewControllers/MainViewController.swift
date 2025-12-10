@@ -555,20 +555,20 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             container.heightAnchor.constraint(greaterThanOrEqualToConstant: 225),
 
             titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
-            titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
+            titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -4),
 
             bgLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
-            bgLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            bgLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            bgLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
+            bgLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -4),
 
             directionLabel.topAnchor.constraint(equalTo: bgLabel.bottomAnchor, constant: 0),
-            directionLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            directionLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            directionLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
+            directionLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -4),
 
             timeLabel.topAnchor.constraint(equalTo: directionLabel.bottomAnchor, constant: 10),
-            timeLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            timeLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            timeLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
+            timeLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -4),
         ])
 
         container.alpha = 0
