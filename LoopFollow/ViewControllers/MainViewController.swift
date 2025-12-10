@@ -425,12 +425,19 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
                 // Convert SGV to display units (mmol/L) using existing Localizer
                 let bgString = Localizer.toDisplayUnits(String(first.sgv)).replacingOccurrences(of: ",", with: ".")
 
-                self.showDexcomAdhocPopup(bgString: bgString, timestamp: date)
+                // Map Dexcom direction string to our arrow symbol
+                let directionSymbol = self.bgDirectionGraphic(first.direction ?? "")
+
+                self.showDexcomAdhocPopup(
+                    bgString: bgString,
+                    timestamp: date,
+                    directionSymbol: directionSymbol
+                )
             }
         }
     }
 
-    private func showDexcomAdhocPopup(bgString: String, timestamp: Date) {
+    private func showDexcomAdhocPopup(bgString: String, timestamp: Date, directionSymbol: String?) {
         // Remove any existing popup
         let popupTag = 424242
         if let existing = view.viewWithTag(popupTag) {
@@ -456,24 +463,31 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         container.layer.shadowRadius = 8
         container.layer.shadowOffset = CGSize(width: 0, height: 4)
 
-        // 3 px kantlinje, label-färgad
-        container.layer.borderWidth = 3
+        // 4 px kantlinje, label-färgad
+        container.layer.borderWidth = 4
         container.layer.borderColor = UIColor.white.cgColor
 
         // Title label
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = UIFont.preferredFont(forTextStyle: .caption2)
+        titleLabel.font = UIFont.systemFont(ofSize: 12, weight: .bold)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         titleLabel.text = "Dexcom Follow"
 
         let bgLabel = UILabel()
         bgLabel.translatesAutoresizingMaskIntoConstraints = false
-        bgLabel.font = UIFont.systemFont(ofSize: 60, weight: .bold)
+        bgLabel.font = UIFont.systemFont(ofSize: 60, weight: .heavy)
         bgLabel.textAlignment = .center
         bgLabel.textColor = .white
         bgLabel.text = bgString
+
+        let directionLabel = UILabel()
+        directionLabel.translatesAutoresizingMaskIntoConstraints = false
+        directionLabel.font = UIFont.systemFont(ofSize: 50, weight: .heavy)
+        directionLabel.textAlignment = .center
+        directionLabel.textColor = .white
+        directionLabel.text = directionSymbol ?? "-"
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
@@ -513,17 +527,18 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
 
         container.addSubview(titleLabel)
         container.addSubview(bgLabel)
+        container.addSubview(directionLabel)
         container.addSubview(timeLabel)
         view.addSubview(container)
 
         NSLayoutConstraint.activate([
             // Position popup centered on BGText
-            container.centerXAnchor.constraint(equalTo: BGText.centerXAnchor, constant: 10),
+            container.centerXAnchor.constraint(equalTo: BGText.centerXAnchor, constant: 6),
             container.topAnchor.constraint(equalTo: BGText.topAnchor),
             container.widthAnchor.constraint(equalToConstant: 150),
-            container.heightAnchor.constraint(greaterThanOrEqualToConstant: 230),
+            container.heightAnchor.constraint(greaterThanOrEqualToConstant: 225),
 
-            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
             titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
@@ -531,7 +546,11 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
             bgLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             bgLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
-            timeLabel.topAnchor.constraint(equalTo: bgLabel.bottomAnchor, constant: 12),
+            directionLabel.topAnchor.constraint(equalTo: bgLabel.bottomAnchor, constant: 0),
+            directionLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            directionLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            timeLabel.topAnchor.constraint(equalTo: directionLabel.bottomAnchor, constant: 10),
             timeLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             timeLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
         ])
