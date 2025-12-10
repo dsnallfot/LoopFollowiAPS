@@ -454,7 +454,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         titleLabel.font = UIFont.preferredFont(forTextStyle: .caption2)
         titleLabel.textColor = .secondaryLabel
         titleLabel.textAlignment = .center
-        titleLabel.text = "Senaste Dexcom-värde"
+        titleLabel.text = "Senaste Dexcom Follow"
 
         let bgLabel = UILabel()
         bgLabel.translatesAutoresizingMaskIntoConstraints = false
