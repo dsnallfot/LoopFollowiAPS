@@ -248,7 +248,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         refreshScrollView.alwaysBounceVertical = true
         
         refreshScrollView.delegate = self
-        // Tap on BGText area to trigger DexcomFollow shortcut
+        // Tap on BGText area to trigger an ad hoc Dexcom Share fetch
         let bgTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleBGTapOnBGText(_:)))
         bgTapGesture.numberOfTapsRequired = 2
         bgTapGesture.numberOfTouchesRequired = 1
@@ -375,10 +375,149 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
 
-        let urlString = "shortcuts://run-shortcut?name=DexcomFollow"
-        if let url = URL(string: urlString) {
-            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        // Recreate ShareClient with latest settings from UserDefaults
+        let shareUserName = UserDefaultsRepository.shareUserName.value
+        let sharePassword = UserDefaultsRepository.sharePassword.value
+        let shareServerRaw = UserDefaultsRepository.shareServer.value == "US"
+            ? KnownShareServers.US.rawValue
+            : KnownShareServers.NON_US.rawValue
+        dexShare = ShareClient(username: shareUserName,
+                               password: sharePassword,
+                               shareServer: shareServerRaw)
+
+        LogManager.shared.log(
+            category: .temporaryDebug,
+            message: "[DexAdhoc] Using userLen=\(shareUserName.count), pwLen=\(sharePassword.count), server=\(shareServerRaw)",
+            isDebug: true
+        )
+
+        // Ensure we have a ShareClient to use
+        guard let dexShare = dexShare else {
+            LogManager.shared.log(category: .temporaryDebug, message: "[DexAdhoc] No ShareClient configured", isDebug: true)
+            showDexcomAdhocErrorAlert(message: "Dexcom Share är inte konfigurerat.")
+            return
         }
+
+        LogManager.shared.log(
+            category: .temporaryDebug,
+            message: "[DexAdhoc] Fetching latest Dexcom Share value (adhoc)",
+            isDebug: true
+        )
+
+        dexShare.fetchData(1) { [weak self] error, result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+
+                if let error = error {
+                    LogManager.shared.log(category: .temporaryDebug, message: "[DexAdhoc] Error fetching Dexcom data: \(error)", isDebug: true)
+                    self.showDexcomAdhocErrorAlert(message: "Kunde inte hämta värde från Dexcom Share.")
+                    return
+                }
+
+                guard let first = result?.first else {
+                    LogManager.shared.log(category: .temporaryDebug, message: "[DexAdhoc] No glucose values returned", isDebug: true)
+                    self.showDexcomAdhocErrorAlert(message: "Inga värden returnerades från Dexcom Share.")
+                    return
+                }
+
+                let date = Date(timeIntervalSince1970: first.date)
+
+                // Convert SGV to display units (mmol/L) using existing Localizer
+                let bgString = Localizer.toDisplayUnits(String(first.sgv)).replacingOccurrences(of: ",", with: ".")
+
+                self.showDexcomAdhocPopup(bgString: bgString, timestamp: date)
+            }
+        }
+    }
+
+    private func showDexcomAdhocPopup(bgString: String, timestamp: Date) {
+        // Remove any existing popup
+        let popupTag = 424242
+        if let existing = view.viewWithTag(popupTag) {
+            existing.removeFromSuperview()
+        }
+
+        let container = UIView()
+        container.tag = popupTag
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.85)
+        container.layer.cornerRadius = 16
+        container.layer.masksToBounds = false
+        container.layer.shadowColor = UIColor.black.cgColor
+        container.layer.shadowOpacity = 0.25
+        container.layer.shadowRadius = 8
+        container.layer.shadowOffset = CGSize(width: 0, height: 4)
+
+        // Title label
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.font = UIFont.preferredFont(forTextStyle: .caption2)
+        titleLabel.textColor = .secondaryLabel
+        titleLabel.textAlignment = .center
+        titleLabel.text = "Senaste Dexcom-värde"
+
+        let bgLabel = UILabel()
+        bgLabel.translatesAutoresizingMaskIntoConstraints = false
+        bgLabel.font = UIFont.systemFont(ofSize: 90, weight: .bold)
+        bgLabel.textAlignment = .center
+        bgLabel.text = bgString
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+
+        let timeLabel = UILabel()
+        timeLabel.translatesAutoresizingMaskIntoConstraints = false
+        timeLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 14, weight: .medium)
+        timeLabel.textColor = .secondaryLabel
+        timeLabel.textAlignment = .center
+        timeLabel.text = formatter.string(from: timestamp)
+
+        container.addSubview(titleLabel)
+        container.addSubview(bgLabel)
+        container.addSubview(timeLabel)
+        view.addSubview(container)
+
+        NSLayoutConstraint.activate([
+            // Position popup centered on BGText
+            container.centerXAnchor.constraint(equalTo: BGText.centerXAnchor),
+            //container.centerYAnchor.constraint(equalTo: BGText.centerYAnchor),
+            container.topAnchor.constraint(equalTo: BGText.topAnchor),
+            container.widthAnchor.constraint(greaterThanOrEqualToConstant: 180),
+            container.heightAnchor.constraint(greaterThanOrEqualToConstant: 230),
+
+            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            bgLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            bgLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            bgLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            timeLabel.topAnchor.constraint(equalTo: bgLabel.bottomAnchor, constant: 4),
+            timeLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            timeLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            //timeLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12)
+        ])
+
+        container.alpha = 0
+        UIView.animate(withDuration: 0.2) {
+            container.alpha = 1
+        }
+
+        // Auto-hide after a few seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak container] in
+            UIView.animate(withDuration: 0.25, animations: {
+                container?.alpha = 0
+            }, completion: { _ in
+                container?.removeFromSuperview()
+            })
+        }
+    }
+
+    private func showDexcomAdhocErrorAlert(message: String) {
+        let alert = UIAlertController(title: "Dexcom Share", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true, completion: nil)
     }
     /*
     private func setupSwipeUpToStatus() {

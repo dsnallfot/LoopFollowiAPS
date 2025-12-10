@@ -18,26 +18,32 @@ extension MainViewController {
     }
 
     func bgTaskAction() {
-        // If anything goes wrong, try again in 60 seconds.
+        LogManager.shared.log(category: .temporaryDebug, message: "[BGTask] bgTaskAction start", isDebug: true)
+
         TaskScheduler.shared.rescheduleTask(
             id: .fetchBG,
             to: Date().addingTimeInterval(60)
         )
 
-        // If no Dexcom credentials and no Nightscout, schedule a retry in 60 seconds.
+        LogManager.shared.log(category: .temporaryDebug, message: "[BGTask] after reschedule, NS enabled = \(IsNightscoutEnabled()), shareUser = \(UserDefaultsRepository.shareUserName.value.isEmpty ? "EMPTY" : "SET")", isDebug: true)
+
         if UserDefaultsRepository.shareUserName.value == "",
            UserDefaultsRepository.sharePassword.value == "",
+           UserDefaultsRepository.dexAdhocOnly.value,
            !IsNightscoutEnabled()
         {
+            LogManager.shared.log(category: .temporaryDebug, message: "[BGTask] abort: no Dexcom and NS disabled", isDebug: true)
             return
         }
 
-        // If Dexcom credentials exist, fetch from DexShare
         if UserDefaultsRepository.shareUserName.value != "" &&
-            UserDefaultsRepository.sharePassword.value != ""
+            UserDefaultsRepository.sharePassword.value != "" &&
+            !UserDefaultsRepository.dexAdhocOnly.value
         {
+            LogManager.shared.log(category: .temporaryDebug, message: "[BGTask] calling webLoadDexShare()", isDebug: true)
             self.webLoadDexShare()
         } else {
+            LogManager.shared.log(category: .temporaryDebug, message: "[BGTask] calling webLoadNSBGData()", isDebug: true)
             self.webLoadNSBGData()
         }
     }

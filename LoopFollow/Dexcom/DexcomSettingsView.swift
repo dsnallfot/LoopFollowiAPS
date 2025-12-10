@@ -29,6 +29,8 @@ struct DexcomSettingsView: View {
                         Text("NON-US").tag("NON-US")
                     }
                     .pickerStyle(SegmentedPickerStyle())
+                    
+                    Toggle("Endast adhoc hämtningar", isOn: $viewModel.adhocOnly)
                 }
             }
             .navigationBarTitle("Dexcominställningar", displayMode: .inline)

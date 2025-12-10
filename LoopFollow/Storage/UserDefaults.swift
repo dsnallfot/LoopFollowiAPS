@@ -82,6 +82,7 @@ class UserDefaultsRepository {
     static let shareUserName = UserDefaultsValue<String>(key: "shareUserName", default: "")
     static let sharePassword = UserDefaultsValue<String>(key: "sharePassword", default: "")
     static let shareServer = UserDefaultsValue<String>(key: "shareServer", default: "US")
+    static let dexAdhocOnly = UserDefaultsValue<Bool>(key: "dexAdhocOnly", default: true)
     
     // Graph Settings
     static let chartScaleX = UserDefaultsValue<Float>(key: "chartScaleX", default: 18.0)

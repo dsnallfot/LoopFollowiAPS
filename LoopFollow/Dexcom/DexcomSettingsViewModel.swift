@@ -31,6 +31,13 @@ class DexcomSettingsViewModel: ObservableObject {
             }
         }
     }
+    @Published var adhocOnly: Bool = UserDefaultsRepository.dexAdhocOnly.value {
+        willSet {
+            if newValue != adhocOnly {
+                UserDefaultsRepository.dexAdhocOnly.value = newValue
+            }
+        }
+    }
 
     init() {
     }
