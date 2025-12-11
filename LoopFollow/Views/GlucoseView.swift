@@ -14,6 +14,14 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     // MARK: - Glucose data (same source as MealAnalysisView)
     private var bgEntries: [BGEntry] = []
     
+    /// Which data source to show in the table.
+    private enum GlucoseDataMode {
+        case allValues      // Dexcom + Nightscout merged (ordinary BG cache)
+        case nsOnly         // Only Trio → Nightscout uploads (NS-only cache)
+    }
+
+    private var dataMode: GlucoseDataMode = .allValues
+    
     // How many days back the manual backfill refresh should fetch (used by reload button)
     private let backfillDays = 14
     // Initial Nightscout backfill window for NS-only cache used in GlucoseView
@@ -32,6 +40,13 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         dp.preferredDatePickerStyle = .compact
         dp.translatesAutoresizingMaskIntoConstraints = false
         return dp
+    }()
+
+    private let modeSegmentedControl: UISegmentedControl = {
+        let sc = UISegmentedControl(items: ["Alla värden", "Endast Trio ⇢ NS"])
+        sc.selectedSegmentIndex = 0
+        sc.translatesAutoresizingMaskIntoConstraints = false
+        return sc
     }()
 
     private var activityIndicator: UIActivityIndicatorView?
@@ -325,16 +340,22 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
 
     // MARK: - Header
     private func setupHeader() {
-        // We’ll use a simple horizontal stack for date picker (like TreatmentsTableView)
+        // Top horizontal row: date picker + spacer + stats label
         let spacer = UIView()
         spacer.translatesAutoresizingMaskIntoConstraints = false
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let headerStack = UIStackView(arrangedSubviews: [datePicker, spacer, statsLabel])
-        headerStack.axis = .horizontal
+        let topRow = UIStackView(arrangedSubviews: [datePicker, spacer, statsLabel])
+        topRow.axis = .horizontal
+        topRow.spacing = 6
+        topRow.alignment = .center
+
+        // Full header: top row + segmented control stacked vertically
+        let headerStack = UIStackView(arrangedSubviews: [topRow, modeSegmentedControl])
+        headerStack.axis = .vertical
         headerStack.spacing = 6
-        headerStack.alignment = .center
+        headerStack.alignment = .fill
         headerStack.translatesAutoresizingMaskIntoConstraints = false
         headerStack.tag = 999 // so we can find it in constraints
         view.addSubview(headerStack)
@@ -345,6 +366,8 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         datePicker.widthAnchor.constraint(lessThanOrEqualToConstant: 105).isActive = true
 
         statsLabel.text = "CGM –" // placeholder until data loads
+
+        modeSegmentedControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
     }
 
     // MARK: - Table
@@ -392,18 +415,18 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         return sorted
     }
 
-    /// Deduplicate BG entries within 5‑minute buckets.
-    /// If multiple readings fall into the same 5‑minute window, keep the newest one.
-    private func dedupeToFiveMinuteBuckets(_ entries: [BGEntry]) -> [BGEntry] {
+    /// Deduplicate BG entries within time buckets of the given size (in seconds).
+    /// If multiple readings fall into the same bucket, keep the newest one.
+    private func dedupeToBuckets(_ entries: [BGEntry], bucketSeconds: TimeInterval) -> [BGEntry] {
         var byBucket: [Int: BGEntry] = [:]
 
         for entry in entries {
             let ts = entry.date.timeIntervalSince1970
-            // 5‑minute window index since 1970‑01‑01
-            let bucket = Int(floor(ts / 300.0))
+            // Bucket window index since 1970‑01‑01
+            let bucket = Int(floor(ts / bucketSeconds))
 
             if let existing = byBucket[bucket] {
-                // Keep the newer reading within the same 5‑minute bucket
+                // Keep the newer reading within the same bucket
                 if entry.date > existing.date {
                     byBucket[bucket] = entry
                 }
@@ -415,9 +438,10 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         return byBucket.values.sorted { $0.date < $1.date }
     }
 
-    /// Load BG for a calendar day from the Nightscout-backed NS-only cache.
-    /// For today, we first refresh the cache from Nightscout for [startOfDay, now],
-    /// then read from cache. For past days, we only read from cache.
+    /// Load BG for a calendar day using the selected data mode.
+    /// - .nsOnly: Uses the NS-only Trio → Nightscout cache (GlucoseNSOnlyCache).
+    ///   For today, we first refresh the cache from Nightscout for [startOfDay, now].
+    /// - .allValues: Uses the ordinary merged Dexcom+Nightscout cache (NightscoutCache).
     private func loadBG(for date: Date) {
         let cal = Calendar.current
         let now = Date()
@@ -431,32 +455,49 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         }
 
         Task {
-            // If we're looking at today, update the cache incrementally for today's window.
-            if cal.isDate(date, inSameDayAs: now) {
-                let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
-                if !sgvBatch.isEmpty {
-                    GlucoseNSOnlyCache.mergeSGVBatch(sgvBatch)
-                }
-            }
+            var rawDayBG: [BGEntry] = []
 
             // Expand the cache window with a ±12h buffer around the day
             let bufferedStart = cal.date(byAdding: .hour, value: -12, to: start) ?? start
             let bufferedEnd   = cal.date(byAdding: .hour, value: 12, to: endOfDay) ?? endOfDay
 
-            let sgvJSON = await GlucoseNSOnlyCache.loadWindow(from: bufferedStart, to: bufferedEnd)
-
-            let rawDayBG: [BGEntry] = sgvJSON
-                .map {
-                    BGEntry(
-                        date: Date(timeIntervalSince1970: $0.date),
-                        mmol: Double($0.sgv) / 18.0182
-                    )
+            switch dataMode {
+            case .nsOnly:
+                // For NS-only mode, we ensure the NS-only cache is up-to-date for today.
+                if cal.isDate(date, inSameDayAs: now) {
+                    let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
+                    if !sgvBatch.isEmpty {
+                        GlucoseNSOnlyCache.mergeSGVBatch(sgvBatch)
+                    }
                 }
-                // Keep only the entries that actually belong to the selected calendar day.
-                .filter { $0.date >= start && $0.date < endOfDay }
 
-            // Deduplicate to at most one reading per 5‑minute bucket
-            let cachedBG = self.dedupeToFiveMinuteBuckets(rawDayBG)
+                let sgvJSON = await GlucoseNSOnlyCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+                rawDayBG = sgvJSON
+                    .map {
+                        BGEntry(
+                            date: Date(timeIntervalSince1970: $0.date),
+                            mmol: Double($0.sgv) / 18.0182
+                        )
+                    }
+                    .filter { $0.date >= start && $0.date < endOfDay }
+
+            case .allValues:
+                // For all-values mode, use the ordinary merged Dex+NS Nightscout cache.
+                let (sgvJSON, _) = await NightscoutCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+                rawDayBG = sgvJSON
+                    .map {
+                        BGEntry(
+                            date: Date(timeIntervalSince1970: $0.date),
+                            mmol: Double($0.sgv) / 18.0182
+                        )
+                    }
+                    .filter { $0.date >= start && $0.date < endOfDay }
+            }
+
+            // Deduplicate before driving table + stats.
+            // NS-only: one reading per ~5 min; All-values: allow slightly tighter 4-min buckets
+            let bucketSeconds: TimeInterval = (dataMode == .nsOnly) ? 300.0 : 240.0
+            let cachedBG = self.dedupeToBuckets(rawDayBG, bucketSeconds: bucketSeconds)
 
             await MainActor.run {
                 // Remove any existing entries inside that day and replace them
@@ -468,6 +509,12 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                 self.hideRefreshIndicator()
             }
         }
+    }
+
+    @objc private func modeChanged(_ sender: UISegmentedControl) {
+        dataMode = sender.selectedSegmentIndex == 0 ? .allValues : .nsOnly
+        loadBG(for: selectedDate)
+        updateStatsLabel()
     }
 
     private func showRefreshIndicator() {
