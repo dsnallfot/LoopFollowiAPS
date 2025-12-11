@@ -12,12 +12,23 @@ import UIKit
 final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
     // MARK: - Glucose data (same source as MealAnalysisView)
+    /// Aktiva värden för valt läge (driver tabell + stats).
     private var bgEntries: [BGEntry] = []
-    
+    /// NS-only Trio → Nightscout-värden för vald dag.
+    private var nsOnlyDayEntries: [BGEntry] = []
+    /// Dexcom+Nightscout-mergade värden för vald dag.
+    private var allValuesDayEntries: [BGEntry] = []
+
     /// Which data source to show in the table.
     private enum GlucoseDataMode {
         case allValues      // Dexcom + Nightscout merged (ordinary BG cache)
         case nsOnly         // Only Trio → Nightscout uploads (NS-only cache)
+    }
+
+    /// Why a 5‑min slot is missing.
+    private enum MissingReason {
+        case sensor       // Sensor never produced a reading (missing in both datasets)
+        case trioUpload   // Trio/NS upload missing, but sensor (Dexcom) has the value
     }
 
     private var dataMode: GlucoseDataMode = .allValues
@@ -57,12 +68,12 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     /// Row model for the table
     private enum GlucoseRow {
         case glucose(BGEntry)
-        case missing(Date)
+        case missing(Date, MissingReason)
 
         var date: Date {
             switch self {
             case .glucose(let e): return e.date
-            case .missing(let d): return d
+            case .missing(let d, _): return d
             }
         }
 
@@ -97,7 +108,15 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         let start = cal.startOfDay(for: selectedDate)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return [] }
 
-        let dayEntriesAsc = bgEntries
+        let baseEntries: [BGEntry]
+        switch dataMode {
+        case .allValues:
+            baseEntries = allValuesDayEntries
+        case .nsOnly:
+            baseEntries = nsOnlyDayEntries
+        }
+
+        let dayEntriesAsc = baseEntries
             .filter { $0.date >= start && $0.date < end }
             .sorted { $0.date < $1.date }
 
@@ -121,7 +140,8 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                     if missingCount > 0 {
                         for i in 1...missingCount {
                             let missingDate = current.date.addingTimeInterval(Double(i) * 300)
-                            rows.append(.missing(missingDate))
+                            let reason = missingReason(for: missingDate)
+                            rows.append(.missing(missingDate, reason))
                         }
                     }
                 }
@@ -140,7 +160,8 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                         for i in 1...missingCount {
                             let missingDate = lastActual.date.addingTimeInterval(Double(i) * 300)
                             if missingDate <= now {
-                                rows.append(.missing(missingDate))
+                                let reason = missingReason(for: missingDate)
+                                rows.append(.missing(missingDate, reason))
                             }
                         }
                     }
@@ -154,7 +175,8 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                         for i in 1...missingCount {
                             let missingDate = lastActual.date.addingTimeInterval(Double(i) * 300)
                             if missingDate < end {
-                                rows.append(.missing(missingDate))
+                                let reason = missingReason(for: missingDate)
+                                rows.append(.missing(missingDate, reason))
                             }
                         }
                     }
@@ -175,11 +197,40 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                 let cal = Calendar.current
                 let start = cal.startOfDay(for: selectedDate)
                 let placeholderDate = cal.date(byAdding: .hour, value: 12, to: start) ?? start
-                return [.missing(placeholderDate)]
+                return [.missing(placeholderDate, .sensor)]
             }
             return missing
         }
         return rows
+    }
+
+    /// Bestäm varför ett 5‑minuters-slot saknas.
+    ///
+    /// - Om varken NS-only eller Alla värden har en avläsning i samma 5-minutersbucket
+    ///   → behandla som sensor-miss.
+    /// - Om Alla värden har en avläsning men NS-only inte har det
+    ///   → behandla som Trio-upload-miss.
+    private func missingReason(for date: Date) -> MissingReason {
+        let bucket = Int(floor(date.timeIntervalSince1970 / 300.0))
+
+        func hasEntry(in entries: [BGEntry]) -> Bool {
+            entries.contains { entry in
+                let b = Int(floor(entry.date.timeIntervalSince1970 / 300.0))
+                return b == bucket
+            }
+        }
+
+        let hasAllValues = hasEntry(in: allValuesDayEntries)
+        let hasNSOnly    = hasEntry(in: nsOnlyDayEntries)
+
+        if !hasAllValues && !hasNSOnly {
+            return .sensor
+        }
+        if hasAllValues && !hasNSOnly {
+            return .trioUpload
+        }
+        // Fallback
+        return .sensor
     }
 
     // MARK: - Lifecycle
@@ -438,10 +489,10 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         return byBucket.values.sorted { $0.date < $1.date }
     }
 
-    /// Load BG for a calendar day using the selected data mode.
-    /// - .nsOnly: Uses the NS-only Trio → Nightscout cache (GlucoseNSOnlyCache).
-    ///   For today, we first refresh the cache from Nightscout for [startOfDay, now].
-    /// - .allValues: Uses the ordinary merged Dexcom+Nightscout cache (NightscoutCache).
+    /// Load BG for a calendar day using both datasets, then drive the UI from the selected mode.
+    /// - NS-only: Uses GlucoseNSOnlyCache (Trio → Nightscout uploads only).
+    ///   For today, we first refresh the NS-only cache from Nightscout for [startOfDay, now].
+    /// - All-values: Uses NightscoutCache (Dexcom+Nightscout merged BG history).
     private func loadBG(for date: Date) {
         let cal = Calendar.current
         let now = Date()
@@ -455,55 +506,55 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         }
 
         Task {
-            var rawDayBG: [BGEntry] = []
-
             // Expand the cache window with a ±12h buffer around the day
             let bufferedStart = cal.date(byAdding: .hour, value: -12, to: start) ?? start
             let bufferedEnd   = cal.date(byAdding: .hour, value: 12, to: endOfDay) ?? endOfDay
 
-            switch dataMode {
-            case .nsOnly:
-                // For NS-only mode, we ensure the NS-only cache is up-to-date for today.
-                if cal.isDate(date, inSameDayAs: now) {
-                    let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
-                    if !sgvBatch.isEmpty {
-                        GlucoseNSOnlyCache.mergeSGVBatch(sgvBatch)
-                    }
+            // --- NS-only dataset ---
+            if cal.isDate(date, inSameDayAs: now) {
+                let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
+                if !sgvBatch.isEmpty {
+                    GlucoseNSOnlyCache.mergeSGVBatch(sgvBatch)
                 }
-
-                let sgvJSON = await GlucoseNSOnlyCache.loadWindow(from: bufferedStart, to: bufferedEnd)
-                rawDayBG = sgvJSON
-                    .map {
-                        BGEntry(
-                            date: Date(timeIntervalSince1970: $0.date),
-                            mmol: Double($0.sgv) / 18.0182
-                        )
-                    }
-                    .filter { $0.date >= start && $0.date < endOfDay }
-
-            case .allValues:
-                // For all-values mode, use the ordinary merged Dex+NS Nightscout cache.
-                let (sgvJSON, _) = await NightscoutCache.loadWindow(from: bufferedStart, to: bufferedEnd)
-                rawDayBG = sgvJSON
-                    .map {
-                        BGEntry(
-                            date: Date(timeIntervalSince1970: $0.date),
-                            mmol: Double($0.sgv) / 18.0182
-                        )
-                    }
-                    .filter { $0.date >= start && $0.date < endOfDay }
             }
 
-            // Deduplicate before driving table + stats.
-            // NS-only: one reading per ~5 min; All-values: allow slightly tighter 4-min buckets
-            let bucketSeconds: TimeInterval = (dataMode == .nsOnly) ? 300.0 : 240.0
-            let cachedBG = self.dedupeToBuckets(rawDayBG, bucketSeconds: bucketSeconds)
+            let nsOnlySGV = await GlucoseNSOnlyCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+            let nsOnlyRaw: [BGEntry] = nsOnlySGV
+                .map {
+                    BGEntry(
+                        date: Date(timeIntervalSince1970: $0.date),
+                        mmol: Double($0.sgv) / 18.0182
+                    )
+                }
+                .filter { $0.date >= start && $0.date < endOfDay }
+            let nsOnlyDay = self.dedupeToBuckets(nsOnlyRaw, bucketSeconds: 300.0)
+
+            // --- All-values dataset (Dex+NS merged cache) ---
+            let (allSGV, _) = await NightscoutCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+            let allRaw: [BGEntry] = allSGV
+                .map {
+                    BGEntry(
+                        date: Date(timeIntervalSince1970: $0.date),
+                        mmol: Double($0.sgv) / 18.0182
+                    )
+                }
+                .filter { $0.date >= start && $0.date < endOfDay }
+            let allDay = self.dedupeToBuckets(allRaw, bucketSeconds: 240.0)
 
             await MainActor.run {
-                // Remove any existing entries inside that day and replace them
-                self.bgEntries.removeAll { $0.date >= start && $0.date < endOfDay }
-                let merged = self.normalizedMergedBG(existing: self.bgEntries, new: cachedBG)
-                self.bgEntries = merged
+                // Cache both datasets for the selected day so that gap analysis
+                // can cross-reference them when deciding missing reasons.
+                self.nsOnlyDayEntries = nsOnlyDay
+                self.allValuesDayEntries = allDay
+
+                // Aktiva värden till tabellen utifrån valt läge.
+                switch self.dataMode {
+                case .nsOnly:
+                    self.bgEntries = nsOnlyDay
+                case .allValues:
+                    self.bgEntries = allDay
+                }
+
                 self.tableView.reloadData()
                 self.updateStatsLabel()
                 self.hideRefreshIndicator()
@@ -715,7 +766,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
             cell.backgroundColor = .clear
             cell.contentView.backgroundColor = .clear
 
-        case .missing(let date):
+        case .missing(let date, let reason):
             // Detect placeholder: no actual missing rows and showOnlyMissingGlucose = true
             let isPlaceholder = showOnlyMissingGlucose && dayRowsIncludingMissing.filter { $0.isMissing }.isEmpty
             if isPlaceholder {
@@ -726,12 +777,19 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                 cell.backgroundColor = tint
                 cell.contentView.backgroundColor = tint
             } else {
-                cell.textLabel?.text = "[Saknas]"
+                switch reason {
+                case .sensor:
+                    cell.textLabel?.text = "[Sensoravläsning saknas]"
+                    cell.backgroundColor = UIColor.systemRed.withAlphaComponent(0.15)
+                    cell.contentView.backgroundColor = UIColor.systemRed.withAlphaComponent(0.15)
+                case .trioUpload:
+                    cell.textLabel?.text = "[Trio uppladdning saknas]"
+                    cell.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.15)
+                    cell.contentView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.15)
+                }
                 cell.textLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
                 cell.detailTextLabel?.text = timeFormatter.string(from: date)
-                let tint = UIColor.systemRed.withAlphaComponent(0.12)
-                cell.backgroundColor = tint
-                cell.contentView.backgroundColor = tint
+
             }
         }
 
@@ -755,7 +813,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                     tableView.deselectRow(at: indexPath, animated: true)
                 }
             }
-        case .missing:
+        case .missing(_, _):
             DispatchQueue.main.async {
                 tableView.deselectRow(at: indexPath, animated: true)
             }
