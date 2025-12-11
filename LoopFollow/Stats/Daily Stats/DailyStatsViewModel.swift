@@ -4,6 +4,13 @@
 import Foundation
 import Combine
 
+extension StatsDataService {
+    /// Dummy placeholder, används endast för att SwiftUI ska kunna skapa views
+    static var placeholder: StatsDataService {
+        return StatsDataService(mainViewController: nil)
+    }
+}
+
 struct DailyStatRow: Identifiable {
     let id = UUID()
     let date: Date
@@ -23,7 +30,7 @@ struct DailyStatRow: Identifiable {
 }
 
 final class DailyStatsViewModel: ObservableObject {
-    private let dataService: StatsDataService
+    let dataService: StatsDataService
     private let todayTDDOverride: Double?
 
         var mainViewController: MainViewController? {
@@ -79,7 +86,7 @@ final class DailyStatsViewModel: ObservableObject {
         let strict = rows.filter { row in
             // Dagens datum: inkludera alltid om vi har något glukosvärde (mean != nil)
             if calendar.isDateInToday(row.date) {
-                return row.meanGlucoseMmol != nil
+                return row.glucoseCount ?? 0 > 0
             }
 
             // Äldre dagar: kräver minst minGlucoseReadingsPerDay värden
@@ -91,8 +98,12 @@ final class DailyStatsViewModel: ObservableObject {
             }
         }
 
-        if !strict.isEmpty {
-            return strict
+        if strict.isEmpty {
+            let fallback = rows.filter { $0.meanGlucoseMmol != nil || ($0.glucoseCount ?? 0) > 0 }
+            if !fallback.isEmpty {
+                return fallback
+            }
+            return rows
         }
 
         // Fallback: om den strikta filtreringen inte gav några dagar alls,
@@ -119,6 +130,20 @@ final class DailyStatsViewModel: ObservableObject {
 
     func loadDailyStats() {
         guard !isLoading else { return }
+        // Skydda mot placeholder-StatsDataService (används bara som SwiftUI-dummy)
+        guard self.mainViewController != nil else {
+            LogManager.shared.log(
+                category: .analysis,
+                message: "DailyStatsViewModel.loadDailyStats – aborting because dataService.mainViewController is nil (placeholder in use)",
+                isDebug: true
+            )
+            DispatchQueue.main.async {
+                self.rows = []
+                self.isLoading = false
+                self.errorMessage = nil
+            }
+            return
+        }
         isLoading = true
         errorMessage = nil
 
@@ -128,6 +153,12 @@ final class DailyStatsViewModel: ObservableObject {
 
             // 🎯 Antal dygn vi vill visa i tabellen (1, 7, 14, 30, 90)
             let daysToShow = max(1, self.dataService.daysToAnalyze)
+            
+            LogManager.shared.log(
+                category: .temporaryDebug,
+                message: "DailyStatsViewModel.loadDailyStats – daysToAnalyze=\(self.dataService.daysToAnalyze)",
+                isDebug: false
+            )
 
             // 🎯 Vi vill alltid ha kalenderbaserade dygn:
             //    [periodStart (00:00 för äldsta dagen) .. endOfToday (00:00 imorgon))
@@ -153,6 +184,21 @@ final class DailyStatsViewModel: ObservableObject {
                 isDebug: false
             )
             if bgAll.isEmpty {
+                let statsBGCount = self.dataService.mainViewController?.statsBGData.count ?? -1
+                let statsLastUpdated = self.dataService.mainViewController?.statsCacheLastUpdated
+
+                LogManager.shared.log(
+                    category: .temporaryDebug,
+                    message: """
+                    DailyStatsViewModel.loadDailyStats – bgAllCount=0 ⚠️
+                    daysToShow=\(daysToShow)
+                    analysisInterval=\(analysisInterval.start) → \(analysisInterval.end)
+                    statsBGData.count=\(statsBGCount)
+                    statsCacheLastUpdated=\(String(describing: statsLastUpdated))
+                    """,
+                    isDebug: true
+                )
+
                 DispatchQueue.main.async {
                     self.rows = []
                     self.isLoading = false

@@ -66,7 +66,14 @@ struct DailyStatsView: View {
                     }
                 }
                 .onAppear {
-                    viewModel.loadDailyStats()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        viewModel.loadDailyStats()
+                    }
+                    LogManager.shared.log(
+                        category: .analysis,
+                        message: "SUMMARY appear – rows=\(viewModel.rows.count), sufficient=\(viewModel.rowsWithSufficientGlucose.count), daysToAnalyze=\(viewModel.dataService.daysToAnalyze)",
+                        isDebug: true
+                    )
                 }
                 .sheet(
                     isPresented: Binding(

@@ -92,24 +92,47 @@ extension MainViewController {
             parameters: params
         ) { (result: Result<[ShareGlucoseData], Error>) in
             defer { finished() }
-            guard case .success(let raw) = result else { return }
-
-            var cleaned: [ShareGlucoseData] = []
-            var lastTs = Double.infinity
-            for var e in raw {
-                e.date /= 1000; e.date.round()
-                if lastTs - e.date >= 240 {
-                    cleaned.append(e)
-                    lastTs = e.date
+            switch result {
+            case .success(let raw):
+                if let first = raw.first {
+                    let date = Date(timeIntervalSince1970: first.date)
+                    /*LogManager.shared.log(
+                        category: .temporaryDebug,
+                        message: "[CacheBG] webLoadNSBGDataCache SUCCESS for day \(start), first sgv=\(first.sgv) at \(date)",
+                        isDebug: true
+                    )*/
+                } else {
+                    /*LogManager.shared.log(
+                        category: .temporaryDebug,
+                        message: "[CacheBG] webLoadNSBGDataCache SUCCESS for day \(start), but no entries",
+                        isDebug: true
+                    )*/
                 }
-                if cleaned.count >= hours * 12 { break }
-            }
 
-            let sgvJSON = cleaned.map { SGVJSON(date: $0.date, sgv: $0.sgv) }
-            let existingTreatments = (try? NightscoutCache.readDay(start).treatments) ?? []
-            try? NightscoutCache.writeDay(date: start,
-                                          sgv: sgvJSON,
-                                          treatments: existingTreatments)
+                var cleaned: [ShareGlucoseData] = []
+                var lastTs = Double.infinity
+                for var e in raw {
+                    e.date /= 1000; e.date.round()
+                    if lastTs - e.date >= 240 {
+                        cleaned.append(e)
+                        lastTs = e.date
+                    }
+                    if cleaned.count >= hours * 12 { break }
+                }
+
+                let sgvJSON = cleaned.map { SGVJSON(date: $0.date, sgv: $0.sgv) }
+                let existingTreatments = (try? NightscoutCache.readDay(start).treatments) ?? []
+                try? NightscoutCache.writeDay(date: start,
+                                              sgv: sgvJSON,
+                                              treatments: existingTreatments)
+            case .failure(let error):
+                LogManager.shared.log(
+                    category: .temporaryDebug,
+                    message: "[CacheBG] webLoadNSBGDataCache FAILED for day \(start): \(error.localizedDescription)",
+                    isDebug: true
+                )
+                return
+            }
         }
     }
 }
@@ -155,6 +178,15 @@ extension MainViewController {
                         }
                         // Rensa gamla filer efter att vi lagt till nya entries (best-effort).
                         NightscoutCache.purgeOldFiles()
+
+                        // Notify listeners that the treatments cache for this day has been updated
+                        DispatchQueue.main.async {
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("TreatmentsCacheUpdated"),
+                                object: nil,
+                                userInfo: ["dayStart": start]
+                            )
+                        }
                     }
                 } else {
                     LogManager.shared.log(category: .nightscout, message: "WebLoadNSTreatments, Unexpected data structure")

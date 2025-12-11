@@ -369,6 +369,8 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
     }
 
     @objc private func handleBGTapOnBGText(_ gesture: UITapGestureRecognizer) {
+        guard UserDefaultsRepository.dexAdhocOnly.value else { return }
+        
         guard gesture.state == .ended else { return }
 
         // Light haptic for feedback

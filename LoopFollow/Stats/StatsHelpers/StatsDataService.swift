@@ -1069,11 +1069,11 @@ class StatsDataService {
 
             results.append(DailyBasalStat(dayStart: currentDayStart,
                                           totalUnits: sim.totalUnits))
-            LogManager.shared.log(
+            /*LogManager.shared.log(
                 category: .analysis,
                 message: "StatsBasalEngine - dayStart=\(currentDayStart), basalUnits=\(sim.totalUnits)",
                 isDebug: true
-            )
+            )*/
 
             currentDayStart = nextDayStart
         }

@@ -164,7 +164,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         // Restrict selectable range to cached window
         let cal = Calendar.current
         if let oldest = cal.date(byAdding: .day,
-                                  value: -NightscoutCache.retentionDays,
+                                  value: -NightscoutCache.retentionDays + 1,
                                   to: Date()) {
             datePicker.minimumDate = oldest
         }

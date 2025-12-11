@@ -1,4 +1,4 @@
-// WORK IN PROGRESS: IDEA IS TO ADD A CACHE WITH entries 7-30 DAYS BACK to USE IN MEALANALYSISVIEW
+
 //  NightscoutCache.swift
 //  LoopFollow
 //
@@ -78,7 +78,7 @@ struct DayPayload: Codable {
 final class NightscoutCache {
 
     // Number of days to keep in cache (x * 24 hours back from now)
-    static var retentionDays = 90
+    static var retentionDays = 91
 
     // MARK: public API --------------------------------------------------------
 
@@ -139,7 +139,7 @@ final class NightscoutCache {
         // Oldest day we want to keep = todayStart - (retentionDays - 1) days
         // Example: retentionDays = 90 → keep 90 hela kalenderdagar inklusive idag.
         let oldestToKeep = calendar.date(byAdding: .day,
-                                         value: -retentionDays + 1,
+                                         value: -retentionDays,// + 1,
                                          to: todayStart)!
 
         for url in (try? FileManager.default.contentsOfDirectory(at: dir,
@@ -149,7 +149,18 @@ final class NightscoutCache {
             }
             let localDayStart = calendar.startOfDay(for: dayDate)
             if localDayStart < oldestToKeep {
+                /*LogManager.shared.log(
+                    category: .temporaryDebug,
+                    message: "purgeOldFiles – DELETING \(localDayStart) (< oldestToKeep \(oldestToKeep))",
+                    isDebug: true
+                )*/
                 try? FileManager.default.removeItem(at: url)
+            } else {
+                /*LogManager.shared.log(
+                    category: .temporaryDebug,
+                    message: "purgeOldFiles – keeping \(localDayStart) (>= oldestToKeep \(oldestToKeep))",
+                    isDebug: true
+                )*/
             }
         }
     }
@@ -159,7 +170,7 @@ final class NightscoutCache {
     /// Some older cache files may have `date` in milliseconds; this helper converts those
     /// on-the-fly when reading so that mixed second/ms data does not cause partial days
     /// or dropped entries in statistics.
-    private static func normalizeAndDedupeSGV(_ sgv: [SGVJSON]) -> [SGVJSON] {
+    static func normalizeAndDedupeSGV(_ sgv: [SGVJSON]) -> [SGVJSON] {
         guard !sgv.isEmpty else { return [] }
 
         var byTimestamp: [TimeInterval: Int] = [:]
@@ -320,5 +331,154 @@ final class NightscoutCache {
         } catch {
             // Silently ignore cache write errors; cache is best-effort only.
         }
+    }
+}
+
+// MARK: - NS-only SGV cache for GlucoseView
+
+/// Lightweight per-day payload for NS-only glucose cache (no treatments).
+private struct GlucoseNSDayPayload: Codable {
+    var sgv: [SGVJSON]
+}
+
+/// Separate Nightscout SGV cache used exclusively by GlucoseView for NS-only gap analysis.
+/// This cache is intentionally not touched by BGTask/BGData or Dexcom logic.
+final class GlucoseNSOnlyCache {
+
+    // Number of days to keep in cache (x * 24 hours back from now)
+    static var retentionDays = 91
+
+    // Directory for NS-only glucose cache
+    static var dir: URL = {
+        let d = FileManager.default
+            .urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("NightscoutGlucoseCache", isDirectory: true)
+        return d
+    }()
+
+    // ISO formatter for day file names (YYYY-MM-DD)
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withFullDate]
+        return f
+    }()
+
+    /// Return SGVs you already have between `start … end` from the NS-only cache.
+    static func loadWindow(from start: Date, to end: Date) async -> [SGVJSON] {
+        var allSGV: [SGVJSON] = []
+
+        var day = Calendar.current.startOfDay(for: start)
+        let last = Calendar.current.startOfDay(for: end)
+
+        while day <= last {
+            if let dayData = try? readDay(day) {
+                let normalizedSGV = NightscoutCache.normalizeAndDedupeSGV(dayData.sgv)
+                allSGV += normalizedSGV
+            }
+            guard let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: day) else { break }
+            day = nextDay
+        }
+
+        // Trim to exact time span
+        let s = start.timeIntervalSince1970
+        let e = end.timeIntervalSince1970
+        allSGV = allSGV.filter { ($0.date >= s) && ($0.date <= e) }
+
+        return allSGV
+    }
+
+    /// Merge a batch of SGVJSON entries into the per‑day NS-only cache files.
+    /// - Note: Best‑effort only; errors are silently ignored.
+    static func mergeSGVBatch(_ batch: [SGVJSON]) {
+        guard !batch.isEmpty else { return }
+
+        let cal = Calendar.current
+
+        // Group incoming readings per calendar day (local startOfDay)
+        var perDay: [Date: [SGVJSON]] = [:]
+        for s in batch {
+            let day = cal.startOfDay(for: Date(timeIntervalSince1970: s.date))
+            perDay[day, default: []].append(s)
+        }
+
+        for (day, newItems) in perDay {
+            do {
+                var payload: GlucoseNSDayPayload
+                if let existing = try? readDay(day) {
+                    payload = existing
+                    // Remove any existing SGV with the same timestamp as in the new items
+                    let newTimestamps = Set(newItems.map { $0.date })
+                    payload.sgv.removeAll { newTimestamps.contains($0.date) }
+                    payload.sgv.append(contentsOf: newItems)
+                } else {
+                    payload = GlucoseNSDayPayload(sgv: newItems)
+                }
+
+                // Keep SGVs sorted by time, oldest first
+                payload.sgv.sort { $0.date < $1.date }
+
+                try writeDay(date: day, sgv: payload.sgv)
+            } catch {
+                // Cache is best‑effort only; ignore write errors.
+            }
+        }
+    }
+
+    /// Delete cached files older than `retentionDays` calendar days.
+    static func purgeOldFiles() {
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: Date())
+        let oldestToKeep = calendar.date(byAdding: .day,
+                                         value: -retentionDays,
+                                         to: todayStart)!
+
+        for url in (try? FileManager.default.contentsOfDirectory(at: dir,
+                                                                 includingPropertiesForKeys: nil)) ?? [] {
+            guard let dayDate = isoFormatter.date(from: url.deletingPathExtension().lastPathComponent) else {
+                continue
+            }
+            let localDayStart = calendar.startOfDay(for: dayDate)
+            if localDayStart < oldestToKeep {
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+    }
+
+    /// Debug: List all cached NS-only glucose day files and their sizes.
+    static func debugListSegments() {
+        do {
+            let urls = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles])
+            print("📦 GlucoseNSOnlyCache — Cached segments:")
+            if urls.isEmpty {
+                print("   (no cached day files)")
+            }
+            for url in urls.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                let attrs = try? url.resourceValues(forKeys: [.fileSizeKey])
+                let size = attrs?.fileSize ?? 0
+                print("   • \(url.lastPathComponent) — \(size) bytes")
+            }
+        } catch {
+            print("❌ GlucoseNSOnlyCache.debugListSegments error:", error.localizedDescription)
+        }
+    }
+
+    // MARK: - Private helpers
+
+    private static func fileURL(for date: Date) -> URL {
+        let dayStr = isoFormatter.string(from: Calendar.current.startOfDay(for: date))
+        return dir.appendingPathComponent(dayStr).appendingPathExtension("json")
+    }
+
+    private static func readDay(_ date: Date) throws -> GlucoseNSDayPayload {
+        let url = fileURL(for: date)
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(GlucoseNSDayPayload.self, from: data)
+    }
+
+    private static func writeDay(date: Date, sgv: [SGVJSON]) throws {
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let payload = GlucoseNSDayPayload(sgv: sgv)
+        let data = try JSONEncoder().encode(payload)
+        try data.write(to: fileURL(for: date), options: .atomic)
     }
 }

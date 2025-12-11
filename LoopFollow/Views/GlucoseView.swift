@@ -14,8 +14,12 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     // MARK: - Glucose data (same source as MealAnalysisView)
     private var bgEntries: [BGEntry] = []
     
-    // How many days back the backfill refresh should fetch
-    private let backfillDays = 7
+    // How many days back the manual backfill refresh should fetch (used by reload button)
+    private let backfillDays = 14
+    // Initial Nightscout backfill window for NS-only cache used in GlucoseView
+    private let initialBackfillDays = 90
+    // UserDefaults flag so we only run the large initial backfill once
+    private let initialBackfillFlagKey = "GlucoseViewInitialNSBackfillDone"
 
     // Selected day for table
     private var selectedDate: Date = Date()
@@ -174,10 +178,10 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         setupHeader()
         setupConstraints()
 
-        // Date picker bounds roughly follow cache retention
+        // Date picker bounds roughly follow NS-only glucose cache retention
         let cal = Calendar.current
         if let oldest = cal.date(byAdding: .day,
-                                 value: -NightscoutCache.retentionDays,
+                                 value: -GlucoseNSOnlyCache.retentionDays + 1,
                                  to: Date()) {
             datePicker.minimumDate = oldest
         }
@@ -185,12 +189,17 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         datePicker.date = selectedDate
         datePicker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
 
-        // Debug: list cached day files whenever entering GlucoseView
-        NightscoutCache.debugListSegments()
-        print("NightscoutCache dir:", NightscoutCache.dir.path)
+        // Debug: list cached NS-only glucose day files whenever entering GlucoseView
+        GlucoseNSOnlyCache.debugListSegments()
+        print("GlucoseNSOnlyCache dir:", GlucoseNSOnlyCache.dir.path)
 
-        // Initial load for today
-        loadBG(for: selectedDate)
+        // Initial NS-only backfill (90 days) + initial load for today from NS cache
+        Task {
+            await self.ensureInitialBackfill()
+            await MainActor.run {
+                self.loadBG(for: self.selectedDate)
+            }
+        }
     }
 
     // MARK: - Navigation bar
@@ -253,31 +262,33 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         }
     }
     
-    /// Fetches X days back from Nightscout and writes them into the cache.
+    /// Fetches X days back from Nightscout and writes SGVs into the NS-only glucose cache.
     /// Overwrites existing cached days only if needed.
     private func backfillLastDays(_ days: Int) async {
         let cal = Calendar.current
         let now = Date()
         let start = cal.date(byAdding: .day, value: -days, to: now)!
 
-        print("🔄 Backfilling \(days) days: \(start) → \(now)")
+        print("🔄 Backfilling \(days) days (NS-only glucose): \(start) → \(now)")
 
-        // 1) Hämta SGVs för fönstret och merg:a in i cachen
         let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
         if !sgvBatch.isEmpty {
-            NightscoutCache.mergeSGVBatch(sgvBatch)
+            GlucoseNSOnlyCache.mergeSGVBatch(sgvBatch)
+            GlucoseNSOnlyCache.purgeOldFiles()
         }
 
-        // 2) Hämta treatments för samma fönster och upsert:a i cachen
-        let treatmentDicts = await NightscoutUtils.fetchTreatmentsWindow(from: start, to: now)
-        if !treatmentDicts.isEmpty {
-            for dict in treatmentDicts {
-                NightscoutCache.upsertTreatment(from: dict)
-            }
-            NightscoutCache.purgeOldFiles()
+        print("✅ NS-only glucose backfill completed.")
+    }
+
+    /// Ensure that we have performed the large initial NS-only backfill once (90 days).
+    private func ensureInitialBackfill() async {
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: initialBackfillFlagKey) {
+            return
         }
 
-        print("✅ Backfill completed.")
+        await backfillLastDays(initialBackfillDays)
+        defaults.set(true, forKey: initialBackfillFlagKey)
     }
 
     @objc private func toggleMissingOnly() {
@@ -381,60 +392,75 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         return sorted
     }
 
-    /// Load BG for a calendar day. Uses live 24h fetch for today, otherwise uses NightscoutCache.
+    /// Deduplicate BG entries within 5‑minute buckets.
+    /// If multiple readings fall into the same 5‑minute window, keep the newest one.
+    private func dedupeToFiveMinuteBuckets(_ entries: [BGEntry]) -> [BGEntry] {
+        var byBucket: [Int: BGEntry] = [:]
+
+        for entry in entries {
+            let ts = entry.date.timeIntervalSince1970
+            // 5‑minute window index since 1970‑01‑01
+            let bucket = Int(floor(ts / 300.0))
+
+            if let existing = byBucket[bucket] {
+                // Keep the newer reading within the same 5‑minute bucket
+                if entry.date > existing.date {
+                    byBucket[bucket] = entry
+                }
+            } else {
+                byBucket[bucket] = entry
+            }
+        }
+
+        return byBucket.values.sorted { $0.date < $1.date }
+    }
+
+    /// Load BG for a calendar day from the Nightscout-backed NS-only cache.
+    /// For today, we first refresh the cache from Nightscout for [startOfDay, now],
+    /// then read from cache. For past days, we only read from cache.
     private func loadBG(for date: Date) {
         let cal = Calendar.current
         let now = Date()
 
         showRefreshIndicator()
 
-        if cal.isDate(date, inSameDayAs: now) {
-            // Live fetch (same as MealAnalysisView.fetchBG24h)
-            BGProvider.fetch { [weak self] sgv in
-                guard let self = self else { return }
-                let newBG: [BGEntry] = sgv.map {
-                    BGEntry(date: Date(timeIntervalSince1970: $0.date),
-                            mmol: Double($0.sgv) / 18.0182)
-                }
-                DispatchQueue.main.async {
-                    // Replace today-window entries, keep older cached ones
-                    let startToday = cal.startOfDay(for: now)
-                    self.bgEntries.removeAll { $0.date >= startToday }
-                    let merged = self.normalizedMergedBG(existing: self.bgEntries, new: newBG)
-                    self.bgEntries = merged
-                    self.tableView.reloadData()
-                    self.updateStatsLabel()
-                    self.hideRefreshIndicator()
-                }
-            }
+        let start = cal.startOfDay(for: date)
+        guard let endOfDay = cal.date(byAdding: .day, value: 1, to: start) else {
+            hideRefreshIndicator()
             return
         }
 
-        // Cached day loader
-        let start = cal.startOfDay(for: date)
-        let end = cal.date(byAdding: .day, value: 1, to: start)!
-
         Task {
-            // Expand the cache window with a ±12h buffer to avoid missing SGVs
-            // that fall just outside the calendar-day boundaries (e.g. around midnight),
-            // then filter back to exactly [start, end) locally.
-            let bufferedStart = Calendar.current.date(byAdding: .hour, value: -12, to: start) ?? start
-            let bufferedEnd   = Calendar.current.date(byAdding: .hour, value: 12, to: end)   ?? end
-
-            let (sgvJSON, _) = await NightscoutCache.loadWindow(from: bufferedStart, to: bufferedEnd)
-
-            let cachedBG: [BGEntry] = sgvJSON.map {
-                BGEntry(
-                    date: Date(timeIntervalSince1970: $0.date),
-                    mmol: Double($0.sgv) / 18.0182
-                )
+            // If we're looking at today, update the cache incrementally for today's window.
+            if cal.isDate(date, inSameDayAs: now) {
+                let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
+                if !sgvBatch.isEmpty {
+                    GlucoseNSOnlyCache.mergeSGVBatch(sgvBatch)
+                }
             }
-            // Keep only the entries that actually belong to the selected calendar day.
-            .filter { $0.date >= start && $0.date < end }
 
-            DispatchQueue.main.async {
+            // Expand the cache window with a ±12h buffer around the day
+            let bufferedStart = cal.date(byAdding: .hour, value: -12, to: start) ?? start
+            let bufferedEnd   = cal.date(byAdding: .hour, value: 12, to: endOfDay) ?? endOfDay
+
+            let sgvJSON = await GlucoseNSOnlyCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+
+            let rawDayBG: [BGEntry] = sgvJSON
+                .map {
+                    BGEntry(
+                        date: Date(timeIntervalSince1970: $0.date),
+                        mmol: Double($0.sgv) / 18.0182
+                    )
+                }
+                // Keep only the entries that actually belong to the selected calendar day.
+                .filter { $0.date >= start && $0.date < endOfDay }
+
+            // Deduplicate to at most one reading per 5‑minute bucket
+            let cachedBG = self.dedupeToFiveMinuteBuckets(rawDayBG)
+
+            await MainActor.run {
                 // Remove any existing entries inside that day and replace them
-                self.bgEntries.removeAll { $0.date >= start && $0.date < end }
+                self.bgEntries.removeAll { $0.date >= start && $0.date < endOfDay }
                 let merged = self.normalizedMergedBG(existing: self.bgEntries, new: cachedBG)
                 self.bgEntries = merged
                 self.tableView.reloadData()

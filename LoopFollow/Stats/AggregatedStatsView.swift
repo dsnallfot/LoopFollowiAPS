@@ -33,6 +33,11 @@ struct AggregatedStatsView: View {
 
         let savedPeriod = UserDefaults.standard.object(forKey: "AggregatedStatsSelectedPeriod") as? Int ?? 14
         _selectedPeriod = State(initialValue: savedPeriod)
+        _dailyStatsVM = StateObject(wrappedValue: DailyStatsViewModel(
+            dataService: viewModel.dataService,
+            daysBack: 90,
+            todayTDDOverride: nil
+        ))
     }
 
     var body: some View {
@@ -156,25 +161,19 @@ struct AggregatedStatsView: View {
                 }
             }
             .sheet(isPresented: $showingDailyStats) {
-                // Antag att AggregatedStatsViewModel har en referens till samma StatsDataService
-                // Justera "dataService" till faktiskt property-namn om det skiljer sig.
-                if #available(iOS 16.0, *) {
-                    DailyStatsView(
-                        viewModel: DailyStatsViewModel(
-                            dataService: viewModel.dataService,
-                            daysBack: 90,
-                            todayTDDOverride: selectedPeriod == 0 ? viewModel.simpleStats.totalDailyDose : nil
-                        )
-                    )
-                } else {
-                    // Fallback on earlier versions
-                }
+                DailyStatsView(viewModel: dailyStatsVM)
             }
         } else {
             // Fallback on earlier versions
         }
     }
     
+    @StateObject private var dailyStatsVM = DailyStatsViewModel(
+        dataService: .placeholder,
+        daysBack: 90,
+        todayTDDOverride: nil
+    )
+
     private func periodLabel(for period: Int) -> String {
         switch period {
         case 0:
