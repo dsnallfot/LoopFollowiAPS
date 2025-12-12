@@ -467,7 +467,7 @@ final class BGCheckStatsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Stickstatistik"
+        title = "Statistick"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
             style: .plain,

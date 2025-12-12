@@ -241,7 +241,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "BG"
+        title = "BG-logg"
         view.backgroundColor = .systemBackground
 
         setupNavigationBar()
@@ -1246,12 +1246,28 @@ final class GlucoseStatsViewController: UITableViewController {
         chartView.setNeedsDisplay()
     }
 
+    // MARK: - Expected counts helper
+
+    private func expectedCount(for day: Date) -> Int {
+        let cal = Calendar.current
+        if cal.isDateInToday(day) {
+            let start = cal.startOfDay(for: day)
+            let secondsSinceStart = Date().timeIntervalSince(start)
+            return max(1, Int(floor(secondsSinceStart / 300)))
+        }
+        return 288
+    }
+
+    private func expectedCountsForSelectedDays() -> [Int] {
+        selectedDays.map { expectedCount(for: $0) }
+    }
+
     // MARK: - Stats table
 
     private enum Row: Int, CaseIterable {
         case avgAllPct
-        case avgTrioPct
         case avgMissedAllPerDay
+        case avgTrioPct
         case avgMissedTrioPerDay
         case avgMinutesWithoutAll
         case bestAllDay
@@ -1287,17 +1303,20 @@ final class GlucoseStatsViewController: UITableViewController {
 
         let row = Row(rawValue: indexPath.row)!
 
-        let daysCount = max(1, selectedDays.count)
-        let totalExpected = Double(288 * daysCount)
+        let expectedPerDay = expectedCountsForSelectedDays()
 
+        let totalExpected = Double(expectedPerDay.reduce(0, +))
         let totalAll = Double(selectedCountsAllValues.reduce(0, +))
         let totalNS  = Double(selectedCountsNSOnly.reduce(0, +))
 
         let avgAllPct = totalExpected > 0 ? (totalAll / totalExpected * 100.0) : 0
         let avgNSPct  = totalExpected > 0 ? (totalNS / totalExpected * 100.0) : 0
 
-        let missedAllPerDay = selectedCountsAllValues.map { Double(max(0, 288 - $0)) }
-        let missedNSPerDay  = selectedCountsNSOnly.map { Double(max(0, 288 - $0)) }
+        let missedAllPerDay = zip(selectedCountsAllValues, expectedPerDay)
+            .map { Double(max(0, $1 - $0)) }
+
+        let missedNSPerDay = zip(selectedCountsNSOnly, expectedPerDay)
+            .map { Double(max(0, $1 - $0)) }
 
         let avgMissAll = avg(missedAllPerDay)
         let avgMissNS  = avg(missedNSPerDay)
@@ -1311,9 +1330,18 @@ final class GlucoseStatsViewController: UITableViewController {
         var worstDate: Date?
 
         for (i, day) in selectedDays.enumerated() {
-            let pct = Double(selectedCountsAllValues[i]) / 288.0 * 100.0
-            if pct > bestPct { bestPct = pct; bestDate = day }
-            if pct < worstPct { worstPct = pct; worstDate = day }
+            let expected = Double(expectedPerDay[i])
+            guard expected > 0 else { continue }
+
+            let pct = Double(selectedCountsAllValues[i]) / expected * 100.0
+            if pct > bestPct {
+                bestPct = pct
+                bestDate = day
+            }
+            if pct < worstPct {
+                worstPct = pct
+                worstDate = day
+            }
         }
 
         switch row {
@@ -1321,34 +1349,34 @@ final class GlucoseStatsViewController: UITableViewController {
             cell.textLabel?.text = "Medel BG-värden (Alla)"
             cell.detailTextLabel?.text = percentString(avgAllPct)
 
+        case .avgMissedAllPerDay:
+            cell.textLabel?.text = "Medel missade BG-värden/dag"
+            cell.detailTextLabel?.text = "\(countString(avgMissAll)) st"
+            
         case .avgTrioPct:
             cell.textLabel?.text = "Medel BG-uppladdningar (Trio)"
             cell.detailTextLabel?.text = percentString(avgNSPct)
 
-        case .avgMissedAllPerDay:
-            cell.textLabel?.text = "Medel missade värden/dag (Alla)"
-            cell.detailTextLabel?.text = "\(countString(avgMissAll)) st"
-
         case .avgMissedTrioPerDay:
-            cell.textLabel?.text = "Medel missade uppl./dag (Trio)"
+            cell.textLabel?.text = "Medel missade uppladdningar/dag"
             cell.detailTextLabel?.text = "\(countString(avgMissNS)) st"
 
         case .avgMinutesWithoutAll:
-            cell.textLabel?.text = "Medel tid/dag utan värden (Alla)"
+            cell.textLabel?.text = "Medel tid/dag utan BG-värden"
             cell.detailTextLabel?.text = "\(countString(avgMinutesNoAll)) min"
 
         case .bestAllDay:
-            cell.textLabel?.text = "Bästa dag BG-värden (Alla)"
+            cell.textLabel?.text = "Bästa dag BG-värden"
             if let d = bestDate {
-                cell.detailTextLabel?.text = "\(percentString(bestPct)) \(dfISO.string(from: d))"
+                cell.detailTextLabel?.text = "\(percentString(bestPct)) • \(dfISO.string(from: d))"
             } else {
                 cell.detailTextLabel?.text = "–"
             }
 
         case .worstAllDay:
-            cell.textLabel?.text = "Sämsta dag BG-värden (Alla)"
+            cell.textLabel?.text = "Sämsta dag BG-värden"
             if let d = worstDate {
-                cell.detailTextLabel?.text = "\(percentString(worstPct)) \(dfISO.string(from: d))"
+                cell.detailTextLabel?.text = "\(percentString(worstPct)) • \(dfISO.string(from: d))"
             } else {
                 cell.detailTextLabel?.text = "–"
             }
