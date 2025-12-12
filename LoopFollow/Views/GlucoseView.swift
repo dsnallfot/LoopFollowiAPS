@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Charts
 
 /// Table-style glucose log, similar look/feel to TreatmentsTableView.
 final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDelegate {
@@ -240,7 +241,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "BG logg"
+        title = "BG"
         view.backgroundColor = .systemBackground
 
         setupNavigationBar()
@@ -297,7 +298,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
             action: #selector(refreshButtonTapped)
         )
         self.reloadButton = reload
-        
+        /*
         // Day-stepper chevrons (top-left)
         let back = UIBarButtonItem(
             image: UIImage(systemName: "chevron.left"),
@@ -312,15 +313,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
             action: #selector(nextDayTapped)
         )
         navigationItem.leftBarButtonItems = [reload, back, forward]
-
-        // Optional close button to mirror other modal logs
-        let done = UIBarButtonItem(
-            title: "Klar",
-            style: .plain,
-            target: self,
-            action: #selector(doneTapped)
-        )
-
+*/
         let filter = UIBarButtonItem(
             image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
             style: .plain,
@@ -328,12 +321,46 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
             action: #selector(toggleMissingOnly)
         )
         filter.tintColor = .label
+        
+        navigationItem.leftBarButtonItems = [reload, filter]
+        
+        // Optional close button to mirror other modal logs
+        let done = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(doneTapped)
+        )
+/*
+        let filter = UIBarButtonItem(
+            image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(toggleMissingOnly)
+        )
+        filter.tintColor = .label
+*/
+        let info = UIBarButtonItem(
+            image: UIImage(systemName: "info"),
+            style: .plain,
+            target: self,
+            action: #selector(showGlucoseStats)
+        )
+        info.tintColor = .label
+        
+        //navigationItem.rightBarButtonItems = [done, info, filter]
 
-        navigationItem.rightBarButtonItems = [done, filter]
+        navigationItem.rightBarButtonItems = [done, info]
     }
 
     @objc private func doneTapped() {
         dismiss(animated: true, completion: nil)
+    }
+
+    @objc private func showGlucoseStats() {
+        let statsVC = GlucoseStatsViewController()
+        let nav = UINavigationController(rootViewController: statsVC)
+        present(nav, animated: true)
     }
     
     @objc private func refreshButtonTapped() {
@@ -378,7 +405,8 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     @objc private func toggleMissingOnly() {
         showOnlyMissingGlucose.toggle()
 
-        if let filterButton = navigationItem.rightBarButtonItems?.last {
+        //if let filterButton = navigationItem.rightBarButtonItems?.last {
+        if let filterButton = navigationItem.leftBarButtonItems?.last {
             let name = showOnlyMissingGlucose
                 ? "line.3.horizontal.decrease.circle.fill"
                 : "line.3.horizontal.decrease.circle"
@@ -856,5 +884,476 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
                 tableView.deselectRow(at: indexPath, animated: true)
             }
         }
+    }
+}
+
+// MARK: - Glucose Stats (All values vs Trio→NS)
+
+final class GlucoseStatsViewController: UITableViewController {
+
+    // Full 90d dataset (oldest → newest)
+    private var allDays: [Date] = []
+    private var allCountsAllValues: [Int] = []
+    private var allCountsNSOnly: [Int] = []
+
+    // Current selection
+    private var selectedDays: [Date] = []
+    private var selectedCountsAllValues: [Int] = []
+    private var selectedCountsNSOnly: [Int] = []
+
+    private enum PeriodOption: CaseIterable {
+        case d1, d7, d14, d30, d90
+
+        var days: Int {
+            switch self {
+            case .d1:  return 1
+            case .d7:  return 7
+            case .d14: return 14
+            case .d30: return 30
+            case .d90: return 90
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .d1:  return "1 d"
+            case .d7:  return "7 d"
+            case .d14: return "14 d"
+            case .d30: return "30 d"
+            case .d90: return "90 d"
+            }
+        }
+    }
+
+    private var selectedPeriod: PeriodOption = .d14
+
+    private lazy var periodControl: UISegmentedControl = {
+        let items = PeriodOption.allCases.map { $0.title }
+        let sc = UISegmentedControl(items: items)
+        sc.selectedSegmentIndex = PeriodOption.allCases.firstIndex(of: selectedPeriod) ?? 2
+        sc.addTarget(self, action: #selector(periodChanged(_:)), for: .valueChanged)
+        return sc
+    }()
+
+    private let chartView: BarChartView = {
+        let v = BarChartView()
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1_000_000
+        return v
+    }()
+
+    private let dfAxis: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "dd/MM"
+        return df
+    }()
+
+    private let dfISO: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyyy-MM-dd"
+        return df
+    }()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Glukosstatistik"
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissSelf)
+        )
+
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "GlucoseStatsCell")
+
+        setupChartHeader()
+        loadDataAndApplyInitialPeriod()
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+
+    // MARK: - Data loading
+
+    private func loadDataAndApplyInitialPeriod() {
+        Task {
+            let cal = Calendar.current
+            let now = Date()
+
+            // Up to 90 days (align with cache retention if smaller)
+            let daysBack = min(NightscoutCache.retentionDays, 90)
+
+            guard let startDay = cal.date(byAdding: .day, value: -(daysBack - 1), to: cal.startOfDay(for: now)) else {
+                await MainActor.run {
+                    self.applyPeriod(self.selectedPeriod)
+                }
+                return
+            }
+
+            // Build all days list (oldest → newest)
+            var days: [Date] = []
+            days.reserveCapacity(daysBack)
+            for offset in 0..<daysBack {
+                if let d = cal.date(byAdding: .day, value: offset, to: startDay) {
+                    days.append(cal.startOfDay(for: d))
+                }
+            }
+
+            // Load datasets
+            let (allSGV, _) = await NightscoutCache.loadWindow(from: startDay, to: now)
+            let nsOnlySGV = await GlucoseNSOnlyCache.loadWindow(from: startDay, to: now)
+
+            // Count unique readings per day using bucket dedupe
+            let countsAllValuesByDay = self.countsByDayFromSGVJSON(allSGV, bucketSeconds: 240.0)
+            let countsNSOnlyByDay = self.countsByDayFromSGVJSON(nsOnlySGV, bucketSeconds: 300.0)
+
+            var countsAll: [Int] = []
+            var countsNS: [Int] = []
+            countsAll.reserveCapacity(days.count)
+            countsNS.reserveCapacity(days.count)
+
+            for day in days {
+                countsAll.append(countsAllValuesByDay[day] ?? 0)
+                countsNS.append(countsNSOnlyByDay[day] ?? 0)
+            }
+
+            await MainActor.run {
+                self.allDays = days
+                self.allCountsAllValues = countsAll
+                self.allCountsNSOnly = countsNS
+
+                // Apply initial period
+                self.applyPeriod(self.selectedPeriod)
+            }
+        }
+    }
+
+    /// Counts unique readings per day by bucketing timestamps.
+    private func countsByDayFromSGVJSON(_ sgvs: [SGVJSON], bucketSeconds: TimeInterval) -> [Date: Int] {
+        let cal = Calendar.current
+        var bucketsByDay: [Date: Set<Int>] = [:]
+
+        for e in sgvs {
+            let date = Date(timeIntervalSince1970: e.date)
+            let dayStart = cal.startOfDay(for: date)
+            let bucket = Int(floor(date.timeIntervalSince1970 / bucketSeconds))
+            bucketsByDay[dayStart, default: []].insert(bucket)
+        }
+
+        var counts: [Date: Int] = [:]
+        counts.reserveCapacity(bucketsByDay.count)
+        for (day, set) in bucketsByDay {
+            counts[day] = set.count
+        }
+        return counts
+    }
+
+    // MARK: - Period selection
+
+    private func applyPeriod(_ period: PeriodOption) {
+        selectedPeriod = period
+        let total = allDays.count
+        guard total > 0 else {
+            selectedDays = []
+            selectedCountsAllValues = []
+            selectedCountsNSOnly = []
+            chartView.data = nil
+            tableView.reloadData()
+            return
+        }
+
+        let n = min(period.days, total)
+        let startIndex = max(0, total - n)
+
+        selectedDays = Array(allDays[startIndex..<total])
+        selectedCountsAllValues = Array(allCountsAllValues[startIndex..<total])
+        selectedCountsNSOnly = Array(allCountsNSOnly[startIndex..<total])
+
+        loadChartData()
+        tableView.reloadData()
+    }
+
+    @objc private func periodChanged(_ sender: UISegmentedControl) {
+        let index = sender.selectedSegmentIndex
+        guard index >= 0 && index < PeriodOption.allCases.count else { return }
+        applyPeriod(PeriodOption.allCases[index])
+    }
+
+    // MARK: - Chart header
+
+    private func setupChartHeader() {
+        let container = UIView()
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 330)
+
+        container.addSubview(periodControl)
+        container.addSubview(chartView)
+
+        periodControl.translatesAutoresizingMaskIntoConstraints = false
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            periodControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            periodControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            periodControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            chartView.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 12),
+            chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+        ])
+
+        tableView.tableHeaderView = container
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let header = tableView.tableHeaderView {
+            let targetSize = CGSize(width: tableView.bounds.width, height: 330)
+            if header.frame.size != targetSize {
+                header.frame.size = targetSize
+                tableView.tableHeaderView = header
+            }
+        }
+    }
+
+    private func loadChartData() {
+        guard selectedDays.count == selectedCountsAllValues.count,
+              selectedDays.count == selectedCountsNSOnly.count,
+              !selectedDays.isEmpty
+        else {
+            chartView.data = nil
+            chartView.setNeedsDisplay()
+            return
+        }
+
+        let n = selectedDays.count
+        let cal = Calendar.current
+        let now = Date()
+        var expectedPerDay: [Int] = []
+        expectedPerDay.reserveCapacity(n)
+        for i in 0..<n {
+            let day = selectedDays[i]
+            if cal.isDateInToday(day) {
+                let startOfDay = cal.startOfDay(for: now)
+                let secondsSinceStart = now.timeIntervalSince(startOfDay)
+                let expected = max(1, Int(floor(secondsSinceStart / 300)))
+                expectedPerDay.append(expected)
+            } else {
+                expectedPerDay.append(288)
+            }
+        }
+
+        var entriesAll: [BarChartDataEntry] = []
+        var entriesNS: [BarChartDataEntry] = []
+        entriesAll.reserveCapacity(n)
+        entriesNS.reserveCapacity(n)
+
+        for i in 0..<n {
+            let expected = Double(expectedPerDay[i])
+            let pctAll = min(100.0, max(0.0, Double(selectedCountsAllValues[i]) / expected * 100.0))
+            let pctNS  = min(100.0, max(0.0, Double(selectedCountsNSOnly[i]) / expected * 100.0))
+            entriesAll.append(BarChartDataEntry(x: Double(i), y: pctAll))
+            entriesNS.append(BarChartDataEntry(x: Double(i), y: pctNS))
+        }
+
+        let dsAll = BarChartDataSet(entries: entriesAll, label: "Alla värden")
+        dsAll.setColor(UIColor.systemRed.withAlphaComponent(0.5))
+        dsAll.drawValuesEnabled = false
+        dsAll.barBorderColor = .black
+        dsAll.barBorderWidth = 0.5
+
+        let dsNS = BarChartDataSet(entries: entriesNS, label: "Endast Trio ⇢ NS")
+        dsNS.setColor(UIColor.systemBlue.withAlphaComponent(0.5))
+        dsNS.drawValuesEnabled = false
+        dsNS.barBorderColor = .black
+        dsNS.barBorderWidth = 0.5
+
+        let data = BarChartData(dataSets: [dsAll, dsNS])
+
+        // Grouped bars (two per day)
+        let groupSpace = 0.20
+        let barSpace = 0.05
+        let barWidth = (1.0 - groupSpace) / 2.0 - barSpace
+        data.barWidth = barWidth
+
+        // Configure X axis for grouping
+        let xAxis = chartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.granularityEnabled = true
+        xAxis.granularity = 1
+        xAxis.centerAxisLabelsEnabled = true
+
+        let labels = selectedDays.map { dfAxis.string(from: $0) }
+        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
+        xAxis.setLabelCount(min(6, labels.count), force: false)
+
+        // Y axis: 0–100 %
+        let yAxis = chartView.leftAxis
+        yAxis.axisMinimum = 0
+        yAxis.axisMaximum = 100
+        yAxis.granularityEnabled = true
+        yAxis.granularity = 10
+        yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            String(format: "%.0f%%", value)
+        }
+
+        chartView.rightAxis.enabled = false
+
+        chartView.data = data
+
+        // Make groups start at x = 0
+        chartView.xAxis.axisMinimum = 0
+        chartView.xAxis.axisMaximum = Double(n)
+        data.groupBars(fromX: 0, groupSpace: groupSpace, barSpace: barSpace)
+
+        // Light grid for readability (same vibe as BGCheck)
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        // --- Legend configuration ---
+        chartView.legend.enabled = true
+        let legend = chartView.legend
+        legend.horizontalAlignment = .center
+        legend.verticalAlignment = .bottom
+        legend.orientation = .horizontal
+        legend.drawInside = false
+        legend.form = .square
+        legend.formSize = 10
+        legend.xEntrySpace = 12
+
+        chartView.notifyDataSetChanged()
+        chartView.setNeedsDisplay()
+    }
+
+    // MARK: - Stats table
+
+    private enum Row: Int, CaseIterable {
+        case avgAllPct
+        case avgTrioPct
+        case avgMissedAllPerDay
+        case avgMissedTrioPerDay
+        case avgMinutesWithoutAll
+        case bestAllDay
+        case worstAllDay
+    }
+
+    override func numberOfSections(in tableView: UITableView) -> Int { 1 }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        Row.allCases.count
+    }
+
+    private func percentString(_ value: Double) -> String {
+        String(format: "%.0f %%", value)
+    }
+
+    private func countString(_ value: Double) -> String {
+        // keep one decimal if needed
+        if abs(value.rounded() - value) < 0.001 {
+            return String(format: "%.0f", value)
+        }
+        return String(format: "%.1f", value)
+    }
+
+    private func avg(_ values: [Double]) -> Double {
+        guard !values.isEmpty else { return 0 }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: "GlucoseStatsCell")
+        cell.selectionStyle = .none
+
+        let row = Row(rawValue: indexPath.row)!
+
+        let daysCount = max(1, selectedDays.count)
+        let totalExpected = Double(288 * daysCount)
+
+        let totalAll = Double(selectedCountsAllValues.reduce(0, +))
+        let totalNS  = Double(selectedCountsNSOnly.reduce(0, +))
+
+        let avgAllPct = totalExpected > 0 ? (totalAll / totalExpected * 100.0) : 0
+        let avgNSPct  = totalExpected > 0 ? (totalNS / totalExpected * 100.0) : 0
+
+        let missedAllPerDay = selectedCountsAllValues.map { Double(max(0, 288 - $0)) }
+        let missedNSPerDay  = selectedCountsNSOnly.map { Double(max(0, 288 - $0)) }
+
+        let avgMissAll = avg(missedAllPerDay)
+        let avgMissNS  = avg(missedNSPerDay)
+
+        let avgMinutesNoAll = avgMissAll * 5.0
+
+        // Best/worst day for "All values"
+        var bestPct: Double = 0
+        var bestDate: Date?
+        var worstPct: Double = 101
+        var worstDate: Date?
+
+        for (i, day) in selectedDays.enumerated() {
+            let pct = Double(selectedCountsAllValues[i]) / 288.0 * 100.0
+            if pct > bestPct { bestPct = pct; bestDate = day }
+            if pct < worstPct { worstPct = pct; worstDate = day }
+        }
+
+        switch row {
+        case .avgAllPct:
+            cell.textLabel?.text = "Medel BG-värden (Alla)"
+            cell.detailTextLabel?.text = percentString(avgAllPct)
+
+        case .avgTrioPct:
+            cell.textLabel?.text = "Medel BG-uppladdningar (Trio)"
+            cell.detailTextLabel?.text = percentString(avgNSPct)
+
+        case .avgMissedAllPerDay:
+            cell.textLabel?.text = "Medel missade värden/dag (Alla)"
+            cell.detailTextLabel?.text = "\(countString(avgMissAll)) st"
+
+        case .avgMissedTrioPerDay:
+            cell.textLabel?.text = "Medel missade uppl./dag (Trio)"
+            cell.detailTextLabel?.text = "\(countString(avgMissNS)) st"
+
+        case .avgMinutesWithoutAll:
+            cell.textLabel?.text = "Medel tid/dag utan värden (Alla)"
+            cell.detailTextLabel?.text = "\(countString(avgMinutesNoAll)) min"
+
+        case .bestAllDay:
+            cell.textLabel?.text = "Bästa dag BG-värden (Alla)"
+            if let d = bestDate {
+                cell.detailTextLabel?.text = "\(percentString(bestPct)) \(dfISO.string(from: d))"
+            } else {
+                cell.detailTextLabel?.text = "–"
+            }
+
+        case .worstAllDay:
+            cell.textLabel?.text = "Sämsta dag BG-värden (Alla)"
+            if let d = worstDate {
+                cell.detailTextLabel?.text = "\(percentString(worstPct)) \(dfISO.string(from: d))"
+            } else {
+                cell.detailTextLabel?.text = "–"
+            }
+        }
+
+        return cell
     }
 }
