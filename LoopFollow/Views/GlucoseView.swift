@@ -42,6 +42,10 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
 
     // Selected day for table
     private var selectedDate: Date = Date()
+    
+    // Throttle so we don’t fetch on every quick appear (e.g. during navigation)
+    private var lastNSOnly24hRefreshAt: Date?
+    private let nsOnly24hRefreshMinInterval: TimeInterval = 60 // seconds
 
     // UI
     private let tableView = UITableView(frame: .zero, style: .plain)
@@ -256,13 +260,27 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         datePicker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
 
         // Debug: list cached NS-only glucose day files whenever entering GlucoseView
-        GlucoseNSOnlyCache.debugListSegments()
-        print("GlucoseNSOnlyCache dir:", GlucoseNSOnlyCache.dir.path)
+        //GlucoseNSOnlyCache.debugListSegments()
+        //print("GlucoseNSOnlyCache dir:", GlucoseNSOnlyCache.dir.path)
 
         // Initial NS-only backfill (90 days) + initial load for today from NS cache
         Task {
             await self.ensureInitialBackfill()
             await MainActor.run {
+                self.loadBG(for: self.selectedDate)
+            }
+        }
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        Task {
+            // Always keep NS-only cache fresh for last 24h when opening the view
+            await refreshNSOnlyCacheRecent(hours: 24)
+
+            await MainActor.run {
+                // Reload current day so labels/SAKNAS reasons are correct immediately
                 self.loadBG(for: self.selectedDate)
             }
         }
@@ -487,6 +505,26 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         }
 
         return byBucket.values.sorted { $0.date < $1.date }
+    }
+    
+    /// Refresh NS-only cache for the most recent window (default 24h).
+    /// This makes sure Trio→NS gaps are up-to-date as soon as the view is opened.
+    private func refreshNSOnlyCacheRecent(hours: Int = 24) async {
+        let now = Date()
+
+        // Throttle
+        if let last = lastNSOnly24hRefreshAt, now.timeIntervalSince(last) < nsOnly24hRefreshMinInterval {
+            return
+        }
+        lastNSOnly24hRefreshAt = now
+
+        let start = now.addingTimeInterval(-TimeInterval(hours) * 3600)
+
+        let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
+        if !sgvBatch.isEmpty {
+            GlucoseNSOnlyCache.mergeSGVBatch(sgvBatch)
+            GlucoseNSOnlyCache.purgeOldFiles()
+        }
     }
 
     /// Load BG for a calendar day using both datasets, then drive the UI from the selected mode.

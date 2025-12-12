@@ -246,7 +246,7 @@ final class NightscoutCache {
             }
         }
     }
-    
+/*
     /// Debug: List all cached day files and their sizes.
     static func debugListSegments() {
         do {
@@ -264,7 +264,7 @@ final class NightscoutCache {
             print("❌ NightscoutCache.debugListSegments error:", error.localizedDescription)
         }
     }
-
+*/
     private static func fileURL(for date: Date) -> URL {
         let dayStr = isoFormatter.string(from: Calendar.current.startOfDay(for: date))
         return dir.appendingPathComponent(dayStr).appendingPathExtension("json")
@@ -443,7 +443,7 @@ final class GlucoseNSOnlyCache {
             }
         }
     }
-
+/*
     /// Debug: List all cached NS-only glucose day files and their sizes.
     static func debugListSegments() {
         do {
@@ -461,6 +461,7 @@ final class GlucoseNSOnlyCache {
             print("❌ GlucoseNSOnlyCache.debugListSegments error:", error.localizedDescription)
         }
     }
+ */
 
     // MARK: - Private helpers
 
