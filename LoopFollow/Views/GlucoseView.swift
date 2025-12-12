@@ -59,7 +59,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     }()
 
     private let modeSegmentedControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["Alla värden", "Endast Trio ⇢ NS"])
+        let sc = UISegmentedControl(items: ["Alla värden", "Uppladdningar Trio ⇢ NS"])
         sc.selectedSegmentIndex = 0
         sc.translatesAutoresizingMaskIntoConstraints = false
         return sc
@@ -1177,7 +1177,7 @@ final class GlucoseStatsViewController: UITableViewController {
         dsAll.barBorderColor = .black
         dsAll.barBorderWidth = 0.5
 
-        let dsNS = BarChartDataSet(entries: entriesNS, label: "Endast Trio ⇢ NS")
+        let dsNS = BarChartDataSet(entries: entriesNS, label: "Uppladdningar Trio ⇢ NS")
         dsNS.setColor(UIColor.systemBlue.withAlphaComponent(0.5))
         dsNS.drawValuesEnabled = false
         dsNS.barBorderColor = .black
@@ -1202,12 +1202,12 @@ final class GlucoseStatsViewController: UITableViewController {
         xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
         xAxis.setLabelCount(min(6, labels.count), force: false)
 
-        // Y axis: 0–100 %
+        // Y axis: cropped to 70–100 % for better day-to-day resolution
         let yAxis = chartView.leftAxis
-        yAxis.axisMinimum = 0
+        yAxis.axisMinimum = 70
         yAxis.axisMaximum = 100
         yAxis.granularityEnabled = true
-        yAxis.granularity = 10
+        yAxis.granularity = 5
         yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
             String(format: "%.0f%%", value)
         }
