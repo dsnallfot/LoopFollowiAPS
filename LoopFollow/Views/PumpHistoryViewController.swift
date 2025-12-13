@@ -505,7 +505,7 @@ final class PumpSessionStatsViewController: UITableViewController {
             histEntries.append(ChartDataEntry(x: start.timeIntervalSince1970, y: y))
 
             let color: NSUIColor
-            if hours > 70 {
+            if hours >= 70 {
                 color = .systemGreen
             } else if hours >= 50 {
                 color = .systemOrange

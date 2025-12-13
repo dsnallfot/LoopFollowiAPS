@@ -45,7 +45,7 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Dextro"
+        title = "Dextrologg"
         view.backgroundColor = .systemBackground
 
         setupNavigationBar()
@@ -703,7 +703,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             scatterChartView.topAnchor.constraint(equalTo: timeFilterControl.bottomAnchor, constant: 12),
             scatterChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             scatterChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            scatterChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+            scatterChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4)
         ])
 
         // Utgångsläge: bar-chart visas, line-chart göms
@@ -991,6 +991,8 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         let cal = Calendar.current
         // Referens = periodens första dag kl 00:00
         let referenceStart = cal.startOfDay(for: selectedDays.first!)
+        let now = Date()
+        let hoursSinceStartNow = max(0.0, now.timeIntervalSince(referenceStart) / 3600.0)
 
         // Sortera Dextro-behandlingar kronologiskt (äldst -> nyast)
         let sortedDextro = zip(selectedTreatmentDates, selectedTreatmentGrams)
@@ -1021,12 +1023,6 @@ final class LowTreatmentsStatsViewController: UITableViewController {
             if mmol > maxMmol { maxMmol = mmol }
         }
 
-        // Om det inte finns några datapunkter alls
-        if dextroEntries.isEmpty && bgEntries.isEmpty {
-            scatterChartView.data = nil
-            scatterChartView.setNeedsDisplay()
-            return
-        }
 
         let dextroSet = ScatterChartDataSet(entries: dextroEntries, label: "Dextro (g)")
         dextroSet.axisDependency = .left
@@ -1058,9 +1054,19 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         marker.chartView = scatterChartView
         scatterChartView.marker = marker
 
-        // --- Custom legend --- //
+        // --- Custom legend (centrerad under grafen) --- //
         let legend = scatterChartView.legend
         legend.enabled = true
+        legend.drawInside = false
+        legend.orientation = .horizontal
+        legend.verticalAlignment = .bottom
+        legend.horizontalAlignment = .center
+        legend.xEntrySpace = 12
+        legend.yEntrySpace = 6
+        legend.formToTextSpace = 6
+        legend.yOffset = 8
+        // Lite extra luft mellan plot-ytan och legend (yOffset påverkar inte alltid layouten)
+        scatterChartView.extraBottomOffset = 4
 
         let dextroLegendEntry = LegendEntry(label: "Dextro (g)")
         dextroLegendEntry.form = .circle
@@ -1081,6 +1087,8 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         xAxis.granularityEnabled = true
         xAxis.valueFormatter = DateAxisFormatter(referenceDate: referenceStart)
         xAxis.setLabelCount(min(6, selectedDays.count), force: false)
+        xAxis.axisMinimum = 0.0
+        xAxis.axisMaximum = hoursSinceStartNow
 
         let leftAxis = scatterChartView.leftAxis
         leftAxis.axisMinimum = 0
@@ -1115,6 +1123,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
         rightAxis.gridLineWidth = 0.5
         rightAxis.gridLineDashLengths = [2, 2]
 
+        scatterChartView.notifyDataSetChanged()
         scatterChartView.setNeedsDisplay()
     }
 

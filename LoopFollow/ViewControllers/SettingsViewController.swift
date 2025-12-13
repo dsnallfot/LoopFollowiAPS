@@ -69,26 +69,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 onDismiss: nil
             )
         }
-        <<< ButtonRow() {
-                $0.title = "Glukoslogg"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let glucoseVC = GlucoseView()
-                        return UINavigationController(rootViewController: glucoseVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
-        <<< ButtonRow() {
-                $0.title = "Fingersticklogg"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let bgCheckVC = BGCheckView()
-                        return UINavigationController(rootViewController: bgCheckVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
+        
         <<< ButtonRow() {
                 $0.title = "Dextrologg"
                 $0.presentationMode = .show(
@@ -99,19 +80,31 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                     onDismiss: nil
                 )
             }
+        
         <<< ButtonRow() {
-                $0.title = "Sensorhistorik"
+                $0.title = "Fingersticklogg"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
-                        let sensorHistoryVC = SensorHistoryViewController()
-                        return UINavigationController(rootViewController: sensorHistoryVC)
+                        let bgCheckVC = BGCheckView()
+                        return UINavigationController(rootViewController: bgCheckVC)
                     }),
                     onDismiss: nil
                 )
             }
         
         <<< ButtonRow() {
-                $0.title = "Pumphistorik"
+                $0.title = "Glukoslogg"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let glucoseVC = GlucoseView()
+                        return UINavigationController(rootViewController: glucoseVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        
+        <<< ButtonRow() {
+                $0.title = "Pumpbyten Logg"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
                         let pumpHistoryVC = PumpHistoryViewController()
@@ -122,7 +115,18 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             }
         
         <<< ButtonRow() {
-            $0.title = "Användarinställningar"
+                $0.title = "Sensorbyten Logg"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let sensorHistoryVC = SensorHistoryViewController()
+                        return UINavigationController(rootViewController: sensorHistoryVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        
+        <<< ButtonRow() {
+            $0.title = "Trio Användarinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let trioView = TrioPreferencesView()
@@ -137,7 +141,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
-            $0.title = "Oref status"
+            $0.title = "Trio Oref Status"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let trioOrefView = TrioOrefView()
@@ -152,7 +156,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         <<< ButtonRow() {
-            $0.title = "Profilinställningar"
+            $0.title = "Trio Profilinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let profileSchedulesView = ProfileSchedulesView()

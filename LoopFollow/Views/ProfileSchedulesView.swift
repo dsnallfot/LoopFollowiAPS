@@ -210,7 +210,7 @@ struct ProfileSchedulesView: View {
                     }
                 }
             }
-            .navigationBarTitle("Profilinställningar", displayMode: .inline)
+            .navigationBarTitle("Trio Profilinställningar", displayMode: .inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Klar") {

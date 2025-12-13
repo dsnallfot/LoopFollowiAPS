@@ -241,7 +241,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "BG-logg"
+        title = "Glukoslogg"
         view.backgroundColor = .systemBackground
 
         setupNavigationBar()
@@ -891,6 +891,15 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
 
 final class GlucoseStatsViewController: UITableViewController {
 
+    // Match LowTreatmentsStatsViewController: insetGrouped gives the rounded light-gray cards
+    init() {
+        super.init(style: .insetGrouped)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
     // Full 90d dataset (oldest → newest)
     private var allDays: [Date] = []
     private var allCountsAllValues: [Int] = []
@@ -969,6 +978,7 @@ final class GlucoseStatsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        tableView.backgroundColor = .systemGroupedBackground
         title = "Glukosstatistik"
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
@@ -1114,7 +1124,7 @@ final class GlucoseStatsViewController: UITableViewController {
             chartView.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 12),
             chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4)
         ])
 
         tableView.tableHeaderView = container
@@ -1241,6 +1251,9 @@ final class GlucoseStatsViewController: UITableViewController {
         legend.form = .square
         legend.formSize = 10
         legend.xEntrySpace = 12
+        legend.yOffset = 8
+        // Lite extra luft mellan plot-ytan och legend (yOffset påverkar inte alltid layouten)
+        chartView.extraBottomOffset = 4
 
         chartView.notifyDataSetChanged()
         chartView.setNeedsDisplay()
@@ -1366,7 +1379,7 @@ final class GlucoseStatsViewController: UITableViewController {
             cell.detailTextLabel?.text = "\(countString(avgMinutesNoAll)) min"
 
         case .bestAllDay:
-            cell.textLabel?.text = "Bästa dag BG-värden"
+            cell.textLabel?.text = "Bästa dag värden"
             if let d = bestDate {
                 cell.detailTextLabel?.text = "\(percentString(bestPct)) • \(dfISO.string(from: d))"
             } else {
@@ -1374,7 +1387,7 @@ final class GlucoseStatsViewController: UITableViewController {
             }
 
         case .worstAllDay:
-            cell.textLabel?.text = "Sämsta dag BG-värden"
+            cell.textLabel?.text = "Sämsta dag värden"
             if let d = worstDate {
                 cell.detailTextLabel?.text = "\(percentString(worstPct)) • \(dfISO.string(from: d))"
             } else {

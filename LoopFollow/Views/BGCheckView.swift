@@ -39,7 +39,7 @@ final class BGCheckView: UIViewController, UITableViewDataSource, UITableViewDel
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Fingerstick"
+        title = "Fingersticklogg"
         view.backgroundColor = .systemBackground
 
         setupNavigationBar()
