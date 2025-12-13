@@ -668,6 +668,21 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         }
     }
     
+    /// Expected number of 5-min glucose slots for a given calendar day.
+    /// Handles DST transitions (23h/25h days) by using the actual local day length.
+    private func expectedSlots(for day: Date, upTo now: Date? = nil) -> Int {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: day)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return 288 }
+
+        // If an upper bound is provided (e.g. "today"), clamp within the day.
+        let upper = min(now ?? end, end)
+        let seconds = max(0, upper.timeIntervalSince(start))
+
+        // 5-min buckets
+        return max(1, Int(floor(seconds / 300.0)))
+    }
+    
     private func updateStatsLabel() {
         let cal = Calendar.current
         let start = cal.startOfDay(for: selectedDate)
@@ -683,10 +698,9 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         
         let expectedCount: Int
         if isToday {
-            let secondsSinceStart = now.timeIntervalSince(start)
-            expectedCount = max(1, Int(floor(secondsSinceStart / 300)))
+            expectedCount = expectedSlots(for: selectedDate, upTo: now)
         } else {
-            expectedCount = 288
+            expectedCount = expectedSlots(for: selectedDate)
         }
         // Hantera lägen där inga värden missats ännu, och de sekunder mellan att ett cgm-värde kommit in och 5 min indelningen av dygnets timmar ger en diff (ex cgm värden kommer minut:sekund 02:30, 07:30, 12:30 osv. expectedCOunt utgår från 05:00, 10:00, 15:00. Det gör at cgm % blir högre än 100% mellan minut:sekund 02:30-05:00, 07:30-10:00, 12:30-15:00 osv utan denna expectedCOuntAdjusted-fix
         var expectedCountAdjusted: Int
@@ -1152,21 +1166,7 @@ final class GlucoseStatsViewController: UITableViewController {
         }
 
         let n = selectedDays.count
-        let cal = Calendar.current
-        let now = Date()
-        var expectedPerDay: [Int] = []
-        expectedPerDay.reserveCapacity(n)
-        for i in 0..<n {
-            let day = selectedDays[i]
-            if cal.isDateInToday(day) {
-                let startOfDay = cal.startOfDay(for: now)
-                let secondsSinceStart = now.timeIntervalSince(startOfDay)
-                let expected = max(1, Int(floor(secondsSinceStart / 300)))
-                expectedPerDay.append(expected)
-            } else {
-                expectedPerDay.append(288)
-            }
-        }
+        let expectedPerDay = expectedCountsForSelectedDays()
 
         var entriesAll: [BarChartDataEntry] = []
         var entriesNS: [BarChartDataEntry] = []
@@ -1263,12 +1263,19 @@ final class GlucoseStatsViewController: UITableViewController {
 
     private func expectedCount(for day: Date) -> Int {
         let cal = Calendar.current
+        let start = cal.startOfDay(for: day)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return 288 }
+
+        // For today, only count expected slots up to now (clamped within the day).
+        let upper: Date
         if cal.isDateInToday(day) {
-            let start = cal.startOfDay(for: day)
-            let secondsSinceStart = Date().timeIntervalSince(start)
-            return max(1, Int(floor(secondsSinceStart / 300)))
+            upper = min(Date(), end)
+        } else {
+            upper = end
         }
-        return 288
+
+        let seconds = max(0, upper.timeIntervalSince(start))
+        return max(1, Int(floor(seconds / 300.0)))
     }
 
     private func expectedCountsForSelectedDays() -> [Int] {
