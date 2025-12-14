@@ -22,6 +22,9 @@ struct TreatmentJSON: Codable {
     let created_at: Date
     let eventType:  String
 
+    // --- meta ---
+    let enteredBy:  String?
+
     // --- numeric payloads used in buildEventsArray ---
     let rate:       Double?      // Temp‑Basal U/h
     let absolute:   Double?      // fallback field for Temp‑Basal
@@ -53,6 +56,8 @@ struct TreatmentJSON: Codable {
         self._id        = id
         self.created_at = date
         self.eventType  = type
+
+        self.enteredBy   = dict["enteredBy"] as? String
 
         self.rate       = dict["rate"]     as? Double
         self.absolute   = dict["absolute"] as? Double
@@ -276,7 +281,7 @@ final class NightscoutCache {
         return try JSONDecoder().decode(DayPayload.self, from: data)
     }
     
-    /// Refresh cached treatments within a time window, replacing treatments in that window with the given entries.
+    /// Refresh cached treatments within a time window by **deleting** cached treatments in that window and then inserting the given entries for that window.
     static func refreshTreatmentsWindow(from start: Date, to end: Date, entries: [[String: Any]]) {
         let treatments = entries.compactMap { TreatmentJSON(dict: $0) }
             .filter { $0.created_at >= start && $0.created_at <= end }

@@ -529,6 +529,7 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 Treatment(dictionary: [
                     "_id":      tjson._id as AnyObject,
                     "eventType":tjson.eventType as AnyObject,
+                    "enteredBy": tjson.enteredBy as AnyObject,
                     "created_at": ISO8601DateFormatter().string(from: tjson.created_at) as AnyObject,
                     "rate":     tjson.rate    as AnyObject,
                     "absolute": tjson.absolute as AnyObject,
@@ -1602,7 +1603,28 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         timeFormatter.dateFormat = "dd MMM HH:mm:ss"
         let timeString = timeFormatter.string(from: treatment.timestamp)
 
+        // Nightscout meta: who created the treatment
+        let enteredByValue: String? = {
+            if let v = treatment.rawData["enteredBy"] as? String, !v.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return v
+            }
+            // Some NS setups / middleware may use different casing
+            if let v = treatment.rawData["entered_by"] as? String, !v.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return v
+            }
+            if let v = treatment.rawData["EnteredBy"] as? String, !v.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return v
+            }
+            return nil
+        }()
+
+        func withEnteredBy(_ base: String) -> String {
+            guard let enteredBy = enteredByValue else { return base }
+            return base + "\n\nInlagt av: \(enteredBy)"
+        }
+
         func presentAlert(title: String, message: String) {
+            //let alert = UIAlertController(title: title, message: withEnteredBy(message), preferredStyle: .alert)
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
                 tableView.deselectRow(at: indexPath, animated: true)

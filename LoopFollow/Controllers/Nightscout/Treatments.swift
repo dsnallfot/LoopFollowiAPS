@@ -43,13 +43,31 @@ extension MainViewController {
                     DispatchQueue.global(qos: .utility).async {
                         if let startDate = NightscoutUtils.parseDate(startTimeString),
                            let endDate = NightscoutUtils.parseDate(currentTimeString) {
+
+                            // Always overwrite the latest 24 hours in cache so edited/deleted/reposted
+                            // treatments (same timestamp, changed duration/notes, etc.) never linger.
+                            let last24hStart = max(startDate, endDate.addingTimeInterval(-24 * 60 * 60))
+
+                            // 1) Hard refresh (delete + replace) for last 24 hours
                             NightscoutCache.refreshTreatmentsWindow(
-                                from: startDate,
+                                from: last24hStart,
                                 to: endDate,
                                 entries: entries.map { $0 as [String: Any] }
                             )
+
+                            // 2) Best-effort upsert for older treatments (do NOT delete older cache content)
+                            // This prevents accidental data loss if Nightscout doesn't return the full window.
+                            for entry in entries {
+                                if let iso = entry["created_at"] as? String,
+                                   let createdAt = NightscoutUtils.parseDate(iso),
+                                   createdAt < last24hStart {
+                                    NightscoutCache.upsertTreatment(from: entry as [String: Any])
+                                }
+                            }
+
                             NightscoutCache.purgeOldFiles()
                         } else {
+                            // Fallback: if parsing fails, keep previous behavior (best-effort upsert)
                             for entry in entries {
                                 NightscoutCache.upsertTreatment(from: entry as [String: Any])
                             }
