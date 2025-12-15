@@ -8,6 +8,7 @@ import UIKit
 struct AggregatedStatsView: View {
     @ObservedObject var viewModel: AggregatedStatsViewModel
     @Environment(\.dismiss) var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showGMI: Bool
     @State private var showStdDev: Bool
     @State private var showFPU: Bool
@@ -17,6 +18,8 @@ struct AggregatedStatsView: View {
     @State private var showLowPercentage: Bool
     @State private var selectedPeriod: Int
     @State private var isLoadingData = false
+    @State private var lastForcedReloadAt: Date? = nil
+    private let forcedReloadThrottleSeconds: TimeInterval = 5 * 60
     @State private var showingDailyStats = false
     @State private var showAllTooltips = false
     @State private var tooltipResetToken = 0
@@ -59,12 +62,7 @@ struct AggregatedStatsView: View {
                     .padding(.bottom, 8)
                     .onChange(of: selectedPeriod) { newValue in
                         UserDefaults.standard.set(newValue, forKey: "AggregatedStatsSelectedPeriod")
-                        isLoadingData = true
-                        DispatchQueue.main.async {
-                            viewModel.updatePeriod(newValue) {
-                                isLoadingData = false
-                            }
-                        }
+                        refreshIfNeeded(forceReload: (newValue == 0 || newValue == 1))
                     }
                 }
                 .background(Color(.systemBackground))
@@ -112,12 +110,7 @@ struct AggregatedStatsView: View {
                         ProgressView()
                     } else {
                         Button(action: {
-                            isLoadingData = true
-                            DispatchQueue.main.async {
-                                viewModel.updatePeriod(selectedPeriod, forceReload: true) {
-                                    isLoadingData = false
-                                }
-                            }
+                            refreshIfNeeded(forceReload: true, overrideThrottle: true)
                         }) {
                             Image(systemName: "arrow.clockwise")
                         }
@@ -152,12 +145,12 @@ struct AggregatedStatsView: View {
                 }
             }
             .onAppear {
-                isLoadingData = true
-                DispatchQueue.main.async {
-                    // Använd cache i första hand; StatsDataService avgör själv om nätverksfetch behövs.
-                    viewModel.updatePeriod(selectedPeriod) {
-                        isLoadingData = false
-                    }
+                refreshIfNeeded(forceReload: shouldForceReloadOnOpen)
+            }
+            .onChange(of: scenePhase) { newPhase in
+                guard newPhase == .active else { return }
+                if shouldForceReloadOnOpen {
+                    refreshIfNeeded(forceReload: true)
                 }
             }
             .sheet(isPresented: $showingDailyStats) {
@@ -165,6 +158,40 @@ struct AggregatedStatsView: View {
             }
         } else {
             // Fallback on earlier versions
+        }
+    }
+    
+    private var shouldForceReloadOnOpen: Bool {
+        // Kort fönster = volatil statistik => alltid hämta senaste när vyn visas
+        selectedPeriod == 0 || selectedPeriod == 1
+    }
+
+    private func refreshIfNeeded(forceReload: Bool, overrideThrottle: Bool = false) {
+        // Prevent overlapping reloads from rapid taps/period switching
+        guard !isLoadingData else { return }
+
+        let now = Date()
+        let shouldForce: Bool
+        if forceReload {
+            if overrideThrottle {
+                shouldForce = true
+                lastForcedReloadAt = now
+            } else if let last = lastForcedReloadAt, now.timeIntervalSince(last) < forcedReloadThrottleSeconds {
+                // Too soon since last forced reload; fall back to cached/ensureDataAvailable
+                shouldForce = false
+            } else {
+                shouldForce = true
+                lastForcedReloadAt = now
+            }
+        } else {
+            shouldForce = false
+        }
+
+        isLoadingData = true
+        DispatchQueue.main.async {
+            viewModel.updatePeriod(selectedPeriod, forceReload: shouldForce) {
+                isLoadingData = false
+            }
         }
     }
     
