@@ -701,6 +701,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
                 return ("pause.circle.fill", .label.withAlphaComponent(0.5))
             } else if let noteText = fullNote, noteText.contains("PumpResume") {
                 return ("play.circle.fill", .label.withAlphaComponent(0.5))
+            } else if let noteText = fullNote, noteText.contains("Trio startades om") {
+                return ("repeat.circle.fill", .label.withAlphaComponent(0.5))
             } else {
                 return ("circle.fill", .label.withAlphaComponent(0.5))
             }
