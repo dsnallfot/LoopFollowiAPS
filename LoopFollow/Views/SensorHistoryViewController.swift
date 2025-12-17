@@ -97,9 +97,9 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
             sb.leadingAnchor.constraint(equalTo: topSearchContainer.leadingAnchor, constant: 12),
             sb.trailingAnchor.constraint(equalTo: topSearchContainer.trailingAnchor, constant: -12),
             sb.topAnchor.constraint(equalTo: topSearchContainer.topAnchor, constant: 6),
-            sb.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor, constant: -6)
+            sb.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor, constant: -2)
         ])
-
+/*
         let sep = UIView()
         sep.translatesAutoresizingMaskIntoConstraints = false
         sep.backgroundColor = UIColor.separator
@@ -110,9 +110,9 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
             sep.trailingAnchor.constraint(equalTo: topSearchContainer.trailingAnchor),
             sep.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor)
         ])
+        */
     }
 
-    // (Removed updateTableInsetsForPinnedSearch and viewDidLayoutSubviews)
     
     // MARK: - Navigation Bar Setup
     

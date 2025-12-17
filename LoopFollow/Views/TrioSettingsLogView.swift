@@ -28,8 +28,15 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
         sb.placeholder = "Sök ändrade inställningar"
         sb.autocapitalizationType = .none
         sb.autocorrectionType = .no
-        sb.returnKeyType = .done
+        sb.searchBarStyle = .minimal
         return sb
+    }()
+    
+    private let topSearchContainer: UIView = {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.backgroundColor = .clear
+        return v
     }()
 
     // MARK: - UI
@@ -61,6 +68,8 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
         view.backgroundColor = .systemBackground
 
         setupNavigationBar()
+        searchBar.delegate = self
+        installPinnedSearchBar()
         setupTableView()
         setupConstraints()
         navigationItem.hidesSearchBarWhenScrolling = false
@@ -99,6 +108,39 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
     @objc private func refreshTapped() {
         loadSettings()
     }
+    
+    private func installPinnedSearchBar() {
+        // Add a non-scrolling container under the nav bar
+        view.addSubview(topSearchContainer)
+        let guide = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            topSearchContainer.topAnchor.constraint(equalTo: guide.topAnchor),
+            topSearchContainer.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
+            topSearchContainer.trailingAnchor.constraint(equalTo: guide.trailingAnchor)
+        ])
+
+        let sb = searchBar
+        sb.translatesAutoresizingMaskIntoConstraints = false
+        topSearchContainer.addSubview(sb)
+        NSLayoutConstraint.activate([
+            sb.leadingAnchor.constraint(equalTo: topSearchContainer.leadingAnchor, constant: 12),
+            sb.trailingAnchor.constraint(equalTo: topSearchContainer.trailingAnchor, constant: -12),
+            sb.topAnchor.constraint(equalTo: topSearchContainer.topAnchor, constant: 6),
+            sb.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor, constant: -2)
+        ])
+/*
+        let sep = UIView()
+        sep.translatesAutoresizingMaskIntoConstraints = false
+        sep.backgroundColor = UIColor.separator
+        topSearchContainer.addSubview(sep)
+        NSLayoutConstraint.activate([
+            sep.heightAnchor.constraint(equalToConstant: 0.5),
+            sep.leadingAnchor.constraint(equalTo: topSearchContainer.leadingAnchor),
+            sep.trailingAnchor.constraint(equalTo: topSearchContainer.trailingAnchor),
+            sep.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor)
+        ])
+        */
+    }
 
     // MARK: - Setup table
 
@@ -111,21 +153,21 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
         tableView.dataSource = self
         tableView.delegate = self
         tableView.tableFooterView = UIView()
+        tableView.keyboardDismissMode = .onDrag
 
         // Searchbar under navbaren
         searchBar.delegate = self
         searchBar.sizeToFit()
-        tableView.tableHeaderView = searchBar
     }
 
     private func setupConstraints() {
-        let safe = view.safeAreaLayoutGuide
+        let guide = view.safeAreaLayoutGuide
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: safe.topAnchor),
-            tableView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: safe.bottomAnchor)
+            tableView.topAnchor.constraint(equalTo: topSearchContainer.bottomAnchor),
+            tableView.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
@@ -228,7 +270,7 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
 
         // Leading text = note (kompakt, en rad)
         let note = entry.note
-        let compact = note.replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: "Justerad inställning: ", with: "")
+        let compact = note.replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: "Justerad inställning: ", with: "").replacingOccurrences(of: " ändrades", with: "")
         cell.textLabel?.text = "\(compact)"
         cell.textLabel?.font = .systemFont(ofSize: 16)
 
@@ -236,9 +278,9 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
         cell.imageView?.image = UIImage(systemName: "gearshape")
         cell.imageView?.tintColor = .label.withAlphaComponent(0.5)
 
-        // Right-aligned full date + time
+        // Right-aligned full date
         let rightLabel = UILabel()
-        rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
+        rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .none)
         rightLabel.font = .systemFont(ofSize: 15)
         rightLabel.textColor = .secondaryLabel
         rightLabel.textAlignment = .right
@@ -252,13 +294,18 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let entry = entries[indexPath.row]
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "sv_SE")
+        timeFormatter.dateFormat = "dd MMM HH:mm:ss"
+        let timeString = timeFormatter.string(from: entry.date)
 
         // Låt raden highlightas kort enligt default-beteende
         tableView.deselectRow(at: indexPath, animated: true)
 
         // Titel = datum/tid, Message = hela note-texten
-        let titleString = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
-        let messageString = entry.note
+        let titleString = timeString //DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
+        let messageString = entry.note.replacingOccurrences(of: "Justerad inställning: ", with: "Justerad inställning: \n").replacingOccurrences(of: "ändrades: ", with: "ändrades: \n").replacingOccurrences(of: ", ", with: "\n")
 
         let alert = UIAlertController(title: titleString, message: messageString, preferredStyle: .alert)
 

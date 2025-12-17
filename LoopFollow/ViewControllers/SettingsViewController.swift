@@ -56,7 +56,16 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
         let trioExpiration = ProfileManager.shared.trioExpirationFormatted ?? "Unknown"
 
         form
-        +++ Section("Trio Data")
+        +++ Section("Historik & Statistik")
+        <<< ButtonRow() {
+            $0.title = "Aggregerad Statistik"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    self.presentStatsView()
+                    return UIViewController()
+                }), onDismiss: nil)
+        }
+        
         <<< ButtonRow() {
             $0.title = "Behandlingslogg"
             $0.presentationMode = .show(
@@ -125,6 +134,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 )
             }
         
+        +++ Section("Trio Inställningar och status")
         <<< ButtonRow() {
             $0.title = "Trio Användarinställningar"
             $0.presentationMode = .show(
@@ -194,18 +204,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
             )
         }
         
-        +++ Section("Statistik")
-        <<< ButtonRow() {
-            $0.title = "Statistik"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    self.presentStatsView()
-                    return UIViewController()
-                }), onDismiss: nil)
-            
-        }
-        
-        +++ Section(header: "Datainställningar", footer: "")
+        +++ Section(header: "Datafångst inställningar", footer: "")
         <<< SegmentedRow<String>("units") { row in
             row.title = "Enhet"
             row.options = ["mg/dL", "mmol/L"]
@@ -234,32 +233,18 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
         }
 
         +++ Section("Appinställningar")
-
-        <<< ButtonRow("backgroundRefreshSettings") {
-            $0.title = "Bakgrundsaktivitet"
+        
+        <<< ButtonRow("alarmsSettings") {
+            $0.title = "Alarm"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
-                    self.presentBackgroundRefreshSettings()
-                    return UIViewController()
-                }),
-                onDismiss: nil
-            )
-        }
-        <<< ButtonRow("syncNewSensor") {
-            $0.title = "Synka heartbeat för ny sensor"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let syncNewSensorView = SyncNewSensorView()
-                    let hostingController = UIHostingController(rootView: syncNewSensorView)
-                    hostingController.modalPresentationStyle = .formSheet
-                    if UserDefaultsRepository.forceDarkMode.value {
-                        hostingController.overrideUserInterfaceStyle = .dark
+                    guard let alarmVC = ViewControllerManager.shared.alarmViewController else {
+                        fatalError("AlarmViewController should be pre-instantiated and available")
                     }
-                    return hostingController
-                }),
-                onDismiss: nil
-            )
+                    return alarmVC
+                }), onDismiss: nil)
         }
+        
         <<< ButtonRow() {
             $0.title = "Allmänna inställningar"
             $0.presentationMode = .show(
@@ -289,16 +274,45 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 }
                                              ), onDismiss: nil)
         }
-        <<< ButtonRow("alarmsSettings") {
-            $0.title = "Alarm"
+        
+        <<< ButtonRow() {
+            $0.title = "Avancerade inställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
-                    guard let alarmVC = ViewControllerManager.shared.alarmViewController else {
-                        fatalError("AlarmViewController should be pre-instantiated and available")
-                    }
-                    return alarmVC
+                    self.presentAdvancedSettingsView()
+                    return UIViewController()
                 }), onDismiss: nil)
+            
         }
+
+        +++ Section("Integrationer")
+        
+        <<< ButtonRow("backgroundRefreshSettings") {
+            $0.title = "Bakgrundsaktivitet"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    self.presentBackgroundRefreshSettings()
+                    return UIViewController()
+                }),
+                onDismiss: nil
+            )
+        }
+        <<< ButtonRow("syncNewSensor") {
+            $0.title = "Dexcom heartbeat synk"
+            $0.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let syncNewSensorView = SyncNewSensorView()
+                    let hostingController = UIHostingController(rootView: syncNewSensorView)
+                    hostingController.modalPresentationStyle = .formSheet
+                    if UserDefaultsRepository.forceDarkMode.value {
+                        hostingController.overrideUserInterfaceStyle = .dark
+                    }
+                    return hostingController
+                }),
+                onDismiss: nil
+            )
+        }
+        
         <<< ButtonRow("remoteSettings") {
             $0.title = "Fjärrkontrollinställningar"
             $0.presentationMode = .show(
@@ -309,8 +323,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                 onDismiss: nil
             )
         }
-
-        +++ Section("Integrationer")
+        
         <<< ButtonRow() {
             $0.title = "Kalendertrick"
             $0.presentationMode = .show(
@@ -320,7 +333,6 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                     return controller
                 }
                                              ), onDismiss: nil)
-
         }
         <<< ButtonRow("contact") {
             $0.title = "Kontakttrick"
@@ -330,16 +342,6 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
                     return UIViewController()
                 }
                                              ), onDismiss: nil)
-        }
-        +++ Section("Avancerade inställningar")
-        <<< ButtonRow() {
-            $0.title = "Avancerade inställningar"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    self.presentAdvancedSettingsView()
-                    return UIViewController()
-                }), onDismiss: nil)
-            
         }
         
         +++ Section("Loggning")
