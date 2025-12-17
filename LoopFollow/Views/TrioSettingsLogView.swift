@@ -10,7 +10,7 @@ import UIKit
 import Charts
 
 /// Enkel loggvy för att fånga noteringar innehållande "Trio startades om" , inspirerad av BGCheckView.
-final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITableViewDelegate {
+final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
 
     // MARK: - Model
 
@@ -20,6 +20,17 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
     }
 
     private var entries: [SettingsEntry] = []
+
+    private var allEntries: [SettingsEntry] = []
+
+    private let searchBar: UISearchBar = {
+        let sb = UISearchBar()
+        sb.placeholder = "Sök ändrade inställningar"
+        sb.autocapitalizationType = .none
+        sb.autocorrectionType = .no
+        sb.returnKeyType = .done
+        return sb
+    }()
 
     // MARK: - UI
 
@@ -52,6 +63,7 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
         setupNavigationBar()
         setupTableView()
         setupConstraints()
+        navigationItem.hidesSearchBarWhenScrolling = false
 
         loadSettings()
     }
@@ -99,6 +111,11 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
         tableView.dataSource = self
         tableView.delegate = self
         tableView.tableFooterView = UIView()
+
+        // Searchbar under navbaren
+        searchBar.delegate = self
+        searchBar.sizeToFit()
+        tableView.tableHeaderView = searchBar
     }
 
     private func setupConstraints() {
@@ -162,11 +179,36 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
             .sorted { $0.date > $1.date }
 
             await MainActor.run {
-                self.entries = settingsNotes
-                self.tableView.reloadData()
+                self.allEntries = settingsNotes
+                self.applyFilter(searchText: self.searchBar.text)
                 self.hideActivity()
             }
         }
+    }
+
+    private func applyFilter(searchText: String?) {
+        let q = (searchText ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if q.isEmpty {
+            entries = allEntries
+        } else {
+            let lower = q.lowercased()
+            entries = allEntries.filter { $0.note.lowercased().contains(lower) }
+        }
+        tableView.reloadData()
+    }
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        applyFilter(searchText: searchText)
+    }
+
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
+    }
+
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.text = nil
+        searchBar.resignFirstResponder()
+        applyFilter(searchText: nil)
     }
 
     // MARK: - UITableViewDataSource
