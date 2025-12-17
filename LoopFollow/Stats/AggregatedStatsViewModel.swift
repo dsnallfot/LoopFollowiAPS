@@ -18,16 +18,15 @@ class AggregatedStatsViewModel: ObservableObject {
         agpStats = AGPViewModel(dataService: dataService)
         griStats = GRIViewModel(dataService: dataService)
         tirStats = TIRViewModel(dataService: dataService)
+
+        // Configure the service immediately for the last selected period so the view doesn't
+        // briefly show default 14-day stats before the first refresh finishes.
+        let savedPeriod = UserDefaults.standard.object(forKey: "AggregatedStatsSelectedPeriod") as? Int ?? 14
+        applyPeriodSettings(savedPeriod)
+        calculateStats()
     }
 
-    func calculateStats() {
-        simpleStats.calculateStats()
-        agpStats.calculateAGP()
-        griStats.calculateGRI()
-        tirStats.calculateTIR()
-    }
-
-    func updatePeriod(_ days: Int, forceReload: Bool = false, completion: @escaping () -> Void = {}) {
+    private func applyPeriodSettings(_ days: Int) {
         if days == 0 {
             // "Idag" – use only data from midnight to now, but fetch 1 dag bakåt om det behövs
             dataService.isTodayOnly = true
@@ -39,6 +38,17 @@ class AggregatedStatsViewModel: ObservableObject {
             dataService.isOneDayOnly = false
             dataService.daysToAnalyze = max(days, 1)
         }
+    }
+
+    func calculateStats() {
+        simpleStats.calculateStats()
+        agpStats.calculateAGP()
+        griStats.calculateGRI()
+        tirStats.calculateTIR()
+    }
+
+    func updatePeriod(_ days: Int, forceReload: Bool = false, completion: @escaping () -> Void = {}) {
+        applyPeriodSettings(days)
 
         let shouldForceReload = forceReload
 

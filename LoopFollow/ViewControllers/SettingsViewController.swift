@@ -142,6 +142,17 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
         }
         
         <<< ButtonRow() {
+                $0.title = "Trio Inställningslogg"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let settingsLogVC = TrioSettingsLogView()
+                        return UINavigationController(rootViewController: settingsLogVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        
+        <<< ButtonRow() {
                 $0.title = "Trio Omstartslogg"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {

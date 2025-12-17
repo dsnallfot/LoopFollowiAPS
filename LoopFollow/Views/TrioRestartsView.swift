@@ -288,7 +288,7 @@ final class TrioRestartsView: UIViewController, UITableViewDataSource, UITableVi
             events: events,
             initialStart: startDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utv. efter Stick"
+            modalTitleString: "Utv. efter Omstart"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet
