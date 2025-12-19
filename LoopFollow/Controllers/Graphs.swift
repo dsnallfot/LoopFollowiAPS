@@ -63,8 +63,16 @@ extension GraphDataIndex {
 class CompositeRenderer: LineChartRenderer {
     let tempTargetRenderer: TempTargetRenderer
     let triangleRenderer: TriangleRenderer
+    let bgCheckRenderer: BGCheckRenderer
 
-    init(dataProvider: LineChartDataProvider?, animator: Animator?, viewPortHandler: ViewPortHandler?, tempTargetDataSetIndex: Int, smbDataSetIndex: Int) {
+    init(
+        dataProvider: LineChartDataProvider?,
+        animator: Animator?,
+        viewPortHandler: ViewPortHandler?,
+        tempTargetDataSetIndex: Int,
+        smbDataSetIndex: Int,
+        bgCheckDataSetIndex: Int
+    ) {
         self.tempTargetRenderer = TempTargetRenderer(
             dataProvider: dataProvider,
             animator: animator,
@@ -77,12 +85,19 @@ class CompositeRenderer: LineChartRenderer {
             viewPortHandler: viewPortHandler,
             smbDataSetIndex: smbDataSetIndex
         )
+        self.bgCheckRenderer = BGCheckRenderer(
+            dataProvider: dataProvider,
+            animator: animator,
+            viewPortHandler: viewPortHandler,
+            bgCheckDataSetIndex: bgCheckDataSetIndex
+        )
         super.init(dataProvider: dataProvider!, animator: animator!, viewPortHandler: viewPortHandler!)
     }
 
     override func drawExtras(context: CGContext) {
         super.drawExtras(context: context)
         tempTargetRenderer.drawExtras(context: context)
+        bgCheckRenderer.drawExtras(context: context)
         // Daniel: Do not draw those triangles for smbs // triangleRenderer.drawExtras(context: context)
     }
 }
@@ -157,6 +172,24 @@ class TempTargetChartDataEntry: ChartDataEntry {
     }
 }
 
+class BGCheckLineChartDataEntry: ChartDataEntry {
+    var xStart: Double = 0.0
+    var xEnd: Double = 0.0
+
+    required init() { super.init() }
+
+    init(xStart: Double, xEnd: Double, y: Double, data: Any?) {
+        self.xStart = xStart
+        self.xEnd = xEnd
+        super.init(x: xStart, y: y)
+        self.data = data
+    }
+
+    override func copy(with zone: NSZone? = nil) -> Any {
+        BGCheckLineChartDataEntry(xStart: xStart, xEnd: xEnd, y: y, data: data)
+    }
+}
+
 class TempTargetRenderer: LineChartRenderer {
     let tempTargetDataSetIndex: Int
 
@@ -206,18 +239,82 @@ class TempTargetRenderer: LineChartRenderer {
     }
 }
 
+class BGCheckRenderer: LineChartRenderer {
+    let bgCheckDataSetIndex: Int
+
+    init(dataProvider: LineChartDataProvider?, animator: Animator?, viewPortHandler: ViewPortHandler?, bgCheckDataSetIndex: Int) {
+        self.bgCheckDataSetIndex = bgCheckDataSetIndex
+        super.init(dataProvider: dataProvider!, animator: animator!, viewPortHandler: viewPortHandler!)
+    }
+
+    override func drawExtras(context: CGContext) {
+        super.drawExtras(context: context)
+
+        guard let dataProvider = dataProvider else { return }
+        guard (dataProvider.lineData?.dataSets.count ?? 0) > bgCheckDataSetIndex,
+              let dataSet = dataProvider.lineData?.dataSets[bgCheckDataSetIndex] as? LineChartDataSet else { return }
+
+        let trans = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
+        let phaseY = animator.phaseY
+
+        let strokeUIColor: UIColor = dataSet.colors.first ?? .systemRed
+
+        context.saveGState()
+        context.setLineCap(.round)
+
+        let dotAlpha: CGFloat = 1.0
+        let tailAlpha: CGFloat = 0.7
+        let lineWidth: CGFloat = 6  // “elongated dot”-känsla
+        let dotRadius: CGFloat = 5.5
+
+        for i in 0 ..< dataSet.entryCount {
+            guard let entry = dataSet.entryForIndex(i) as? BGCheckLineChartDataEntry else { continue }
+
+            let yVal = entry.y * phaseY
+            let p1 = trans.pixelForValues(x: entry.xStart, y: yVal)
+            let p2 = trans.pixelForValues(x: entry.xEnd, y: yVal)
+
+            // Skip if completely outside viewport
+            if (p1.x < viewPortHandler.contentLeft && p2.x < viewPortHandler.contentLeft) ||
+               (p1.x > viewPortHandler.contentRight && p2.x > viewPortHandler.contentRight) {
+                continue
+            }
+
+            // 1) Solid start dot
+            context.setAlpha(dotAlpha)
+            context.setFillColor(strokeUIColor.withAlphaComponent(dotAlpha).cgColor)
+            let dotRect = CGRect(x: p1.x - dotRadius, y: p1.y - dotRadius, width: dotRadius * 2, height: dotRadius * 2)
+            context.fillEllipse(in: dotRect)
+
+            // 2) Faded tail segment
+            context.setAlpha(tailAlpha)
+            context.setStrokeColor(strokeUIColor.withAlphaComponent(tailAlpha).cgColor)
+            context.setLineWidth(lineWidth)
+
+            context.beginPath()
+            context.move(to: p1)
+            context.addLine(to: p2)
+            context.strokePath()
+        }
+
+        context.restoreGState()
+    }
+}
+
 let ScaleXMax:Float = 150.0
 extension MainViewController {
     func updateChartRenderers() {
         let tempTargetDataIndex = GraphDataIndex.tempTarget.rawValue
         let smbDataIndex = GraphDataIndex.smb.rawValue
+        let bgCheckDataIndex = GraphDataIndex.bgCheck.rawValue
 
         let compositeRenderer = CompositeRenderer(
             dataProvider: BGChart,
             animator: BGChart.chartAnimator,
             viewPortHandler: BGChart.viewPortHandler,
             tempTargetDataSetIndex: tempTargetDataIndex,
-            smbDataSetIndex: smbDataIndex
+            smbDataSetIndex: smbDataIndex,
+            bgCheckDataSetIndex: bgCheckDataIndex
         )
         BGChart.renderer = compositeRenderer
 
@@ -594,7 +691,7 @@ extension MainViewController {
         lineBGCheck.drawCircleHoleEnabled = false
         lineBGCheck.setDrawHighlightIndicators(false)
         lineBGCheck.setColor(NSUIColor.systemRed, alpha: 1.0)
-        lineBGCheck.drawCirclesEnabled = true
+        lineBGCheck.drawCirclesEnabled = false
         lineBGCheck.lineWidth = 0
         lineBGCheck.highlightEnabled = true
         lineBGCheck.axisDependency = YAxis.AxisDependency.right
@@ -1699,36 +1796,60 @@ extension MainViewController {
     }
     
     func updateBGCheckGraph() {
-        var dataIndex = 7
+        let dataIndex = 7
+
         BGChart.lineData?.dataSets[dataIndex].clear()
         BGChartFull.lineData?.dataSets[dataIndex].clear()
-        
-        for i in 0..<bgCheckData.count{
-            let formatter = NumberFormatter()
-            formatter.minimumFractionDigits = 0
-            formatter.maximumFractionDigits = 2
-            formatter.minimumIntegerDigits = 1
-            
-            // skip if outside of visible area
-            let graphHours = 24 * UserDefaultsRepository.downloadDays.value
-            if bgCheckData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
-            
-            let value = ChartDataEntry(x: Double(bgCheckData[i].date), y: Double(bgCheckData[i].sgv), data: formatPillText(line1: "Fingerstick\n" + Localizer.toDisplayUnits(String(bgCheckData[i].sgv)) + " mmol/L", time: bgCheckData[i].date))
-            BGChart.data?.dataSets[dataIndex].addEntry(value)
-            if UserDefaultsRepository.smallGraphTreatments.value {
-                BGChartFull.data?.dataSets[dataIndex].addEntry(value)
-            }
 
+        // skip if outside of visible area
+        let graphHours = 24 * UserDefaultsRepository.downloadDays.value
+        let graphStart = dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours)
+
+        for i in 0..<bgCheckData.count {
+            if bgCheckData[i].date < graphStart { continue }
+
+            // Din befintliga pill-text (behåll exakt samma)
+            let pill = formatPillText(
+                line1: "Fingerstick\n" + Localizer.toDisplayUnits(String(bgCheckData[i].sgv)) + " mmol/L",
+                time: bgCheckData[i].date
+            )
+
+            // ✅ Huvudgrafen: 15-min “elongated dot”
+            let start = Double(bgCheckData[i].date)
+            let end = start + (15.0 * 60.0)
+
+            let mainEntry = BGCheckLineChartDataEntry(
+                xStart: start,
+                xEnd: end,
+                y: Double(bgCheckData[i].sgv),
+                data: pill
+            )
+            BGChart.data?.dataSets[dataIndex].addEntry(mainEntry)
+
+            // ✅ Small graph: lämna som dot (ChartDataEntry) för att slippa ändra den logiken
+            if UserDefaultsRepository.smallGraphTreatments.value {
+                let smallEntry = ChartDataEntry(
+                    x: start,
+                    y: Double(bgCheckData[i].sgv),
+                    data: pill
+                )
+                BGChartFull.data?.dataSets[dataIndex].addEntry(smallEntry)
+            }
         }
-        
+
+        // Notify
         BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
         BGChart.data?.notifyDataChanged()
         BGChart.notifyDataSetChanged()
+
         if UserDefaultsRepository.smallGraphTreatments.value {
             BGChartFull.data?.dataSets[dataIndex].notifyDataSetChanged()
             BGChartFull.data?.notifyDataChanged()
             BGChartFull.notifyDataSetChanged()
         }
+
+        // Viktigt: säkerställ att vår custom renderer är inkopplad
+        updateChartRenderers()
     }
     
     func updateSuspendGraph() {
