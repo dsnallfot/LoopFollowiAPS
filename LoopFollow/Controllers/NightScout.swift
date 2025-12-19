@@ -99,6 +99,7 @@ extension MainViewController {
     {
         bgCheckData.removeAll()
         updateBGCheckGraph()
+        updateChartRenderers()
     }
     
     func clearOldOverride()
