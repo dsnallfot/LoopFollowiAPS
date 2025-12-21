@@ -314,7 +314,7 @@ extension MainViewController {
                 LogManager.shared.log(category: .deviceStatus, message: "BGI pattern not found in reason string.", isDebug: true)
             }
         }
-
+/*
         // Dev
         if let reasonString = enactedOrSuggested["reason"] as? String {
             let pattern = "Dev:\\s([-+]?[0-9]*\\.?[0-9])"
@@ -337,7 +337,67 @@ extension MainViewController {
                 LogManager.shared.log(category: .deviceStatus, message: "Dev pattern not found in reason string.", isDebug: true)
             }
         }
+*/
         
+        // Dev
+        if let reasonString = enactedOrSuggested["reason"] as? String {
+
+            // Lite robustare: tillåter flera siffror + decimals (och ev utan decimal)
+            let pattern = #"Dev:\s*([-+]?\d+(?:\.\d+)?)"#
+
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let match = regex.firstMatch(in: reasonString,
+                                            range: NSRange(location: 0, length: reasonString.utf16.count)) {
+
+                let devValueString = (reasonString as NSString).substring(with: match.range(at: 1))
+
+                if let devValue = Double(devValueString) {
+                    let formattedDev = String(format: "%@%.1f", devValue > 0 ? "+" : "", devValue)
+
+                    // 🟡 + priority när |dev| > 5.0 (byt till devValue > 5.0 om du bara menar positiva)
+                    let isDevHigh = abs(devValue) > 5.0
+                    let unitForInfo = isDevHigh ? "mmol/L 🟡" : "mmol/L"
+
+                    infoManager.setPriority(isDevHigh, for: .dev)
+                    infoManager.updateInfoData(type: .dev, value: formattedDev, unit: unitForInfo)
+
+                    LogManager.shared.log(
+                        category: .deviceStatus,
+                        message: "Dev updated: value=\(formattedDev), priority=\(isDevHigh)",
+                        isDebug: true
+                    )
+                } else {
+                    infoManager.setPriority(false, for: .dev)
+                    infoManager.updateInfoData(type: .dev, value: "--", unit: "mmol/L")
+
+                    LogManager.shared.log(
+                        category: .deviceStatus,
+                        message: "Failed to convert Dev value '\(devValueString)' to Double. Using default --",
+                        isDebug: true
+                    )
+                }
+
+            } else {
+                infoManager.setPriority(false, for: .dev)
+                infoManager.updateInfoData(type: .dev, value: "0.0", unit: "mmol/L")
+
+                LogManager.shared.log(
+                    category: .deviceStatus,
+                    message: "Dev pattern not found in reason string. Using default 0.0",
+                    isDebug: true
+                )
+            }
+
+        } else {
+            infoManager.setPriority(false, for: .dev)
+            infoManager.updateInfoData(type: .dev, value: "0.0", unit: "mmol/L")
+
+            LogManager.shared.log(
+                category: .deviceStatus,
+                message: "Reason string missing. Dev not available, using default 0.0",
+                isDebug: true
+            )
+        }
         // AF (Adjustment Factor)
         if let reasonString = enactedOrSuggested["reason"] as? String {
             let afPattern = "AF:\\s(\\d+\\.\\d{1,2})" // Matches "AF: x.x" or "AF: x.xx"
