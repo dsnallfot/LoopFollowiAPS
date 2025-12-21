@@ -196,6 +196,9 @@ extension MainViewController {
         }
         if temporaryOverride.count > 0 {
             processNSOverrides(entries: temporaryOverride)
+        } else {
+            infoManager.updateInfoData(type: .overridePercentage, value: "100 %")
+            LogManager.shared.log(category: .general, message: "No Overrides found: Override percentage updated to default 100 %", isDebug: true)
         }
 
         if temporaryTarget.count == 0 && tempTargetGraphData.count > 0 {
