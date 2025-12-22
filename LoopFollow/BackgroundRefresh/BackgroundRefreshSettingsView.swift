@@ -10,6 +10,7 @@ struct BackgroundRefreshSettingsView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var forceRefresh = false
     @State private var timer: Timer?
+    @State private var showSyncNewSensorView: Bool = false
 
     @ObservedObject var bleManager = BLEManager.shared
 
@@ -42,6 +43,9 @@ struct BackgroundRefreshSettingsView: View {
             }
             .onDisappear {
                 stopTimer()
+            }
+            .sheet(isPresented: $showSyncNewSensorView) {
+                SyncNewSensorView()
             }
         }
     }
@@ -273,52 +277,60 @@ struct BackgroundRefreshSettingsView: View {
 
     private var suggestedHeartbeatOffsetSection: some View {
         Section(header: Text("Nästa sensorbyte: Förslag offset")) {
-            if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40) {
+            Button {
+                // Pre-fill SyncNewSensorView with the latest suggestion (if available)
+                if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40) {
+                    UserDefaultsRepository.pairingOffset.value = suggestion.offset
+                    UserDefaultsRepository.offsetString.value = "\(suggestion.offset)"
+                }
+                showSyncNewSensorView = true
+            } label: {
                 VStack(spacing: 6) {
-                    Text("\(suggestion.offset) sekunder")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40) {
+                        Text("\(suggestion.offset) sekunder")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .center)
 
-                    Text("Optimerar för 20–40 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total)*")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        Text("Optimerar för 20–40 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total)*")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
 
-                    let hitIDs = hitDeviceIDs(for: suggestion.offset, optimalWindow: 20...40)
-                    let hitNames: [String] = bleManager.devices
-                        .filter { hitIDs.contains($0.id) }
-                        .compactMap { $0.name }
-                        .sorted()
+                        let hitIDs = hitDeviceIDs(for: suggestion.offset, optimalWindow: 20...40)
+                        let hitNames: [String] = bleManager.devices
+                            .filter { hitIDs.contains($0.id) }
+                            .compactMap { $0.name }
+                            .sorted()
 
-                    if !hitNames.isEmpty {
-                        Divider()
-                            .padding(.top, 6)
+                        if !hitNames.isEmpty {
+                            Divider()
+                                .padding(.top, 6)
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(hitNames, id: \.self) { name in
-                                Text("* \(name)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(hitNames, id: \.self) { name in
+                                    Text("* \(name)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 2)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
+                    } else {
+                        Text("Väntar på fler heartbeats…")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .center)
+
+                        Text("Öppna vyn i ~5 minuter så hinner flera sensorer synas.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
                 .padding(.vertical, 6)
-            } else {
-                VStack(spacing: 6) {
-                    Text("Väntar på fler heartbeats…")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, alignment: .center)
-
-                    Text("Öppna vyn i ~5 minuter så hinner flera sensorer synas.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.plain)
         }
     }
     
