@@ -534,7 +534,7 @@ final class TrioRestartsStatsViewController: UITableViewController {
         yAxis.granularity = 1
         yAxis.granularityEnabled = true
         yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
-            String(format: "%.0f st", value)
+            String(format: "%.0f ggr", value)
         }
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
@@ -605,13 +605,13 @@ final class TrioRestartsStatsViewController: UITableViewController {
         switch row {
         case .totalRestarts:
             cell.textLabel?.text = "Totalt antal omstarter"
-            cell.detailTextLabel?.text = "\(totalRestarts) st"
+            cell.detailTextLabel?.text = "\(totalRestarts) ggr"
 
         case .avgPerDay:
             cell.textLabel?.text = "Medel omstarter per dag"
             if totalDays > 0 {
                 let avg = Double(totalRestarts) / Double(totalDays)
-                cell.detailTextLabel?.text = String(format: "%.1f st", avg)
+                cell.detailTextLabel?.text = String(format: "%.1f ggr", avg)
             } else {
                 cell.detailTextLabel?.text = "–"
             }
@@ -624,14 +624,14 @@ final class TrioRestartsStatsViewController: UITableViewController {
             cell.textLabel?.text = "Medel omstarter per omstart-dag"
             if daysWithRestarts > 0 {
                 let avg = Double(totalRestarts) / Double(daysWithRestarts)
-                cell.detailTextLabel?.text = String(format: "%.1f st", avg)
+                cell.detailTextLabel?.text = String(format: "%.1f ggr", avg)
             } else {
                 cell.detailTextLabel?.text = "–"
             }
 
         case .maxPerDay:
             cell.textLabel?.text = "Högsta antal omstarter per dag"
-            cell.detailTextLabel?.text = "\(maxRestartsPerDay) st"
+            cell.detailTextLabel?.text = "\(maxRestartsPerDay) ggr"
 
         case .longestNoRestartStreak:
             cell.textLabel?.text = "Längsta streak utan omstarter"

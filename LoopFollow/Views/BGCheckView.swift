@@ -573,7 +573,7 @@ final class BGCheckStatsViewController: UITableViewController {
         yAxis.granularity = 1
         yAxis.granularityEnabled = true
         yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
-            String(format: "%.0f st", value)
+            String(format: "%.0f ggr", value)
         }
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
@@ -649,13 +649,13 @@ final class BGCheckStatsViewController: UITableViewController {
         switch row {
         case .totalSticks:
             cell.textLabel?.text = "Totalt antal stick"
-            cell.detailTextLabel?.text = "\(totalSticks) st"
+            cell.detailTextLabel?.text = "\(totalSticks) ggr"
 
         case .avgPerDay:
             cell.textLabel?.text = "Medel stick per dag"
             if totalDays > 0 {
                 let avg = Double(totalSticks) / Double(totalDays)
-                cell.detailTextLabel?.text = String(format: "%.1f st", avg)
+                cell.detailTextLabel?.text = String(format: "%.1f ggr", avg)
             } else {
                 cell.detailTextLabel?.text = "–"
             }
@@ -668,14 +668,14 @@ final class BGCheckStatsViewController: UITableViewController {
             cell.textLabel?.text = "Medel stick per stick-dag"
             if daysWithSticks > 0 {
                 let avg = Double(totalSticks) / Double(daysWithSticks)
-                cell.detailTextLabel?.text = String(format: "%.1f st", avg)
+                cell.detailTextLabel?.text = String(format: "%.1f ggr", avg)
             } else {
                 cell.detailTextLabel?.text = "–"
             }
 
         case .maxPerStickDay:
             cell.textLabel?.text = "Högsta antal stick per stick-dag"
-            cell.detailTextLabel?.text = "\(maxSticksPerDay) st"
+            cell.detailTextLabel?.text = "\(maxSticksPerDay) ggr"
         case .longestNoStickStreak:
             cell.textLabel?.text = "Längsta streak utan stick"
             let streak = longestStreakWithoutSticks()
