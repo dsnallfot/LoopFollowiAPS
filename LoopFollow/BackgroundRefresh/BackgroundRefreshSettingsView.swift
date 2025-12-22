@@ -24,6 +24,10 @@ struct BackgroundRefreshSettingsView: View {
                     selectedDeviceSection
                     availableDevicesSection
                 }
+
+                if viewModel.backgroundRefreshType == .dexcom {
+                    suggestedHeartbeatOffsetSection
+                }
             }
             .navigationBarTitle("Bakgrundsaktivitet", displayMode: .inline)
             .toolbar {
@@ -89,7 +93,16 @@ struct BackgroundRefreshSettingsView: View {
             Section(header: Text("Vald enhet")) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text(storedDevice.name ?? "Okänd enhet")
+                        let deviceName = storedDevice.name ?? "Okänd enhet"
+                        let isHitDevice: Bool = {
+                            guard viewModel.backgroundRefreshType == .dexcom,
+                                  let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40)
+                            else { return false }
+
+                            return hitDeviceIDs(for: suggestion.offset, optimalWindow: 20...40).contains(storedDevice.id)
+                        }()
+
+                        Text(isHitDevice ? "* \(deviceName)" : deviceName)
                             .font(.headline)
                         
                         // ✅ Battery Indicator (if battery level is available)
@@ -256,5 +269,71 @@ struct BackgroundRefreshSettingsView: View {
         default:
             return .red
         }
+    }
+
+    private var suggestedHeartbeatOffsetSection: some View {
+        Section(header: Text("Nästa sensorbyte: Förslag offset")) {
+            if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40) {
+                VStack(spacing: 6) {
+                    Text("\(suggestion.offset) sekunder")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    Text("Optimerar för 20–40 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total)*")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    let hitIDs = hitDeviceIDs(for: suggestion.offset, optimalWindow: 20...40)
+                    let hitNames: [String] = bleManager.devices
+                        .filter { hitIDs.contains($0.id) }
+                        .compactMap { $0.name }
+                        .sorted()
+
+                    if !hitNames.isEmpty {
+                        Divider()
+                            .padding(.top, 6)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(hitNames, id: \.self) { name in
+                                Text("* \(name)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
+                    }
+                }
+                .padding(.vertical, 6)
+            } else {
+                VStack(spacing: 6) {
+                    Text("Väntar på fler heartbeats…")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    Text("Öppna vyn i ~5 minuter så hinner flera sensorer synas.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .padding(.vertical, 6)
+            }
+        }
+    }
+    
+    private func hitDeviceIDs(for suggestionOffset: Int, optimalWindow: ClosedRange<Int>) -> Set<UUID> {
+        // Only Dexcom devices participate in the 5-min cycle alignment.
+        let dexcomDevices = bleManager.devices.filter { BackgroundRefreshType.dexcom.matches($0) }
+
+        var hits = Set<UUID>()
+        for device in dexcomDevices {
+            guard let d = bleManager.expectedSensorFetchOffsetSeconds(for: device) else { continue }
+            let shifted = (d + suggestionOffset) % 300
+            if optimalWindow.contains(shifted) {
+                hits.insert(device.id)
+            }
+        }
+        return hits
     }
 }

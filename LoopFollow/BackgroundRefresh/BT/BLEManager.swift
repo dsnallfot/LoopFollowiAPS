@@ -321,5 +321,134 @@ extension BLEManager {
         }
         return nil
     }
+
+    /// Returns the expected sensor fetch offset as seconds for Dexcom/RileyLink devices.
+    /// This is the same value shown by `expectedSensorFetchOffsetString(for:)` (without formatting).
+    func expectedSensorFetchOffsetSeconds(for device: BLEDevice) -> Int? {
+        // Determine the device type using your BackgroundRefreshType matching.
+        guard let matchedType = BackgroundRefreshType.allCases.first(where: { $0.matches(device) }) else {
+            return nil
+        }
+
+        // We calculate this for Dexcom and RileyLink devices.
+        if matchedType == .dexcom || matchedType == .rileyLink {
+            // Return nil if the sensor schedule offset hasn't been set.
+            guard let sensorOffset = Storage.shared.sensorScheduleOffset.value else {
+                return nil
+            }
+
+            // Polling delay: use dynamic setting if enabled, otherwise the default.
+            let pollingDelay: TimeInterval = Double(UserDefaultsRepository.bgUpdateDelay.value)
+
+            // T_expected: the time (in seconds) after the sensor reading when the value is available.
+            let expectedOffset = sensorOffset + pollingDelay
+
+            // Determine the cycle duration based on the device type.
+            let cycleDuration: TimeInterval = (matchedType == .rileyLink) ? 60 : 300
+
+            // For RileyLink, if lastHeartbeatTime is nil, return nil (waiting for heartbeat).
+            if matchedType == .rileyLink, (self.activeDevice?.lastHeartbeatTime == nil || firstHeartbeat) {
+                return nil
+            }
+
+            // Use activeDevice.lastHeartbeatTime for RileyLink; otherwise use device.lastSeen.
+            let heartbeatReferenceDate: Date
+            if matchedType == .rileyLink,
+               let activeDevice = self.activeDevice,
+               let lastHeartbeat = activeDevice.lastHeartbeatTime {
+                heartbeatReferenceDate = lastHeartbeat
+            } else {
+                heartbeatReferenceDate = device.lastSeen
+            }
+
+            // Compute the device’s heartbeat offset within the appropriate cycle.
+            let calendar = Calendar(identifier: .gregorian)
+            let startOfDay = calendar.startOfDay(for: heartbeatReferenceDate)
+            let heartbeatOffset = heartbeatReferenceDate.timeIntervalSince(startOfDay).truncatingRemainder(dividingBy: cycleDuration)
+
+            // Calculate effective delay (same math as in expectedSensorFetchOffsetString).
+            let effectiveDelay: TimeInterval = (heartbeatOffset >= expectedOffset)
+                ? (heartbeatOffset - expectedOffset + pollingDelay)
+                : (heartbeatOffset + cycleDuration - expectedOffset + pollingDelay)
+
+            // Normalize into 0...(cycle-1)
+            let normalized = Int(effectiveDelay.rounded())
+            let cycleInt = Int(cycleDuration)
+            let clamped = ((normalized % cycleInt) + cycleInt) % cycleInt
+            return clamped
+        }
+
+        return nil
+    }
+
+    /// Suggests which offset (0...299) to use in `SyncNewSensorView` so that as many discovered
+    /// Dexcom heartbeats as possible land in the "optimal" fetch delay window (default 20–40s).
+    ///
+    /// Interpretation (matches your SyncNewSensorView text):
+    /// - offset = 0   => new sensor heartbeat same second as current
+    /// - offset = 30  => new sensor heartbeat ~30s earlier
+    /// - offset = 270 => new sensor heartbeat ~30s later
+    ///
+    /// Internally we assume shifting the new sensor by `offset` shifts each discovered sensor’s
+    /// effective delay by +offset (mod 300).
+    func suggestedHeartbeatOffsetForNextSensor(optimalWindow: ClosedRange<Int> = 20...40) -> (offset: Int, matches: Int, total: Int)? {
+        // Only meaningful if we're in Dexcom mode.
+        guard Storage.shared.backgroundRefreshType.value == .dexcom else {
+            return nil
+        }
+
+        // Gather current effective delays for all discovered Dexcom-like devices.
+        let dexcomDevices = devices.filter { BackgroundRefreshType.dexcom.matches($0) }
+        let delays: [Int] = dexcomDevices.compactMap { expectedSensorFetchOffsetSeconds(for: $0) }
+
+        guard !delays.isEmpty else {
+            return nil
+        }
+
+        // Brute-force all offsets and pick the one that maximizes the number of devices
+        // whose shifted delay ends up inside the optimal window.
+        var bestOffset = 0
+        var bestMatches = -1
+        var bestDistanceSum = Int.max
+
+        let targetCenter = (optimalWindow.lowerBound + optimalWindow.upperBound) / 2
+
+        for candidate in 0...299 {
+            var matches = 0
+            var distanceSum = 0
+
+            for d in delays {
+                let shifted = (d + candidate) % 300
+                if optimalWindow.contains(shifted) {
+                    matches += 1
+                    distanceSum += abs(shifted - targetCenter)
+                } else {
+                    // Penalize near-misses lightly so ties break toward "closest".
+                    // Distance to nearest bound.
+                    let distToWindow: Int
+                    if shifted < optimalWindow.lowerBound {
+                        distToWindow = optimalWindow.lowerBound - shifted
+                    } else {
+                        distToWindow = shifted - optimalWindow.upperBound
+                    }
+                    distanceSum += (distToWindow + 20) // small bias so true hits win
+                }
+            }
+
+            if matches > bestMatches {
+                bestMatches = matches
+                bestOffset = candidate
+                bestDistanceSum = distanceSum
+            } else if matches == bestMatches {
+                // Tie-breaker: minimize overall distance to the target window/center.
+                if distanceSum < bestDistanceSum {
+                    bestOffset = candidate
+                    bestDistanceSum = distanceSum
+                }
+            }
+        }
+
+        return (offset: bestOffset, matches: bestMatches, total: delays.count)
+    }
 }
 

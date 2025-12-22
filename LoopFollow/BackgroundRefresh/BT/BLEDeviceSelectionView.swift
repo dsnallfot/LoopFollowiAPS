@@ -37,7 +37,20 @@ struct BLEDeviceSelectionView: View {
                         HStack {
                             VStack(alignment: .leading) {
                                 // Device Name
-                                Text(device.name ?? "Okänd")
+                                let deviceName = device.name ?? "Okänd"
+                                let isHit: Bool = {
+                                    // Only show hit-markers for Dexcom mode (5-min cycle alignment)
+                                    guard Storage.shared.backgroundRefreshType.value == .dexcom,
+                                          let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40),
+                                          BackgroundRefreshType.dexcom.matches(device),
+                                          let d = bleManager.expectedSensorFetchOffsetSeconds(for: device)
+                                    else { return false }
+
+                                    let shifted = (d + suggestion.offset) % 300
+                                    return (20...40).contains(shifted)
+                                }()
+
+                                Text(isHit ? "* \(deviceName)" : deviceName)
                                 
                                 // RSSI
                                 Text("RSSI: \(device.rssi) dBm")
