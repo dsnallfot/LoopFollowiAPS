@@ -276,7 +276,7 @@ struct BackgroundRefreshSettingsView: View {
     }
 
     private var suggestedHeartbeatOffsetSection: some View {
-        Section(header: Text("Nästa sensorbyte: Förslag offset")) {
+        Section(header: Text("Optimal offset nästa sensorbyte")) {
             Button {
                 // Pre-fill SyncNewSensorView with the latest suggestion (if available)
                 if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40) {
@@ -291,7 +291,7 @@ struct BackgroundRefreshSettingsView: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity, alignment: .center)
 
-                        Text("Optimerar för 20–40 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total)*")
+                        Text("Optimerar för 20–40 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total) *")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .center)

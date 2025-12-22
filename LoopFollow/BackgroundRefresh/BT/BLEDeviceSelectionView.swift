@@ -107,6 +107,20 @@ struct BLEDeviceSelectionView: View {
                                                     .foregroundColor(offsetColor)
                                                     .font(.footnote)
                                             }
+                                            // Offset you should enter in SyncNewSensorView so the *new* sensor reports ~30s before THIS device.
+                                            // We want: (deviceDelay + pairingOffset) % 300 == 30
+                                            let targetDelay = 30
+                                            let optimalPairingOffset = ((targetDelay - offsetInt) % 300 + 300) % 300
+
+                                            HStack {
+                                                Text("Optimal offset nästa sensorbyte:")
+                                                    .foregroundColor(.secondary)
+                                                    .font(.footnote)
+
+                                                Text("\(optimalPairingOffset) sek")
+                                                    .foregroundColor(.secondary)
+                                                    .font(.footnote)
+                                            }
                                         }
                                     }
                                 }
