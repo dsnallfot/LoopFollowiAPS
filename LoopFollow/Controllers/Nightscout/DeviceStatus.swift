@@ -17,6 +17,19 @@ extension MainViewController {
     func webLoadNSDeviceStatus() {
         if isDeviceStatusFetchInProgress { return }
         isDeviceStatusFetchInProgress = true
+        // Watchdog: if the request hangs and we never get a callback, unlock after 30s.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+            if isDeviceStatusFetchInProgress {
+                isDeviceStatusFetchInProgress = false
+                LogManager.shared.log(
+                    category: .deviceStatus,
+                    message: "Device status fetch watchdog: unlock after timeout",
+                    isDebug: true
+                )
+                // Try again soon.
+                TaskScheduler.shared.rescheduleTask(id: .deviceStatus, to: Date().addingTimeInterval(5))
+            }
+        }
         let parameters: [String: String] = ["count": "1"]
         
         NightscoutUtils.executeDynamicRequest(eventType: .deviceStatus, parameters: parameters) { result in
@@ -28,17 +41,25 @@ extension MainViewController {
                         self.updateDeviceStatusDisplay(jsonDeviceStatus: jsonDeviceStatus)
                     }
                 } else {
-                    self.handleDeviceStatusError(nil)
+                    // Ensure we don't get stuck in "in progress" if payload is unexpected.
+                    DispatchQueue.main.async {
+                        isDeviceStatusFetchInProgress = false
+                        self.handleDeviceStatusError(nil)
+                    }
                 }
                 
             case .failure(let error):
-                isDeviceStatusFetchInProgress = false
-                self.handleDeviceStatusError(error)
+                DispatchQueue.main.async {
+                    isDeviceStatusFetchInProgress = false
+                    self.handleDeviceStatusError(error)
+                }
             }
         }
     }
 
     private func handleDeviceStatusError(_ error: Error? = nil) {
+        // Safety: never allow the device status fetch to remain locked.
+        isDeviceStatusFetchInProgress = false
         let retryDelay: TimeInterval
 
         if let urlError = error as? URLError {
