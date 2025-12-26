@@ -336,6 +336,28 @@ struct DailyStatsView: View {
                     }
                 }()
 
+                let newestTimestamp: TimeInterval? = {
+                    let newestBG = mainVC.statsBGData.max(by: { $0.date < $1.date })?.date
+                    let newestBolus = mainVC.statsBolusData.max(by: { $0.date < $1.date })?.date
+                    let newestSMB = mainVC.statsSMBData.max(by: { $0.date < $1.date })?.date
+                    let newestCarb = mainVC.statsCarbData.max(by: { $0.date < $1.date })?.date
+                    let newestBasal = mainVC.statsBasalData.max(by: { $0.date < $1.date })?.date
+                    let newestBGCheck = mainVC.statsBGCheckData.max()
+
+                    return [newestBG, newestBolus, newestSMB, newestCarb, newestBasal, newestBGCheck]
+                        .compactMap { $0 }
+                        .max()
+                }()
+
+                let newestEntryText: String = {
+                    if let newest = newestTimestamp {
+                        let newestDate = Date(timeIntervalSince1970: newest)
+                        return dateTimeFormatter.string(from: newestDate)
+                    } else {
+                        return "—"
+                    }
+                }()
+
                 // Metadata rows
                 Group {
                     HStack {
@@ -349,6 +371,13 @@ struct DailyStatsView: View {
                         Text("Äldsta post:")
                         Spacer()
                         Text(oldestEntryText)
+                            .foregroundColor(.secondary)
+                    }
+
+                    HStack {
+                        Text("Nyaste post:")
+                        Spacer()
+                        Text(newestEntryText)
                             .foregroundColor(.secondary)
                     }
                 }
