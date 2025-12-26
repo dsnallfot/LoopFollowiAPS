@@ -52,6 +52,15 @@ struct TIRGraphView: UIViewRepresentable {
         guard let chartView = containerView.subviews.first as? BarChartView else { return }
         guard !tirData.isEmpty else { return }
 
+        // Put the overall average first using the canonical display order
+        let orderIndex: [TIRPeriod: Int] = Dictionary(uniqueKeysWithValues: TIRPeriod.displayOrder.enumerated().map { ($0.element, $0.offset) })
+        let orderedTirData = tirData.sorted {
+            (orderIndex[$0.period] ?? Int.max) < (orderIndex[$1.period] ?? Int.max)
+        }
+
+        // Ensure we don't stack up limit lines across updates
+        chartView.xAxis.removeAllLimitLines()
+
         var stackedEntries: [BarChartDataEntry] = []
         var veryLowLabelEntries: [BarChartDataEntry] = []
         var lowLabelEntries: [BarChartDataEntry] = []
@@ -60,7 +69,7 @@ struct TIRGraphView: UIViewRepresentable {
         var veryHighLabelEntries: [BarChartDataEntry] = []
         var xAxisLabels: [String] = []
 
-        for (index, point) in tirData.enumerated() {
+        for (index, point) in orderedTirData.enumerated() {
             // Stacked bar (very low, low, in range, high, very high)
             let stackedEntry = BarChartDataEntry(
                 x: Double(index),
@@ -134,6 +143,8 @@ struct TIRGraphView: UIViewRepresentable {
             veryHighLabelEntries.append(veryHighLabelEntry)
 
             xAxisLabels.append(point.period.rawValue)
+
+            // (Separator configured after data is set below)
         }
 
         // Main stacked dataset for the TIR distribution
@@ -201,6 +212,16 @@ struct TIRGraphView: UIViewRepresentable {
         chartView.xAxis.valueFormatter = IndexAxisValueFormatter(values: xAxisLabels)
         chartView.xAxis.labelRotationAngle = 0
         chartView.xAxis.labelCount = xAxisLabels.count
+
+        // Vertical separator between the "MEDEL" bar (index 0) and the 6h-period bars
+        if xAxisLabels.count > 1 {
+            let separator = ChartLimitLine(limit: 0.5)
+            separator.lineWidth = 1.0
+            separator.lineColor = UIColor.label.withAlphaComponent(0.3)
+            separator.lineDashLengths = [2, 2]
+            chartView.xAxis.addLimitLine(separator)
+            chartView.xAxis.drawLimitLinesBehindDataEnabled = true
+        }
 
         chartView.notifyDataSetChanged()
     }

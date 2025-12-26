@@ -115,14 +115,17 @@ struct TIRLegendItem: View {
     let percentage: Double
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
+            Rectangle()
+                .fill(.clear)
+                .frame(width: 34, alignment: .leading)
             Rectangle()
                 .fill(color)
-                .frame(width: 10, height: 10)
-                .frame(width: 14, alignment: .leading)
+                .frame(width: 10, height: 10, alignment: .leading)
+                //.frame(width: 14, alignment: .leading)
             Text(String(format: "%.1f %%", percentage))
                 .foregroundColor(.primary)
-                .frame(width: 45, alignment: .leading)
+                .frame(width: 48, alignment: .leading)
             Text(label)
                 .foregroundColor(.secondary)
                 .frame(width: 65, alignment: .leading)

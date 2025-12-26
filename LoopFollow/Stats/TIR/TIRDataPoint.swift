@@ -19,6 +19,15 @@ enum TIRPeriod: String, CaseIterable {
     case evening = "kl 18-24\nKväll"
     case average = "MEDEL"
 
+    /// Central display order used by charts and tables
+    static var displayOrder: [TIRPeriod] {
+        [.average, .night, .morning, .day, .evening]
+    }
+
+    var isAverage: Bool {
+        self == .average
+    }
+
     var hourRange: (start: Int, end: Int)? {
         switch self {
         case .night:
