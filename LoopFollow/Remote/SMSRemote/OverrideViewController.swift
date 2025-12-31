@@ -9,7 +9,7 @@
 import UIKit
 import AudioToolbox
 
-class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
+class OverrideViewController: ThemedViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
     var appStateController: AppStateController?
     
     @IBOutlet weak var sendOverrideButton: UIButton!
@@ -26,6 +26,7 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        updateBackgroundForCurrentMode()
         // Set the delegate and data source for the UIPickerView
         overridePicker.delegate = self
         overridePicker.dataSource = self
@@ -265,4 +266,3 @@ class OverrideViewController: UIViewController, UIPickerViewDataSource, UIPicker
         }
     }()
 }
-

@@ -8,7 +8,7 @@
 
 import UIKit
 
-class SMSRemoteViewController: UIViewController, RemoteSettingsDelegate {
+class SMSRemoteViewController: ThemedViewController, RemoteSettingsDelegate {
     var appStateController: AppStateController?
     
     @IBOutlet weak var customActionButton: UIButton!
@@ -23,13 +23,14 @@ class SMSRemoteViewController: UIViewController, RemoteSettingsDelegate {
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
-            
-            // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustom value
-            updateUI()
-        }
+        // Re-apply theme after potential style override
+        updateBackgroundForCurrentMode()
+        // Initial UI setup based on hideRemoteBolus and hide hideRemoteCustom value
+        updateUI()
+    }
     
     override func viewWillAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+        super.viewWillAppear(animated)
         updateMethodButtonImage()
     }
 

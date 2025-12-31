@@ -1,5 +1,5 @@
 //
-//  SecondViewController.swift
+// NightscoutViewController.swift
 //  LoopFollow
 //
 //  Created by Jon Fawcett on 6/1/20.
@@ -11,7 +11,7 @@ import WebKit
 
 
 
-class NightscoutViewController: UIViewController {
+class NightscoutViewController: ThemedViewController {
 
     @IBOutlet weak var webView: WKWebView!
     
@@ -22,6 +22,8 @@ class NightscoutViewController: UIViewController {
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        // Re-apply theme after potential style override
+        updateBackgroundForCurrentMode()
         
         var url = ObservableUserDefaults.shared.url.value
         let token = UserDefaultsRepository.token.value

@@ -1,5 +1,5 @@
 //
-//  OverrideViewController.swift
+//  TempTargetViewController.swift
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2024-03-21.
@@ -9,7 +9,7 @@
 import UIKit
 import AudioToolbox
 
-class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
+class TempTargetViewController: ThemedViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
     var appStateController: AppStateController?
     
     @IBOutlet weak var sendTempTargetButton: UIButton!
@@ -26,6 +26,7 @@ class TempTargetViewController: UIViewController, UIPickerViewDataSource, UIPick
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        updateBackgroundForCurrentMode()
         // Set the delegate and data source for the UIPickerView
         tempTargetsPicker.delegate = self
         tempTargetsPicker.dataSource = self

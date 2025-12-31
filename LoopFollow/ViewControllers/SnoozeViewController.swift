@@ -1,5 +1,5 @@
 //
-//  SecondViewController.swift
+//  SnoozeViewController.swift
 //  LoopFollow
 //
 //  Created by Jon Fawcett on 6/1/20.
@@ -11,7 +11,7 @@ import UserNotifications
 import SwiftUI
 
 
-class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
+class SnoozeViewController: ThemedViewController, UNUserNotificationCenterDelegate {
     var appStateController: AppStateController?
     var snoozeTabItem: UITabBarItem = UITabBarItem()
     var mainTabItem: UITabBarItem = UITabBarItem()
@@ -511,6 +511,8 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        // Re-apply theme after potential style override
+        updateBackgroundForCurrentMode()
         SnoozeButton.layer.cornerRadius = 5
         SnoozeButton.contentEdgeInsets = UIEdgeInsets(top: 10,left: 10,bottom: 10,right: 10)
         // Thin white border around InfoButton

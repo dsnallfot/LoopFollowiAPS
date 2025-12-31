@@ -10,7 +10,7 @@ import UIKit
 import LocalAuthentication
 import AudioToolbox
 
-class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
+class CustomActionViewController: ThemedViewController, UIPickerViewDataSource, UIPickerViewDelegate, TwilioRequestable  {
     var appStateController: AppStateController?
     
     @IBOutlet weak var sendCustomActionButton: UIButton!
@@ -31,9 +31,8 @@ class CustomActionViewController: UIViewController, UIPickerViewDataSource, UIPi
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
-            
-            // Do any additional setup after loading the view.
         }
+        updateBackgroundForCurrentMode()
         // Set the delegate and data source for the UIPickerView
         customActionsPicker.delegate = self
         customActionsPicker.dataSource = self

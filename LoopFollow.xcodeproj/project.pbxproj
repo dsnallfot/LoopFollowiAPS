@@ -57,6 +57,7 @@
 		6577653D2ED9C99B001D1AC7 /* DailyStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6577653C2ED9C995001D1AC7 /* DailyStatsView.swift */; };
 		6578DBD12EB7739A00AF4942 /* VolumeButtonHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6578DBD02EB7738900AF4942 /* VolumeButtonHandler.swift */; };
 		6578DBD32EB8DD4B00AF4942 /* SnoozeStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */; };
+		657B4C692F0554E3007BA7A6 /* ThemedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657B4C682F0554E0007BA7A6 /* ThemedViewController.swift */; };
 		6582C4B72ED23B4F0047658C /* GlucoseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6582C4B62ED23B490047658C /* GlucoseView.swift */; };
 		659AC6832D7C594D0069FC7C /* TreatmentsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
@@ -391,6 +392,7 @@
 		6577653C2ED9C995001D1AC7 /* DailyStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStatsView.swift; sourceTree = "<group>"; };
 		6578DBD02EB7738900AF4942 /* VolumeButtonHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeButtonHandler.swift; sourceTree = "<group>"; };
 		6578DBD22EB8DD3C00AF4942 /* SnoozeStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnoozeStatusView.swift; sourceTree = "<group>"; };
+		657B4C682F0554E0007BA7A6 /* ThemedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemedViewController.swift; sourceTree = "<group>"; };
 		6582C4B62ED23B490047658C /* GlucoseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseView.swift; sourceTree = "<group>"; };
 		659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreatmentsTableView.swift; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
@@ -1361,6 +1363,7 @@
 				DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */,
 				FCC6886A24898FD800A0279D /* ObservationToken.swift */,
 				DDF699952C5582290058A8D9 /* TextFieldWithToolBar.swift */,
+				657B4C682F0554E0007BA7A6 /* ThemedViewController.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1742,6 +1745,7 @@
 				FC16A97F249969E2003D6245 /* Graphs.swift in Sources */,
 				651C9D422ED5D33B0077D40A /* GRIViewModel.swift in Sources */,
 				FC8589BF252B54F500C8FC73 /* Mobileprovision.swift in Sources */,
+				657B4C692F0554E3007BA7A6 /* ThemedViewController.swift in Sources */,
 				650A60732EE0D1C800EF4C93 /* BasalIOBCalculator.swift in Sources */,
 				DD4878052C7B2C970048F05C /* Storage.swift in Sources */,
 				651C9D352ED5D2C30077D40A /* TIRGraphView.swift in Sources */,

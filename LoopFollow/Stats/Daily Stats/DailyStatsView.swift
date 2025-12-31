@@ -9,35 +9,37 @@ import WebKit
 struct DailyStatsView: View {
     @ObservedObject var viewModel: DailyStatsViewModel
     @Environment(\.dismiss) private var dismiss
-
+    
     @State private var exportURL: URL?
     @State private var showingTitrSummary: Bool = true
     @State private var selectedDateForReport: Date?
     @State private var showNightscoutAlert: Bool = false
     @State private var showNightscoutReport: Bool = false
     @State private var showDatabaseInfo: Bool = false
-
+    
     private let dateFormatter: DateFormatter = {
         let df = DateFormatter()
         df.dateFormat = " yyyy-MM-dd"
         return df
     }()
-
+    
     // Kolumnbredder för raka marginaler
     private let dateWidth: CGFloat = 66
-        private let carbsWidth: CGFloat = 36
-        private let insulinWidth: CGFloat = 36
-        private let meanWidth: CGFloat = 36
-        private let lowWidth: CGFloat = 36
-        private let titrWidth: CGFloat = 36
-        private let tirWidth: CGFloat = 36
-        private let stdWidth: CGFloat = 36
-        private let profileWidth: CGFloat = 36
-        private let emptyWidth: CGFloat = 10
-
-        private let columnSpacing: CGFloat = 1
-
+    private let carbsWidth: CGFloat = 36
+    private let insulinWidth: CGFloat = 36
+    private let meanWidth: CGFloat = 36
+    private let lowWidth: CGFloat = 36
+    private let titrWidth: CGFloat = 36
+    private let tirWidth: CGFloat = 36
+    private let stdWidth: CGFloat = 36
+    private let profileWidth: CGFloat = 36
+    private let emptyWidth: CGFloat = 10
+    
+    private let columnSpacing: CGFloat = 1
+    
     var body: some View {
+        ZStack {
+                ThemeBackground()
         NavigationStack {
             coreContent
                 .navigationTitle("Daglig statistik")
@@ -52,13 +54,13 @@ struct DailyStatsView: View {
                             Image(systemName: "square.and.arrow.up")
                         }
                     }
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button {
-                                showDatabaseInfo = true
-                            } label: {
-                                Image(systemName: "internaldrive")
-                            }
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            showDatabaseInfo = true
+                        } label: {
+                            Image(systemName: "internaldrive")
                         }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Klar") {
                             dismiss()
@@ -105,6 +107,7 @@ struct DailyStatsView: View {
                 .overlay(nightscoutAlertOverlay)
         }
     }
+}
     
     struct HighlightInfo {
         let bestID: AnyHashable?
@@ -180,7 +183,7 @@ struct DailyStatsView: View {
                                         .background({
                                             // Bas: varannan rad ljusgrå
                                             let baseColor: Color = index % 2 == 0
-                                            ? Color(.systemGray5.withAlphaComponent(0.5))
+                                            ? Color(.systemBackground.withAlphaComponent(0.5))
                                             : Color.clear
                                             
                                             // Highlight: bästa / sämsta dag enligt aktuell TITR/TIR-vy
@@ -292,146 +295,149 @@ struct DailyStatsView: View {
 
     @ViewBuilder
     private var databaseInfoContent: some View {
-        VStack(spacing: 16) {
-            Text("Databasens innehåll")
-                .font(.title2)
-                .padding(.top)
-
-            if let mainVC = viewModel.mainViewController {
-                // Formatter for date/time rows
-                let dateTimeFormatter: DateFormatter = {
-                    let df = DateFormatter()
-                    df.dateFormat = "yyyy-MM-dd HH:mm"
-                    return df
-                }()
-
-                // Precompute texts to keep the view tree simple
-                let lastUpdatedText: String = {
-                    if let lastUpdated = mainVC.statsCacheLastUpdated {
-                        return dateTimeFormatter.string(from: lastUpdated)
-                    } else {
-                        return "—"
+        ZStack {
+            ThemeBackground()
+            VStack(spacing: 16) {
+                Text("Databasens innehåll")
+                    .font(.title2)
+                    .padding(.top)
+                
+                if let mainVC = viewModel.mainViewController {
+                    // Formatter for date/time rows
+                    let dateTimeFormatter: DateFormatter = {
+                        let df = DateFormatter()
+                        df.dateFormat = "yyyy-MM-dd HH:mm"
+                        return df
+                    }()
+                    
+                    // Precompute texts to keep the view tree simple
+                    let lastUpdatedText: String = {
+                        if let lastUpdated = mainVC.statsCacheLastUpdated {
+                            return dateTimeFormatter.string(from: lastUpdated)
+                        } else {
+                            return "—"
+                        }
+                    }()
+                    
+                    let oldestTimestamp: TimeInterval? = {
+                        let oldestBG = mainVC.statsBGData.min(by: { $0.date < $1.date })?.date
+                        let oldestBolus = mainVC.statsBolusData.min(by: { $0.date < $1.date })?.date
+                        let oldestSMB = mainVC.statsSMBData.min(by: { $0.date < $1.date })?.date
+                        let oldestCarb = mainVC.statsCarbData.min(by: { $0.date < $1.date })?.date
+                        let oldestBasal = mainVC.statsBasalData.min(by: { $0.date < $1.date })?.date
+                        let oldestBGCheck = mainVC.statsBGCheckData.min()
+                        
+                        return [oldestBG, oldestBolus, oldestSMB, oldestCarb, oldestBasal, oldestBGCheck]
+                            .compactMap { $0 }
+                            .min()
+                    }()
+                    
+                    let oldestEntryText: String = {
+                        if let oldest = oldestTimestamp {
+                            let oldestDate = Date(timeIntervalSince1970: oldest)
+                            return dateTimeFormatter.string(from: oldestDate)
+                        } else {
+                            return "—"
+                        }
+                    }()
+                    
+                    let newestTimestamp: TimeInterval? = {
+                        let newestBG = mainVC.statsBGData.max(by: { $0.date < $1.date })?.date
+                        let newestBolus = mainVC.statsBolusData.max(by: { $0.date < $1.date })?.date
+                        let newestSMB = mainVC.statsSMBData.max(by: { $0.date < $1.date })?.date
+                        let newestCarb = mainVC.statsCarbData.max(by: { $0.date < $1.date })?.date
+                        let newestBasal = mainVC.statsBasalData.max(by: { $0.date < $1.date })?.date
+                        let newestBGCheck = mainVC.statsBGCheckData.max()
+                        
+                        return [newestBG, newestBolus, newestSMB, newestCarb, newestBasal, newestBGCheck]
+                            .compactMap { $0 }
+                            .max()
+                    }()
+                    
+                    let newestEntryText: String = {
+                        if let newest = newestTimestamp {
+                            let newestDate = Date(timeIntervalSince1970: newest)
+                            return dateTimeFormatter.string(from: newestDate)
+                        } else {
+                            return "—"
+                        }
+                    }()
+                    
+                    // Metadata rows
+                    Group {
+                        HStack {
+                            Text("Databas uppdaterad:")
+                            Spacer()
+                            Text(lastUpdatedText)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        HStack {
+                            Text("Äldsta post:")
+                            Spacer()
+                            Text(oldestEntryText)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        HStack {
+                            Text("Nyaste post:")
+                            Spacer()
+                            Text(newestEntryText)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                }()
-
-                let oldestTimestamp: TimeInterval? = {
-                    let oldestBG = mainVC.statsBGData.min(by: { $0.date < $1.date })?.date
-                    let oldestBolus = mainVC.statsBolusData.min(by: { $0.date < $1.date })?.date
-                    let oldestSMB = mainVC.statsSMBData.min(by: { $0.date < $1.date })?.date
-                    let oldestCarb = mainVC.statsCarbData.min(by: { $0.date < $1.date })?.date
-                    let oldestBasal = mainVC.statsBasalData.min(by: { $0.date < $1.date })?.date
-                    let oldestBGCheck = mainVC.statsBGCheckData.min()
-
-                    return [oldestBG, oldestBolus, oldestSMB, oldestCarb, oldestBasal, oldestBGCheck]
-                        .compactMap { $0 }
-                        .min()
-                }()
-
-                let oldestEntryText: String = {
-                    if let oldest = oldestTimestamp {
-                        let oldestDate = Date(timeIntervalSince1970: oldest)
-                        return dateTimeFormatter.string(from: oldestDate)
-                    } else {
-                        return "—"
+                    .font(.footnote)
+                    
+                    Divider()
+                        .padding(.vertical, 4)
+                    
+                    // Content rows with leading label and trailing value
+                    Group {
+                        HStack {
+                            Text("Blodsockervärden:")
+                            Spacer()
+                            Text("\(mainVC.statsBGData.count)")
+                        }
+                        HStack {
+                            Text("Fingerstick:")
+                            Spacer()
+                            Text("\(mainVC.statsBGCheckData.count)")
+                        }
+                        HStack {
+                            Text("Manuell bolus:")
+                            Spacer()
+                            Text("\(mainVC.statsBolusData.count)")
+                        }
+                        HStack {
+                            Text("SMB:")
+                            Spacer()
+                            Text("\(mainVC.statsSMBData.count)")
+                        }
+                        HStack {
+                            Text("Kolhydrater:")
+                            Spacer()
+                            Text("\(mainVC.statsCarbData.count)")
+                        }
+                        HStack {
+                            Text("Temp basal:")
+                            Spacer()
+                            Text("\(mainVC.statsBasalData.count)")
+                        }
                     }
-                }()
-
-                let newestTimestamp: TimeInterval? = {
-                    let newestBG = mainVC.statsBGData.max(by: { $0.date < $1.date })?.date
-                    let newestBolus = mainVC.statsBolusData.max(by: { $0.date < $1.date })?.date
-                    let newestSMB = mainVC.statsSMBData.max(by: { $0.date < $1.date })?.date
-                    let newestCarb = mainVC.statsCarbData.max(by: { $0.date < $1.date })?.date
-                    let newestBasal = mainVC.statsBasalData.max(by: { $0.date < $1.date })?.date
-                    let newestBGCheck = mainVC.statsBGCheckData.max()
-
-                    return [newestBG, newestBolus, newestSMB, newestCarb, newestBasal, newestBGCheck]
-                        .compactMap { $0 }
-                        .max()
-                }()
-
-                let newestEntryText: String = {
-                    if let newest = newestTimestamp {
-                        let newestDate = Date(timeIntervalSince1970: newest)
-                        return dateTimeFormatter.string(from: newestDate)
-                    } else {
-                        return "—"
-                    }
-                }()
-
-                // Metadata rows
-                Group {
-                    HStack {
-                        Text("Databas uppdaterad:")
-                        Spacer()
-                        Text(lastUpdatedText)
-                            .foregroundColor(.secondary)
-                    }
-
-                    HStack {
-                        Text("Äldsta post:")
-                        Spacer()
-                        Text(oldestEntryText)
-                            .foregroundColor(.secondary)
-                    }
-
-                    HStack {
-                        Text("Nyaste post:")
-                        Spacer()
-                        Text(newestEntryText)
-                            .foregroundColor(.secondary)
-                    }
+                    .font(.body)
+                } else {
+                    Text("Ingen data tillgänglig.")
                 }
-                .font(.footnote)
-
-                Divider()
-                    .padding(.vertical, 4)
-
-                // Content rows with leading label and trailing value
-                Group {
-                    HStack {
-                        Text("Blodsockervärden:")
-                        Spacer()
-                        Text("\(mainVC.statsBGData.count)")
-                    }
-                    HStack {
-                        Text("Fingerstick:")
-                        Spacer()
-                        Text("\(mainVC.statsBGCheckData.count)")
-                    }
-                    HStack {
-                        Text("Manuell bolus:")
-                        Spacer()
-                        Text("\(mainVC.statsBolusData.count)")
-                    }
-                    HStack {
-                        Text("SMB:")
-                        Spacer()
-                        Text("\(mainVC.statsSMBData.count)")
-                    }
-                    HStack {
-                        Text("Kolhydrater:")
-                        Spacer()
-                        Text("\(mainVC.statsCarbData.count)")
-                    }
-                    HStack {
-                        Text("Temp basal:")
-                        Spacer()
-                        Text("\(mainVC.statsBasalData.count)")
-                    }
+                
+                Spacer()
+                
+                Button("Stäng") {
+                    showDatabaseInfo = false
                 }
-                .font(.body)
-            } else {
-                Text("Ingen data tillgänglig.")
+                .padding(.bottom)
             }
-
-            Spacer()
-
-            Button("Stäng") {
-                showDatabaseInfo = false
-            }
-            .padding(.bottom)
+            .padding()
         }
-        .padding()
     }
 
     // MARK: - Subviews

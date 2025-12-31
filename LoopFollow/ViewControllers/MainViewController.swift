@@ -19,7 +19,7 @@ func IsNightscoutEnabled() -> Bool {
     return !ObservableUserDefaults.shared.url.value.isEmpty
 }
 
-class MainViewController: UIViewController, UITableViewDataSource, ChartViewDelegate, UNUserNotificationCenterDelegate, UIScrollViewDelegate {
+class MainViewController: ThemedViewController, UITableViewDataSource, ChartViewDelegate, UNUserNotificationCenterDelegate, UIScrollViewDelegate {
     
     @IBOutlet weak var BGText: UILabel!
     @IBOutlet weak var DeltaText: UILabel!
@@ -279,7 +279,7 @@ class MainViewController: UIViewController, UITableViewDataSource, ChartViewDele
         // 2. Create the circle view
         let circleView = UIView()
         circleView.translatesAutoresizingMaskIntoConstraints = false
-        circleView.backgroundColor = .systemGray6
+        circleView.backgroundColor = .systemBackground.withAlphaComponent(0.5)
         circleView.layer.cornerRadius = 32.5 // half of 65 -> a perfect circle
         circleView.layer.masksToBounds = true
 

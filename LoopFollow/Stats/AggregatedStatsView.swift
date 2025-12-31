@@ -23,7 +23,7 @@ struct AggregatedStatsView: View {
     @State private var showingDailyStats = false
     @State private var showAllTooltips = false
     @State private var tooltipResetToken = 0
-
+    
     init(viewModel: AggregatedStatsViewModel) {
         self.viewModel = viewModel
         _showGMI = State(initialValue: Storage.shared.showGMI.value)
@@ -33,7 +33,7 @@ struct AggregatedStatsView: View {
         _showDextroAmount = State(initialValue: Storage.shared.showDextroAmount.value)
         _showProfileBasal = State(initialValue: Storage.shared.showProfileBasal.value)
         _showLowPercentage = State(initialValue: Storage.shared.showLowPercentage.value)
-
+        
         let savedPeriod = UserDefaults.standard.object(forKey: "AggregatedStatsSelectedPeriod") as? Int ?? 14
         _selectedPeriod = State(initialValue: savedPeriod)
         _dailyStatsVM = StateObject(wrappedValue: DailyStatsViewModel(
@@ -42,8 +42,10 @@ struct AggregatedStatsView: View {
             todayTDDOverride: nil
         ))
     }
-
+    
     var body: some View {
+        ZStack {
+                ThemeBackground()
         if #available(iOS 16.0, *) {
             VStack(spacing: 0) {
                 // Fixed segment picker header
@@ -65,7 +67,8 @@ struct AggregatedStatsView: View {
                         refreshIfNeeded(forceReload: (newValue == 0 || newValue == 1))
                     }
                 }
-                .background(Color(.systemBackground))
+                //.background(Color(.systemBackground))
+                .background(Color.clear)
                 .zIndex(1)
                 
                 ScrollView {
@@ -116,7 +119,7 @@ struct AggregatedStatsView: View {
                         }
                     }
                 }
-
+                
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: {
                         showAllTooltips.toggle()
@@ -127,7 +130,7 @@ struct AggregatedStatsView: View {
                         Image(systemName: showAllTooltips ? "ellipsis.bubble.fill" : "ellipsis.bubble")
                     }
                 }
-
+                
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
                         showingDailyStats = true
@@ -135,9 +138,9 @@ struct AggregatedStatsView: View {
                         Image(systemName: "tablecells")
                     }
                 }
-
+                
                 ToolbarSpacer(placement: .topBarTrailing)
-
+                
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button("Klar") {
                         dismiss()
@@ -160,6 +163,7 @@ struct AggregatedStatsView: View {
             // Fallback on earlier versions
         }
     }
+}
     
     private var shouldForceReloadOnOpen: Bool {
         // Kort fönster = volatil statistik => alltid hämta senaste när vyn visas
@@ -279,7 +283,7 @@ struct StatCard: View {
                     .padding(8)
             }
         }
-        .background(Color(.systemGray5.withAlphaComponent(0.6)))
+        .background(Color(.systemBackground.withAlphaComponent(0.5)))
         .cornerRadius(15)
         .overlay {
             if isTooltipVisible {

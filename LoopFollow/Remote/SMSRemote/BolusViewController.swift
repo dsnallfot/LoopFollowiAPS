@@ -10,7 +10,7 @@ import UIKit
 import LocalAuthentication
 import AudioToolbox
 
-class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequestable  {
+class BolusViewController: ThemedViewController, UITextFieldDelegate, TwilioRequestable  {
     var appStateController: AppStateController?
     
     @IBOutlet weak var bolusEntryField: UITextField!
@@ -32,6 +32,7 @@ class BolusViewController: UIViewController, UITextFieldDelegate, TwilioRequesta
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        updateBackgroundForCurrentMode()
         bolusEntryField.delegate = self
         self.focusBolusEntryField()
         

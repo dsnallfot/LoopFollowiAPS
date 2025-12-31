@@ -98,7 +98,7 @@ struct Treatment {
 
 /// A view controller that downloads and displays all treatments in a table view,
 /// with a segmented control above the table to filter the results.
-class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewDelegate, TwilioRequestable {
+class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableViewDelegate, TwilioRequestable {
 
     private let tableView = UITableView()
     // The complete set of downloaded treatments.
@@ -154,7 +154,8 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         super.viewDidLoad()
         // Shift table content down to make room for the date picker
         self.title = "Behandlingslogg"
-        view.backgroundColor = .systemBackground
+        //view.backgroundColor = .systemBackground
+        updateBackgroundForCurrentMode()
         setupNavigationBar()
         setupSegmentedControl()
         setupTableView()
@@ -458,6 +459,12 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
     
     private func setupTableView() {
         tableView.translatesAutoresizingMaskIntoConstraints = false
+        // Transparent table so ThemedViewController's gradient/background shows through
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.separatorColor = UIColor.white.withAlphaComponent(0.08)
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        tableView.cellLayoutMarginsFollowReadableWidth = false
         view.addSubview(tableView)
         // Register the custom cell class so that cells are always .value1 style.
         tableView.register(Value1TableViewCell.self, forCellReuseIdentifier: "TreatmentCell")
@@ -722,6 +729,17 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "TreatmentCell", for: indexPath) as? Value1TableViewCell else {
             return UITableViewCell(style: .value1, reuseIdentifier: "TreatmentCell")
         }
+        // Ensure cell is truly transparent (iOS 14+ uses backgroundConfiguration)
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        cell.selectedBackgroundView = nil
+
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
         
         let treatment = filteredTreatments[indexPath.row]
         // Check if this override is pending upload
@@ -872,6 +890,12 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
         }
         
         cell.selectionStyle = .default
+        // Subtle selection highlight that still shows the gradient
+        let selected = UIView()
+        selected.backgroundColor = UIColor.white.withAlphaComponent(0.08)
+        selected.layer.cornerRadius = 10
+        selected.layer.masksToBounds = true
+        cell.selectedBackgroundView = selected
         
         // Check for duplicates: only count duplicates that have the same timestamp and event type (excluding "Note").
         let duplicateCount = filteredTreatments.filter {
@@ -884,25 +908,55 @@ class TreatmentsTableView: UIViewController, UITableViewDataSource, UITableViewD
             let exerciseEndTime = treatment.timestamp.addingTimeInterval(duration * 60)
             if Date() < exerciseEndTime {
                 cell.backgroundColor = UIColor.systemPurple.withAlphaComponent(0.3)
+                cell.contentView.backgroundColor = cell.backgroundColor
+                if #available(iOS 14.0, *) {
+                    var bg = UIBackgroundConfiguration.clear()
+                    bg.backgroundColor = cell.backgroundColor
+                    cell.backgroundConfiguration = bg
+                }
             } else {
                 cell.backgroundColor = (duplicateCount > 1)
                     ? UIColor.systemRed.withAlphaComponent(0.3)
-                    : UIColor.systemBackground
+                    : UIColor.clear
+                cell.contentView.backgroundColor = cell.backgroundColor
+                if #available(iOS 14.0, *) {
+                    var bg = UIBackgroundConfiguration.clear()
+                    bg.backgroundColor = cell.backgroundColor
+                    cell.backgroundConfiguration = bg
+                }
             }
         } else if treatment.eventType == "Temp Basal" {
             // Find the newest Temp Basal treatment.
             if let newestTempBasal = treatments.first(where: { $0.eventType == "Temp Basal" }),
                treatment.timestamp == newestTempBasal.timestamp {
-                cell.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.2)
+                cell.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.25)
+                cell.contentView.backgroundColor = cell.backgroundColor
+                if #available(iOS 14.0, *) {
+                    var bg = UIBackgroundConfiguration.clear()
+                    bg.backgroundColor = cell.backgroundColor
+                    cell.backgroundConfiguration = bg
+                }
             } else {
                 cell.backgroundColor = (duplicateCount > 1)
                     ? UIColor.systemRed.withAlphaComponent(0.3)
-                    : UIColor.systemBackground
+                    : UIColor.clear
+                cell.contentView.backgroundColor = cell.backgroundColor
+                if #available(iOS 14.0, *) {
+                    var bg = UIBackgroundConfiguration.clear()
+                    bg.backgroundColor = cell.backgroundColor
+                    cell.backgroundConfiguration = bg
+                }
             }
         } else {
             cell.backgroundColor = (duplicateCount > 1 && treatment.eventType != "Note")
                 ? UIColor.systemRed.withAlphaComponent(0.3)
-                : UIColor.systemBackground
+                : UIColor.clear
+            cell.contentView.backgroundColor = cell.backgroundColor
+            if #available(iOS 14.0, *) {
+                var bg = UIBackgroundConfiguration.clear()
+                bg.backgroundColor = cell.backgroundColor
+                cell.backgroundConfiguration = bg
+            }
         }
 
         

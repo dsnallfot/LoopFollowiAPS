@@ -11,7 +11,7 @@ import Eureka
 import EventKit
 import EventKitUI
 
-class RemoteSettingsViewController: FormViewController {
+class RemoteSettingsViewController: ThemedFormViewController {
     weak var delegate: RemoteSettingsDelegate?
     var appStateController: AppStateController?
     
@@ -24,6 +24,7 @@ class RemoteSettingsViewController: FormViewController {
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        applyTheme()
         
         // Build and configure advanced settings
         buildAdvancedSettings()

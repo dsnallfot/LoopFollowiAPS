@@ -1023,7 +1023,7 @@ extension MainViewController {
         BGChart.legend.enabled = false
         BGChart.scaleYEnabled = false
         BGChart.drawGridBackgroundEnabled = true
-        BGChart.gridBackgroundColor = NSUIColor.secondarySystemBackground
+        BGChart.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
         BGChart.highlightValue(nil, callDelegate: false)
         BGChart.data = data
         BGChart.setExtraOffsets(left: 5, top: 10, right: 5, bottom: 10)

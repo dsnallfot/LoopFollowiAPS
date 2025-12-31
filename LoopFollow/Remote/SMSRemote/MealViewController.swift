@@ -10,7 +10,7 @@ import UIKit
 import LocalAuthentication
 import AudioToolbox
 
-class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestable  {
+class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioRequestable  {
     var appStateController: AppStateController?
     
     @IBOutlet weak var carbsEntryField: UITextField!
@@ -59,6 +59,7 @@ class MealViewController: UIViewController, UITextFieldDelegate, TwilioRequestab
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
+        updateBackgroundForCurrentMode()
         carbsEntryField.delegate = self
         fatEntryField.delegate = self
         proteinEntryField.delegate = self

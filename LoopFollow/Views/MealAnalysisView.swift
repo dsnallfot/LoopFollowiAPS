@@ -24,7 +24,7 @@ struct BGEntry {
     let mmol: Double
 }
 
-class MealAnalysisView: UIViewController, ChartViewDelegate {
+class MealAnalysisView: ThemedViewController, ChartViewDelegate {
 
     // MARK: - BG Bar Width Constraints
     private var belowWidthConstraint: NSLayoutConstraint?
@@ -187,7 +187,8 @@ class MealAnalysisView: UIViewController, ChartViewDelegate {
             }
         }
 
-        view.backgroundColor = .systemBackground
+        //view.backgroundColor = .systemBackground
+        updateBackgroundForCurrentMode()
 
         // Configure picker limits (now‒24h ... ∞) and initial value
         endPicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))

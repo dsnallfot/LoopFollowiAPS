@@ -6,13 +6,14 @@
 //  Copyright © 2020 Jon Fawcett. All rights reserved.
 //
 
+
 import UIKit
 import Eureka
 import EventKit
 import EventKitUI
 import SwiftUI
 
-class SettingsViewController: FormViewController, NightscoutSettingsViewModelDelegate {
+class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewModelDelegate {
     var tokenRow: TextRow?
     var appStateController: AppStateController?
     var statusLabelRow: LabelRow!
@@ -42,6 +43,7 @@ class SettingsViewController: FormViewController, NightscoutSettingsViewModelDel
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        applyTheme()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
