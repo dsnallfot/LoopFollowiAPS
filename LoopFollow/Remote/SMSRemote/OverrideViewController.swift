@@ -34,6 +34,10 @@ class OverrideViewController: ThemedViewController, UIPickerViewDataSource, UIPi
         // Set the default selected item for the UIPickerView
         overridePicker.selectRow(0, inComponent: 0, animated: false)
         
+        // UIPickerView can't be made truly transparent; use themed backdrop to match the gradient in dark mode.
+        overridePicker.applyThemedBackdrop(for: traitCollection.userInterfaceStyle, intensity: 0.72, showSelectionHighlight: true)
+        
+        
         // Set the initial selected override
         selectedOverride = overrideOptions[0]
         
@@ -42,6 +46,11 @@ class OverrideViewController: ThemedViewController, UIPickerViewDataSource, UIPi
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutError), name: NSNotification.Name("ShortcutError"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutCancel), name: NSNotification.Name("ShortcutCancel"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        overridePicker.applyThemedBackdrop(for: traitCollection.userInterfaceStyle, intensity: 0.72, showSelectionHighlight: true)
     }
     
     // MARK: - UIPickerViewDataSource

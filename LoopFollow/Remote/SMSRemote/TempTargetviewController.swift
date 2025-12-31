@@ -34,6 +34,10 @@ class TempTargetViewController: ThemedViewController, UIPickerViewDataSource, UI
         // Set the default selected item for the UIPickerView
         tempTargetsPicker.selectRow(0, inComponent: 0, animated: false)
         
+        // UIPickerView can't be made truly transparent; use themed backdrop to match the gradient in dark mode.
+        tempTargetsPicker.applyThemedBackdrop(for: traitCollection.userInterfaceStyle, intensity: 0.72, showSelectionHighlight: true)
+        
+        
         // Set the initial selected temp target
         selectedTempTarget = tempTargetsOptions[0]
         
@@ -42,6 +46,11 @@ class TempTargetViewController: ThemedViewController, UIPickerViewDataSource, UI
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutError), name: NSNotification.Name("ShortcutError"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutCancel), name: NSNotification.Name("ShortcutCancel"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        tempTargetsPicker.applyThemedBackdrop(for: traitCollection.userInterfaceStyle, intensity: 0.72, showSelectionHighlight: true)
     }
     
     // MARK: - UIPickerViewDataSource

@@ -36,6 +36,18 @@ class ThemedViewController: UIViewController {
 
     private weak var gradientView: GradientView?
 
+    /// Shared gradient colors used across UIKit + SwiftUI.
+    /// Optionally accepts an intensity multiplier for the alpha values (use >1.0 for stronger/darker gradients).
+    static func themeGradientColors(intensity: CGFloat = 1.0) -> [CGColor] {
+        // Clamp so we never exceed 1.0 alpha.
+        func a(_ base: CGFloat) -> CGFloat { min(max(base * intensity, 0.0), 1.0) }
+        return [
+            UIColor.systemBlue.withAlphaComponent(a(0.15)).cgColor,
+            UIColor.systemBlue.withAlphaComponent(a(0.25)).cgColor,
+            UIColor.systemBlue.withAlphaComponent(a(0.15)).cgColor
+        ]
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         updateBackgroundForCurrentMode()
@@ -60,11 +72,7 @@ class ThemedViewController: UIViewController {
         if traitCollection.userInterfaceStyle == .dark {
             view.backgroundColor = .systemBackground
 
-            let colors: [CGColor] = [
-                UIColor.systemBlue.withAlphaComponent(0.15).cgColor,
-                UIColor.systemBlue.withAlphaComponent(0.25).cgColor,
-                UIColor.systemBlue.withAlphaComponent(0.15).cgColor
-            ]
+            let colors: [CGColor] = Self.themeGradientColors()
 
             let gv = GradientView(colors: colors)
             gv.translatesAutoresizingMaskIntoConstraints = false
@@ -113,11 +121,7 @@ class ThemedFormViewController: FormViewController {
         if traitCollection.userInterfaceStyle == .dark {
             view.backgroundColor = .systemBackground
 
-            let colors: [CGColor] = [
-                UIColor.systemBlue.withAlphaComponent(0.15).cgColor,
-                UIColor.systemBlue.withAlphaComponent(0.25).cgColor,
-                UIColor.systemBlue.withAlphaComponent(0.15).cgColor
-            ]
+            let colors: [CGColor] = ThemedViewController.themeGradientColors(intensity: 1.0)
 
             let gv = GradientView(colors: colors)
             gv.translatesAutoresizingMaskIntoConstraints = false
@@ -190,3 +194,85 @@ struct ThemeBackground: View {
 }
 
 
+
+
+// MARK: - UIPickerView Themed Gradient Helper
+
+extension UIPickerView {
+
+    private static let themedGradientTag = 998877
+    private static let selectionHighlightTag = 998878
+
+    /// UIPickerView is notoriously hard to make fully transparent (it has internal tinted/blur layers).
+    /// This method "fakes" transparency by inserting the app's gradient behind the wheel *inside* the picker.
+    /// Use `intensity` > 1.0 for modal sheets (pageSheet) since the system sheet background can lighten the result.
+    /// Call after the picker is laid out (e.g. viewDidLayoutSubviews) for best effect.
+    func applyThemedBackdrop(for style: UIUserInterfaceStyle, intensity: CGFloat = 1.0, showSelectionHighlight: Bool = true) {
+        // Remove any previous themed views we inserted.
+        subviews.first(where: { $0.tag == Self.themedGradientTag })?.removeFromSuperview()
+        subviews.first(where: { $0.tag == Self.selectionHighlightTag })?.removeFromSuperview()
+
+        guard style == .dark else {
+            // Light mode: keep it clean and native-ish.
+            backgroundColor = .systemGray6
+            return
+        }
+
+        // Insert the same gradient used by the VC behind the wheel.
+        let gv = GradientView(colors: ThemedViewController.themeGradientColors(intensity: intensity))
+        gv.tag = Self.themedGradientTag
+        gv.isUserInteractionEnabled = false
+        gv.translatesAutoresizingMaskIntoConstraints = false
+        insertSubview(gv, at: 0)
+
+        NSLayoutConstraint.activate([
+            gv.leadingAnchor.constraint(equalTo: leadingAnchor),
+            gv.trailingAnchor.constraint(equalTo: trailingAnchor),
+            gv.topAnchor.constraint(equalTo: topAnchor),
+            gv.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+
+        // Optional selection highlight overlay (makes the selected row more obvious)
+        if showSelectionHighlight {
+            let highlight = UIView()
+            highlight.tag = Self.selectionHighlightTag
+            highlight.isUserInteractionEnabled = false
+            highlight.translatesAutoresizingMaskIntoConstraints = false
+            highlight.backgroundColor = UIColor.white.withAlphaComponent(0.05)
+            highlight.layer.borderColor = UIColor.white.withAlphaComponent(0.18).cgColor
+            highlight.layer.borderWidth = 1
+            highlight.layer.cornerRadius = 12
+            highlight.layer.masksToBounds = true
+
+            // Place above the gradient but below the wheel contents
+            insertSubview(highlight, aboveSubview: gv)
+
+            NSLayoutConstraint.activate([
+                highlight.centerYAnchor.constraint(equalTo: centerYAnchor),
+                highlight.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+                highlight.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+                highlight.heightAnchor.constraint(equalToConstant: 44)
+            ])
+        }
+
+        // Attempt to clear internal tinted layers as much as UIKit allows.
+        isOpaque = false
+        backgroundColor = .clear
+        layer.backgroundColor = UIColor.clear.cgColor
+        setValue(UIColor.clear, forKey: "backgroundColor")
+
+        for v in subviews {
+            // Keep our inserted views as-is
+            guard v.tag != Self.themedGradientTag, v.tag != Self.selectionHighlightTag else { continue }
+            v.isOpaque = false
+            v.backgroundColor = .clear
+            v.layer.backgroundColor = UIColor.clear.cgColor
+            if let blur = v as? UIVisualEffectView { blur.effect = nil }
+            if let tv = v as? UITableView {
+                tv.backgroundColor = .clear
+                tv.backgroundView = nil
+                tv.separatorStyle = .none
+            }
+        }
+    }
+}

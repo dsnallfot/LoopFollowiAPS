@@ -40,6 +40,9 @@ class CustomActionViewController: ThemedViewController, UIPickerViewDataSource, 
         // Set the default selected item for the UIPickerView
         customActionsPicker.selectRow(0, inComponent: 0, animated: false)
         
+        // UIPickerView can't be made truly transparent; use themed backdrop to match the gradient in dark mode.
+        customActionsPicker.applyThemedBackdrop(for: traitCollection.userInterfaceStyle, intensity: 0.72, showSelectionHighlight: true)
+        
         // Set the initial selected override
         selectedCustomAction = customActionsOptions[0]
         
@@ -75,6 +78,11 @@ class CustomActionViewController: ThemedViewController, UIPickerViewDataSource, 
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutError), name: NSNotification.Name("ShortcutError"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutCancel), name: NSNotification.Name("ShortcutCancel"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutPasscode), name: NSNotification.Name("ShortcutPasscode"), object: nil)
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        customActionsPicker.applyThemedBackdrop(for: traitCollection.userInterfaceStyle, intensity: 0.72, showSelectionHighlight: true)
     }
     
     // MARK: - UIPickerViewDataSource
