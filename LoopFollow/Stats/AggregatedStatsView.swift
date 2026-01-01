@@ -289,7 +289,7 @@ struct StatCard: View {
             if isTooltipVisible {
                 ZStack {
                     RoundedRectangle(cornerRadius: 15)
-                        .fill(.ultraThinMaterial)
+                        .fill(.ultraThickMaterial)
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 4) {

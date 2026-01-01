@@ -402,7 +402,8 @@ struct SnoozeStatusView: View {
             ZStack {
                 // Force a consistent system background (works well in dark mode)
                 Color(uiColor: .secondarySystemBackground)
-                    .ignoresSafeArea()
+                 .ignoresSafeArea()
+                ThemeBackground()
                 if #available(iOS 16.0, *) {
                     List {
                         if viewModel.items.isEmpty {
@@ -502,6 +503,7 @@ struct SnoozeStatusView: View {
                             // Force a consistent sheet background (dark-mode friendly)
                             Color(uiColor: .secondarySystemBackground)
                                 .ignoresSafeArea()
+                            ThemeBackground()
                             VStack(spacing: 16) {
                                 DatePicker("Tid", selection: $editingTime)
                                     .datePickerStyle(.compact)

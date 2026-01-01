@@ -17,7 +17,7 @@
 import UIKit
 import Eureka
 
-class AlarmViewController: FormViewController {
+class AlarmViewController: ThemedFormViewController {
     var appStateController: AppStateController?
 
     var soundFiles: [String] = [
@@ -242,6 +242,7 @@ class AlarmViewController: FormViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        applyTheme()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }

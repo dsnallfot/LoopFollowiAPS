@@ -241,7 +241,7 @@ extension UIPickerView {
             highlight.backgroundColor = UIColor.white.withAlphaComponent(0.05)
             highlight.layer.borderColor = UIColor.white.withAlphaComponent(0.18).cgColor
             highlight.layer.borderWidth = 1
-            highlight.layer.cornerRadius = 12
+            highlight.layer.cornerRadius = 20
             highlight.layer.masksToBounds = true
 
             // Place above the gradient but below the wheel contents
@@ -251,7 +251,7 @@ extension UIPickerView {
                 highlight.centerYAnchor.constraint(equalTo: centerYAnchor),
                 highlight.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
                 highlight.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-                highlight.heightAnchor.constraint(equalToConstant: 44)
+                highlight.heightAnchor.constraint(equalToConstant: 40)
             ])
         }
 
