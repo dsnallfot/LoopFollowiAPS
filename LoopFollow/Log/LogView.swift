@@ -254,7 +254,7 @@ private struct ScatterLogChartView: UIViewRepresentable {
         // Datumformatter på x-axeln
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "sv_SE")
-        formatter.dateFormat = "HH:mm"
+        formatter.dateFormat = "HH"
         uiView.xAxis.valueFormatter = EpochTimeAxisValueFormatter(dateFormatter: formatter)
 
         uiView.notifyDataSetChanged()
