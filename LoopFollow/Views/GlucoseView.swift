@@ -10,7 +10,7 @@ import UIKit
 import Charts
 
 /// Table-style glucose log, similar look/feel to TreatmentsTableView.
-final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDelegate {
+final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
 
     // MARK: - Glucose data (same source as MealAnalysisView)
     /// Aktiva värden för valt läge (driver tabell + stats).
@@ -242,7 +242,8 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Glukoslogg"
-        view.backgroundColor = .systemBackground
+        //view.backgroundColor = .systemBackground
+        updateBackgroundForCurrentMode()
 
         setupNavigationBar()
         setupTableView()
@@ -360,6 +361,19 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
     @objc private func showGlucoseStats() {
         let statsVC = GlucoseStatsViewController()
         let nav = UINavigationController(rootViewController: statsVC)
+
+        nav.modalPresentationStyle = .formSheet
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
         present(nav, animated: true)
     }
     
@@ -475,6 +489,9 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
         tableView.dataSource = self
         tableView.delegate = self
         tableView.tableFooterView = UIView()
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.isOpaque = false
     }
 
     private func setupConstraints() {
@@ -903,7 +920,7 @@ final class GlucoseView: UIViewController, UITableViewDataSource, UITableViewDel
 
 // MARK: - Glucose Stats (All values vs Trio→NS)
 
-final class GlucoseStatsViewController: UITableViewController {
+final class GlucoseStatsViewController: ThemedTableViewController {
 
     // Match LowTreatmentsStatsViewController: insetGrouped gives the rounded light-gray cards
     init() {
@@ -992,7 +1009,11 @@ final class GlucoseStatsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        tableView.backgroundColor = .systemGroupedBackground
+        updateBackgroundForCurrentMode()
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = tableView.backgroundView
+        tableView.isOpaque = false
+        tableView.layer.backgroundColor = UIColor.clear.cgColor
         title = "Glukosstatistik"
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
@@ -1123,6 +1144,7 @@ final class GlucoseStatsViewController: UITableViewController {
     private func setupChartHeader() {
         let container = UIView()
         container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 330)
+        container.backgroundColor = .clear
 
         container.addSubview(periodControl)
         container.addSubview(chartView)
@@ -1320,6 +1342,16 @@ final class GlucoseStatsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .value1, reuseIdentifier: "GlucoseStatsCell")
         cell.selectionStyle = .none
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
 
         let row = Row(rawValue: indexPath.row)!
 

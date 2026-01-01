@@ -13,7 +13,7 @@ protocol AddManualSensorNoteDelegate: AnyObject {
     func didUpdateManualSensorNote(note: SensorStartHistoryEntry, at index: Int)
 }
 
-class AddManualSensorNoteViewController: UIViewController {
+class AddManualSensorNoteViewController: ThemedViewController {
     
     weak var delegate: AddManualSensorNoteDelegate?
     private var editingIndex: Int?
@@ -49,7 +49,8 @@ class AddManualSensorNoteViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Registrera sensor"
-        view.backgroundColor = .systemBackground
+        //view.backgroundColor = .systemBackground
+        updateBackgroundForCurrentMode()
         setupUI()
         setupNavigationBar()
         if let existing = editingOriginal {

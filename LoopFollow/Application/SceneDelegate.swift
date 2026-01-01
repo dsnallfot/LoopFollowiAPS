@@ -9,6 +9,7 @@
 import UIKit
 import AVFoundation
 
+@available(iOS 26.0, *)
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?

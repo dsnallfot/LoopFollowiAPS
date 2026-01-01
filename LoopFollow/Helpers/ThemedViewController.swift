@@ -170,6 +170,67 @@ class ThemedFormViewController: FormViewController {
     }
 }
 
+// MARK: - Theming (UITableViewController)
+
+/// Same theme logic as `ThemedViewController`, but adapted for `UITableViewController`.
+/// Sets gradient in dark mode and `.systemGray6` in light mode.
+class ThemedTableViewController: UITableViewController {
+
+    private weak var gradientView: GradientView?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        updateBackgroundForCurrentMode()
+        // Ensure the root table view can actually show transparency.
+        tableView.isOpaque = false
+        tableView.backgroundView = nil
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Re-apply theme on appearance; grouped/insetGrouped tables may reset backgrounds.
+        updateBackgroundForCurrentMode()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
+            updateBackgroundForCurrentMode()
+        }
+    }
+
+    @objc func updateBackgroundForCurrentMode() {
+        // Remove any existing gradient
+        gradientView?.removeFromSuperview()
+        gradientView = nil
+
+        if traitCollection.userInterfaceStyle == .dark {
+            // Use tableView.backgroundView for more reliable gradient placement (esp. insetGrouped)
+            view.backgroundColor = .clear
+            tableView.backgroundColor = .clear
+            tableView.isOpaque = false
+            tableView.layer.backgroundColor = UIColor.clear.cgColor
+
+            let gv = GradientView(colors: ThemedViewController.themeGradientColors(intensity: 1.0))
+            gv.frame = tableView.bounds
+            gv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            gv.translatesAutoresizingMaskIntoConstraints = true
+
+            // Put gradient behind all table content
+            tableView.backgroundView = gv
+            gradientView = gv
+        } else {
+            view.backgroundColor = .systemGray6
+            tableView.backgroundColor = .systemGray6
+            tableView.backgroundView = nil
+            tableView.isOpaque = true
+            tableView.layer.backgroundColor = UIColor.systemGray6.cgColor
+            // Ensure gradientView is nil already (cleanup)
+            gradientView = nil
+        }
+    }
+}
+
 struct ThemeBackground: View {
     @Environment(\.colorScheme) private var colorScheme
 

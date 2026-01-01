@@ -4,7 +4,7 @@ import UIKit
 import Charts
 
 /// Loggvy för lågbehandlingar (Dextro), inspirerad av BGCheckView.
-final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableViewDelegate {
+final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
 
     // MARK: - Model
 
@@ -46,7 +46,8 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Dextrologg"
-        view.backgroundColor = .systemBackground
+        //view.backgroundColor = .systemBackground
+        updateBackgroundForCurrentMode()
 
         setupNavigationBar()
         setupTableView()
@@ -155,6 +156,23 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
             bgCheckMmol: bgCheckMmolForStats
         )
         let nav = UINavigationController(rootViewController: statsVC)
+
+        // Ensure the modal container doesn't paint an opaque gray background over the themed table.
+        nav.modalPresentationStyle = .formSheet
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar so the gradient shows behind it too.
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Match current interface style
+        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+
         present(nav, animated: true)
     }
 
@@ -169,6 +187,10 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
         tableView.dataSource = self
         tableView.delegate = self
         tableView.tableFooterView = UIView()
+        
+        tableView.backgroundColor = .clear
+        tableView.isOpaque = false
+        tableView.backgroundView = nil
     }
 
     private func setupConstraints() {
@@ -284,6 +306,18 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
         let cell = tableView.dequeueReusableCell(withIdentifier: "LowTreatmentCell") ?? UITableViewCell(style: .subtitle, reuseIdentifier: "LowTreatmentCell")
         cell.textLabel?.numberOfLines = 1
 
+        // Transparent cell so the themed gradient shows through
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
+
         let entry = entries[indexPath.row]
         let gramsString = gramsFormatter.string(from: NSNumber(value: entry.grams)) ?? String(format: "%.0f", entry.grams)
 
@@ -372,7 +406,7 @@ final class LowTreatmentsView: UIViewController, UITableViewDataSource, UITableV
 
 // MARK: - Statistikvy
 
-final class LowTreatmentsStatsViewController: UITableViewController {
+final class LowTreatmentsStatsViewController: ThemedTableViewController {
 
     // Full data set (upp till t.ex. 90 dagar)
     private let allDays: [Date]
@@ -640,6 +674,11 @@ final class LowTreatmentsStatsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        updateBackgroundForCurrentMode()
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.isOpaque = false
+        tableView.layer.backgroundColor = UIColor.clear.cgColor
         title = "Dextrostatistik"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
@@ -669,6 +708,7 @@ final class LowTreatmentsStatsViewController: UITableViewController {
     private func setupChartHeader() {
         let container = UIView()
         container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 340)
+        container.backgroundColor = .clear
 
         container.addSubview(periodControl)
         container.addSubview(modeControl)
@@ -1217,6 +1257,16 @@ private enum Row: Int, CaseIterable {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .value1, reuseIdentifier: "LowStatsCell")
         cell.selectionStyle = .none
+
+        // Transparent cell so the themed gradient shows
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
 
         let row = Row(rawValue: indexPath.row)!
         switch row {

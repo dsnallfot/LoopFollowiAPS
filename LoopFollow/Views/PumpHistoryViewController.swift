@@ -21,11 +21,11 @@ struct PumpSessionBuckets {
     var hrs_total: Int { hrs_lt1h + hrs_h1to50 + hrs_h50to70 + hrs_gt70 }
 }
 
-class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UIDocumentPickerDelegate {
+class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UITableViewDelegate, UIDocumentPickerDelegate {
 
     private var pumpHistory: [PumpChangeHistoryEntry] = []
     private let tableView: UITableView = {
-        let tv = UITableView(frame: .zero, style: .insetGrouped)
+        let tv = UITableView(frame: .zero, style: .plain)
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
     }()
@@ -36,7 +36,8 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Pumplogg"
-        view.backgroundColor = .systemBackground
+        //view.backgroundColor = .systemBackground
+        updateBackgroundForCurrentMode()
 
         setupNavigationBar()
         setupTableView()
@@ -103,6 +104,10 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "PumpHistoryCell")
+        // Themed background: let gradient show through
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.isOpaque = false
     }
 
     private func setupConstraints() {
@@ -135,6 +140,23 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
         let buckets = computePumpSessionBuckets(from: history)
         let statsVC = PumpSessionStatsViewController(buckets: buckets, history: history)
         let nav = UINavigationController(rootViewController: statsVC)
+
+        // Ensure the modal container doesn't paint an opaque gray background.
+        nav.modalPresentationStyle = .formSheet
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar so the gradient shows behind it too.
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Match current interface style
+        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+
         present(nav, animated: true)
     }
     
@@ -341,6 +363,18 @@ class PumpHistoryViewController: UIViewController, UITableViewDataSource, UITabl
 
         cell.textLabel?.numberOfLines = 0
         cell.textLabel?.attributedText = composed
+        
+        // Transparent cell so the themed gradient shows through
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
 
         return cell
     }
@@ -411,7 +445,7 @@ extension PumpHistoryViewController: AddManualPumpDelegate {
 }
 
 
-final class PumpSessionStatsViewController: UITableViewController {
+final class PumpSessionStatsViewController: ThemedTableViewController {
     private let buckets: PumpSessionBuckets
     private let history: [PumpChangeHistoryEntry]
     private let chartView: ScatterChartView = {
@@ -450,6 +484,10 @@ final class PumpSessionStatsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        updateBackgroundForCurrentMode()
+        tableView.backgroundColor = .clear
+        tableView.isOpaque = false
+        tableView.layer.backgroundColor = UIColor.clear.cgColor
         title = "Sessionstid pumpar"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
@@ -464,6 +502,9 @@ final class PumpSessionStatsViewController: UITableViewController {
 
     private func setupChartHeader() {
         let container = UIView()
+        container.backgroundColor = .clear
+        container.isOpaque = false
+        chartView.backgroundColor = .clear
         container.addSubview(chartView)
         container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 260)
         chartView.translatesAutoresizingMaskIntoConstraints = false
@@ -619,6 +660,17 @@ final class PumpSessionStatsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .value1, reuseIdentifier: "cell")
         cell.selectionStyle = .none
+        // Transparent cell so the themed gradient shows
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
         switch Section(rawValue: indexPath.section)! {
         case .counts:
             let row = CountRow(rawValue: indexPath.row)!

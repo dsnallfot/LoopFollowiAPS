@@ -2,7 +2,7 @@ import UIKit
 import Charts
 
 /// Enkel loggvy för att fånga noteringar innehållande "Trio startades om" , inspirerad av BGCheckView.
-final class TrioRestartsView: UIViewController, UITableViewDataSource, UITableViewDelegate {
+final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
 
     // MARK: - Model
 
@@ -38,8 +38,9 @@ final class TrioRestartsView: UIViewController, UITableViewDataSource, UITableVi
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Apply themed background (gradient in dark mode)
+        updateBackgroundForCurrentMode()
         title = "Trio omstartslogg"
-        view.backgroundColor = .systemBackground
 
         setupNavigationBar()
         setupTableView()
@@ -125,6 +126,23 @@ final class TrioRestartsView: UIViewController, UITableViewDataSource, UITableVi
 
         let statsVC = TrioRestartsStatsViewController(days: days, counts: counts, restartDates: restartDates)
         let nav = UINavigationController(rootViewController: statsVC)
+
+        // Ensure the modal container doesn't paint an opaque gray background.
+        nav.modalPresentationStyle = .formSheet
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar so the gradient shows behind it too.
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Match current interface style
+        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+
         present(nav, animated: true)
     }
 
@@ -139,6 +157,10 @@ final class TrioRestartsView: UIViewController, UITableViewDataSource, UITableVi
         tableView.dataSource = self
         tableView.delegate = self
         tableView.tableFooterView = UIView()
+        // Themed background: let gradient show through
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.isOpaque = false
     }
 
     private func setupConstraints() {
@@ -216,6 +238,17 @@ final class TrioRestartsView: UIViewController, UITableViewDataSource, UITableVi
     ) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "RestartCell") ?? UITableViewCell(style: .subtitle, reuseIdentifier: "RestartCell")
         cell.textLabel?.numberOfLines = 1
+        // Transparent cell so the themed gradient shows through
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
 
         let entry = entries[indexPath.row]
 
@@ -292,6 +325,19 @@ final class TrioRestartsView: UIViewController, UITableViewDataSource, UITableVi
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet
+
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+
         self.present(nav, animated: true)
     }
 
@@ -302,7 +348,7 @@ final class TrioRestartsView: UIViewController, UITableViewDataSource, UITableVi
     }
 }
 
-final class TrioRestartsStatsViewController: UITableViewController {
+final class TrioRestartsStatsViewController: ThemedTableViewController {
 
     // Full data set (upp till t.ex. 90 dagar)
     private let allDays: [Date]
@@ -428,6 +474,7 @@ final class TrioRestartsStatsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        updateBackgroundForCurrentMode()
         title = "Statistik"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
@@ -454,6 +501,12 @@ final class TrioRestartsStatsViewController: UITableViewController {
     private func setupChartHeader() {
         let container = UIView()
         container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 300)
+        container.backgroundColor = .clear
+        container.isOpaque = false
+
+        // Let the chart + segmented control show the underlying gradient
+        chartView.backgroundColor = .clear
+        periodControl.backgroundColor = .clear
 
         container.addSubview(periodControl)
         container.addSubview(chartView)
@@ -600,6 +653,17 @@ final class TrioRestartsStatsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .value1, reuseIdentifier: "BGStatsCell")
         cell.selectionStyle = .none
+        // Transparent cell so the themed gradient shows
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
 
         let row = Row(rawValue: indexPath.row)!
         switch row {

@@ -5,7 +5,7 @@ protocol AddManualPumpDelegate: AnyObject {
     func didUpdateManualPumpChange(entry: PumpChangeHistoryEntry, at index: Int)
 }
 
-class AddManualPumpViewController: UIViewController {
+class AddManualPumpViewController: ThemedViewController {
 
     weak var delegate: AddManualPumpDelegate?
     private var editingIndex: Int?
@@ -33,7 +33,8 @@ class AddManualPumpViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Registrera pumpbyte"
-        view.backgroundColor = .systemBackground
+        //view.backgroundColor = .systemBackground
+        updateBackgroundForCurrentMode()
         setupUI()
         setupNavigationBar()
 

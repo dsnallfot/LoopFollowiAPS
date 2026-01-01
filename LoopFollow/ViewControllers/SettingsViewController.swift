@@ -13,6 +13,7 @@ import EventKit
 import EventKitUI
 import SwiftUI
 
+@available(iOS 26.0, *)
 class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewModelDelegate {
     var tokenRow: TextRow?
     var appStateController: AppStateController?
@@ -346,7 +347,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                                              ), onDismiss: nil)
         }
         
-        +++ Section("Loggning")
+        +++ Section("Systemlogg")
         <<< ButtonRow("viewlog") {
             $0.title = "Se logg"
             $0.presentationMode = .show(
@@ -495,6 +496,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         present(hostingController, animated: true, completion: nil)
     }
 
+    @available(iOS 26.0, *)
     func presentLogView() {
         let viewModel = LogViewModel()
         let logView = LogView(viewModel: viewModel)

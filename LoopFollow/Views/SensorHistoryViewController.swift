@@ -26,7 +26,7 @@ struct SessionBuckets {
     var hrs_total: Int { hrs_lt1d + hrs_d1to5 + hrs_d5to9_5 + hrs_gt9_5 }
 }
 
-class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITableViewDataSource, UITableViewDelegate {
+class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UITableViewDataSource, UITableViewDelegate {
     
     private var sensorHistory: [SensorStartHistoryEntry] = []
     private var filteredHistory: [SensorStartHistoryEntry] = []
@@ -50,7 +50,7 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
     }()
 
     private let tableView: UITableView = {
-        let tv = UITableView(frame: .zero, style: .insetGrouped)
+        let tv = UITableView(frame: .zero, style: .plain)//.insetGrouped)
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
     }()
@@ -62,6 +62,7 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "Sensorlogg"
+        updateBackgroundForCurrentMode()
         setupNavigationBar()
         searchBar.delegate = self
         installPinnedSearchBar()
@@ -77,6 +78,10 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
         tableView.delegate = self
         tableView.keyboardDismissMode = .onDrag
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "SensorHistoryCell")
+        // Themed background: let gradient show through
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.isOpaque = false
         loadSensorHistory()
     }
 
@@ -99,18 +104,6 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
             sb.topAnchor.constraint(equalTo: topSearchContainer.topAnchor, constant: 6),
             sb.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor, constant: -2)
         ])
-/*
-        let sep = UIView()
-        sep.translatesAutoresizingMaskIntoConstraints = false
-        sep.backgroundColor = UIColor.separator
-        topSearchContainer.addSubview(sep)
-        NSLayoutConstraint.activate([
-            sep.heightAnchor.constraint(equalToConstant: 0.5),
-            sep.leadingAnchor.constraint(equalTo: topSearchContainer.leadingAnchor),
-            sep.trailingAnchor.constraint(equalTo: topSearchContainer.trailingAnchor),
-            sep.bottomAnchor.constraint(equalTo: topSearchContainer.bottomAnchor)
-        ])
-        */
     }
 
     
@@ -177,6 +170,23 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
         let buckets = computeSessionBuckets()
         let statsVC = SensorSessionStatsViewController(buckets: buckets, history: sensorHistory)
         let nav = UINavigationController(rootViewController: statsVC)
+
+        // Ensure the modal container doesn't paint an opaque gray background.
+        nav.modalPresentationStyle = .formSheet
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar so the gradient shows behind it too.
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Match current interface style
+        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+
         present(nav, animated: true)
     }
 
@@ -272,6 +282,19 @@ class SensorHistoryViewController: UIViewController, UISearchBarDelegate, UITabl
 
         cell.textLabel?.attributedText = composed
         cell.textLabel?.numberOfLines = 0
+        
+        // Transparent cell so the themed gradient shows through
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
+        
         return cell
     }
 
@@ -484,7 +507,7 @@ extension SensorHistoryViewController: UIDocumentPickerDelegate {
     }
 }
 
-final class SensorSessionStatsViewController: UITableViewController {
+final class SensorSessionStatsViewController: ThemedTableViewController {
     private let buckets: SessionBuckets
     private let history: [SensorStartHistoryEntry]
     private let chartView: ScatterChartView = {
@@ -525,6 +548,10 @@ final class SensorSessionStatsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        updateBackgroundForCurrentMode()
+        tableView.backgroundColor = .clear
+        tableView.isOpaque = false
+        tableView.layer.backgroundColor = UIColor.clear.cgColor
         title = "Sessionstid sensorer"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
@@ -539,6 +566,9 @@ final class SensorSessionStatsViewController: UITableViewController {
 
     private func setupChartHeader() {
         let container = UIView()
+        container.backgroundColor = .clear
+        container.isOpaque = false
+        chartView.backgroundColor = .clear
         container.addSubview(chartView)
         container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 260)
         chartView.translatesAutoresizingMaskIntoConstraints = false
@@ -702,6 +732,17 @@ final class SensorSessionStatsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .value1, reuseIdentifier: "cell")
         cell.selectionStyle = .none
+        // Transparent cell so the themed gradient shows
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .clear
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
         switch Section(rawValue: indexPath.section)! {
         case .counts:
             let row = CountRow(rawValue: indexPath.row)!
