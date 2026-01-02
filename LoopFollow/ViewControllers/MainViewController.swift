@@ -749,12 +749,6 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
 
             if let type = infoManager.infoTypeForPriorityRow(rowIndexPath) {
                 switch type {
-                case .iob:
-                    cell.textLabel?.textColor = .systemBlue
-                    cell.detailTextLabel?.textColor = .systemBlue
-                case .cob:
-                    cell.textLabel?.textColor = .systemOrange
-                    cell.detailTextLabel?.textColor = .systemOrange
                 default:
                     cell.textLabel?.textColor = .label
                     cell.detailTextLabel?.textColor = .label
@@ -809,15 +803,18 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
 
             if let type = infoManager.infoTypeForRow(rowIndexPath) {
                 switch type {
-                case .iob:
+                case .iob, .tdd:
                     cell.textLabel?.textColor = .systemBlue
                     cell.detailTextLabel?.textColor = .systemBlue
-                case .cob:
+                case .cob, .carbsToday:
                     cell.textLabel?.textColor = .systemOrange
                     cell.detailTextLabel?.textColor = .systemOrange
+                case .minMax, .bgi, .dev, .totIob, .SMBUAMmin, .smbRatio, .af, .autosensMinMax, .target:
+                    cell.textLabel?.textColor = .secondaryLabel
+                    cell.detailTextLabel?.textColor = .secondaryLabel
                 default:
                     cell.textLabel?.textColor = .label
-                    cell.detailTextLabel?.textColor = .secondaryLabel
+                    cell.detailTextLabel?.textColor = .label
                 }
             }
 
