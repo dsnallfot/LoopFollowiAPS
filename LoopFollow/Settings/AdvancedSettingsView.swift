@@ -49,7 +49,7 @@ struct AdvancedSettingsView: View {
                         }
                         Divider().opacity(0.35)
                         themedRow {
-                            Toggle("Rita nadra behandlingar", isOn: $viewModel.graphOtherTreatments)
+                            Toggle("Rita andra behandlingar", isOn: $viewModel.graphOtherTreatments)
                         }
                         Divider().opacity(0.35)
                         themedRow {
