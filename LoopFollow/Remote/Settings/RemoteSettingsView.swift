@@ -10,9 +10,9 @@
 import SwiftUI
 import HealthKit
 
+@available(iOS 16.0, *)
 struct RemoteSettingsView: View {
     @ObservedObject var viewModel: RemoteSettingsViewModel
-    @Environment(\.presentationMode) var presentationMode
     @FocusState private var focusedField: Field?
 
     @State private var showAlert: Bool = false
@@ -35,7 +35,10 @@ struct RemoteSettingsView: View {
     }
 
     var body: some View {
-        NavigationView {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
             Form {
                 // Remote Type Section
                 // Instructions for Remote Type options
@@ -46,7 +49,7 @@ struct RemoteSettingsView: View {
                         if BuildDetails.default.branch?.lowercased() != "main" {
                             Text("Trio Remote Control").tag(RemoteType.trc)
                         }
-                        Text("SMS Remote Control").tag(RemoteType.sms) // New option
+                        Text("SMS Remote Control").tag(RemoteType.sms)
                     }
                     .pickerStyle(MenuPickerStyle())
 
@@ -60,6 +63,7 @@ struct RemoteSettingsView: View {
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
+                .listRowBackground(Color.clear)
 
                 // User Information Section
                 if viewModel.remoteType != .none {
@@ -73,6 +77,7 @@ struct RemoteSettingsView: View {
                                 .multilineTextAlignment(.trailing)
                         }
                     }
+                    .listRowBackground(Color.clear)
                 }
 
                 // Trio Remote Control Settings Section
@@ -110,6 +115,7 @@ struct RemoteSettingsView: View {
                         }
 
                     }
+                    .listRowBackground(Color.clear)
 
                     // Guardrails Section
                     Section(header: Text("Maxgränser")) {
@@ -189,6 +195,7 @@ struct RemoteSettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
+                    .listRowBackground(Color.clear)
 
                     // Meal Section
                     Section(header: Text("Måltidsinställningar")) {
@@ -198,6 +205,7 @@ struct RemoteSettingsView: View {
                         Toggle("Måltid med Fett/Protein", isOn: $viewModel.mealWithFatProtein)
                             .toggleStyle(SwitchToggleStyle())
                     }
+                    .listRowBackground(Color.clear)
 
                     Section(header: Text("Debug / Info")) {
                         Text("Device Token: \(Storage.shared.deviceToken.value)")
@@ -205,19 +213,13 @@ struct RemoteSettingsView: View {
                         Text("Team ID: \(Storage.shared.teamId.value ?? "")")
                         Text("Bundle ID: \(Storage.shared.bundleId.value)")
                     }
+                    .listRowBackground(Color.clear)
                 }
             }
-            .navigationBarTitle("Fjärrkontrollinställningar", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-            .onTapGesture {
-                focusedField = nil
-            }
+            // Let the gradient show through the Form/List background
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .onTapGesture { focusedField = nil }
             .alert(isPresented: $showAlert) {
                 switch alertType {
                 case .validation:

@@ -9,16 +9,19 @@
 import SwiftUI
 import Contacts
 
+@available(iOS 16.0, *)
 struct ContactSettingsView: View {
     @ObservedObject var viewModel: ContactSettingsViewModel
-    @Environment(\.presentationMode) var presentationMode
 
     @State private var showAlert: Bool = false
     @State private var alertTitle: String = ""
     @State private var alertMessage: String = ""
 
     var body: some View {
-        NavigationView {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
             Form {
                 Section(header: Text("Kontaktintegration")) {
                     Text("Lägg till kontakter som heter '\(viewModel.contactName)' till din Apple Watch för att visa aktuellt BG och andra värden i realtid. Se till att ge appen full access till dina kontakter på telefonen när du tillfrågas.")
@@ -34,6 +37,7 @@ struct ContactSettingsView: View {
                             }
                         }
                 }
+                .listRowBackground(Color.clear)
 
                 if viewModel.contactEnabled {
                     Section(header: Text("Extra information")) {
@@ -52,19 +56,16 @@ struct ContactSettingsView: View {
                                     viewModel.contactTrend = false
                                 }
                             }
+
                         Toggle("Visa också 10m delta", isOn: $viewModel.contactFifteenMinutes)
                             .toggleStyle(SwitchToggleStyle())
                     }
+                    .listRowBackground(Color.clear)
                 }
             }
-            .navigationBarTitle("Kontakttrick", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
+            // Let gradient show through the Form background
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
             .alert(isPresented: $showAlert) {
                 Alert(title: Text(alertTitle), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }

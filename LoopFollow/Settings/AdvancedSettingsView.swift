@@ -87,6 +87,6 @@ struct AdvancedSettingsView: View {
         content()
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .tint(Color(uiColor: .systemBlue))
+            .tint(Color(uiColor: .systemGreen))
     }
 }

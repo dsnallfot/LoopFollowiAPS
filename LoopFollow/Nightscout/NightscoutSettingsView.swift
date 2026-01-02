@@ -8,28 +8,26 @@
 
 import SwiftUI
 
+@available(iOS 16.0, *)
 struct NightscoutSettingsView: View {
     @ObservedObject var viewModel: NightscoutSettingsViewModel
-    @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        NavigationView {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
             Form {
                 urlSection
                 tokenSection
                 statusSection
             }
-            .navigationBarTitle("Nightscoutinställningar", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-            .onDisappear {
-                viewModel.dismiss()
-            }
+            // Let gradient show through the Form background
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+        }
+        .onDisappear {
+            viewModel.dismiss()
         }
     }
 
@@ -47,6 +45,7 @@ struct NightscoutSettingsView: View {
         } header: {
             Text("URL")
         }
+        .listRowBackground(Color.clear)
     }
 
     private var tokenSection: some View {
@@ -58,6 +57,7 @@ struct NightscoutSettingsView: View {
         } header: {
             Text("Token")
         }
+        .listRowBackground(Color.clear)
     }
 
     private var statusSection: some View {
@@ -66,5 +66,6 @@ struct NightscoutSettingsView: View {
         } header: {
             Text("Status")
         }
+        .listRowBackground(Color.clear)
     }
 }

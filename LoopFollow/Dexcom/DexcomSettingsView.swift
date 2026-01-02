@@ -8,14 +8,17 @@
 
 import SwiftUI
 
+@available(iOS 16.0, *)
 struct DexcomSettingsView: View {
     @ObservedObject var viewModel: DexcomSettingsViewModel
-    @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        NavigationView {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
             Form {
-                Section(header: Text("Dexcominställningar")) {
+                Section(header: Text("Dexcom")) {
                     TextField("Användarnamn", text: $viewModel.userName)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
@@ -29,18 +32,13 @@ struct DexcomSettingsView: View {
                         Text("NON-US").tag("NON-US")
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                    
+
                     Toggle("Endast adhoc hämtningar", isOn: $viewModel.adhocOnly)
                 }
+                .listRowBackground(Color.clear)
             }
-            .navigationBarTitle("Dexcominställningar", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
         }
     }
 }

@@ -8,13 +8,17 @@
 
 import SwiftUI
 
+@available(iOS 16.0, *)
 struct InfoDisplaySettingsView: View {
     @ObservedObject var viewModel: InfoDisplaySettingsViewModel
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        NavigationView {
-            Form {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            List {
                 Section(header: Text("Allmänt")) {
                     Toggle(isOn: Binding(
                         get: { UserDefaultsRepository.hideInfoTable.value },
@@ -22,34 +26,31 @@ struct InfoDisplaySettingsView: View {
                     )) {
                         Text("Dölj informationspanelen")
                     }
+                    .listRowBackground(Color.clear)
                 }
 
                 Section(header: Text("Inställningar för informationspanel")) {
-                    List {
-                        ForEach(viewModel.infoSort, id: \.self) { sortedIndex in
-                            HStack {
-                                Text(viewModel.getName(for: sortedIndex))
-                                Spacer()
-                                Toggle("", isOn: Binding(
-                                    get: { viewModel.infoVisible[sortedIndex] },
-                                    set: { _ in
-                                        viewModel.toggleVisibility(for: sortedIndex)
-                                    }
-                                ))
-                                .labelsHidden()
-                            }
+                    ForEach(viewModel.infoSort, id: \.self) { sortedIndex in
+                        HStack {
+                            Text(viewModel.getName(for: sortedIndex))
+                            Spacer()
+                            Toggle("", isOn: Binding(
+                                get: { viewModel.infoVisible[sortedIndex] },
+                                set: { _ in viewModel.toggleVisibility(for: sortedIndex) }
+                            ))
+                            .labelsHidden()
                         }
-                        .onMove(perform: viewModel.move)
+                        .listRowBackground(Color.clear)
                     }
-                    .environment(\.editMode, .constant(.active))
+                    .onMove(perform: viewModel.move)
                 }
             }
-            .navigationBarItems(trailing: Button("Klar") {
-                presentationMode.wrappedValue.dismiss()
-            })
-            .onDisappear {
-                NotificationCenter.default.post(name: NSNotification.Name("refresh"), object: nil)
-            }
+            .environment(\.editMode, .constant(.active))
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+        }
+        .onDisappear {
+            NotificationCenter.default.post(name: NSNotification.Name("refresh"), object: nil)
         }
     }
 }

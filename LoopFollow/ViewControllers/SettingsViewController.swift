@@ -440,42 +440,134 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
     func presentInfoDisplaySettings() {
         let viewModel = InfoDisplaySettingsViewModel()
+
+        let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
         let settingsView = InfoDisplaySettingsView(viewModel: viewModel)
+            .preferredColorScheme(isDark ? .dark : .light)
+            .environment(\.colorScheme, isDark ? .dark : .light)
 
         let hostingController = UIHostingController(rootView: settingsView)
-        hostingController.modalPresentationStyle = .formSheet
+        hostingController.title = "Informationinställningar"
 
-        if UserDefaultsRepository.forceDarkMode.value {
-            hostingController.overrideUserInterfaceStyle = .dark
-        }
+        hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
 
-        present(hostingController, animated: true, completion: nil)
+        // Transparent hosting background
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.isOpaque = false
+        hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let nav = UINavigationController(rootViewController: hostingController)
+        nav.modalPresentationStyle = .formSheet
+
+        // Transparent modal container
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+        hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+        present(nav, animated: true)
     }
 
     func presentRemoteSettings() {
         let viewModel = RemoteSettingsViewModel()
+
+        let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
         let settingsView = RemoteSettingsView(viewModel: viewModel)
+            .preferredColorScheme(isDark ? .dark : .light)
+            .environment(\.colorScheme, isDark ? .dark : .light)
+
         let hostingController = UIHostingController(rootView: settingsView)
-        hostingController.modalPresentationStyle = .formSheet
+        hostingController.title = "Fjärrkontrollinställningar"
 
-        if UserDefaultsRepository.forceDarkMode.value {
-            hostingController.overrideUserInterfaceStyle = .dark
-        }
+        hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
 
-        present(hostingController, animated: true, completion: nil)
+        // Transparent hosting background
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.isOpaque = false
+        hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let nav = UINavigationController(rootViewController: hostingController)
+        nav.modalPresentationStyle = .formSheet
+
+        // Transparent modal container
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+        hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+        present(nav, animated: true)
     }
 
     func presentContactSettings() {
         let viewModel = ContactSettingsViewModel()
+
+        let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
         let contactSettingsView = ContactSettingsView(viewModel: viewModel)
+            .preferredColorScheme(isDark ? .dark : .light)
+            .environment(\.colorScheme, isDark ? .dark : .light)
+
         let hostingController = UIHostingController(rootView: contactSettingsView)
-        hostingController.modalPresentationStyle = .formSheet
+        hostingController.title = "Kontakttrick"
 
-        if UserDefaultsRepository.forceDarkMode.value {
-            hostingController.overrideUserInterfaceStyle = .dark
-        }
+        hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
 
-        present(hostingController, animated: true, completion: nil)
+        // Transparent hosting background
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.isOpaque = false
+        hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let nav = UINavigationController(rootViewController: hostingController)
+        nav.modalPresentationStyle = .formSheet
+
+        // Transparent modal container
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+        hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+        present(nav, animated: true)
     }
 
     func presentBackgroundRefreshSettings() {
@@ -585,15 +677,45 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         let viewModel = NightscoutSettingsViewModel()
         viewModel.delegate = self
 
+        let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
         let view = NightscoutSettingsView(viewModel: viewModel)
+            .preferredColorScheme(isDark ? .dark : .light)
+            .environment(\.colorScheme, isDark ? .dark : .light)
+
         let hostingController = UIHostingController(rootView: view)
-        hostingController.modalPresentationStyle = .formSheet
+        hostingController.title = "Nightscoutinställningar"
 
-        if UserDefaultsRepository.forceDarkMode.value {
-            hostingController.overrideUserInterfaceStyle = .dark
-        }
+        hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
 
-        present(hostingController, animated: true, completion: nil)
+        // Transparent hosting background
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.isOpaque = false
+        hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let nav = UINavigationController(rootViewController: hostingController)
+        nav.modalPresentationStyle = .formSheet
+
+        // Transparent modal container
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+        hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+        present(nav, animated: true)
     }
 
     func nightscoutSettingsDidFinish() {
@@ -602,15 +724,47 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
     func presentDexcomSettingsView() {
         let viewModel = DexcomSettingsViewModel()
+
+        let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
         let settingsView = DexcomSettingsView(viewModel: viewModel)
+            .preferredColorScheme(isDark ? .dark : .light)
+            .environment(\.colorScheme, isDark ? .dark : .light)
+
         let hostingController = UIHostingController(rootView: settingsView)
-        hostingController.modalPresentationStyle = .formSheet
+        hostingController.title = "Dexcominställningar"
 
-        if UserDefaultsRepository.forceDarkMode.value {
-            hostingController.overrideUserInterfaceStyle = .dark
-        }
+        hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
 
-        present(hostingController, animated: true, completion: nil)
+        // Transparent hosting background
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.isOpaque = false
+        hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let nav = UINavigationController(rootViewController: hostingController)
+        nav.modalPresentationStyle = .formSheet
+
+        // Transparent modal container
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Match current interface style
+        nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+        hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+        present(nav, animated: true)
     }
     
     func presentAdvancedSettingsView() {
