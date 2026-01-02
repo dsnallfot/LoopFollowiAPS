@@ -8,6 +8,9 @@ class SimpleStatsViewModel: ObservableObject {
     @Published var gmi: Double?
     @Published var avgGlucose: Double?
     @Published var avgGlucoseTrend: StatsTrendArrow = .none
+    
+    @Published var highGlucose: Double?
+    @Published var highGlucoseTrend: StatsTrendArrow = .none
 
     @Published var stdDeviation: Double?
     @Published var coefficientOfVariation: Double?
@@ -57,6 +60,8 @@ class SimpleStatsViewModel: ObservableObject {
     @Published var avgLowPercentageTrend: StatsTrendArrow = .none
     
     @Published var prevAvgGlucose: Double?
+    @Published var prevHighGlucose: Double?
+    
     @Published var prevStdDeviation: Double?
     @Published var prevCoefficientOfVariation: Double?
 
@@ -87,6 +92,7 @@ class SimpleStatsViewModel: ObservableObject {
 
     func calculateStats() {
         avgGlucoseTrend = .none
+        highGlucoseTrend = .none
         stdDeviationTrend = .none
         cvTrend = .none
         totalDailyDoseTrend = .none
@@ -106,6 +112,7 @@ class SimpleStatsViewModel: ObservableObject {
 
         // Nolla previous-värden
         prevAvgGlucose = nil
+        prevHighGlucose = nil
         prevStdDeviation = nil
         prevCoefficientOfVariation = nil
 
@@ -138,6 +145,14 @@ class SimpleStatsViewModel: ObservableObject {
         let totalGlucose = bgData.reduce(0) { $0 + $1.sgv }
         let avgBGmgdL = Double(totalGlucose) / Double(bgData.count)
         avgGlucose = UserDefaultsRepository.units.value == "mg/dL" ? avgBGmgdL : avgBGmgdL * GlucoseConversion.mgDlToMmolL
+
+        // Highest glucose in current interval
+        if let maxSGV = bgData.max(by: { $0.sgv < $1.sgv })?.sgv {
+            let maxMgdL = Double(maxSGV)
+            highGlucose = UserDefaultsRepository.units.value == "mg/dL" ? maxMgdL : maxMgdL * GlucoseConversion.mgDlToMmolL
+        } else {
+            highGlucose = nil
+        }
 
         let variance = bgData.reduce(0.0) { sum, reading in
             let diff = Double(reading.sgv) - avgBGmgdL
@@ -396,11 +411,17 @@ class SimpleStatsViewModel: ObservableObject {
             let prevBG = dataService.getBGData(in: prevInterval)
             var prevAvgBGmgdL: Double?
             var prevStdDevMgdL: Double?
+            var prevHighBGmgdL: Double?
 
             if !prevBG.isEmpty {
                 let prevTotalGlucose = prevBG.reduce(0) { $0 + $1.sgv }
                 let avg = Double(prevTotalGlucose) / Double(prevBG.count)
                 prevAvgBGmgdL = avg
+
+                // Highest glucose in previous interval
+                if let prevMaxSGV = prevBG.max(by: { $0.sgv < $1.sgv })?.sgv {
+                    prevHighBGmgdL = Double(prevMaxSGV)
+                }
 
                 let prevVariance = prevBG.reduce(0.0) { sum, reading in
                     let diff = Double(reading.sgv) - avg
@@ -421,6 +442,19 @@ class SimpleStatsViewModel: ObservableObject {
             avgGlucoseTrend = StatsTrendCalculator.arrow(current: avgGlucose, previous: prevAvgGlucoseConverted)
             
             prevAvgGlucose = prevAvgGlucoseConverted
+
+            // Highest glucose trend (i aktuella enheter)
+            let prevHighGlucoseConverted: Double? = {
+                guard let base = prevHighBGmgdL else { return nil }
+                if UserDefaultsRepository.units.value == "mg/dL" {
+                    return base
+                } else {
+                    return base * GlucoseConversion.mgDlToMmolL
+                }
+            }()
+
+            prevHighGlucose = prevHighGlucoseConverted
+            highGlucoseTrend = StatsTrendCalculator.arrow(current: highGlucose, previous: prevHighGlucoseConverted)
 
             // Low % previous period
             let prevLowCount: Int = prevBG.filter {

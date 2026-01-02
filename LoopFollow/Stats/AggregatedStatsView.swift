@@ -11,6 +11,7 @@ struct AggregatedStatsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var showGMI: Bool
     @State private var showStdDev: Bool
+    @State private var showAvgGlucose: Bool
     @State private var showFPU: Bool
     @State private var showSMB: Bool
     @State private var showDextroAmount: Bool
@@ -28,6 +29,7 @@ struct AggregatedStatsView: View {
         self.viewModel = viewModel
         _showGMI = State(initialValue: Storage.shared.showGMI.value)
         _showStdDev = State(initialValue: Storage.shared.showStdDev.value)
+        _showAvgGlucose = State(initialValue: Storage.shared.showAvgGlucose.value)
         _showFPU = State(initialValue: Storage.shared.showFPU.value)
         _showSMB = State(initialValue: Storage.shared.showSMB.value)
         _showDextroAmount = State(initialValue: Storage.shared.showDextroAmount.value)
@@ -81,6 +83,7 @@ struct AggregatedStatsView: View {
                             simpleStats: viewModel.simpleStats,
                             showGMI: $showGMI,
                             showStdDev: $showStdDev,
+                            showAvgGlucose: $showAvgGlucose,
                             showFPU: $showFPU,
                             showSMB: $showSMB,
                             showDextroAmount: $showDextroAmount,
@@ -401,6 +404,7 @@ struct StatsGridView: View {
     @ObservedObject var simpleStats: SimpleStatsViewModel
     @Binding var showGMI: Bool
     @Binding var showStdDev: Bool
+    @Binding var showAvgGlucose: Bool
     @Binding var showFPU: Bool
     @Binding var showSMB: Bool
     @Binding var showDextroAmount: Bool
@@ -470,18 +474,27 @@ struct StatsGridView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                StatCard(
-                    title: "Medel glukos",
-                    value: formatGlucose(simpleStats.avgGlucose),
-                    unit: UserDefaultsRepository.units.value,
-                    color: .primary,
-                    trendArrow: showTrends ? simpleStats.avgGlucoseTrend : nil,
-                    tooltipCurrent: simpleStats.avgGlucose,
-                    tooltipPrevious: simpleStats.prevAvgGlucose,
-                    periodLabel: periodLabel,
-                    showAllTooltips: $showAllTooltips,
-                    tooltipResetToken: $tooltipResetToken
-                )
+                    Button(action: {
+                        showAvgGlucose.toggle()
+                        Storage.shared.showAvgGlucose.value = showAvgGlucose
+                    }) {
+                        StatCard(
+                            title: showAvgGlucose ? "Medel glukos" : "Högsta glukos",
+                            value: showAvgGlucose ? formatGlucose(simpleStats.avgGlucose) : formatGlucose(simpleStats.highGlucose),
+                            unit: UserDefaultsRepository.units.value,
+                            color: .primary,
+                            isInteractive: true,
+                            trendArrow: showTrends
+                                ? (showAvgGlucose ? simpleStats.avgGlucoseTrend : simpleStats.highGlucoseTrend)
+                                : nil,
+                            tooltipCurrent: showAvgGlucose ? simpleStats.avgGlucose : simpleStats.highGlucose,
+                            tooltipPrevious: showAvgGlucose ? simpleStats.prevAvgGlucose : simpleStats.prevHighGlucose,
+                            periodLabel: periodLabel,
+                            showAllTooltips: $showAllTooltips,
+                            tooltipResetToken: $tooltipResetToken
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
             }
             
             HStack(spacing: 16) {

@@ -42,6 +42,7 @@ class Storage {
     // Statistics display preferences
     var showGMI = StorageValue<Bool>(key: "showGMI", defaultValue: true)
     var showStdDev = StorageValue<Bool>(key: "showStdDev", defaultValue: true)
+    var showAvgGlucose = StorageValue<Bool>(key: "showAvgGlucose", defaultValue: true)
     var showTITR = StorageValue<Bool>(key: "showTITR", defaultValue: true)
     var showFPU = StorageValue<Bool>(key: "showFPU", defaultValue: false)
     var showSMB = StorageValue<Bool>(key: "showSMB", defaultValue: false)
