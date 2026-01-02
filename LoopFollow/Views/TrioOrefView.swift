@@ -44,6 +44,9 @@ private struct UISearchBarRepresentable: UIViewRepresentable {
         sb.searchBarStyle = .minimal
         sb.returnKeyType = .done
         sb.enablesReturnKeyAutomatically = false
+        if #available(iOS 13.0, *) {
+            sb.searchTextField.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.35)
+        }
         return sb
     }
 
@@ -75,9 +78,9 @@ private struct UISearchBarRepresentable: UIViewRepresentable {
     }
 }
 
+@available(iOS 16.0, *)
 struct TrioOrefView: View {
     @ObservedObject var viewModel = TrioOrefViewModel()
-    @Environment(\.presentationMode) var presentationMode
     @State private var searchText: String = ""
 
     var filteredEntries: [Oref2Entry] {
@@ -92,24 +95,26 @@ struct TrioOrefView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
                 PinnedSearchBar(text: $searchText, placeholder: "Sök Oref-variabler...")
 
                 List(filteredEntries) { entry in
-                    VStack(alignment: .leading) {
-                        Text(entry.key).font(.headline)
-                        Text(entry.value).font(.subheadline)
-                    }.padding(.vertical, 4)
-                }
-            }
-            .navigationBarTitle(viewModel.formattedTitle, displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        presentationMode.wrappedValue.dismiss()
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(entry.key)
+                            .font(.headline)
+                        Text(entry.value)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
+                    .padding(.vertical, 2)
+                    .listRowBackground(Color.clear)
                 }
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
             }
         }
     }

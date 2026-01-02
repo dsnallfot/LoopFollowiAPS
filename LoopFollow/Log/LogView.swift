@@ -12,13 +12,15 @@ import Charts
 @available(iOS 26.0, *)
 struct LogView: View {
     @ObservedObject var viewModel = LogViewModel()
-    @Environment(\.presentationMode) var presentationMode
-
     @State private var isChartPresented: Bool = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
-            VStack {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack(spacing: 10) {
                 Picker("Category", selection: $viewModel.selectedCategory) {
                     Text("Allt").tag(LogManager.Category?.none)
                     ForEach(LogManager.Category.allCases, id: \.self) { category in
@@ -26,12 +28,13 @@ struct LogView: View {
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
+                .padding(.horizontal)
 
                 SearchBar(
                     text: $viewModel.searchText,
                     placeholder: viewModel.searchResultsIsHighlighted ? "Highlighta i loggen" : "Sök i loggen"
                 )
-                .padding([.leading, .trailing])
+                .padding(.horizontal)
 
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 2) {
@@ -52,52 +55,53 @@ struct LogView: View {
                     .padding(.horizontal)
                 }
             }
-            .navigationBarTitle("Dagens logg", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(action: {
-                        viewModel.searchResultsIsHighlighted.toggle()
-                    }) {
-                        Image(systemName: viewModel.searchResultsIsHighlighted
-                              ? "line.3.horizontal.decrease.circle.fill"
-                              : "line.3.horizontal.decrease.circle")
-                            .foregroundColor(viewModel.searchResultsIsHighlighted ? .blue : .primary)
-                    }
+            .background(Color.clear)
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: {
+                    viewModel.searchResultsIsHighlighted.toggle()
+                }) {
+                    Image(systemName: viewModel.searchResultsIsHighlighted
+                          ? "line.3.horizontal.decrease.circle.fill"
+                          : "line.3.horizontal.decrease.circle")
                 }
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button(action: {
-                        isChartPresented = true
-                    }) {
-                        Image(systemName: "info")
-                    }
-                    .accessibilityLabel("Info")
-                }
-                    
-                ToolbarSpacer(placement: .topBarTrailing)
-                        
-                        
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                        Button("Klar") {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    }
+                .foregroundColor(viewModel.searchResultsIsHighlighted ? .blue : .primary)
             }
-            .onAppear {
-                viewModel.loadLogEntries()
-            }
-            .sheet(isPresented: $isChartPresented) {
-                // Visa endast rader som matchar söktexten (även när highlight-läget är på)
-                let matched = viewModel.filteredLogEntries.filter { entry in
-                    !viewModel.searchText.isEmpty && entry.text.localizedCaseInsensitiveContains(viewModel.searchText)
-                }
 
-                LogViewChart(
-                    title: viewModel.searchText.isEmpty
-                        ? "Sökords-träffar"
-                        : "Träffar: \(viewModel.searchText) (\(matched.count)st)",
-                    matchedEntries: matched
-                )
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button(action: {
+                    isChartPresented = true
+                }) {
+                    Image(systemName: "info")
+                }
+                .accessibilityLabel("Info")
             }
+                
+                ToolbarSpacer(placement: .topBarTrailing)
+                
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    
+                    Button("Klar") {
+                        dismiss()
+                    }
+                }
+            }
+        .onAppear {
+            viewModel.loadLogEntries()
+        }
+        .sheet(isPresented: $isChartPresented) {
+            // Visa endast rader som matchar söktexten (även när highlight-läget är på)
+            let matched = viewModel.filteredLogEntries.filter { entry in
+                !viewModel.searchText.isEmpty && entry.text.localizedCaseInsensitiveContains(viewModel.searchText)
+            }
+
+            LogViewChart(
+                title: viewModel.searchText.isEmpty
+                    ? "Sökords-träffar"
+                    : "Träffar: \(viewModel.searchText) (\(matched.count)st)",
+                matchedEntries: matched
+            )
         }
     }
 
@@ -164,24 +168,30 @@ private struct LogViewChart: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                if points.isEmpty {
-                    Text("Inga matchande loggrader att plotta.")
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                } else {
-                    ScatterLogChartView(points: points)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 320)
-                        .padding(.horizontal)
+            ZStack {
+                ThemeBackground()
+                    .ignoresSafeArea()
 
-                    Text("• X-axel: senaste 24 timmarna \n• Y-axel: minut i timmen (0–60)")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
+                VStack(alignment: .leading, spacing: 12) {
+                    if points.isEmpty {
+                        Text("Inga matchande loggrader att plotta.")
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                    } else {
+                        ScatterLogChartView(points: points)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 320)
+                            .padding(.horizontal)
+
+                        Text("• X-axel: senaste 24 timmarna \n• Y-axel: minut i timmen (0–60)")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                    }
+
+                    Spacer(minLength: 0)
                 }
-
-                Spacer(minLength: 0)
+                .background(Color.clear)
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -202,6 +212,8 @@ private struct ScatterLogChartView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> ScatterChartView {
         let chartView = ScatterChartView()
+        chartView.backgroundColor = .clear
+        chartView.isOpaque = false
 
         chartView.legend.enabled = false
         chartView.chartDescription.enabled = false
@@ -257,6 +269,8 @@ private struct ScatterLogChartView: UIViewRepresentable {
         formatter.dateFormat = "HH"
         uiView.xAxis.valueFormatter = EpochTimeAxisValueFormatter(dateFormatter: formatter)
 
+        uiView.backgroundColor = .clear
+        uiView.isOpaque = false
         uiView.notifyDataSetChanged()
     }
 }

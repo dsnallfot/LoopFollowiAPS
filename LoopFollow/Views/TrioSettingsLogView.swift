@@ -10,7 +10,7 @@ import UIKit
 import Charts
 
 /// Enkel loggvy för att fånga noteringar innehållande "Trio startades om" , inspirerad av BGCheckView.
-final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
+final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {
 
     // MARK: - Model
 
@@ -65,10 +65,13 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Trio inställningslogg"
-        view.backgroundColor = .systemBackground
 
         setupNavigationBar()
         searchBar.delegate = self
+        // Make search text field background partially translucent for blend
+        if #available(iOS 13.0, *) {
+            searchBar.searchTextField.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.35)
+        }
         installPinnedSearchBar()
         setupTableView()
         setupConstraints()
@@ -102,7 +105,14 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
     }
 
     @objc private func doneTapped() {
-        dismiss(animated: true, completion: nil)
+        // If presented modally (wrapped in a UINavigationController), dismiss.
+        if presentingViewController != nil {
+            dismiss(animated: true)
+            return
+        }
+
+        // If pushed in a nav stack, pop.
+        navigationController?.popViewController(animated: true)
     }
 
     @objc private func refreshTapped() {
@@ -154,6 +164,9 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
         tableView.delegate = self
         tableView.tableFooterView = UIView()
         tableView.keyboardDismissMode = .onDrag
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.isOpaque = false
 
         // Searchbar under navbaren
         searchBar.delegate = self
@@ -167,7 +180,7 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
             tableView.topAnchor.constraint(equalTo: topSearchContainer.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: guide.bottomAnchor)
         ])
     }
 
@@ -287,6 +300,8 @@ final class TrioSettingsLogView: UIViewController, UITableViewDataSource, UITabl
         rightLabel.sizeToFit()
         cell.accessoryView = rightLabel
 
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
         cell.selectionStyle = .default
         cell.accessoryType = .none
         return cell

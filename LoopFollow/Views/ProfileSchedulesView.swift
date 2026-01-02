@@ -9,9 +9,9 @@
 import SwiftUI
 import Charts
 
+@available(iOS 16.0, *)
 struct ProfileSchedulesView: View {
     @ObservedObject var viewModel = ProfileSchedulesViewModel()
-    @Environment(\.presentationMode) var presentationMode
     
     @State private var selectedSection: SectionType = .targets // Default section
 
@@ -134,8 +134,11 @@ struct ProfileSchedulesView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
                 Picker("Select Section", selection: $selectedSection) {
                     ForEach(SectionType.allCases, id: \.self) { section in
                         Text(section.rawValue).tag(section)
@@ -153,70 +156,82 @@ struct ProfileSchedulesView: View {
                         Section(header: Text("🟪 Mål (mmol/L)")) {
                             ForEach(viewModel.targetEntries) { entry in
                                 scheduleRow(entry)
+                                    .listRowBackground(Color.clear)
                             }
                         }
+                        .listRowBackground(Color.clear)
                     }
-                    
+
                     if selectedSection == .basal {
                         Section(header: Text("🟪 Basal (E/h)")) {
                             ForEach(viewModel.basalEntries) { entry in
                                 scheduleRow(entry, isBold: entry.time == "Total daglig basal")
+                                    .listRowBackground(Color.clear)
                             }
                         }
-                    Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
-                        ForEach(viewModel.basalIOBEntries) { entry in
-                            scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
+                        .listRowBackground(Color.clear)
+
+                        Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
+                            ForEach(viewModel.basalIOBEntries) { entry in
+                                scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
+                                    .listRowBackground(Color.clear)
+                            }
                         }
+                        .listRowBackground(Color.clear)
                     }
-                }
-                    
+
                     if selectedSection == .cr {
                         Section(header: Text("🟪 Insulinkvoter CR (g/E)")) {
                             ForEach(viewModel.carbRatioEntries) { entry in
                                 scheduleRow(entry)
+                                    .listRowBackground(Color.clear)
                             }
                         }
+                        .listRowBackground(Color.clear)
                     }
-                    
+
                     if selectedSection == .isf {
                         Section(header: Text("🟪 Insulinkänslighet ISF (mmol/L/E)")) {
                             ForEach(viewModel.isfEntries) { entry in
                                 scheduleRow(entry)
+                                    .listRowBackground(Color.clear)
                             }
                         }
+                        .listRowBackground(Color.clear)
                     }
-                    
+
                     if selectedSection == .csf {
                         Section(header: Text("🟪 Kh-känslighet CSF (mmol/L/g)")) {
                             ForEach(viewModel.csfEntries) { entry in
                                 scheduleRow(entry)
+                                    .listRowBackground(Color.clear)
                             }
                         }
+                        .listRowBackground(Color.clear)
                     }
-                    
+
                     if selectedSection == .cHr {
                         Section(header: Text("🟪 Minsta absorption Kh (g/h)")) {
                             ForEach(viewModel.minCarbsEntries) { entry in
                                 scheduleRow(entry, isBold: entry.time == "Medelvärde")
+                                    .listRowBackground(Color.clear)
                             }
                         }
+                        .listRowBackground(Color.clear)
                     }
+
                     if selectedSection == .smb {
                         Section(header: Text("🟦 Maxgräns SMB / UAMSMB (E/SMB)")) {
                             ForEach(viewModel.smbEntries) { entry in
                                 scheduleRow(entry)
+                                    .listRowBackground(Color.clear)
                             }
                         }
+                        .listRowBackground(Color.clear)
                     }
                 }
-            }
-            .navigationBarTitle("Trio Profilinställningar", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
             }
         }
     }
