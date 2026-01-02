@@ -159,8 +159,10 @@ struct AGPGraphView: UIViewRepresentable {
         // Target lines (defaults: 70 / 140 mg/dL, converted if needed)
         let defaultTargetLowMgdl: Double = 70
         let defaultTargetHighMgdl: Double = 140
+        let defaultTargetTitHighMgdl: Double = 180
         let targetLow: Double = 70
         let targetHigh: Double = 140
+        let targetTitHigh: Double = 180
         /*if UserDefaultsRepository.units.value == "mg/dL" {
             targetLow = defaultTargetLowMgdl
             targetHigh = defaultTargetHighMgdl
@@ -196,6 +198,10 @@ struct AGPGraphView: UIViewRepresentable {
             ChartDataEntry(x: 0, y: targetHigh),
             ChartDataEntry(x: 24, y: targetHigh),
         ]
+        let targetTitHighEntries = [
+            ChartDataEntry(x: 0, y: targetTitHigh),
+            ChartDataEntry(x: 24, y: targetTitHigh),
+        ]
 
         let targetLowDataSet = LineChartDataSet(entries: targetLowEntries, label: "Target Low")
         targetLowDataSet.colors = [NSUIColor.systemRed.withAlphaComponent(0.8)]
@@ -210,11 +216,20 @@ struct AGPGraphView: UIViewRepresentable {
         targetHighDataSet.drawCirclesEnabled = false
         targetHighDataSet.drawValuesEnabled = false
         targetHighDataSet.drawFilledEnabled = false
+        
+        let targetTitHighDataSet = LineChartDataSet(entries: targetTitHighEntries, label: "Target TIT High")
+        targetTitHighDataSet.colors = [NSUIColor.systemPurple.withAlphaComponent(0.8)]
+        targetTitHighDataSet.lineWidth = 1
+        targetTitHighDataSet.lineDashLengths = [2, 2]
+        targetTitHighDataSet.drawCirclesEnabled = false
+        targetTitHighDataSet.drawValuesEnabled = false
+        targetTitHighDataSet.drawFilledEnabled = false
 
         let data = LineChartData()
         data.append(hourLinesDataSet)
         data.append(targetLowDataSet)
         data.append(targetHighDataSet)
+        data.append(targetTitHighDataSet)
         data.append(p5DataSet)
         data.append(p25DataSet)
         data.append(p50DataSet)
