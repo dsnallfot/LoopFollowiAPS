@@ -11,12 +11,13 @@ import Eureka
 import EventKit
 import EventKitUI
 
-class WatchSettingsViewController: FormViewController {
+class WatchSettingsViewController: ThemedFormViewController {
     
     var appStateController: AppStateController?
     
     override func viewDidLoad()  {
         super.viewDidLoad()
+        applyTheme()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
