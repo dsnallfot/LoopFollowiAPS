@@ -11,12 +11,13 @@ import Eureka
 import EventKit
 import EventKitUI
 
-class GeneralSettingsViewController: FormViewController {
+class GeneralSettingsViewController: ThemedFormViewController {
    
    var appStateController: AppStateController?
    
    override func viewDidLoad()  {
       super.viewDidLoad()
+       applyTheme()
       
       if UserDefaultsRepository.forceDarkMode.value {
          overrideUserInterfaceStyle = .dark

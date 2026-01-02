@@ -11,12 +11,13 @@ import Eureka
 import EventKit
 import EventKitUI
 
-class GraphSettingsViewController: FormViewController {
+class GraphSettingsViewController: ThemedFormViewController {
 
    var appStateController: AppStateController?
    
    override func viewDidLoad()  {
       super.viewDidLoad()
+       applyTheme()
       if UserDefaultsRepository.forceDarkMode.value {
          overrideUserInterfaceStyle = .dark
       }

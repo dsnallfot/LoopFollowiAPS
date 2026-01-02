@@ -391,7 +391,7 @@ extension BLEManager {
     ///
     /// Internally we assume shifting the new sensor by `offset` shifts each discovered sensor’s
     /// effective delay by +offset (mod 300).
-    func suggestedHeartbeatOffsetForNextSensor(optimalWindow: ClosedRange<Int> = 20...40) -> (offset: Int, matches: Int, total: Int)? {
+    func suggestedHeartbeatOffsetForNextSensor(optimalWindow: ClosedRange<Int> = 40...60) -> (offset: Int, matches: Int, total: Int)? {
         // Only meaningful if we're in Dexcom mode.
         guard Storage.shared.backgroundRefreshType.value == .dexcom else {
             return nil

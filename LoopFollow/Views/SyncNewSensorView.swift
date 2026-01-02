@@ -14,34 +14,34 @@ var bgData: [ShareGlucoseData] = []
 
 struct SyncNewSensorView: View {
     // MARK: – Environment
-        @Environment(\.presentationMode) private var presentationMode
-
-        // MARK: – BG & pairing state
-        @State private var lastBG: Date = Date()
-        @State private var pairingCountdown: Int = 300
-        @State private var pairingPaused: Bool = true
-        @State private var pairingPauseStart: Date? = nil
-        @State private var pairingPauseAdjustment: TimeInterval = 0
-
-        // Now mutable via UI
-        /// Offset for how many seconds before the current sensor heartbeat the insert sensor countdown should aim towards
-        /// Maybe needs to be tweaked, but initial findings indicates that the sensor needs ~183 s extra during warmup before the 300 s cycle starts, ie 153 s offset should give an effective offset of -30 s between the new sensor readings and the old sensor that will be used as heartbeat in LF
-        // Persist these values through UserDefaultsRepository
-        @State private var pairingOffset: Int = UserDefaultsRepository.pairingOffset.value
-        @State private var offsetString: String = UserDefaultsRepository.offsetString.value
-        @State private var lastValidOffset: Int = UserDefaultsRepository.pairingOffset.value
-        @State private var showOffsetError: Bool = false
-
-        // For pairing countdown sounds
-        @State private var prevPairingCountdown: Int = 300
+    // (Presentation mode no longer needed, handled by UIKit navbar button)
+    
+    // MARK: – BG & pairing state
+    @State private var lastBG: Date = Date()
+    @State private var pairingCountdown: Int = 300
+    @State private var pairingPaused: Bool = true
+    @State private var pairingPauseStart: Date? = nil
+    @State private var pairingPauseAdjustment: TimeInterval = 0
+    
+    // Now mutable via UI
+    /// Offset for how many seconds before the current sensor heartbeat the insert sensor countdown should aim towards
+    /// Maybe needs to be tweaked, but initial findings indicates that the sensor needs ~183 s extra during warmup before the 300 s cycle starts, ie 153 s offset should give an effective offset of -30 s between the new sensor readings and the old sensor that will be used as heartbeat in LF
+    // Persist these values through UserDefaultsRepository
+    @State private var pairingOffset: Int = UserDefaultsRepository.pairingOffset.value
+    @State private var offsetString: String = UserDefaultsRepository.offsetString.value
+    @State private var lastValidOffset: Int = UserDefaultsRepository.pairingOffset.value
+    @State private var showOffsetError: Bool = false
+    
+    // For pairing countdown sounds
+    @State private var prevPairingCountdown: Int = 300
     
     // Timer publisher: fires every second.
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
-
+    
     
     // MARK: - Countdown Calculations
-
+    
     /// Calculates pairing countdown (300-sec cycle) based on lastBG.
     private func calculatePairingCountdown(for current: Date) -> Int {
         let cycle = 300
@@ -112,8 +112,8 @@ struct SyncNewSensorView: View {
         var parameters: [String: String] = [:]
         let utcISODateFormatter = ISO8601DateFormatter()
         guard let startDate = Calendar.current.date(byAdding: .day,
-                                                      value: -1 * UserDefaultsRepository.downloadDays.value,
-                                                      to: Date()) else {
+                                                    value: -1 * UserDefaultsRepository.downloadDays.value,
+                                                    to: Date()) else {
             LogManager.shared.log(category: .dexcom, message: "DEBUG: [fetchNSBGData] Failed to calculate startDate.", isDebug: true)
             return
         }
@@ -172,8 +172,12 @@ struct SyncNewSensorView: View {
     // MARK: - View Body
     
     var body: some View {
-            NavigationView {
-                VStack(spacing: 20) {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: 16) {
                     // Pairing countdown button
                     Button(action: togglePairingPause) {
                         VStack {
@@ -181,17 +185,17 @@ struct SyncNewSensorView: View {
                                 Text("Skjut fast ny sensor")
                                     .font(.title)
                                     .padding(.bottom, 2)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.secondary)
                                 Text("Starta nedräkning")
                                     .font(.largeTitle)
                                     .fontWeight(.bold)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.secondary)
                             } else {
                                 Text("Skjut fast ny sensor om:")
                                     .font(.title)
                                     .padding(.bottom, 2)
                                     .foregroundColor(.primary)
-                                Text("\(pairingCountdown) sekunder")
+                                Text("\(pairingCountdown) sekunder")
                                     .font(.largeTitle)
                                     .fontWeight(.bold)
                                     .foregroundColor(.primary)
@@ -199,88 +203,111 @@ struct SyncNewSensorView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity, minHeight: 90)
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(12)
                     }
-
+                    .buttonStyle(.plain)
+                    .themedCardBackground()
+                    
                     // Explanation text
                     Text("""
-                    'Skjut fast ny sensor'-nedräkningen hjälper dig att initiera parkopplingen med den nya sensorn i dexcomappen vid exakt rätt ögonblick. Efter parkopplingen kommer den nya sensorn att skicka ett heartbeat var 5e minut. Genom att tajma offseten noggrant, så kommer du kunna använda den gamla sensorn som heartbeat för att väcka Loop Follow och hämta nya data från Nightscout med minimal fördröjning.\n\n Justera offset nedan till hur många sekunder tidigare du vill att den nya sensorn du skjuter fast ska skicka sin heartbeat vs när den nuvarande sensorn skickar sitt heartbeat (Standard 30s). \n\nExempel: Om du vill att heartbeat ska ske samma sekund som den gamla sätter du offset till 0s. Om du vill att heartbeat ska ske 30s efter den gamla sätter du offset till 270s.
+                    'Skjut fast ny sensor'-nedräkningen hjälper dig att initiera parkopplingen med den nya sensorn i dexcomappen vid exakt rätt ögonblick. Efter parkopplingen kommer den nya sensorn att skicka ett heartbeat var 5e minut. Genom att tajma offseten noggrant, så kommer du kunna använda den gamla sensorn som heartbeat för att väcka Loop Follow och hämta nya data från Nightscout med minimal fördröjning.
+                    
+                    Justera offset nedan till hur många sekunder tidigare du vill att den nya sensorn du skjuter fast ska skicka sin heartbeat vs när den nuvarande sensorn skickar sitt heartbeat (Standard 30s).
+                    
+                    Exempel: Om du vill att heartbeat ska ske samma sekund som den gamla sätter du offset till 0s. Om du vill att heartbeat ska ske 30s efter den gamla sätter du offset till 270s.
                     """)
                     .font(.caption2)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-
-                    HStack {
-                        Text("Justera offset (sekunder):")
-                        Spacer()
-                        TextField("", text: $offsetString)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.center)
-                            .frame(width: 60)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .background(Color.clear)
-                            .onChange(of: offsetString) { newValue in
-                                if let val = Int(newValue) {
-                                    if (0...299).contains(val) {
-                                        // valid: update both offset and lastValid
-                                        pairingOffset = val
-                                        UserDefaultsRepository.pairingOffset.value = val
-                                        UserDefaultsRepository.offsetString.value = "\(val)"
-                                        lastValidOffset = val
-                                        pairingCountdown = calculatePairingCountdown(for: Date())
+                    .padding(.horizontal, 8)
+                    
+                    // Offset editor
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text("Justera offset (sekunder):")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            TextField("", text: $offsetString)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.center)
+                                .frame(width: 70)
+                                .textFieldStyle(.plain)
+                                .padding(.vertical, 6)
+                                .background(Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                )
+                                .onChange(of: offsetString) { newValue in
+                                    if let val = Int(newValue) {
+                                        if (0...299).contains(val) {
+                                            pairingOffset = val
+                                            UserDefaultsRepository.pairingOffset.value = val
+                                            UserDefaultsRepository.offsetString.value = "\(val)"
+                                            lastValidOffset = val
+                                            pairingCountdown = calculatePairingCountdown(for: Date())
+                                        } else {
+                                            offsetString = "\(lastValidOffset)"
+                                            showOffsetError = true
+                                        }
+                                    } else if newValue.isEmpty {
+                                        // user clearing out field: do nothing yet
                                     } else {
-                                        // too big: revert & show error
                                         offsetString = "\(lastValidOffset)"
                                         showOffsetError = true
                                     }
-                                } else if newValue.isEmpty {
-                                    // user clearing out field: do nothing yet
-                                } else {
-                                    // non‑numeric: revert & show error
-                                    offsetString = "\(lastValidOffset)"
-                                    showOffsetError = true
                                 }
-                            }
-                            .alert("Felaktig offset", isPresented: $showOffsetError) {
-                                Button("OK", role: .cancel) { }
-                            } message: {
-                                Text("\nAnge en offset mellan 0-299 sekunder")
-                            }
+                                .alert("Felaktig offset", isPresented: $showOffsetError) {
+                                    Button("OK", role: .cancel) { }
+                                } message: {
+                                    Text("\nAnge en offset mellan 0-299 sekunder")
+                                }
+                        }
                     }
-                    .frame(maxWidth: .infinity, minHeight: 20)
                     .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(12)
-
-                    Spacer()
+                    .themedCardBackground()
+                    
+                    Spacer(minLength: 16)
                 }
-                .padding()
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
+            }
+        }
+        .onAppear {
+            LogManager.shared.log(category: .dexcom, message: "DEBUG: [onAppear] SyncNewSensorView onAppear triggered", isDebug: true)
+            fetchNSBGData()
+            let bgSec = Calendar.current.component(.second, from: lastBG)
+            LogManager.shared.log(category: .dexcom, message: "DEBUG: [onAppear] lastBG after NS fetch: \(lastBG) (seconds: \(bgSec))", isDebug: true)
+            
+            pairingCountdown = calculatePairingCountdown(for: Date())
+            LogManager.shared.log(category: .dexcom, message: "DEBUG: [onAppear] Initialized sensor countdown: \(pairingCountdown)", isDebug: true)
+        }
+        .onReceive(timer) { currentTime in
+            if !pairingPaused {
+                pairingCountdown = calculatePairingCountdown(for: currentTime)
+                checkPairingSounds(with: pairingCountdown)
+            }
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+struct SyncNewSensorSheetContainer: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            SyncNewSensorView()
                 .navigationTitle("Synka heartbeat för ny sensor")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Klar") {
-                            // Dismiss the modal
-                            presentationMode.wrappedValue.dismiss()
-                        }
+                        Button("Klar") { dismiss() }
                     }
                 }
-                .onAppear {
-                    LogManager.shared.log(category: .dexcom, message: "DEBUG: [onAppear] SyncNewSensorView onAppear triggered", isDebug: true)
-                    fetchNSBGData()
-                    let bgSec = Calendar.current.component(.second, from: lastBG)
-                    LogManager.shared.log(category: .dexcom, message: "DEBUG: [onAppear] lastBG after NS fetch: \(lastBG) (seconds: \(bgSec))", isDebug: true)
-                    
-                    pairingCountdown = calculatePairingCountdown(for: Date())
-                    LogManager.shared.log(category: .dexcom, message: "DEBUG: [onAppear] Initialized sensor countdown: \(pairingCountdown)", isDebug: true)
-                }
-                .onReceive(timer) { currentTime in
-                    if !pairingPaused {
-                        pairingCountdown = calculatePairingCountdown(for: currentTime)
-                        checkPairingSounds(with: pairingCountdown)
-                    }
-                }
-            }
+                // Låt gradienten synas bakom navbar
+                .toolbarBackground(.clear, for: .navigationBar)
+                .toolbarBackground(.visible, for: .navigationBar)
         }
     }
+}

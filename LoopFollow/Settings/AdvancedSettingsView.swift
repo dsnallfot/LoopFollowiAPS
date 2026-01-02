@@ -8,38 +8,85 @@
 
 import SwiftUI
 
+@available(iOS 16.0, *)
 struct AdvancedSettingsView: View {
     @ObservedObject var viewModel: AdvancedSettingsViewModel
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Avancerade inställningar")) {
-                    Toggle("Ladda ner behandlingar", isOn: $viewModel.downloadTreatments)
-                    Toggle("Ladda ner prognoser", isOn: $viewModel.downloadPrediction)
-                    Toggle("Rita basal", isOn: $viewModel.graphBasal)
-                    Toggle("Rita bolusar", isOn: $viewModel.graphBolus)
-                    Toggle("Rita måltider", isOn: $viewModel.graphCarbs)
-                    Toggle("Rita nadra behandlingar", isOn: $viewModel.graphOtherTreatments)
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
 
-                    Stepper(value: $viewModel.bgUpdateDelay, in: 1...30, step: 1) {
-                        Text("BG fördröjning (sek): \(viewModel.bgUpdateDelay)")
-                    }
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
 
-                Section(header: Text("Loggalternativ")) {
-                    Toggle("Visa debugloggar", isOn: $viewModel.debugLogLevel)
-                }
-            }
-            .navigationBarTitle("Avancerade inställningar", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        presentationMode.wrappedValue.dismiss()
+                    // MARK: - Avancerade inställningar
+                    Text("Avancerade inställningar")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+
+                    VStack(spacing: 0) {
+                        themedRow {
+                            Toggle("Ladda ner behandlingar", isOn: $viewModel.downloadTreatments)
+                        }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Toggle("Ladda ner prognoser", isOn: $viewModel.downloadPrediction)
+                        }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Toggle("Rita basal", isOn: $viewModel.graphBasal)
+                        }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Toggle("Rita bolusar", isOn: $viewModel.graphBolus)
+                        }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Toggle("Rita måltider", isOn: $viewModel.graphCarbs)
+                        }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Toggle("Rita nadra behandlingar", isOn: $viewModel.graphOtherTreatments)
+                        }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Stepper(value: $viewModel.bgUpdateDelay, in: 1...30, step: 1) {
+                                Text("BG fördröjning (sek): \(viewModel.bgUpdateDelay)")
+                            }
+                        }
                     }
+                    .themedCardBackground()
+
+                    // MARK: - Loggalternativ
+                    Text("Loggalternativ")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 6)
+
+                    VStack(spacing: 0) {
+                        themedRow {
+                            Toggle("Visa debugloggar", isOn: $viewModel.debugLogLevel)
+                        }
+                    }
+                    .themedCardBackground()
+
+                    Spacer(minLength: 24)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
         }
+    }
+
+    @ViewBuilder
+    private func themedRow<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .tint(Color(uiColor: .systemBlue))
     }
 }

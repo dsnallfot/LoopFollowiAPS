@@ -304,13 +304,8 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             $0.title = "Dexcom heartbeat synk"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
-                    let syncNewSensorView = SyncNewSensorView()
-                    let hostingController = UIHostingController(rootView: syncNewSensorView)
-                    hostingController.modalPresentationStyle = .formSheet
-                    if UserDefaultsRepository.forceDarkMode.value {
-                        hostingController.overrideUserInterfaceStyle = .dark
-                    }
-                    return hostingController
+                    self.presentSyncNewSensorView()
+                    return UIViewController()
                 }),
                 onDismiss: nil
             )
@@ -485,15 +480,91 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
     func presentBackgroundRefreshSettings() {
         let viewModel = BackgroundRefreshSettingsViewModel()
-        let settingsView = BackgroundRefreshSettingsView(viewModel: viewModel)
-        let hostingController = UIHostingController(rootView: settingsView)
-        hostingController.modalPresentationStyle = .formSheet
 
-        if UserDefaultsRepository.forceDarkMode.value {
-            hostingController.overrideUserInterfaceStyle = .dark
-        }
+        let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
+        let view = BackgroundRefreshSettingsView(viewModel: viewModel)
+            .preferredColorScheme(isDark ? .dark : .light)
+            .environment(\.colorScheme, isDark ? .dark : .light)
 
-        present(hostingController, animated: true, completion: nil)
+        let hostingController = UIHostingController(rootView: view)
+        hostingController.title = "Bakgrundsaktivitet"
+
+        // Provide the close button via UIKit navigation bar
+        hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
+
+        // Transparent hosting background
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.isOpaque = false
+        hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let nav = UINavigationController(rootViewController: hostingController)
+        nav.modalPresentationStyle = .formSheet
+
+        // Transparent modal container
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Match current interface style
+        nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+        hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+        present(nav, animated: true, completion: nil)
+    }
+    
+    func presentSyncNewSensorView() {
+        let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
+        let view = SyncNewSensorView()
+            .preferredColorScheme(isDark ? .dark : .light)
+            .environment(\.colorScheme, isDark ? .dark : .light)
+
+        let hostingController = UIHostingController(rootView: view)
+        hostingController.title = "Synka heartbeat för ny sensor"
+
+        hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
+
+        // Transparent hosting background
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.isOpaque = false
+        hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let nav = UINavigationController(rootViewController: hostingController)
+        nav.modalPresentationStyle = .formSheet
+
+        // Transparent modal container
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Match current interface style
+        nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+        hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+        present(nav, animated: true)
     }
 
     @available(iOS 26.0, *)
@@ -543,17 +614,54 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
     }
     
     func presentAdvancedSettingsView() {
-            let viewModel = AdvancedSettingsViewModel()
-            let view = AdvancedSettingsView(viewModel: viewModel)
-            let hostingController = UIHostingController(rootView: view)
-            hostingController.modalPresentationStyle = .formSheet
+        let viewModel = AdvancedSettingsViewModel()
 
-            if UserDefaultsRepository.forceDarkMode.value {
-                hostingController.overrideUserInterfaceStyle = .dark
-            }
+        let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
+        let view = AdvancedSettingsView(viewModel: viewModel)
+            .preferredColorScheme(isDark ? .dark : .light)
+            .environment(\.colorScheme, isDark ? .dark : .light)
 
-            present(hostingController, animated: true, completion: nil)
-        }
+        let hostingController = UIHostingController(rootView: view)
+        hostingController.title = "Avancerade inställningar"
+
+        // Provide the close button via UIKit navigation bar (avoids double titles)
+        hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
+
+        // Transparent hosting background
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.isOpaque = false
+        hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let nav = UINavigationController(rootViewController: hostingController)
+        nav.modalPresentationStyle = .formSheet
+
+        // Transparent modal container
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        // Transparent navigation bar
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Match current interface style
+        nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+        hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+        present(nav, animated: true)
+    }
+
+    @objc private func dismissPresentedController() {
+        presentedViewController?.dismiss(animated: true)
+    }
     
     private func resolveMainViewController() -> MainViewController? {
         // 1) If we're embedded in a navigation stack, search upwards in that stack

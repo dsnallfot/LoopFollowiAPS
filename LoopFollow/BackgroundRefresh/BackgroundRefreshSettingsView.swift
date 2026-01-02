@@ -5,6 +5,7 @@
 
 import SwiftUI
 
+@available(iOS 16.0, *)
 struct BackgroundRefreshSettingsView: View {
     @ObservedObject var viewModel: BackgroundRefreshSettingsViewModel
     @Environment(\.presentationMode) var presentationMode
@@ -17,164 +18,253 @@ struct BackgroundRefreshSettingsView: View {
     @State private var batteryPercentage: Int = 0
 
     var body: some View {
-        NavigationView {
-            Form {
-                refreshTypeSection
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
 
-                if viewModel.backgroundRefreshType.isBluetooth {
-                    selectedDeviceSection
-                    availableDevicesSection
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
 
-                if viewModel.backgroundRefreshType == .dexcom {
-                    suggestedHeartbeatOffsetSection
-                }
-            }
-            .navigationBarTitle("Bakgrundsaktivitet", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-            .onAppear {
-                startTimer()
-            }
-            .onDisappear {
-                stopTimer()
-            }
-            .sheet(isPresented: $showSyncNewSensorView) {
-                SyncNewSensorView()
-            }
-        }
-    }
+                    // MARK: - Typ
+                    Text("Välj metod för bakgrundsuppdateringar")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
 
-    // MARK: - Subviews / Computed Properties
+                    VStack(spacing: 0) {
+                        themedRow {
+                            Picker("Bakgrundsaktivitet Typ", selection: $viewModel.backgroundRefreshType) {
+                                ForEach(BackgroundRefreshType.allCases, id: \.self) { type in
+                                    Text(type.rawValue).tag(type)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
 
-    private var refreshTypeSection: some View {
-        Section {
-            Picker("Bakgrundsaktivitet Typ", selection: $viewModel.backgroundRefreshType) {
-                ForEach(BackgroundRefreshType.allCases, id: \.self) { type in
-                    Text(type.rawValue).tag(type)
-                }
-            }
-            .pickerStyle(MenuPickerStyle())
+                        Divider().opacity(0.35)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Välj typ av bakgrundsaktivitet.")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Välj typ av bakgrundsaktivitet.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
 
-                switch viewModel.backgroundRefreshType {
-                case .none:
-                    Text("No background refresh. Alarms and updates will not work unless the app is open in the foreground.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-
-                case .silentTune:
-                    Text("En tyst melodi spelas i bakgrunden, vilket håller appen aktiv. Den kan avbrytas av andra appar. Möjliggör kontinuerliga uppdateringar men förbrukar mer batteri.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-
-                case .rileyLink:
-                    Text("Kräver en RileyLink-kompatibel enhet inom Bluetooth-räckvidd. Ger uppdateringar en gång per minut och använder mindre batteri än metoden med tyst melodi.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-
-                case .dexcom:
-                    Text("Kräver en Dexcom G6/ONE/G7/ONE+ sändare inom Bluetooth-räckvidd. Ger uppdateringar var 5:e minut och använder mindre batteri än metoden med tyst melodi.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var selectedDeviceSection: some View {
-        if let storedDevice = bleManager.getSelectedDevice() {
-            Section(header: Text("Vald enhet")) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        let deviceName = storedDevice.name ?? "Okänd enhet"
-                        let isHitDevice: Bool = {
-                            guard viewModel.backgroundRefreshType == .dexcom,
-                                  let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40)
-                            else { return false }
-
-                            return hitDeviceIDs(for: suggestion.offset, optimalWindow: 20...40).contains(storedDevice.id)
-                        }()
-
-                        Text(isHitDevice ? "* \(deviceName)" : deviceName)
-                            .font(.headline)
-                        
-                        // ✅ Battery Indicator (if battery level is available)
-                        if let batteryLevel = storedDevice.batteryLevel {
-                            let batterySymbol = getBatterySymbol(batteryLevel: batteryLevel)
-                            let batteryColor = getBatteryColor(batteryLevel: batteryLevel)
-                            
-                            Spacer()
-                            
-                            ZStack {
-                                Image(systemName: batterySymbol) // Fills inside dynamically
-                                    .foregroundColor(batteryColor) // Conditional color
-                                    .font(.title2)
-                                
-                                Image(systemName: "battery.0percent") // Always shows a battery outline
-                                    .foregroundColor(.primary) // Keeps the outline in label color
-                                    .font(.title2)
-                                
-                                Text("\(batteryLevel) ")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.primary)
-                                    .scaleEffect(0.85)
+                            switch viewModel.backgroundRefreshType {
+                            case .none:
+                                Text("No background refresh. Alarms and updates will not work unless the app is open in the foreground.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            case .silentTune:
+                                Text("En tyst melodi spelas i bakgrunden, vilket håller appen aktiv. Den kan avbrytas av andra appar. Möjliggör kontinuerliga uppdateringar men förbrukar mer batteri.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            case .rileyLink:
+                                Text("Kräver en RileyLink-kompatibel enhet inom Bluetooth-räckvidd. Ger uppdateringar en gång per minut och använder mindre batteri än metoden med tyst melodi.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            case .dexcom:
+                                Text("Kräver en Dexcom G6/ONE/G7/ONE+ sändare inom Bluetooth-räckvidd. Ger uppdateringar var 5:e minut och använder mindre batteri än metoden med tyst melodi.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
                             }
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
                     }
-                    
-                    deviceConnectionStatus(for: storedDevice)
-                    
-                    if storedDevice.rssi != 0 {
-                        Text("RSSI: \(storedDevice.rssi) dBm")
-                            .foregroundColor(.secondary)
-                            .font(.footnote)
-                    }
-                    
-                    // ✅ Show Sensor Activation Date (if found)
-                    if let sensorID = storedDevice.name,
-                       let activationDate = Storage.shared.latestActivationDate(for: sensorID) {
-                        Text("Aktiverades: \(activationDate)")
-                            .foregroundColor(.secondary)
-                            .font(.footnote)
-                    }
-                    
-                    if let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: storedDevice) {
-                        
-                        
-                        Text("Förväntad fördröjning: \(offset)")
-                            .foregroundColor(.secondary)
-                            .font(.footnote)
-                    }
-                    
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            bleManager.disconnect()
-                        }) {
-                            Text("Koppla från")
-                                .foregroundColor(.blue)
+                    .themedCardBackground()
+
+                    // MARK: - Vald enhet / Tillgängliga enheter
+                    if viewModel.backgroundRefreshType.isBluetooth {
+                        if let storedDevice = bleManager.getSelectedDevice() {
+                            Text("Vald enhet")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 6)
+
+                            VStack(spacing: 0) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack {
+                                        let deviceName = storedDevice.name ?? "Okänd enhet"
+                                        let isHitDevice: Bool = {
+                                            guard viewModel.backgroundRefreshType == .dexcom,
+                                                  let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60)
+                                            else { return false }
+
+                                            return hitDeviceIDs(for: suggestion.offset, optimalWindow: 40...60).contains(storedDevice.id)
+                                        }()
+
+                                        Text(isHitDevice ? "* \(deviceName)" : deviceName)
+                                            .font(.headline)
+
+                                        // Battery indicator
+                                        if let batteryLevel = storedDevice.batteryLevel {
+                                            let batterySymbol = getBatterySymbol(batteryLevel: batteryLevel)
+                                            let batteryColor = getBatteryColor(batteryLevel: batteryLevel)
+
+                                            Spacer()
+
+                                            ZStack {
+                                                Image(systemName: batterySymbol)
+                                                    .foregroundColor(batteryColor)
+                                                    .font(.title2)
+
+                                                Image(systemName: "battery.0percent")
+                                                    .foregroundColor(.primary)
+                                                    .font(.title2)
+
+                                                Text("\(batteryLevel) ")
+                                                    .font(.caption2)
+                                                    .fontWeight(.bold)
+                                                    .foregroundColor(.primary)
+                                                    .scaleEffect(0.85)
+                                            }
+                                        }
+                                    }
+
+                                    deviceConnectionStatus(for: storedDevice)
+
+                                    if storedDevice.rssi != 0 {
+                                        Text("RSSI: \(storedDevice.rssi) dBm")
+                                            .foregroundStyle(.secondary)
+                                            .font(.footnote)
+                                    }
+
+                                    if let sensorID = storedDevice.name,
+                                       let activationDate = Storage.shared.latestActivationDate(for: sensorID) {
+                                        Text("Aktiverades: \(activationDate)")
+                                            .foregroundStyle(.secondary)
+                                            .font(.footnote)
+                                    }
+
+                                    if let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: storedDevice) {
+                                        Text("Förväntad fördröjning: \(offset)")
+                                            .foregroundStyle(.secondary)
+                                            .font(.footnote)
+                                    }
+
+                                    HStack {
+                                        Spacer()
+                                        Button("Koppla från") {
+                                            bleManager.disconnect()
+                                        }
+                                        .foregroundColor(Color(uiColor: .systemBlue))
+                                        .buttonStyle(.plain)
+                                        Spacer()
+                                    }
+                                    .padding(.top, 4)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                            }
+                            .themedCardBackground()
+                            .id(forceRefresh)
                         }
-                        .buttonStyle(BorderlessButtonStyle())
-                        Spacer()
+
+                        Text("Tillgängliga enheter")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 6)
+
+                        VStack(spacing: 0) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Söker efter \(viewModel.backgroundRefreshType.rawValue)...")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+
+                                BLEDeviceSelectionView(
+                                    bleManager: bleManager,
+                                    selectedFilter: viewModel.backgroundRefreshType,
+                                    onSelectDevice: { device in
+                                        bleManager.connect(device: device)
+                                    }
+                                )
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                        }
+                        .themedCardBackground()
                     }
+
+                    // MARK: - Dexcom offset-suggestion
+                    if viewModel.backgroundRefreshType == .dexcom {
+                        Text("Optimal offset nästa sensorbyte")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 6)
+
+                        VStack(spacing: 0) {
+                            Button {
+                                if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60) {
+                                    UserDefaultsRepository.pairingOffset.value = suggestion.offset
+                                    UserDefaultsRepository.offsetString.value = "\(suggestion.offset)"
+                                }
+                                showSyncNewSensorView = true
+                            } label: {
+                                VStack(spacing: 6) {
+                                    if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60) {
+                                        Text("\(suggestion.offset) sekunder")
+                                            .font(.headline)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+
+                                        Text("Optimerar för 40–60 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total) *")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+
+                                        let hitIDs = hitDeviceIDs(for: suggestion.offset, optimalWindow: 40...60)
+                                        let hitNames: [String] = bleManager.devices
+                                            .filter { hitIDs.contains($0.id) }
+                                            .compactMap { $0.name }
+                                            .sorted()
+
+                                        if !hitNames.isEmpty {
+                                            Divider().opacity(0.35)
+                                                .padding(.top, 6)
+
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                ForEach(hitNames, id: \.self) { name in
+                                                    Text("* \(name)")
+                                                        .font(.caption)
+                                                        .foregroundStyle(.secondary)
+                                                }
+                                            }
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(.top, 2)
+                                        }
+                                    } else {
+                                        Text("Väntar på fler heartbeats…")
+                                            .font(.headline)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+
+                                        Text("Öppna vyn i ~5 minuter så hinner flera sensorer synas.")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                    }
+                                }
+                                .padding(.vertical, 6)
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                        }
+                        .themedCardBackground()
+                    }
+
+                    Spacer(minLength: 24)
                 }
-                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
-            .id(forceRefresh)
+        }
+        .onAppear { startTimer() }
+        .onDisappear { stopTimer() }
+        .sheet(isPresented: $showSyncNewSensorView) {
+            SyncNewSensorSheetContainer()
         }
     }
+
 
     private func formattedTimeString(from seconds: TimeInterval) -> String {
         if seconds < 60 {
@@ -186,23 +276,6 @@ struct BackgroundRefreshSettingsView: View {
         }
     }
 
-    private var availableDevicesSection: some View {
-        Section(header: scanningStatusHeader) {
-            BLEDeviceSelectionView(
-                bleManager: bleManager,
-                selectedFilter: viewModel.backgroundRefreshType,
-                onSelectDevice: { device in
-                    bleManager.connect(device: device)
-                }
-            )
-        }
-    }
-
-    private var scanningStatusHeader: some View {
-        Text("Söker efter \(viewModel.backgroundRefreshType.rawValue)...")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-    }
 
     private func deviceConnectionStatus(for device: BLEDevice) -> some View {
         let expectedConnectionTime: TimeInterval = bleManager.expectedHeartbeatInterval() ?? 300
@@ -275,63 +348,13 @@ struct BackgroundRefreshSettingsView: View {
         }
     }
 
-    private var suggestedHeartbeatOffsetSection: some View {
-        Section(header: Text("Optimal offset nästa sensorbyte")) {
-            Button {
-                // Pre-fill SyncNewSensorView with the latest suggestion (if available)
-                if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40) {
-                    UserDefaultsRepository.pairingOffset.value = suggestion.offset
-                    UserDefaultsRepository.offsetString.value = "\(suggestion.offset)"
-                }
-                showSyncNewSensorView = true
-            } label: {
-                VStack(spacing: 6) {
-                    if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 20...40) {
-                        Text("\(suggestion.offset) sekunder")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .center)
 
-                        Text("Optimerar för 20–40 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total) *")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-
-                        let hitIDs = hitDeviceIDs(for: suggestion.offset, optimalWindow: 20...40)
-                        let hitNames: [String] = bleManager.devices
-                            .filter { hitIDs.contains($0.id) }
-                            .compactMap { $0.name }
-                            .sorted()
-
-                        if !hitNames.isEmpty {
-                            Divider()
-                                .padding(.top, 6)
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(hitNames, id: \.self) { name in
-                                    Text("* \(name)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 2)
-                        }
-                    } else {
-                        Text("Väntar på fler heartbeats…")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .center)
-
-                        Text("Öppna vyn i ~5 minuter så hinner flera sensorer synas.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                }
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.plain)
-        }
+    @ViewBuilder
+    private func themedRow<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .tint(Color(uiColor: .systemBlue))
     }
     
     private func hitDeviceIDs(for suggestionOffset: Int, optimalWindow: ClosedRange<Int>) -> Set<UUID> {

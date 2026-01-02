@@ -289,7 +289,7 @@ struct StatCard: View {
             if isTooltipVisible {
                 ZStack {
                     RoundedRectangle(cornerRadius: 15)
-                        .fill(.ultraThickMaterial)
+                        .fill(Color(uiColor: .systemBlue))
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 4) {
@@ -302,7 +302,8 @@ struct StatCard: View {
                                 Text(arrow.rawValue)
                                     .font(.subheadline)
                                     .fontWeight(.bold)
-                                    .foregroundColor(color)
+                                    //.foregroundColor(color)
+                                    .foregroundColor(.primary)
                             }
                         }
                         if let arrow = trendArrow, arrow != .none {
