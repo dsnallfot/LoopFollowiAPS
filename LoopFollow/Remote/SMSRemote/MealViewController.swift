@@ -561,9 +561,22 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
         }
     
     @IBAction func presetButtonTapped(_ sender: Any) {
+        guard let url = URL(string: "carbcounter://") else { return }
+
+        UIApplication.shared.open(url, options: [:]) { success in
+            if !success {
+                // valfritt: logga / visa alert om appen inte finns eller URL-schemat ej är registrerat
+                print("Kunde inte öppna carbcounter://")
+            }
+        }
+    }
+    
+    /*
+     @IBAction func presetButtonTapped(_ sender: Any) {
         let customActionViewController = storyboard!.instantiateViewController(withIdentifier: "remoteCustomAction") as! CustomActionViewController
         self.present(customActionViewController, animated: true, completion: nil)
     }
+*/
     
     @IBAction func sendRemoteMealPressed(_ sender: Any) {
         // Disable the button to prevent multiple taps
