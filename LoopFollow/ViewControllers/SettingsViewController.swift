@@ -137,7 +137,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                 )
             }
         
-        +++ Section("Trio Inställningar och status")
+        +++ Section("\nTrio Inställningar och status")
         <<< ButtonRow() {
             $0.title = "Trio Användarinställningar"
             $0.presentationMode = .presentModally(
@@ -326,7 +326,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             )
         }
         
-        +++ Section(header: "Datafångst inställningar", footer: "")
+        +++ Section(header: "\nDatafångst inställningar", footer: "")
         <<< SegmentedRow<String>("units") { row in
             row.title = "Enhet"
             row.options = ["mg/dL", "mmol/L"]
@@ -354,7 +354,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             )
         }
 
-        +++ Section("Appinställningar")
+        +++ Section("\nAppinställningar")
         
         <<< ButtonRow("alarmsSettings") {
             $0.title = "Alarm"
@@ -407,7 +407,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             
         }
 
-        +++ Section("Integrationer")
+        +++ Section("\nIntegrationer")
         
         <<< ButtonRow("backgroundRefreshSettings") {
             $0.title = "Bakgrundsaktivitet"
@@ -461,7 +461,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                                              ), onDismiss: nil)
         }
         
-        +++ Section("Systemlogg")
+        +++ Section("\nSystemlogg")
         <<< ButtonRow("viewlog") {
             $0.title = "Se logg"
             $0.presentationMode = .show(
@@ -472,15 +472,18 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         <<< ButtonRow("shareLogs") {
             $0.title = "Dela logg"
-            $0.cellSetup { cell, row in
+            $0.cellSetup { cell, _ in
                 cell.accessibilityIdentifier = "ShareLogsButton"
+            }
+            $0.cellUpdate { cell, _ in
+                cell.textLabel?.textAlignment = .left
             }
             $0.onCellSelection { [weak self] _, _ in
                 self?.shareLogs()
             }
         }
 
-            +++ Section("Appinformation")
+            +++ Section("\nAppinformation")
             <<< LabelRow() {
                 $0.title = "Version"
                 $0.value = version
@@ -783,7 +786,9 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         let viewModel = LogViewModel()
 
         let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
-        let logView = LogView(viewModel: viewModel)
+        let logView = LogView(viewModel: viewModel, onDone: { [weak self] in
+            self?.dismissPresentedController()
+        })
             .preferredColorScheme(isDark ? .dark : .light)
             .environment(\.colorScheme, isDark ? .dark : .light)
 
