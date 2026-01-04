@@ -11,7 +11,8 @@ import UserNotifications
 import SwiftUI
 
 
-class SnoozeViewController: ThemedViewController, UNUserNotificationCenterDelegate {
+//class SnoozeViewController: ThemedViewController, UNUserNotificationCenterDelegate { // Använd inte blå gradient för snooze-vyn eftersom den blir för ljus på natten
+class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     var appStateController: AppStateController?
     var snoozeTabItem: UITabBarItem = UITabBarItem()
     var mainTabItem: UITabBarItem = UITabBarItem()
@@ -512,7 +513,7 @@ class SnoozeViewController: ThemedViewController, UNUserNotificationCenterDelega
             overrideUserInterfaceStyle = .dark
         }
         // Re-apply theme after potential style override
-        updateBackgroundForCurrentMode()
+        // updateBackgroundForCurrentMode()
         SnoozeButton.layer.cornerRadius = 5
         SnoozeButton.contentEdgeInsets = UIEdgeInsets(top: 10,left: 10,bottom: 10,right: 10)
         // Thin white border around InfoButton
