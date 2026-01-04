@@ -55,6 +55,7 @@ struct AggregatedStatsView: View {
                     Picker("Period", selection: $selectedPeriod) {
                         Text("Idag").tag(0)
                         Text("1 d").tag(1)
+                        Text("3 d").tag(3)
                         Text("7 d").tag(7)
                         Text("14 d").tag(14)
                         Text("30 d").tag(30)
@@ -214,6 +215,8 @@ struct AggregatedStatsView: View {
             return "idag"
         case 1:
             return "1 dag"
+        case 3:
+            return "3 dagar"
         case 7:
             return "7 dagar"
         case 14:
