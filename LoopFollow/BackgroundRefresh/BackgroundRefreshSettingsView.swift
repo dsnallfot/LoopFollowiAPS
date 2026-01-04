@@ -12,10 +12,16 @@ struct BackgroundRefreshSettingsView: View {
     @State private var forceRefresh = false
     @State private var timer: Timer?
     @State private var showSyncNewSensorView: Bool = false
+    @State private var minAgoNavText: String = ""
+    @State private var minAgoNavShortText: String = ""
 
     @ObservedObject var bleManager = BLEManager.shared
 
     @State private var batteryPercentage: Int = 0
+    
+    // MARK: - Constants for BG delay thresholds
+    let goodDelay = 90
+    let okDelay = 180
 
     var body: some View {
         ZStack {
@@ -134,11 +140,23 @@ struct BackgroundRefreshSettingsView: View {
                                             .foregroundStyle(.secondary)
                                             .font(.footnote)
                                     }
-
-                                    if let offset = BLEManager.shared.expectedSensorFetchOffsetString(for: storedDevice) {
-                                        Text("Förväntad fördröjning: \(offset)")
-                                            .foregroundStyle(.secondary)
-                                            .font(.footnote)
+                                    
+                                    // Expected BG Delay with color logic (for Dexcom devices only)
+                                    if Storage.shared.backgroundRefreshType.value == .dexcom,
+                                       let offsetStr = BLEManager.shared.expectedSensorFetchOffsetString(for: storedDevice) {
+                                        // Expect offset string like "120 sek" – get the number portion.
+                                        let offsetNumberString = offsetStr.components(separatedBy: " ").first ?? ""
+                                        if let offsetInt = Int(offsetNumberString) {
+                                            let offsetColor: Color = offsetInt > okDelay ? .red : (offsetInt > goodDelay ? .orange : .green)
+                                            HStack {
+                                                Text("Förväntad fördröjning BG:")
+                                                    .foregroundColor(.secondary)
+                                                    .font(.footnote)
+                                                Text("\(offsetInt) sek")
+                                                    .foregroundColor(offsetColor)
+                                                    .font(.footnote)
+                                            }
+                                        }
                                     }
 
                                     HStack {
@@ -262,6 +280,24 @@ struct BackgroundRefreshSettingsView: View {
         .onDisappear { stopTimer() }
         .sheet(isPresented: $showSyncNewSensorView) {
             SyncNewSensorSheetContainer()
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                HStack(spacing: 6) {
+                    Text(minAgoNavShortText.isEmpty ? "–" : minAgoNavShortText)
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .minAgoTextUpdated)) { notification in
+            let text = notification.userInfo?["text"] as? String ?? ""
+            let short = notification.userInfo?["short"] as? String ?? ""
+            self.minAgoNavText = text
+            self.minAgoNavShortText = short.isEmpty ? text : short
         }
     }
 

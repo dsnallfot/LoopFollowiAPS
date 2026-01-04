@@ -215,6 +215,12 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(self, selector: #selector(appMovedToBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
         notificationCenter.addObserver(self, selector: #selector(appCameToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(updateBluetoothPingInfo),
+            name: .bluetoothHeartbeatUpdated,
+            object: nil
+        )
 
         // Setup the Graph
         if firstGraphLoad {
@@ -304,6 +310,34 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     deinit {
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name("refresh"), object: nil)
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name("RefreshTreatmentsCacheForDay"), object: nil)
+        NotificationCenter.default.removeObserver(self, name: .bluetoothHeartbeatUpdated, object: nil)
+    }
+    /// Updates the Bluetooth ping info display in the info table.
+    @objc private func updateBluetoothPingInfo() {
+        guard let heartbeatDate = BLEManager.shared.lastHeartbeatDate else {
+            infoManager.updateInfoData(type: .btPing, value: "– 🔴")
+            infoManager.setPriority(true, for: .btPing)
+            return
+        }
+
+        let now = Date().timeIntervalSince1970
+        let heartbeatTime = heartbeatDate.timeIntervalSince1970
+        let ageSeconds = now - heartbeatTime
+
+        var formattedTime = Localizer.formatTimestampToLocalString(heartbeatTime)
+
+        if ageSeconds < 360 { // < 6 min
+            formattedTime += " 🟢"
+            infoManager.setPriority(false, for: .btPing)
+        } else if ageSeconds < 720 { // 6–12 min
+            formattedTime += " 🟡"
+            infoManager.setPriority(true, for: .btPing)
+        } else {
+            formattedTime += " 🔴"
+            infoManager.setPriority(true, for: .btPing)
+        }
+
+        infoManager.updateInfoData(type: .btPing, value: formattedTime)
     }
     
     // Clean all timers and start new ones when refreshing
@@ -647,7 +681,6 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         if let appState = self.appStateController {
             
             if appState.chartSettingsChanged {
-                
                 // can look at settings flags to be more fine tuned
                 self.updateBGGraphSettings()
                 
@@ -661,7 +694,6 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                 appState.chartSettingsChanges = 0
             }
             if appState.generalSettingsChanged {
-                
                 // settings for appBadge changed
                 if appState.generalSettingsChanges & GeneralSettingsChangeEnum.appBadgeChange.rawValue != 0 {
                     
@@ -704,6 +736,8 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             
             // add more processing of the app state
         }
+        // Always update Bluetooth ping info on appear
+        updateBluetoothPingInfo()
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {

@@ -49,6 +49,11 @@ class AdvancedSettingsViewModel: ObservableObject {
             Storage.shared.debugLogLevel.value = debugLogLevel
         }
     }
+    @Published var tempDebugLogLevel: Bool {
+        didSet {
+            Storage.shared.tempDebugLogLevel.value = tempDebugLogLevel
+        }
+    }
     init() {
         self.downloadTreatments = UserDefaultsRepository.downloadTreatments.value
         self.downloadPrediction = UserDefaultsRepository.downloadPrediction.value
@@ -58,5 +63,6 @@ class AdvancedSettingsViewModel: ObservableObject {
         self.graphOtherTreatments = UserDefaultsRepository.graphOtherTreatments.value
         self.bgUpdateDelay = UserDefaultsRepository.bgUpdateDelay.value
         self.debugLogLevel = Storage.shared.debugLogLevel.value
+        self.tempDebugLogLevel = Storage.shared.tempDebugLogLevel.value
     }
 }

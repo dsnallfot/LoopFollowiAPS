@@ -58,17 +58,40 @@ class LogManager {
     ///   - category: The log category.
     ///   - message: The message to log.
     ///   - isDebug: Indicates if this is a debug log.
+    ///   - isTempDebug: Indicates if this is a temporary more detailed debug log.
     ///   - limitIdentifier: Optional key to rate-limit similar log messages.
     ///   - limitInterval: Time interval (in seconds) to wait before logging the same type again.
-    func log(category: Category, message: String, isDebug: Bool = false, limitIdentifier: String? = nil, limitInterval: TimeInterval = 300) {
+    func log(category: Category, message: String, isDebug: Bool = false, isTempDebug: Bool = false, limitIdentifier: String? = nil, limitInterval: TimeInterval = 300) {
         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
         let logMessage = "[\(timestamp)] [\(category.rawValue)] \(message)"
         
-        consoleQueue.async {
-            print(logMessage)
+        let debugEnabled = Storage.shared.debugLogLevel.value
+        let tempDebugEnabled = Storage.shared.tempDebugLogLevel.value
+
+        // 3 log levels:
+        // 1) Always logs (default): always shown
+        // 2) Debug logs (isDebug=true): only shown when "Visa debugloggar" is enabled
+        // 3) Temp debug logs (isTempDebug=true): only shown when "Visa temporära debugloggar" is enabled
+        let shouldLogThisMessage: Bool = {
+            switch (isDebug, isTempDebug) {
+            case (true, true):
+                return debugEnabled || tempDebugEnabled
+            case (true, false):
+                return debugEnabled
+            case (false, true):
+                return tempDebugEnabled
+            case (false, false):
+                return true
+            }
+        }()
+        
+        if shouldLogThisMessage {
+            consoleQueue.async {
+                print(logMessage)
+            }
         }
         
-        if let key = limitIdentifier, !Storage.shared.debugLogLevel.value {
+        if let key = limitIdentifier, !(debugEnabled || tempDebugEnabled) {
             let shouldLog: Bool = rateLimitQueue.sync {
                 if let lastLogged = lastLoggedTimestamps[key] {
                     let interval = Date().timeIntervalSince(lastLogged)
@@ -84,7 +107,7 @@ class LogManager {
             }
         }
         
-        if !isDebug || Storage.shared.debugLogLevel.value {
+        if shouldLogThisMessage {
             let logFileURL = self.currentLogFileURL
             self.append(logMessage + "\n", to: logFileURL)
             logUpdateSubject.send() // Notify subscribers of the log update

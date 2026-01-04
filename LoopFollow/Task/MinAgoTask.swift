@@ -6,8 +6,13 @@
 //  Copyright © 2025 Jon Fawcett. All rights reserved.
 //
 
+
 import Foundation
 import UIKit
+
+extension Notification.Name {
+    static let minAgoTextUpdated = Notification.Name("minAgoTextUpdated")
+}
 
 extension MainViewController {
     func scheduleMinAgoTask(initialDelay: TimeInterval = 1.0) {
@@ -41,6 +46,8 @@ extension MainViewController {
                     snoozer.BGLabel.attributedText = NSAttributedString(string: "")
                 }
             }
+            // Also notify SwiftUI views that minAgo is unavailable
+            NotificationCenter.default.post(name: .minAgoTextUpdated, object: nil, userInfo: ["text": "", "short": ""])
             TaskScheduler.shared.rescheduleTask(id: .minAgoUpdate, to: Date().addingTimeInterval(1))
             return
         }
@@ -77,6 +84,20 @@ extension MainViewController {
             displayText = formattedDuration + " min sedan"
         }
 
+        let shortText: String = {
+            if secondsAgo >= 0 && secondsAgo < 60 {
+                return "\(Int(secondsAgo))s"
+            }
+            if secondsAgo >= 300 && secondsAgo < 360 {
+                // show m:s in the 5–6 min band where you already show seconds
+                let m = Int(secondsAgo) / 60
+                let s = Int(secondsAgo) % 60
+                return "\(m):\(String(format: "%02d", s))"
+            }
+            // default: minutes
+            return "\(Int(secondsAgo / 60))m"
+        }()
+
         // Debug logging for minAgo calculation
         /*LogManager.shared.log(
             category: .analysis,
@@ -90,6 +111,9 @@ extension MainViewController {
                 guard let self = self else { return }
                 self.MinAgoText.text = displayText
                 self.latestMinAgoString = displayText
+
+                // Notify SwiftUI views (e.g. BackgroundRefreshSettingsView) to update their minAgo label
+                NotificationCenter.default.post(name: .minAgoTextUpdated, object: nil, userInfo: ["text": displayText, "short": shortText])
 
                 if let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController {
                     snoozer.MinAgoLabel.text = displayText

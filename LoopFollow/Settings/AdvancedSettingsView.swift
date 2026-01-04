@@ -70,6 +70,10 @@ struct AdvancedSettingsView: View {
                         themedRow {
                             Toggle("Visa debugloggar", isOn: $viewModel.debugLogLevel)
                         }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Toggle("Visa temporära debugloggar", isOn: $viewModel.tempDebugLogLevel)
+                        }
                     }
                     .themedCardBackground()
 

@@ -14,6 +14,9 @@ struct LogView: View {
     @ObservedObject var viewModel = LogViewModel()
     @State private var isChartPresented: Bool = false
     @Environment(\.dismiss) private var dismiss
+    
+    /// Används när vyn ligger i UIKit-nav/modal
+        let onDone: (() -> Void)?
 
     var body: some View {
         ZStack {
@@ -83,7 +86,11 @@ struct LogView: View {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     
                     Button("Klar") {
-                        dismiss()
+                        if let onDone {
+                            onDone()
+                        } else {
+                            dismiss()
+                        }
                     }
                 }
             }

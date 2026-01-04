@@ -82,7 +82,7 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     }
 
     func startScanning() -> BluetoothDevice.startScanningResult {
-        LogManager.shared.log(category: .bluetooth, message: "Start Scanning", isDebug: true)
+        LogManager.shared.log(category: .bluetooth, message: "Start Scanning", isDebug: true, isTempDebug: true)
 
         var returnValue = BluetoothDevice.startScanningResult.unknown
 
@@ -139,7 +139,7 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     }
 
     fileprivate func stopScanAndconnect(to peripheral: CBPeripheral) {
-        LogManager.shared.log(category: .bluetooth, message: "Stop Scan And Connect", isDebug: true)
+        LogManager.shared.log(category: .bluetooth, message: "Stop Scan And Connect", isDebug: true, isTempDebug: true)
 
         self.centralManager?.stopScan()
         self.deviceAddress = peripheral.identifier.uuidString
@@ -187,7 +187,7 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        LogManager.shared.log(category: .bluetooth, message: "[BLE] didDiscover", isDebug: true)
+        LogManager.shared.log(category: .bluetooth, message: "[BLE] didDiscover", isDebug: true, isTempDebug: true)
 
         timeStampLastStatusUpdate = Date()
 
@@ -218,7 +218,7 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        LogManager.shared.log(category: .bluetooth, message: "Central Manager Did Update State", isDebug: true)
+        LogManager.shared.log(category: .bluetooth, message: "Central Manager Did Update State", isDebug: true, isTempDebug: true)
 
         timeStampLastStatusUpdate = Date()
 
