@@ -329,6 +329,7 @@ private struct LogViewChart: View {
                             .font(.footnote)
                             .foregroundColor(.secondary)
                             .padding(.horizontal)
+                            .padding(.bottom, 20)
                         
                         // Tabell med special-statistik
                         VStack(spacing: 6) {
@@ -406,6 +407,9 @@ private struct ScatterLogChartView: UIViewRepresentable {
         
         // Tvinga 13 etiketter över 60min: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60
         chartView.leftAxis.setLabelCount(13, force: true)
+
+        // Extra bottenmarginal för att separera x-axel och legend visuellt
+        chartView.extraBottomOffset = 6
 
         return chartView
     }
