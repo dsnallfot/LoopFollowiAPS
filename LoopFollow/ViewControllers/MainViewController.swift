@@ -217,7 +217,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         notificationCenter.addObserver(self, selector: #selector(appCameToForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(updateBluetoothPingInfo),
+            selector: #selector(updateBluetoothHeartbeatInfo),
             name: .bluetoothHeartbeatUpdated,
             object: nil
         )
@@ -313,11 +313,21 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         NotificationCenter.default.removeObserver(self, name: .bluetoothHeartbeatUpdated, object: nil)
     }
     /// Updates the Bluetooth ping info display in the info table.
-    @objc private func updateBluetoothPingInfo() {
-        guard let heartbeatDate = BLEManager.shared.lastHeartbeatDate else {
+    @objc private func updateBluetoothHeartbeatInfo() {
+        // BLEManager may not have a heartbeat immediately after app restart.
+        // Fall back to the last persisted heartbeat until a fresh ping arrives.
+        let liveHeartbeatDate = BLEManager.shared.lastHeartbeatDate
+        let persistedHeartbeatDate = Storage.shared.lastBluetoothHeartbeatDate.value
+
+        guard let heartbeatDate = liveHeartbeatDate ?? persistedHeartbeatDate else {
             infoManager.updateInfoData(type: .btPing, value: "– 🔴")
             infoManager.setPriority(true, for: .btPing)
             return
+        }
+
+        // Persist when we have a fresh (live) heartbeat
+        if let live = liveHeartbeatDate {
+            Storage.shared.lastBluetoothHeartbeatDate.value = live
         }
 
         let now = Date().timeIntervalSince1970
@@ -737,7 +747,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             // add more processing of the app state
         }
         // Always update Bluetooth ping info on appear
-        updateBluetoothPingInfo()
+        updateBluetoothHeartbeatInfo()
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {

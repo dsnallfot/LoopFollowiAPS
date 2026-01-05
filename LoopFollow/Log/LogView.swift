@@ -44,6 +44,7 @@ struct LogView: View {
         return multiFilters.first(where: { lower.contains($0.term.lowercased()) })
     }
 
+
     var body: some View {
         ZStack {
             ThemeBackground()
@@ -132,12 +133,23 @@ struct LogView: View {
                 }
                 return .init(id: f.id, label: f.term, color: f.color, entries: matched)
             }
+            
+            // Bygg en rubrik som inkluderar antal per filter/färg, t.ex. "Träffar: 🔵25 🟡32 🔴122"
+            let emojiForSeriesId: [Int: String] = [0: "🔵", 1: "🟡", 2: "🔴"]
+            let orderedForTitle = series.sorted(by: { $0.id < $1.id })
+            let titleSuffix = orderedForTitle
+                .map { s in
+                    let emoji = emojiForSeriesId[s.id] ?? ""
+                    return "\(emoji)\(s.entries.count) "
+                }
+                .joined(separator: " ")
+
+            let chartTitle = titleSuffix.isEmpty ? "Träffar" : "Träffar: \(titleSuffix)"
 
             LogViewChart(
-                title: filters.isEmpty
-                    ? "Sökträffar"
-                    : "Sökträffar",
-                    //: "Träffar: \(filters.map { $0.term }.joined(separator: " • "))",
+                title: chartTitle,
+                // För special-statistik vill vi utgå från "hela" loggen (inte nödvändigtvis bara sökträffarna).
+                allLogEntries: viewModel.allLogEntries,
                 series: series
             )
         }
@@ -148,6 +160,7 @@ struct LogView: View {
 @available(iOS 16.0, *)
 private struct LogViewChart: View {
     let title: String
+    let allLogEntries: [LogEntry]
     struct Series: Identifiable {
         let id: Int
         let label: String
@@ -216,6 +229,83 @@ private struct LogViewChart: View {
         }
     }
 
+    // MARK: - Specialare: BLE Ping success-rate (oavsett blå/gul/röd-filter)
+
+    private struct StatRow: Identifiable {
+        let id: String
+        let label: String
+        let value: String
+    }
+
+    private func parseTimeToday(from line: String, calendar: Calendar, todayStart: Date, dayStart: Date, nextDayStart: Date, timeFormatter: DateFormatter) -> Date? {
+        // Förväntat format: "[21:34:12] ..."
+        guard let firstOpen = line.firstIndex(of: "["),
+              let firstClose = line[firstOpen...].firstIndex(of: "]") else {
+            return nil
+        }
+
+        let timeString = String(line[line.index(after: firstOpen)..<firstClose])
+        guard let timeOnly = timeFormatter.date(from: timeString) else {
+            return nil
+        }
+
+        // Kombinera tid med dagens datum
+        let comps = calendar.dateComponents([.hour, .minute, .second], from: timeOnly)
+        guard let combined = calendar.date(byAdding: comps, to: todayStart) else {
+            return nil
+        }
+
+        // Begränsa till innevarande dygn: 00:00 -> 00:00 nästa dygn
+        guard combined >= dayStart && combined < nextDayStart else {
+            return nil
+        }
+
+        return combined
+    }
+
+    private var specialStatsRows: [StatRow] {
+        let now = Date()
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: now)
+        let nextDayStart = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(24 * 3600)
+
+        // Datumformatter för loggens prefix: [HH:mm:ss]
+        let timeFormatter = DateFormatter()
+        timeFormatter.locale = Locale(identifier: "sv_SE")
+        timeFormatter.dateFormat = "HH:mm:ss"
+
+        let todayStart = dayStart
+
+        // 1) BLE Ping lyckades: räkna faktiska loggar med "Bluetooth ping received" inom dagens intervall
+        let pingNeedle = "Bluetooth ping received"
+
+        let pingActual = allLogEntries.reduce(into: 0) { acc, entry in
+            guard entry.text.localizedCaseInsensitiveContains(pingNeedle) else { return }
+            guard let d = parseTimeToday(from: entry.text,
+                                         calendar: calendar,
+                                         todayStart: todayStart,
+                                         dayStart: dayStart,
+                                         nextDayStart: nextDayStart,
+                                         timeFormatter: timeFormatter) else { return }
+            // Fram till NU
+            guard d <= now else { return }
+            acc += 1
+        }
+
+        // 2) Förväntade: 1 per 5-minutersfönster från midnatt till NU
+        let elapsed = max(0, now.timeIntervalSince(dayStart))
+        let expected = max(1, Int(elapsed / 300.0) + 1)
+
+        let percent: Double = expected > 0 ? (Double(pingActual) / Double(expected)) * 100.0 : 0
+        let percentString = String(format: "%.0f%%", percent)
+
+        let pingValue = "\(pingActual)/\(expected) (\(percentString))"
+
+        return [
+            StatRow(id: "ble_ping", label: "BLE Ping lyckades", value: pingValue)
+        ]
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -232,13 +322,32 @@ private struct LogViewChart: View {
                     } else {
                         ScatterLogChartView(series: pointsBySeries)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 320)
+                            .frame(height: 480)
                             .padding(.horizontal)
 
                         Text("• X-axel: 00:00 → 24:00 (innevarande dygn) \n• Y-axel: minut i timmen (0–60)")
                             .font(.footnote)
                             .foregroundColor(.secondary)
                             .padding(.horizontal)
+                        
+                        // Tabell med special-statistik
+                        VStack(spacing: 6) {
+                            ForEach(specialStatsRows) { row in
+                                HStack {
+                                    Text(row.label)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                                    Text(row.value)
+                                        .font(.body)
+                                        .monospacedDigit()
+                                        .foregroundColor(.primary)
+                                        .frame(alignment: .trailing)
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
                     }
 
                     Spacer(minLength: 0)
@@ -284,7 +393,7 @@ private struct ScatterLogChartView: UIViewRepresentable {
         chartView.rightAxis.enabled = false
         chartView.leftAxis.axisMinimum = 0
         chartView.leftAxis.axisMaximum = 60
-        chartView.leftAxis.granularity = 10
+        chartView.leftAxis.granularity = 1
         chartView.leftAxis.drawZeroLineEnabled = true
 
         chartView.xAxis.labelPosition = .bottom
@@ -294,6 +403,9 @@ private struct ScatterLogChartView: UIViewRepresentable {
         // Tvinga 9 etiketter över dygnet: 00, 03, 06, 09, 12, 15, 18, 21, 24
         // (Charts fördelar etiketter jämnt mellan axisMinimum/axisMaximum när force=true)
         chartView.xAxis.setLabelCount(9, force: true)
+        
+        // Tvinga 13 etiketter över 60min: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60
+        chartView.leftAxis.setLabelCount(13, force: true)
 
         return chartView
     }
@@ -386,4 +498,3 @@ private final class EpochTimeAxisValueFormatter: AxisValueFormatter {
         return dateFormatter.string(from: date)
     }
 }
-
