@@ -10,6 +10,19 @@ class LogViewModel: ObservableObject {
     @Published var searchText: String = ""
     @Published var searchResultsIsHighlighted: Bool = false
 
+    // MARK: - Multi-search filters (split by '.')
+    private var activeSearchFilters: [String] {
+        searchText
+            .split(separator: ".", omittingEmptySubsequences: true)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    private func matchesAnyFilter(_ line: String, filters: [String]) -> Bool {
+        guard !filters.isEmpty else { return true }
+        return filters.contains(where: { line.localizedCaseInsensitiveContains($0) })
+    }
+
     private enum DefaultsKeys {
         static let selectedCategory = "LogView_SelectedCategory"
         static let searchText = "LogView_SearchText"
@@ -161,10 +174,16 @@ class LogViewModel: ObservableObject {
                     }
             }
 
-            // Filter by search text only when not in highlight mode
-            if !searchText.isEmpty && !searchResultsIsHighlighted {
-                filtered = filtered.filter {
-                    $0.text.localizedCaseInsensitiveContains(searchText)
+            // Filter by search text only when not in highlight mode.
+            // Supports up to N filters separated by '.' and matches ANY of them.
+            if !searchResultsIsHighlighted {
+                let filters = searchText
+                    .split(separator: ".", omittingEmptySubsequences: true)
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+
+                if !filters.isEmpty {
+                    filtered = filtered.filter { self.matchesAnyFilter($0.text, filters: filters) }
                 }
             }
 
