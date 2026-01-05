@@ -439,19 +439,35 @@ private struct ScatterLogChartView: UIViewRepresentable {
         chartView.rightAxis.enabled = false
         chartView.leftAxis.axisMinimum = 0
         chartView.leftAxis.axisMaximum = 60
-        chartView.leftAxis.granularity = 1
+
+        // Vi kör 5-minutersgrid (dashad) för att få stabil rendering i Charts.
+        // Labels: 0, 5, 10, ... 60
+        chartView.leftAxis.granularity = 5
+        chartView.leftAxis.granularityEnabled = true
+        chartView.leftAxis.setLabelCount(13, force: true) // 0...60 i 5-min-steg
+        chartView.leftAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let v = Int(value.rounded())
+            return String(format: "%d", v)
+        }
         chartView.leftAxis.drawZeroLineEnabled = true
 
-        chartView.xAxis.labelPosition = .bottom
-        chartView.xAxis.granularityEnabled = true
-        chartView.xAxis.granularity = 3 * 60 * 60 // 3 timmar i sekunder
+        // Grid styling
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        chartView.leftAxis.gridColor = gridLineColor
+        chartView.leftAxis.gridLineWidth = 0.5
+        chartView.leftAxis.gridLineDashLengths = [2, 2]
 
-        // Tvinga 9 etiketter över dygnet: 00, 03, 06, 09, 12, 15, 18, 21, 24
-        // (Charts fördelar etiketter jämnt mellan axisMinimum/axisMaximum när force=true)
-        chartView.xAxis.setLabelCount(9, force: true)
-        
-        // Tvinga 13 etiketter över 60min: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60
-        chartView.leftAxis.setLabelCount(13, force: true)
+        chartView.xAxis.labelPosition = .bottom
+
+        // Vi vill ha "mindre" (dashed) grid för varje hel timme, men endast visa etiketter var 3:e timme.
+        chartView.xAxis.granularityEnabled = true
+        chartView.xAxis.granularity = 60 * 60 // 1 timme
+        chartView.xAxis.setLabelCount(25, force: true) // 00..24
+
+        // Grid styling
+        chartView.xAxis.gridColor = gridLineColor
+        chartView.xAxis.gridLineWidth = 0.5
+        chartView.xAxis.gridLineDashLengths = [2, 2]
 
         // Extra bottenmarginal för att separera x-axel och legend visuellt
         chartView.extraBottomOffset = 6
@@ -511,28 +527,39 @@ private struct ScatterLogChartView: UIViewRepresentable {
         let nextDayStart = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(24 * 3600)
         uiView.xAxis.axisMinimum = dayStart.timeIntervalSince1970
         uiView.xAxis.axisMaximum = nextDayStart.timeIntervalSince1970
-        uiView.xAxis.setLabelCount(9, force: true)
+        uiView.xAxis.setLabelCount(25, force: true)
 
         // Datumformatter på x-axeln
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "sv_SE")
         formatter.dateFormat = "HH"
-        uiView.xAxis.valueFormatter = EpochTimeAxisValueFormatter(dateFormatter: formatter)
+        uiView.xAxis.valueFormatter = EpochTimeAxisValueFormatter(dateFormatter: formatter, showOnlyEveryNthHour: 3)
 
         uiView.backgroundColor = .clear
         uiView.isOpaque = false
+        // Säkerställ 5-minutersgrid även efter uppdatering/layout
+        uiView.leftAxis.axisMinimum = 0
+        uiView.leftAxis.axisMaximum = 60
+        uiView.leftAxis.granularity = 5
+        uiView.leftAxis.granularityEnabled = true
+        uiView.leftAxis.setLabelCount(13, force: true)
         uiView.notifyDataSetChanged()
     }
 }
 
 private final class EpochTimeAxisValueFormatter: AxisValueFormatter {
     private let dateFormatter: DateFormatter
+    private let showOnlyEveryNthHour: Int
+    private let calendar: Calendar
 
-    init(dateFormatter: DateFormatter) {
+    init(dateFormatter: DateFormatter, showOnlyEveryNthHour: Int = 3, calendar: Calendar = .current) {
         self.dateFormatter = dateFormatter
+        self.showOnlyEveryNthHour = max(1, showOnlyEveryNthHour)
+        self.calendar = calendar
     }
 
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+        // Om axis saknas, fall tillbaka till formatter.
         guard let axis = axis else {
             let date = Date(timeIntervalSince1970: value)
             return dateFormatter.string(from: date)
@@ -544,6 +571,10 @@ private final class EpochTimeAxisValueFormatter: AxisValueFormatter {
         }
 
         let date = Date(timeIntervalSince1970: value)
+        let hour = calendar.component(.hour, from: date)
+
+        // Visa endast etiketter var N:e timme
+        guard hour % showOnlyEveryNthHour == 0 else { return "" }
         return dateFormatter.string(from: date)
     }
 }
