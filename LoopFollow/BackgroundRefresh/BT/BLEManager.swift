@@ -138,19 +138,26 @@ class BLEManager: NSObject, ObservableObject {
     }
 
     /// Updates or adds a BLEDevice in the list
+    /// NOTE: CoreBluetooth callbacks can arrive on a background queue; `@Published` must update on main.
     private func addOrUpdateDevice(_ device: BLEDevice) {
-        if let idx = devices.firstIndex(where: { $0.id == device.id }) {
-            var updatedDevice = devices[idx]
-            updatedDevice.rssi = device.rssi
-            updatedDevice.lastSeen = device.lastSeen
-            updatedDevice.batteryLevel = device.batteryLevel
-            devices[idx] = updatedDevice
-        } else {
-            var newDevice = device
-            newDevice.lastSeen = Date()
-            devices.append(newDevice)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            if let idx = self.devices.firstIndex(where: { $0.id == device.id }) {
+                var updatedDevice = self.devices[idx]
+                updatedDevice.rssi = device.rssi
+                updatedDevice.lastSeen = device.lastSeen
+                updatedDevice.batteryLevel = device.batteryLevel
+                self.devices[idx] = updatedDevice
+            } else {
+                var newDevice = device
+                newDevice.lastSeen = Date()
+                self.devices.append(newDevice)
+            }
+
+            // Force SwiftUI to refresh for in-place mutations.
+            self.devices = self.devices
         }
-        devices = devices
     }
 
     private func cleanupOldDevices() {
