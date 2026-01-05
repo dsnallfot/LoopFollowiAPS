@@ -139,7 +139,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             LogManager.shared.log(category: .remote, message: "Posted success notification", isDebug: true)
         case "error":
             NotificationCenter.default.post(name: NSNotification.Name("ShortcutError"), object: nil)
-            LogManager.shared.log(category: .remote, message: "Posted error notification", isDebug: true)
+            LogManager.shared.log(category: .remote, message: "Posted error notification")
         case "cancel":
             NotificationCenter.default.post(name: NSNotification.Name("ShortcutCancel"), object: nil)
             LogManager.shared.log(category: .remote, message: "Posted cancel notification", isDebug: true)

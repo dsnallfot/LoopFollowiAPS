@@ -26,7 +26,7 @@ extension MainViewController {
                 }
                 isSageFetchInProgress = false
             case .failure(let error):
-                LogManager.shared.log(category: .nightscout, message: "webLoadNSSage, failed to fetch data: \(error.localizedDescription)")
+                LogManager.shared.log(category: .nightscout, message: "webLoadNSSage error, failed to fetch data: \(error.localizedDescription)")
                 isSageFetchInProgress = false
             }
         }

@@ -134,8 +134,8 @@ struct LogView: View {
                 return .init(id: f.id, label: f.term, color: f.color, entries: matched)
             }
             
-            // Bygg en rubrik som inkluderar antal per filter/färg, t.ex. "Träffar: 🔵25 🟡32 🔴122"
-            let emojiForSeriesId: [Int: String] = [0: "🔵", 1: "🟡", 2: "🔴"]
+            // Bygg en rubrik som inkluderar antal per filter/färg, t.ex. "Träffar: 🟦25 🟨32 🟥122"
+            let emojiForSeriesId: [Int: String] = [0: "🟦", 1: "🟨", 2: "🟥"]
             let orderedForTitle = series.sorted(by: { $0.id < $1.id })
             let titleSuffix = orderedForTitle
                 .map { s in
@@ -144,7 +144,7 @@ struct LogView: View {
                 }
                 .joined(separator: " ")
 
-            let chartTitle = titleSuffix.isEmpty ? "Träffar" : "Träffar: \(titleSuffix)"
+            let chartTitle = titleSuffix.isEmpty ? "Sökträffar" : "Sökträffar:  \(titleSuffix)"
 
             LogViewChart(
                 title: chartTitle,
@@ -301,8 +301,45 @@ private struct LogViewChart: View {
 
         let pingValue = "\(pingActual)/\(expected) (\(percentString))"
 
+        // 3) Antal omstarter: räkna loggar med "App started" idag
+        let restartNeedle = "App started"
+        let restartCount = allLogEntries.reduce(into: 0) { acc, entry in
+            guard entry.text.localizedCaseInsensitiveContains(restartNeedle) else { return }
+            guard let d = parseTimeToday(from: entry.text,
+                                         calendar: calendar,
+                                         todayStart: todayStart,
+                                         dayStart: dayStart,
+                                         nextDayStart: nextDayStart,
+                                         timeFormatter: timeFormatter) else { return }
+            guard d <= now else { return }
+            acc += 1
+        }
+
+        let restartValue = "\(restartCount) st"
+        
+        // 4) Antal errors: räkna loggar med "error" och/eller "failed" idag
+        let errorNeedle1 = "error"
+        let errorNeedle2 = "failed"
+        let errorCount = allLogEntries.reduce(into: 0) { acc, entry in
+            let text = entry.text
+            guard text.localizedCaseInsensitiveContains(errorNeedle1)
+                    || text.localizedCaseInsensitiveContains(errorNeedle2) else { return }
+            guard let d = parseTimeToday(from: text,
+                                         calendar: calendar,
+                                         todayStart: todayStart,
+                                         dayStart: dayStart,
+                                         nextDayStart: nextDayStart,
+                                         timeFormatter: timeFormatter) else { return }
+            guard d <= now else { return }
+            acc += 1
+        }
+
+        let errorValue = "\(errorCount) st"
+
         return [
-            StatRow(id: "ble_ping", label: "BLE Ping lyckades", value: pingValue)
+            StatRow(id: "ble_ping", label: "BLE ping lyckades:", value: pingValue),
+            StatRow(id: "app_restarts", label: "Antal omstarter app:", value: restartValue),
+            StatRow(id: "errors", label: "Antal errors & failed:", value: errorValue)
         ]
     }
 
@@ -312,7 +349,7 @@ private struct LogViewChart: View {
                 ThemeBackground()
                     .ignoresSafeArea()
 
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     let anyPoints = pointsBySeries.contains(where: { !$0.points.isEmpty })
 
                     if !anyPoints {
@@ -324,15 +361,23 @@ private struct LogViewChart: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 480)
                             .padding(.horizontal)
-
-                        Text("• X-axel: 00:00 → 24:00 (innevarande dygn) \n• Y-axel: minut i timmen (0–60)")
-                            .font(.footnote)
+                        HStack{
+                            Spacer()
+                            Text("Y-axel: minut i timmen (0–60)   •   X-axel: 00:00 → 24:00 (idag)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 8)
+                                .padding(.bottom, 20)
+                            Spacer()
+                        }
+                        Text("Systemstatus idag")
+                            .font(.headline)
+                            .fontWeight(.semibold)
                             .foregroundColor(.secondary)
                             .padding(.horizontal)
-                            .padding(.bottom, 20)
                         
                         // Tabell med special-statistik
-                        VStack(spacing: 6) {
+                        VStack(spacing: 4) {
                             ForEach(specialStatsRows) { row in
                                 HStack {
                                     Text(row.label)
@@ -439,7 +484,7 @@ private struct ScatterLogChartView: UIViewRepresentable {
             case 0:
                 // Blå: större cirkel (underst)
                 ds.setScatterShape(.circle)
-                ds.scatterShapeSize = 10
+                ds.scatterShapeSize = 9
             case 1:
                 // Yellow: triangel (mitten)
                 ds.setScatterShape(.triangle)
