@@ -460,12 +460,14 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
         case count
         case grams
         case lowAndBg
+        case time
 
         var title: String {
             switch self {
-            case .count: return "Behandlingar"
-            case .grams: return "Mängd (g)"
-            case .lowAndBg: return "Dextro & Stick"
+            case .count: return "Behandling"
+            case .grams: return "Mängd"
+            case .lowAndBg: return "Dex & Stick"
+            case .time: return "Tid"
             }
         }
     }
@@ -544,6 +546,25 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
         v.highlightPerDragEnabled = false
         v.drawMarkers = true
         v.rightAxis.enabled = true
+        return v
+    }()
+    
+    // Scatterplot: Dextro-behandlingar per datum (x) och tid på dygnet (y)
+    private let timeChartView: ScatterChartView = {
+        let v = ScatterChartView()
+        v.chartDescription.enabled = false
+        v.legend.enabled = true
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1000000
         return v
     }()
     
@@ -642,9 +663,12 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
             selectedBGCheckMmol = []
         }
 
-        if selectedMode == .lowAndBg {
+        switch selectedMode {
+        case .lowAndBg:
             loadLowAndBgChartData()
-        } else {
+        case .time:
+            loadTreatmentTimeChartData()
+        case .count, .grams:
             loadChartData()
         }
         tableView.reloadData()
@@ -662,12 +686,17 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
         guard index >= 0 && index < ModeOption.allCases.count else { return }
         selectedMode = ModeOption.allCases[index]
 
-        chartView.isHidden = (selectedMode == .lowAndBg)
+        let showBars = (selectedMode == .count || selectedMode == .grams)
+        chartView.isHidden = !showBars
         scatterChartView.isHidden = (selectedMode != .lowAndBg)
+        timeChartView.isHidden = (selectedMode != .time)
 
-        if selectedMode == .lowAndBg {
+        switch selectedMode {
+        case .lowAndBg:
             loadLowAndBgChartData()
-        } else {
+        case .time:
+            loadTreatmentTimeChartData()
+        case .count, .grams:
             loadChartData()
         }
     }
@@ -715,12 +744,14 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
         container.addSubview(timeFilterControl)
         container.addSubview(chartView)
         container.addSubview(scatterChartView)
+        container.addSubview(timeChartView)
 
         periodControl.translatesAutoresizingMaskIntoConstraints = false
         modeControl.translatesAutoresizingMaskIntoConstraints = false
         timeFilterControl.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
         scatterChartView.translatesAutoresizingMaskIntoConstraints = false
+        timeChartView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             periodControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
@@ -743,12 +774,18 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
             scatterChartView.topAnchor.constraint(equalTo: timeFilterControl.bottomAnchor, constant: 12),
             scatterChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             scatterChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            scatterChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4)
+            scatterChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -0),
+            
+            timeChartView.topAnchor.constraint(equalTo: timeFilterControl.bottomAnchor, constant: 12),
+            timeChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            timeChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            timeChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -0),
         ])
 
         // Utgångsläge: bar-chart visas, line-chart göms
-        chartView.isHidden = selectedMode == .lowAndBg
-        scatterChartView.isHidden = selectedMode != .lowAndBg
+        chartView.isHidden = !(selectedMode == .count || selectedMode == .grams)
+        scatterChartView.isHidden = (selectedMode != .lowAndBg)
+        timeChartView.isHidden = (selectedMode != .time)
 
         tableView.tableHeaderView = container
     }
@@ -757,11 +794,12 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
         guard index >= 0 && index < TimeFilterOption.allCases.count else { return }
         selectedTimeFilter = TimeFilterOption.allCases[index]
 
-        if selectedMode == .lowAndBg {
+        switch selectedMode {
+        case .lowAndBg:
             loadLowAndBgChartData()
-        } else {
-            // För närvarande filtrerar vi bara scatter-grafen,
-            // men om du vill kan vi även låta stapeldiagrammet påverkas här.
+        case .time:
+            loadTreatmentTimeChartData()
+        case .count, .grams:
             loadChartData()
         }
     }
@@ -831,6 +869,9 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
                     yValues[idx] += grams
                 }
             }
+        case .time:
+            // Används inte i stapeldiagram
+            break
         }
 
         // Om allt är noll → töm grafen
@@ -892,6 +933,9 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
             yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
                 String(format: "%.0f g", value)
             }
+        case .time:
+            // Ingen stapel → ingen formatter behövs
+            break
         }
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
@@ -1165,6 +1209,144 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
 
         scatterChartView.notifyDataSetChanged()
         scatterChartView.setNeedsDisplay()
+    }
+    
+    private func loadTreatmentTimeChartData() {
+        guard !selectedDays.isEmpty else {
+            timeChartView.data = nil
+            timeChartView.setNeedsDisplay()
+            return
+        }
+
+        let cal = Calendar.current
+
+        // Index per dag för x-position
+        var indexByDay: [Date: Int] = [:]
+        for (idx, d) in selectedDays.enumerated() {
+            indexByDay[cal.startOfDay(for: d)] = idx
+        }
+
+        func hourOfDay(for date: Date) -> Double {
+            let comps = cal.dateComponents([.hour, .minute, .second], from: date)
+            let h = Double(comps.hour ?? 0)
+            let m = Double(comps.minute ?? 0)
+            let s = Double(comps.second ?? 0)
+            return h + (m / 60.0) + (s / 3600.0)
+        }
+
+        // Vita punkter = alla dextro, lila = dextro med fingerstick (hasBGCheckNearby == true)
+        var allPoints: [ChartDataEntry] = []
+        var purplePoints: [ChartDataEntry] = []
+        allPoints.reserveCapacity(selectedTreatmentDates.count)
+        purplePoints.reserveCapacity(selectedTreatmentDates.count)
+
+        for i in selectedTreatmentDates.indices {
+            let date = selectedTreatmentDates[i]
+            guard passesTimeFilter(date) else { continue }
+
+            let dayStart = cal.startOfDay(for: date)
+            guard let dayIndex = indexByDay[dayStart] else { continue }
+
+            let entry = ChartDataEntry(x: Double(dayIndex), y: hourOfDay(for: date))
+            allPoints.append(entry)
+
+            if i < selectedTreatmentHasBGCheck.count, selectedTreatmentHasBGCheck[i] {
+                purplePoints.append(entry)
+            }
+        }
+
+        let whiteColor = UIColor.white.withAlphaComponent(0.90)
+        let purpleColor = UIColor.systemPurple.withAlphaComponent(0.95)
+
+        let dsAll = ScatterChartDataSet(entries: allPoints, label: "Dextrobehandling")
+        dsAll.setColor(whiteColor)
+        dsAll.setScatterShape(.circle)
+        dsAll.scatterShapeSize = 7
+        dsAll.drawValuesEnabled = false
+
+        let dsPurple = ScatterChartDataSet(entries: purplePoints, label: "Dextro med fingerstick")
+        dsPurple.setColor(purpleColor)
+        dsPurple.setScatterShape(.circle)
+        dsPurple.scatterShapeSize = 7
+        dsPurple.drawValuesEnabled = false
+
+        // Lila sist så de syns ovanpå vitt
+        timeChartView.data = ScatterChartData(dataSets: [dsAll, dsPurple])
+        timeChartView.autoScaleMinMaxEnabled = false
+        timeChartView.notifyDataSetChanged()
+
+        // Custom legend: vit cirkel + lila cirkel
+        let legend = timeChartView.legend
+        legend.enabled = true
+        legend.drawInside = false
+        legend.orientation = .horizontal
+        legend.verticalAlignment = .bottom
+        legend.horizontalAlignment = .center
+        legend.xEntrySpace = 12
+        legend.formToTextSpace = 6
+        legend.yOffset = 6
+
+        let e1 = LegendEntry(label: "Dextrobehandling")
+        e1.form = .circle
+        e1.formSize = 8
+        e1.formColor = whiteColor
+
+        let e2 = LegendEntry(label: "Dextro med fingerstick")
+        e2.form = .circle
+        e2.formSize = 8
+        e2.formColor = purpleColor
+
+        legend.setCustom(entries: [e1, e2])
+        timeChartView.extraBottomOffset = 8
+
+        // X-axis labels = datum (dd/MM)
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "dd/MM"
+        let labels = selectedDays.map { df.string(from: $0) }
+
+        let xAxis = timeChartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.granularity = 1
+        xAxis.granularityEnabled = true
+        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
+        xAxis.setLabelCount(min(6, labels.count), force: false)
+
+        // Y-axel = timmar 0–24 (dashad grid) + solida huvudlinjer 00/06/12/18/24
+        let yAxis = timeChartView.leftAxis
+        yAxis.axisMinimum = 0
+        yAxis.axisMaximum = 24
+        yAxis.granularity = 1
+        yAxis.granularityEnabled = true
+        yAxis.setLabelCount(25, force: false)
+        yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let v = Int(value.rounded())
+            guard [0, 6, 12, 18, 24].contains(v) else { return "" }
+            return String(format: "%02d:00", v)
+        }
+
+        yAxis.removeAllLimitLines()
+        let majorLineColor = UIColor.lightGray.withAlphaComponent(0.65)
+        for hour in [0.0, 6.0, 12.0, 18.0, 24.0] {
+            let ll = ChartLimitLine(limit: hour)
+            ll.lineWidth = 0.8
+            ll.lineColor = majorLineColor
+            ll.lineDashLengths = []
+            ll.label = ""
+            yAxis.addLimitLine(ll)
+        }
+
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        timeChartView.rightAxis.enabled = false
+        timeChartView.setNeedsDisplay()
     }
 
     @objc private func dismissSelf() {

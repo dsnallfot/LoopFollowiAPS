@@ -643,7 +643,7 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             timeChartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
             timeChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             timeChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            timeChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+            timeChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -0)
         ])
 
         tableView.tableHeaderView = container
