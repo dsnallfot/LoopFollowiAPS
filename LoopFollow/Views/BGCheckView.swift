@@ -134,7 +134,15 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         }
 
         let bgCheckDates = entries.map { $0.date }
-        let statsVC = BGCheckStatsViewController(days: days, counts: counts, dextroCounts: dextroCounts, bgCheckDates: bgCheckDates)
+        let bgCheckDextroDates = entries.filter { $0.hasDextroNearby }.map { $0.date }
+
+        let statsVC = BGCheckStatsViewController(
+            days: days,
+            counts: counts,
+            dextroCounts: dextroCounts,
+            bgCheckDates: bgCheckDates,
+            bgCheckDextroDates: bgCheckDextroDates
+        )
         let nav = UINavigationController(rootViewController: statsVC)
 
         nav.modalPresentationStyle = .formSheet
@@ -391,12 +399,14 @@ final class BGCheckStatsViewController: ThemedTableViewController {
     private let allCounts: [Int]
     private let allDextroCounts: [Int]
     private let allBGCheckDates: [Date]
+    private let allBGCheckDextroDates: [Date]
 
     // Aktuell vy (styrd av segmented control)
     private var selectedDays: [Date] = []
     private var selectedCounts: [Int] = []
     private var selectedDextroCounts: [Int] = []
     private var selectedBGCheckDates: [Date] = []
+    private var selectedBGCheckDextroDates: [Date] = []
 
     private enum PeriodOption: CaseIterable {
         case d7, d14, d30, d90
@@ -453,7 +463,7 @@ final class BGCheckStatsViewController: ThemedTableViewController {
 
     private let chartView: BarChartView = {
         let v = BarChartView()
-        v.legend.enabled = false
+        v.legend.enabled = true
         v.chartDescription.enabled = false
         v.rightAxis.enabled = false
         v.minOffset = 8
@@ -487,11 +497,12 @@ final class BGCheckStatsViewController: ThemedTableViewController {
         return v
     }()
 
-    init(days: [Date], counts: [Int], dextroCounts: [Int], bgCheckDates: [Date]) {
+    init(days: [Date], counts: [Int], dextroCounts: [Int], bgCheckDates: [Date], bgCheckDextroDates: [Date]) {
         self.allDays = days
         self.allCounts = counts
         self.allDextroCounts = dextroCounts
         self.allBGCheckDates = bgCheckDates
+        self.allBGCheckDextroDates = bgCheckDextroDates
         super.init(style: .insetGrouped)
     }
 
@@ -536,8 +547,12 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             selectedBGCheckDates = allBGCheckDates
                 .filter { $0 >= start && $0 < end }
                 .sorted()
+            selectedBGCheckDextroDates = allBGCheckDextroDates
+                .filter { $0 >= start && $0 < end }
+                .sorted()
         } else {
             selectedBGCheckDates = []
+            selectedBGCheckDextroDates = []
         }
 
         loadChartData()
@@ -729,33 +744,74 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             indexByDay[cal.startOfDay(for: d)] = idx
         }
 
-        // Scatterpunkter: x = dag-index, y = timmar på dygnet (0–24)
-        var points: [ChartDataEntry] = []
-        points.reserveCapacity(selectedBGCheckDates.count)
-
-        for d in selectedBGCheckDates {
-            let dayStart = cal.startOfDay(for: d)
-            guard let dayIndex = indexByDay[dayStart] else { continue }
-
-            let comps = cal.dateComponents([.hour, .minute, .second], from: d)
+        // Hjälpfunktion: timestamp -> timmar på dygnet (0–24)
+        func hourOfDay(for date: Date) -> Double {
+            let comps = cal.dateComponents([.hour, .minute, .second], from: date)
             let h = Double(comps.hour ?? 0)
             let m = Double(comps.minute ?? 0)
             let s = Double(comps.second ?? 0)
-            let hourOfDay = h + (m / 60.0) + (s / 3600.0)
-
-            points.append(ChartDataEntry(x: Double(dayIndex), y: hourOfDay))
+            return h + (m / 60.0) + (s / 3600.0)
         }
 
-        let ds = ScatterChartDataSet(entries: points, label: "")
-        ds.setColor(.systemRed.withAlphaComponent(0.85))
-        ds.setScatterShape(.circle)
-        ds.scatterShapeSize = 7
-        ds.drawValuesEnabled = false
+        // Dataset 1: Alla fingersticks
+        var allPoints: [ChartDataEntry] = []
+        allPoints.reserveCapacity(selectedBGCheckDates.count)
+        for d in selectedBGCheckDates {
+            let dayStart = cal.startOfDay(for: d)
+            guard let dayIndex = indexByDay[dayStart] else { continue }
+            allPoints.append(ChartDataEntry(x: Double(dayIndex), y: hourOfDay(for: d)))
+        }
 
-        let data = ScatterChartData(dataSet: ds)
+        // Dataset 2: Fingerstick -> 🍬 (subset)
+        var dextroPoints: [ChartDataEntry] = []
+        dextroPoints.reserveCapacity(selectedBGCheckDextroDates.count)
+        for d in selectedBGCheckDextroDates {
+            let dayStart = cal.startOfDay(for: d)
+            guard let dayIndex = indexByDay[dayStart] else { continue }
+            dextroPoints.append(ChartDataEntry(x: Double(dayIndex), y: hourOfDay(for: d)))
+        }
+
+        let redColor = UIColor.systemRed
+        let purpleColor = UIColor.systemPurple
+
+        let dsAll = ScatterChartDataSet(entries: allPoints, label: "Fingerstick")
+        dsAll.setColor(redColor)
+        dsAll.setScatterShape(.circle)
+        dsAll.scatterShapeSize = 7
+        dsAll.drawValuesEnabled = false
+
+        let dsDextro = ScatterChartDataSet(entries: dextroPoints, label: "Fingerstick → 🍬")
+        dsDextro.setColor(purpleColor)
+        dsDextro.setScatterShape(.circle)
+        dsDextro.scatterShapeSize = 7
+        dsDextro.drawValuesEnabled = false
+
+        // Lägg dsDextro sist så lila ritas ovanpå röd vid samma koordinat
+        let data = ScatterChartData(dataSets: [dsAll, dsDextro])
         timeChartView.data = data
         timeChartView.autoScaleMinMaxEnabled = false
         timeChartView.notifyDataSetChanged()
+
+        // Legend under grafen
+        timeChartView.legend.enabled = true
+        timeChartView.legend.verticalAlignment = .bottom
+        timeChartView.legend.horizontalAlignment = .center
+        timeChartView.legend.orientation = .horizontal
+        timeChartView.legend.drawInside = false
+        timeChartView.legend.yOffset = 6
+
+        let e1 = LegendEntry(label: "Fingerstick")
+        e1.form = .circle
+        e1.formSize = 8
+        e1.formColor = redColor
+
+        let e2 = LegendEntry(label: "Fingerstick → 🍬")
+        e2.form = .circle
+        e2.formSize = 8
+        e2.formColor = purpleColor
+
+        timeChartView.legend.setCustom(entries: [e1, e2])
+        timeChartView.extraBottomOffset = 8
 
         // X-axis labels = datum (kompakt format) för varje index
         let df = DateFormatter()
