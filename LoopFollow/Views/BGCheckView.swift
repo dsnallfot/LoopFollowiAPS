@@ -133,7 +133,8 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             }
         }
 
-        let statsVC = BGCheckStatsViewController(days: days, counts: counts, dextroCounts: dextroCounts)
+        let bgCheckDates = entries.map { $0.date }
+        let statsVC = BGCheckStatsViewController(days: days, counts: counts, dextroCounts: dextroCounts, bgCheckDates: bgCheckDates)
         let nav = UINavigationController(rootViewController: statsVC)
 
         nav.modalPresentationStyle = .formSheet
@@ -389,11 +390,13 @@ final class BGCheckStatsViewController: ThemedTableViewController {
     private let allDays: [Date]
     private let allCounts: [Int]
     private let allDextroCounts: [Int]
+    private let allBGCheckDates: [Date]
 
     // Aktuell vy (styrd av segmented control)
     private var selectedDays: [Date] = []
     private var selectedCounts: [Int] = []
     private var selectedDextroCounts: [Int] = []
+    private var selectedBGCheckDates: [Date] = []
 
     private enum PeriodOption: CaseIterable {
         case d7, d14, d30, d90
@@ -417,7 +420,28 @@ final class BGCheckStatsViewController: ThemedTableViewController {
         }
     }
 
+    private enum ChartMode: CaseIterable {
+        case count, time
+
+        var title: String {
+            switch self {
+            case .count: return "Antal"
+            case .time:  return "Tid"
+            }
+        }
+    }
+
     private var selectedPeriod: PeriodOption = .d90
+
+    private var selectedMode: ChartMode = .count
+
+    private lazy var modeControl: UISegmentedControl = {
+        let items = ChartMode.allCases.map { $0.title }
+        let sc = UISegmentedControl(items: items)
+        sc.selectedSegmentIndex = ChartMode.allCases.firstIndex(of: selectedMode) ?? 0
+        sc.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
+        return sc
+    }()
 
     private lazy var periodControl: UISegmentedControl = {
         let items = PeriodOption.allCases.map { $0.title }
@@ -445,10 +469,29 @@ final class BGCheckStatsViewController: ThemedTableViewController {
         return v
     }()
 
-    init(days: [Date], counts: [Int], dextroCounts: [Int]) {
+    private let timeChartView: ScatterChartView = {
+        let v = ScatterChartView()
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1000000
+        return v
+    }()
+
+    init(days: [Date], counts: [Int], dextroCounts: [Int], bgCheckDates: [Date]) {
         self.allDays = days
         self.allCounts = counts
         self.allDextroCounts = dextroCounts
+        self.allBGCheckDates = bgCheckDates
         super.init(style: .insetGrouped)
     }
 
@@ -472,7 +515,9 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             selectedDays = []
             selectedCounts = []
             selectedDextroCounts = []
+            selectedBGCheckDates = []
             chartView.data = nil
+            timeChartView.data = nil
             tableView.reloadData()
             return
         }
@@ -482,6 +527,18 @@ final class BGCheckStatsViewController: ThemedTableViewController {
         selectedDays = Array(allDays[startIndex..<total])
         selectedCounts = Array(allCounts[startIndex..<total])
         selectedDextroCounts = Array(allDextroCounts[startIndex..<total])
+
+        // Compute date range for the selected days and filter BGCheck timestamps into it.
+        if let firstDay = selectedDays.first, let lastDay = selectedDays.last {
+            let cal = Calendar.current
+            let start = cal.startOfDay(for: firstDay)
+            let end = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: lastDay)) ?? Date.distantFuture
+            selectedBGCheckDates = allBGCheckDates
+                .filter { $0 >= start && $0 < end }
+                .sorted()
+        } else {
+            selectedBGCheckDates = []
+        }
 
         loadChartData()
         tableView.reloadData()
@@ -518,6 +575,12 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             periodControl.selectedSegmentIndex = idx
         }
 
+        // Default: Antal
+        selectedMode = .count
+        if let idx2 = ChartMode.allCases.firstIndex(of: selectedMode) {
+            modeControl.selectedSegmentIndex = idx2
+        }
+
         setupChartHeader()
         applyPeriod(initialPeriod)
     }
@@ -526,24 +589,46 @@ final class BGCheckStatsViewController: ThemedTableViewController {
 
     private func setupChartHeader() {
         let container = UIView()
-        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 300)
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 340)
         container.backgroundColor = .clear
-        
+
+        chartView.backgroundColor = .clear
+        timeChartView.backgroundColor = .clear
+        periodControl.backgroundColor = .clear
+        modeControl.backgroundColor = .clear
+
         container.addSubview(periodControl)
+        container.addSubview(modeControl)
         container.addSubview(chartView)
+        container.addSubview(timeChartView)
 
         periodControl.translatesAutoresizingMaskIntoConstraints = false
+        modeControl.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
+        timeChartView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Default visibility
+        chartView.isHidden = false
+        timeChartView.isHidden = true
 
         NSLayoutConstraint.activate([
             periodControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
             periodControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             periodControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
-            chartView.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 12),
+            modeControl.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 8),
+            modeControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            modeControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            chartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
             chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24),
+
+            timeChartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 12),
+            timeChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            timeChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            timeChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
         ])
 
         tableView.tableHeaderView = container
@@ -552,7 +637,7 @@ final class BGCheckStatsViewController: ThemedTableViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if let header = tableView.tableHeaderView {
-            let targetSize = CGSize(width: tableView.bounds.width, height: 300)
+            let targetSize = CGSize(width: tableView.bounds.width, height: 340)
             if header.frame.size != targetSize {
                 header.frame.size = targetSize
                 tableView.tableHeaderView = header
@@ -563,10 +648,21 @@ final class BGCheckStatsViewController: ThemedTableViewController {
     private func loadChartData() {
         guard selectedDays.count == selectedCounts.count, !selectedDays.isEmpty else {
             chartView.data = nil
+            timeChartView.data = nil
             chartView.setNeedsDisplay()
+            timeChartView.setNeedsDisplay()
             return
         }
 
+        switch selectedMode {
+        case .count:
+            loadCountChartData()
+        case .time:
+            loadTimeChartData()
+        }
+    }
+
+    private func loadCountChartData() {
         var entries: [BarChartDataEntry] = []
         entries.reserveCapacity(selectedDays.count)
 
@@ -622,6 +718,110 @@ final class BGCheckStatsViewController: ThemedTableViewController {
 
         chartView.rightAxis.enabled = false
         chartView.setNeedsDisplay()
+    }
+
+    private func loadTimeChartData() {
+        let cal = Calendar.current
+
+        // Index per dag för x-position
+        var indexByDay: [Date: Int] = [:]
+        for (idx, d) in selectedDays.enumerated() {
+            indexByDay[cal.startOfDay(for: d)] = idx
+        }
+
+        // Scatterpunkter: x = dag-index, y = timmar på dygnet (0–24)
+        var points: [ChartDataEntry] = []
+        points.reserveCapacity(selectedBGCheckDates.count)
+
+        for d in selectedBGCheckDates {
+            let dayStart = cal.startOfDay(for: d)
+            guard let dayIndex = indexByDay[dayStart] else { continue }
+
+            let comps = cal.dateComponents([.hour, .minute, .second], from: d)
+            let h = Double(comps.hour ?? 0)
+            let m = Double(comps.minute ?? 0)
+            let s = Double(comps.second ?? 0)
+            let hourOfDay = h + (m / 60.0) + (s / 3600.0)
+
+            points.append(ChartDataEntry(x: Double(dayIndex), y: hourOfDay))
+        }
+
+        let ds = ScatterChartDataSet(entries: points, label: "")
+        ds.setColor(.systemRed.withAlphaComponent(0.85))
+        ds.setScatterShape(.circle)
+        ds.scatterShapeSize = 7
+        ds.drawValuesEnabled = false
+
+        let data = ScatterChartData(dataSet: ds)
+        timeChartView.data = data
+        timeChartView.autoScaleMinMaxEnabled = false
+        timeChartView.notifyDataSetChanged()
+
+        // X-axis labels = datum (kompakt format) för varje index
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "dd/MM"
+        let labels = selectedDays.map { df.string(from: $0) }
+
+        let xAxis = timeChartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.granularity = 1
+        xAxis.granularityEnabled = true
+        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
+        xAxis.setLabelCount(min(6, labels.count), force: false)
+
+        // Y-axel = timmar på dygnet 0–24
+        let yAxis = timeChartView.leftAxis
+        yAxis.axisMinimum = 0
+        yAxis.axisMaximum = 24
+
+        // Dashad grid för varje timme, men endast labels vid 00/06/12/18/24
+        yAxis.granularity = 1
+        yAxis.granularityEnabled = true
+        yAxis.setLabelCount(25, force: false)
+        yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let v = Int(value.rounded())
+            guard [0, 6, 12, 18, 24].contains(v) else { return "" }
+            return String(format: "%02d:00", v)
+        }
+
+        // Rensa tidigare limit-lines
+        yAxis.removeAllLimitLines()
+
+        // Solida huvudlinjer vid 00/06/12/18/24
+        let majorLineColor = UIColor.lightGray.withAlphaComponent(0.65)
+        for hour in [0.0, 6.0, 12.0, 18.0, 24.0] {
+            let ll = ChartLimitLine(limit: hour)
+            ll.lineWidth = 0.8
+            ll.lineColor = majorLineColor
+            ll.lineDashLengths = []
+            ll.label = ""
+            yAxis.addLimitLine(ll)
+        }
+
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        timeChartView.rightAxis.enabled = false
+        timeChartView.setNeedsDisplay()
+    }
+
+    @objc private func modeChanged(_ sender: UISegmentedControl) {
+        let index = sender.selectedSegmentIndex
+        guard index >= 0 && index < ChartMode.allCases.count else { return }
+        selectedMode = ChartMode.allCases[index]
+
+        let showCount = (selectedMode == .count)
+        chartView.isHidden = !showCount
+        timeChartView.isHidden = showCount
+
+        loadChartData()
     }
 
     @objc private func dismissSelf() {
