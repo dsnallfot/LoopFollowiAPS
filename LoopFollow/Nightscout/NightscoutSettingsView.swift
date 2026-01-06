@@ -42,6 +42,7 @@ struct NightscoutSettingsView: View {
                 .onChange(of: viewModel.nightscoutURL) { newValue in
                     viewModel.processURL(newValue)
                 }
+            Divider().opacity(0.35)
         } header: {
             Text("URL")
         }
@@ -54,6 +55,7 @@ struct NightscoutSettingsView: View {
                 .textContentType(.password)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
+            Divider().opacity(0.35)
         } header: {
             Text("Token")
         }
@@ -63,6 +65,7 @@ struct NightscoutSettingsView: View {
     private var statusSection: some View {
         Section {
             Text(viewModel.nightscoutStatus)
+            Divider().opacity(0.35)
         } header: {
             Text("Status")
         }

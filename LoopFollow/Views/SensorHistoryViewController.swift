@@ -144,7 +144,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
         // --- Right side: info + done ---
         let infoButton = UIBarButtonItem(
-            image: UIImage(systemName: "info"),
+            image: UIImage(systemName: "chart.bar.xaxis.ascending"),
             style: .plain,
             target: self,
             action: #selector(showSessionStats)

@@ -34,6 +34,7 @@ struct DexcomSettingsView: View {
                     .pickerStyle(SegmentedPickerStyle())
 
                     Toggle("Endast adhoc hämtningar", isOn: $viewModel.adhocOnly)
+                    Divider().opacity(0.35)
                 }
                 .listRowBackground(Color.clear)
             }

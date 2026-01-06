@@ -342,7 +342,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         filter.tintColor = .label
 */
         let info = UIBarButtonItem(
-            image: UIImage(systemName: "info"),
+            image: UIImage(systemName: "chart.bar.xaxis.ascending"),
             style: .plain,
             target: self,
             action: #selector(showGlucoseStats)
@@ -1385,7 +1385,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             let expected = Double(expectedPerDay[i])
             guard expected > 0 else { continue }
 
-            let pct = Double(selectedCountsAllValues[i]) / expected * 100.0
+            let pct = Double(selectedCountsNSOnly[i]) / expected * 100.0
             if pct > bestPct {
                 bestPct = pct
                 bestDate = day
@@ -1418,7 +1418,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             cell.detailTextLabel?.text = "\(countString(avgMinutesNoAll)) min"
 
         case .bestAllDay:
-            cell.textLabel?.text = "Bästa dag värden"
+            cell.textLabel?.text = "Bästa dag Trio->NS"
             if let d = bestDate {
                 cell.detailTextLabel?.text = "\(percentString(bestPct)) • \(dfISO.string(from: d))"
             } else {
@@ -1426,7 +1426,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             }
 
         case .worstAllDay:
-            cell.textLabel?.text = "Sämsta dag värden"
+            cell.textLabel?.text = "Sämsta dag Trio->NS"
             if let d = worstDate {
                 cell.detailTextLabel?.text = "\(percentString(worstPct)) • \(dfISO.string(from: d))"
             } else {

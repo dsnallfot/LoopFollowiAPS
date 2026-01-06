@@ -72,7 +72,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         )
 
         let statsBtn = UIBarButtonItem(
-            image: UIImage(systemName: "info"),
+            image: UIImage(systemName: "chart.bar.xaxis.ascending"),
             style: .plain,
             target: self,
             action: #selector(showBGCheckStats)
@@ -980,8 +980,8 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             cell.detailTextLabel?.text = "\(maxSticksPerDay) ggr"
         case .longestNoStickStreak:
             cell.textLabel?.text = "Längsta streak utan stick"
-            let streak = longestStreakWithoutSticks()
-            cell.detailTextLabel?.text = "\(streak) dagar"
+            let streak = longestStreakWithoutSticks() * 24
+            cell.detailTextLabel?.text = "\(streak) h"
         case .dextroShare:
             cell.textLabel?.text = "Andel stick ⇢ 🍬"
             if totalSticks > 0 {

@@ -75,7 +75,7 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
         )
 
         let statsBtn = UIBarButtonItem(
-            image: UIImage(systemName: "info"),
+            image: UIImage(systemName: "chart.bar.xaxis.ascending"),
             style: .plain,
             target: self,
             action: #selector(showLowTreatmentStats)

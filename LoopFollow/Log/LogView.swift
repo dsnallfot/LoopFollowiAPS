@@ -102,9 +102,9 @@ struct LogView: View {
                 Button(action: {
                     isChartPresented = true
                 }) {
-                    Image(systemName: "info")
+                    Image(systemName: "chart.bar.xaxis.ascending")
                 }
-                .accessibilityLabel("Info")
+                .accessibilityLabel("chart")
             }
                 
                 ToolbarSpacer(placement: .topBarTrailing)

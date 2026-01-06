@@ -71,7 +71,7 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
         )
 
         let statsBtn = UIBarButtonItem(
-            image: UIImage(systemName: "info"),
+            image: UIImage(systemName: "chart.bar.xaxis.ascending"),
             style: .plain,
             target: self,
             action: #selector(showRestartStats)
