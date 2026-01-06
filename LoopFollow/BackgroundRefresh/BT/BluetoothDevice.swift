@@ -25,6 +25,10 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     private let maxTimeToWaitForPeripheralResponse = 5.0
     private var connectTimeOutTimer: Timer?
     var lastHeartbeatTime: Date?
+    // --- Begin Dexcom force-disconnect watchdog additions ---
+    private var lastConnectTime: Date?
+    private var forceDisconnectWorkItem: DispatchWorkItem?
+    // --- End Dexcom force-disconnect watchdog additions ---
 
     init(address:String, name:String?, CBUUID_Advertisement:String?, servicesCBUUIDs:[CBUUID]?, CBUUID_ReceiveCharacteristic:String, bluetoothDeviceDelegate: BluetoothDeviceDelegate) {
         self.lastHeartbeatTime = nil
@@ -45,10 +49,17 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     }
 
     deinit {
+        // --- Begin Dexcom force-disconnect watchdog cleanup ---
+        forceDisconnectWorkItem?.cancel()
+        forceDisconnectWorkItem = nil
+        // --- End Dexcom force-disconnect watchdog cleanup ---
         disconnect()
     }
 
     func connect() {
+        // Cancel any pending force-disconnect from a previous session
+        forceDisconnectWorkItem?.cancel()
+        forceDisconnectWorkItem = nil
         if let centralManager = centralManager, !retrievePeripherals(centralManager) {
             _ = startScanning()
         }
@@ -201,6 +212,30 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
 
         timeStampLastStatusUpdate = Date()
 
+        // --- Begin Dexcom force-disconnect watchdog ---
+        lastConnectTime = Date()
+
+        // Dexcom should normally connect briefly and then disconnect.
+        // If iOS/CB stack gets stuck in a long-lived connected state, we proactively force a disconnect
+        // so the next heartbeat cycle can occur and background tasks can keep running.
+        forceDisconnectWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self, weak peripheral] in
+            guard let self = self, let peripheral = peripheral else { return }
+            if peripheral.state == .connected {
+                let connectedFor = self.lastConnectTime.map { Date().timeIntervalSince($0) } ?? 0
+                LogManager.shared.log(
+                    category: .bluetooth,
+                    message: "[BLE] Force-disconnecting after \(String(format: "%.1f", connectedFor))s connected (Dexcom expected short session)",
+                    isDebug: true,
+                    isTempDebug: true
+                )
+                self.centralManager?.cancelPeripheralConnection(peripheral)
+            }
+        }
+        forceDisconnectWorkItem = workItem
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 15.0, execute: workItem)
+        // --- End Dexcom force-disconnect watchdog ---
+
         bluetoothDeviceDelegate?.didConnectTo(bluetoothDevice: self)
 
         peripheral.discoverServices(servicesCBUUIDs)
@@ -208,6 +243,12 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         timeStampLastStatusUpdate = Date()
+
+        // --- Begin Dexcom force-disconnect watchdog cleanup ---
+        forceDisconnectWorkItem?.cancel()
+        forceDisconnectWorkItem = nil
+        lastConnectTime = nil
+        // --- End Dexcom force-disconnect watchdog cleanup ---
 
         let peripheralName = peripheral.name ?? "Unknown"
         let errorMessage = error?.localizedDescription ?? "No error details provided"
@@ -230,7 +271,16 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         timeStampLastStatusUpdate = Date()
 
+        // Connection ended; cancel any pending force-disconnect watchdog.
+        forceDisconnectWorkItem?.cancel()
+        forceDisconnectWorkItem = nil
+        lastConnectTime = nil
+
         bluetoothDeviceDelegate?.didDisconnectFrom(bluetoothDevice: self)
+
+        if let error = error {
+            LogManager.shared.log(category: .bluetooth, message: "[BLE] didDisconnectPeripheral error: \(error.localizedDescription)", isDebug: true, isTempDebug: true)
+        }
 
         if let ownPeripheral = self.peripheral {
             centralManager?.connect(ownPeripheral, options: nil)
@@ -268,10 +318,34 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         timeStampLastStatusUpdate = Date()
+
+        if let error = error {
+            LogManager.shared.log(category: .bluetooth, message: "[BLE] didUpdateNotificationState error: \(error.localizedDescription)", isDebug: true, isTempDebug: true)
+        } else {
+            LogManager.shared.log(category: .bluetooth, message: "[BLE] Notifications \(characteristic.isNotifying ? "ENABLED" : "DISABLED") for \(characteristic.uuid.uuidString)", isDebug: true, isTempDebug: true)
+        }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         timeStampLastStatusUpdate = Date()
+
+        // Treat any notify update from the receive characteristic as a "heartbeat".
+        // This is important because iOS may keep the peripheral connected for long periods,
+        // which would otherwise prevent our disconnect-driven heartbeat from firing.
+        if characteristic.uuid == CBUUID(string: CBUUID_ReceiveCharacteristic) {
+            let now = Date()
+            self.lastHeartbeatTime = now
+
+            // Log lightly (temp debug) so we can correlate with background wakeups.
+            LogManager.shared.log(
+                category: .bluetooth,
+                message: "[BLE] didUpdateValue (heartbeat) from: \(deviceName ?? "Unknown")",
+                isDebug: true,
+                isTempDebug: true
+            )
+
+            bluetoothDeviceDelegate?.heartBeat()
+        }
     }
 
     func centralManager(_ central: CBCentralManager, willRestoreState dict: [String : Any]) {
