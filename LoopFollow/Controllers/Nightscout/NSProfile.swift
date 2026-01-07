@@ -117,6 +117,11 @@ struct NSProfile: Decodable {
     let trioExpirationDateString: String?
     let trioExpirationDate: Date?
     let trioExpirationFormatted: String?
+    
+    // New properties for profile created_at date
+    let profileCreatedAtString: String?
+    let profileCreatedAt: Date?
+    let profileCreatedAtFormatted: String?
 
     enum CodingKeys: String, CodingKey {
         case store
@@ -129,6 +134,7 @@ struct NSProfile: Decodable {
         case teamID
         case nsPreferences = "preferences"
         case trioExpirationDateString = "expirationDate" // Maps JSON key "expirationDate"
+        case profileCreatedAtString = "created_at" // Maps JSON key "created_at"
     }
     
     // Custom initializer to parse expiration date
@@ -169,6 +175,32 @@ struct NSProfile: Decodable {
             } else {
                 trioExpirationDate = nil
                 trioExpirationFormatted = "Unknown"
+            }
+            
+            // Decode Profile created_at date
+            profileCreatedAtString = try container.decodeIfPresent(String.self, forKey: .profileCreatedAtString)
+
+            if let createdAtString = profileCreatedAtString {
+                let isoFormatter = ISO8601DateFormatter()
+                isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                
+                if let parsedProfileDate = isoFormatter.date(from: createdAtString) {
+                    profileCreatedAt = parsedProfileDate
+                    
+                    // Format it into "YYYY-MM-DD, HH:mm"
+                    let displayFormatter = DateFormatter()
+                    displayFormatter.dateFormat = "yyyy-MM-dd, HH:mm"
+                    displayFormatter.locale = Locale(identifier: "en_US_POSIX")
+                    displayFormatter.timeZone = TimeZone.current  // Adjust to the user's local time zone
+                    
+                    profileCreatedAtFormatted = displayFormatter.string(from: parsedProfileDate)
+                } else {
+                    profileCreatedAt = nil
+                    profileCreatedAtFormatted = "Unknown"
+                }
+            } else {
+                profileCreatedAt = nil
+                profileCreatedAtFormatted = "Unknown"
             }
         }
 }

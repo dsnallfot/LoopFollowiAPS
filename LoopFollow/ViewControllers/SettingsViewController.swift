@@ -187,47 +187,6 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             )
         }
         
-        <<< ButtonRow() {
-            $0.title = "Trio Inställningslogg"
-            $0.presentationMode = .presentModally(
-                controllerProvider: .callback(builder: {
-                    let settingsLogVC = TrioSettingsLogView()
-
-                    let nav = UINavigationController(rootViewController: settingsLogVC)
-                    nav.modalPresentationStyle = .formSheet
-
-                    // Transparent modal container
-                    nav.view.backgroundColor = .clear
-                    nav.view.isOpaque = false
-                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    // Transparent navigation bar
-                    let appearance = UINavigationBarAppearance()
-                    appearance.configureWithTransparentBackground()
-                    nav.navigationBar.standardAppearance = appearance
-                    nav.navigationBar.scrollEdgeAppearance = appearance
-                    nav.navigationBar.compactAppearance = appearance
-
-                    // Match current interface style
-                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
-                    settingsLogVC.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
-
-                    return nav
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() {
-                $0.title = "Trio Omstartslogg"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let restartsVC = TrioRestartsView()
-                        return UINavigationController(rootViewController: restartsVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
         
         <<< ButtonRow() {
             $0.title = "Trio Oref Status"
@@ -239,7 +198,6 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                         .environment(\.colorScheme, isDark ? .dark : .light)
 
                     let hostingController = UIHostingController(rootView: trioOrefView)
-                    hostingController.title = "Trio Oref Status"
 
                     hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
                         title: "Klar",
@@ -325,6 +283,48 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                 onDismiss: nil
             )
         }
+        
+        <<< ButtonRow() {
+            $0.title = "Trio Inställningslogg"
+            $0.presentationMode = .presentModally(
+                controllerProvider: .callback(builder: {
+                    let settingsLogVC = TrioSettingsLogView()
+
+                    let nav = UINavigationController(rootViewController: settingsLogVC)
+                    nav.modalPresentationStyle = .formSheet
+
+                    // Transparent modal container
+                    nav.view.backgroundColor = .clear
+                    nav.view.isOpaque = false
+                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+                    // Transparent navigation bar
+                    let appearance = UINavigationBarAppearance()
+                    appearance.configureWithTransparentBackground()
+                    nav.navigationBar.standardAppearance = appearance
+                    nav.navigationBar.scrollEdgeAppearance = appearance
+                    nav.navigationBar.compactAppearance = appearance
+
+                    // Match current interface style
+                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+                    settingsLogVC.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+                    return nav
+                }),
+                onDismiss: nil
+            )
+        }
+        
+        <<< ButtonRow() {
+                $0.title = "Trio Omstartslogg"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let restartsVC = TrioRestartsView()
+                        return UINavigationController(rootViewController: restartsVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
         
         +++ Section(header: "\nDatafångst inställningar", footer: "")
         <<< SegmentedRow<String>("units") { row in

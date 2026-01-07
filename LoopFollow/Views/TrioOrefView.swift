@@ -117,5 +117,7 @@ struct TrioOrefView: View {
                 .background(Color.clear)
             }
         }
+        .navigationTitle(viewModel.formattedTitle)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

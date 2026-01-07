@@ -463,7 +463,7 @@ final class BGCheckStatsViewController: ThemedTableViewController {
 
     private let chartView: BarChartView = {
         let v = BarChartView()
-        v.legend.enabled = true
+        v.legend.enabled = false
         v.chartDescription.enabled = false
         v.rightAxis.enabled = false
         v.minOffset = 8
@@ -481,7 +481,7 @@ final class BGCheckStatsViewController: ThemedTableViewController {
 
     private let timeChartView: ScatterChartView = {
         let v = ScatterChartView()
-        v.legend.enabled = false
+        v.legend.enabled = true
         v.chartDescription.enabled = false
         v.rightAxis.enabled = false
         v.minOffset = 8

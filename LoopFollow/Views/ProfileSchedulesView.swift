@@ -14,6 +14,7 @@ struct ProfileSchedulesView: View {
     @ObservedObject var viewModel = ProfileSchedulesViewModel()
     
     @State private var selectedSection: SectionType = .targets // Default section
+    @State private var showProfileUpdatedAlert: Bool = false
 
     enum SectionType: String, CaseIterable {
         case targets = "Mål"
@@ -233,6 +234,21 @@ struct ProfileSchedulesView: View {
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
             }
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    showProfileUpdatedAlert = true
+                } label: {
+                    Image(systemName: "info")
+                }
+                .accessibilityLabel("Profil uppdaterades senast")
+            }
+        }
+        .alert("Profil uppdaterades senast", isPresented: $showProfileUpdatedAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(ProfileManager.shared.profileCreatedAtFormatted ?? "Okänt")
         }
     }
 

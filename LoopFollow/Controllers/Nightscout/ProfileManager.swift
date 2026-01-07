@@ -24,6 +24,10 @@ final class ProfileManager {
     var trioExpirationDateString: String?
     var trioExpirationDate: Date?
     var trioExpirationFormatted: String?
+    var profileCreatedAtString: String?
+    var profileCreatedAt: Date?
+    var profileCreatedAtFormatted: String?
+
 
     // MARK: - Nested Structures
     struct TimeValue<T> {
@@ -137,6 +141,33 @@ final class ProfileManager {
             } else {
                 self.trioExpirationDate = nil
                 self.trioExpirationFormatted = "Unknown"
+            }
+        
+        // Store Trio created at Date (Raw String)
+            self.profileCreatedAtString = profileData.profileCreatedAtString
+
+            // Parse and format created at date
+            if let createdAtString = profileData.profileCreatedAtString {
+                let isoFormatter = ISO8601DateFormatter()
+                isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+                if let parsedProfileDate = isoFormatter.date(from: createdAtString) {
+                    self.profileCreatedAt = parsedProfileDate
+                    
+                    // Format date to "YYYY-MM-DD, HH:mm"
+                    let displayFormatter = DateFormatter()
+                    displayFormatter.dateFormat = "yyyy-MM-dd, HH:mm"
+                    displayFormatter.locale = Locale(identifier: "en_US_POSIX")
+                    displayFormatter.timeZone = TimeZone.current  // Local timezone
+                    
+                    self.profileCreatedAtFormatted = displayFormatter.string(from: parsedProfileDate)
+                } else {
+                    self.profileCreatedAt = nil
+                    self.profileCreatedAtFormatted = "Unknown"
+                }
+            } else {
+                self.profileCreatedAt = nil
+                self.profileCreatedAtFormatted = "Unknown"
             }
         
         Storage.shared.deviceToken.value = profileData.deviceToken ?? ""

@@ -294,7 +294,7 @@ private struct LogViewChart: View {
 
         // 2) Förväntade: 1 per 5-minutersfönster från midnatt till NU
         let elapsed = max(0, now.timeIntervalSince(dayStart))
-        let expected = max(1, Int(elapsed / 300.0) + 1)
+        let expected = max(1, Int(elapsed / 300.0) )//+ 1)
 
         let percent: Double = expected > 0 ? (Double(pingActual) / Double(expected)) * 100.0 : 0
         let percentString = String(format: "%.0f%%", percent)
