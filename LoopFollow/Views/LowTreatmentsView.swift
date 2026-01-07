@@ -1254,6 +1254,16 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
                 purplePoints.append(entry)
             }
         }
+        
+        // Viktigt: sortera entries för att undvika Charts-bug där punkter kan försvinna vid zoom/scroll
+        allPoints.sort {
+            if $0.x == $1.x { return $0.y < $1.y }
+            return $0.x < $1.x
+        }
+        purplePoints.sort {
+            if $0.x == $1.x { return $0.y < $1.y }
+            return $0.x < $1.x
+        }
 
         let whiteColor = UIColor.white.withAlphaComponent(0.90)
         let purpleColor = UIColor.systemPurple.withAlphaComponent(0.95)

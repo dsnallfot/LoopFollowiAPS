@@ -761,6 +761,12 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             guard let dayIndex = indexByDay[dayStart] else { continue }
             allPoints.append(ChartDataEntry(x: Double(dayIndex), y: hourOfDay(for: d)))
         }
+        
+        // Viktigt: sortera entries för att undvika Charts-bug där punkter kan försvinna vid zoom/scroll
+        allPoints.sort {
+            if $0.x == $1.x { return $0.y < $1.y }
+            return $0.x < $1.x
+        }
 
         // Dataset 2: Fingerstick -> 🍬 (subset)
         var dextroPoints: [ChartDataEntry] = []
@@ -769,6 +775,12 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             let dayStart = cal.startOfDay(for: d)
             guard let dayIndex = indexByDay[dayStart] else { continue }
             dextroPoints.append(ChartDataEntry(x: Double(dayIndex), y: hourOfDay(for: d)))
+        }
+        
+        // Viktigt: sortera entries för att undvika Charts-bug där punkter kan försvinna vid zoom/scroll
+        dextroPoints.sort {
+            if $0.x == $1.x { return $0.y < $1.y }
+            return $0.x < $1.x
         }
 
         let redColor = UIColor.systemRed
