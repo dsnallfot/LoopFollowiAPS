@@ -211,6 +211,17 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
 
     private let headerStack = UIStackView()
 
+    private let dayLegendLabel: UILabel = {
+        let l = UILabel()
+        l.translatesAutoresizingMaskIntoConstraints = false
+        l.numberOfLines = 0
+        l.textAlignment = .center
+        l.font = UIFont.preferredFont(forTextStyle: .caption1)
+        l.textColor = .secondaryLabel
+        l.isHidden = false
+        return l
+    }()
+
     private let datePicker: UIDatePicker = {
         let dp = UIDatePicker()
         dp.datePickerMode = .date
@@ -337,6 +348,8 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
     private func setupCharts() {
         view.addSubview(dayChartView)
         view.addSubview(weekChartView)
+        view.addSubview(dayLegendLabel)
+        updateDayLegendText()
 
         dayChartView.delegate = self
         weekChartView.delegate = self
@@ -371,10 +384,13 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
             dayChartView.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
             dayChartView.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
             dayChartView.heightAnchor.constraint(equalToConstant: 300),
-            dayChartView.bottomAnchor.constraint(lessThanOrEqualTo: safe.bottomAnchor, constant: -8),
+            dayLegendLabel.topAnchor.constraint(equalTo: dayChartView.bottomAnchor, constant: 8),
+            dayLegendLabel.leadingAnchor.constraint(equalTo: dayChartView.leadingAnchor, constant: 15),
+            dayLegendLabel.trailingAnchor.constraint(equalTo: dayChartView.trailingAnchor),
+            dayLegendLabel.bottomAnchor.constraint(lessThanOrEqualTo: safe.bottomAnchor, constant: -8),
 
             weekChartView.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 10),
-            weekChartView.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            weekChartView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),//, constant: 8),
             weekChartView.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
             weekChartView.heightAnchor.constraint(equalToConstant: 300),
             weekChartView.bottomAnchor.constraint(lessThanOrEqualTo: safe.bottomAnchor, constant: -8)
@@ -514,12 +530,14 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         case .day:
             dayChartView.isHidden = false
             weekChartView.isHidden = true
+            dayLegendLabel.isHidden = false
             selectedDate = date
             datePicker.date = selectedDate
 
         case .week:
             dayChartView.isHidden = true
             weekChartView.isHidden = false
+            dayLegendLabel.isHidden = true
             selectedDate = startOfWeek(for: date)
             datePicker.date = selectedDate
         }
@@ -654,6 +672,30 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
     }
 
     // MARK: - Helpers
+
+    private func updateDayLegendText() {
+        let a = NSMutableAttributedString(string: "Batteristatus:  ")
+
+        func add(_ title: String, color: UIColor) {
+            let sq = NSAttributedString(
+                string: "■ ",
+                attributes: [.foregroundColor: color]
+            )
+            let txt = NSAttributedString(
+                string: title,
+                attributes: [.foregroundColor: UIColor.secondaryLabel]
+            )
+            a.append(sq)
+            a.append(txt)
+        }
+
+        add("Laddar  ", color: .systemBlue)
+        add("Bra  ", color: .systemGreen)
+        add("Låg  ", color: .systemOrange)
+        add("Akut låg", color: .systemRed)
+
+        dayLegendLabel.attributedText = a
+    }
 
     private func colorForBattery(percent: Double, isCharging: Bool) -> UIColor {
         if isCharging { return .systemBlue }
