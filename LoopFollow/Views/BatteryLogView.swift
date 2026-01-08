@@ -31,6 +31,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
         dp.datePickerMode = .date
         dp.preferredDatePickerStyle = .compact
         dp.translatesAutoresizingMaskIntoConstraints = false
+        dp.locale = Locale(identifier: "sv_SE")
         return dp
     }()
 
@@ -198,7 +199,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
 }
 
 /// Battery stats view with Day / Week visualization.
-final class BatteryLogStatsViewController: ThemedViewController {
+final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelegate {
 
     private enum Mode: Int {
         case day = 0
@@ -215,6 +216,7 @@ final class BatteryLogStatsViewController: ThemedViewController {
         dp.datePickerMode = .date
         dp.preferredDatePickerStyle = .compact
         dp.translatesAutoresizingMaskIntoConstraints = false
+        dp.locale = Locale(identifier: "sv_SE")
         return dp
     }()
 
@@ -234,7 +236,7 @@ final class BatteryLogStatsViewController: ThemedViewController {
         v.pinchZoomEnabled = false
         v.scaleXEnabled = false
         v.scaleYEnabled = false
-        v.highlightPerTapEnabled = false
+        v.highlightPerTapEnabled = true
         v.highlightPerDragEnabled = false
         return v
     }()
@@ -248,7 +250,7 @@ final class BatteryLogStatsViewController: ThemedViewController {
         v.pinchZoomEnabled = false
         v.scaleXEnabled = false
         v.scaleYEnabled = false
-        v.highlightPerTapEnabled = false
+        v.highlightPerTapEnabled = true
         v.highlightPerDragEnabled = false
         return v
     }()
@@ -336,6 +338,9 @@ final class BatteryLogStatsViewController: ThemedViewController {
         view.addSubview(dayChartView)
         view.addSubview(weekChartView)
 
+        dayChartView.delegate = self
+        weekChartView.delegate = self
+
         configureYAxis(for: dayChartView.leftAxis, rightAxis: dayChartView.rightAxis)
         configureYAxis(for: weekChartView.leftAxis, rightAxis: weekChartView.rightAxis)
 
@@ -349,6 +354,9 @@ final class BatteryLogStatsViewController: ThemedViewController {
         // Background / grid aesthetics
         dayChartView.backgroundColor = .clear
         weekChartView.backgroundColor = .clear
+
+        // Ensure content isn't clipped at edges
+        weekChartView.setExtraOffsets(left: 8, top: 0, right: 8, bottom: 0)
     }
 
     private func setupConstraints() {
@@ -422,14 +430,21 @@ final class BatteryLogStatsViewController: ThemedViewController {
         let x = weekChartView.xAxis
         x.labelPosition = .bottom
         x.drawGridLinesEnabled = false
-        x.drawAxisLineEnabled = false
+        x.drawAxisLineEnabled = true
+        x.axisLineColor = UIColor.label.withAlphaComponent(1.0)
+        x.axisLineWidth = 0.5
         x.labelTextColor = .secondaryLabel
         x.granularity = 1
-        x.axisMinimum = 0
-        x.axisMaximum = 6
+        // Add half-step padding so day 0 and day 6 candles are not clipped
+        x.axisMinimum = -0.5
+        x.axisMaximum = 6.5
         x.setLabelCount(7, force: true)
         x.valueFormatter = weekXAxisFormatter
-
+/*
+        // Extra spacing at chart edges (defensive)
+        x.spaceMin = 0.5
+        x.spaceMax = 0.5
+*/
         weekChartView.leftAxis.spaceTop = 5
         weekChartView.leftAxis.spaceBottom = 0
     }
@@ -509,6 +524,7 @@ final class BatteryLogStatsViewController: ThemedViewController {
             datePicker.date = selectedDate
         }
 
+        // Caller decides when to reload (avoids duplicate reloads during tap navigation)
         reload()
     }
 
@@ -560,7 +576,8 @@ final class BatteryLogStatsViewController: ThemedViewController {
         let set = BarChartDataSet(entries: entries, label: "")
         set.colors = colors
         set.drawValuesEnabled = false
-        set.highlightEnabled = false
+        set.drawValuesEnabled = false
+        set.highlightEnabled = true
 
         let data = BarChartData(dataSet: set)
         data.barWidth = 0.9
@@ -615,7 +632,8 @@ final class BatteryLogStatsViewController: ThemedViewController {
 
         let set = CandleChartDataSet(entries: candleEntries, label: "")
         set.drawValuesEnabled = false
-        set.highlightEnabled = false
+        set.highlightEnabled = true
+        set.setDrawHighlightIndicators(false)   // så du slipper crosshair-linjer
         set.shadowWidth = 1
         // Single color for all week candles (focus is on day-to-day range differences)
         let c = UIColor.systemGreen
@@ -651,6 +669,45 @@ final class BatteryLogStatsViewController: ThemedViewController {
             return cal.startOfDay(for: interval.start)
         }
         return cal.startOfDay(for: date)
+    }
+    
+    // MARK: - ChartViewDelegate (tap-to-navigate)
+
+    func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+        if chartView === weekChartView {
+            // Week -> Day: x is 0..6 for the day index in the selected week
+            let idx = Int(round(entry.x))
+            guard idx >= 0 && idx < 7 else { return }
+
+            let cal = Calendar.current
+            let weekStart = startOfWeek(for: selectedDate)
+            guard let dayDate = cal.date(byAdding: .day, value: idx, to: weekStart) else { return }
+
+            // Switch to day mode and show that date
+            applyMode(.day, keepingDate: dayDate)
+            selectedDate = cal.startOfDay(for: dayDate)
+            datePicker.date = selectedDate
+            reload()
+
+            // Clear highlight to avoid accidental re-selection
+            weekChartView.highlightValues(nil)
+
+        } else if chartView === dayChartView {
+            // Day -> Week: any bar tap opens the week containing the current selected day (Monday start)
+            let cal = Calendar.current
+            let weekStart = startOfWeek(for: selectedDate)
+
+            applyMode(.week, keepingDate: weekStart)
+            selectedDate = cal.startOfDay(for: weekStart)
+            datePicker.date = selectedDate
+            reload()
+
+            dayChartView.highlightValues(nil)
+        }
+    }
+    
+    func chartValueNothingSelected(_ chartView: ChartViewBase) {
+        // No-op
     }
 }
 

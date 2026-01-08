@@ -55,6 +55,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         dp.datePickerMode = .date
         dp.preferredDatePickerStyle = .compact
         dp.translatesAutoresizingMaskIntoConstraints = false
+        dp.locale = Locale(identifier: "sv_SE")
         return dp
     }()
 
