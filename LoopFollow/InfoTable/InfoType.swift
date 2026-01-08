@@ -35,7 +35,7 @@ enum InfoType: Int, CaseIterable {
         case .carbReq: return "Behov kh"
         case .af: return "Justeringsfaktor"
         case .smbRatio: return "SMB ratio"
-        case .pumpStatus: return "Pump status"
+        case .pumpStatus: return "Pumpstatus"
         case .smbStatus: return "SMB status"
         case .SMBUAMmin: return "SMB/UAM min"
         case .autosensMinMax: return "Autosens min/max"

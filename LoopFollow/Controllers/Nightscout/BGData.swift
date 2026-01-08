@@ -526,9 +526,9 @@ extension MainViewController {
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.systemRed, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: 0)
 
-                // If a Dexcom G7 sensor note exists after the latest BG, surface it as sensor error, otherwise N/A
-                if self.hasDexcomG7NoteTreatment(after: lastBGTime) {
-                    self.infoManager.updateInfoData(type: .sensorStatus, value: "Fel ⚠️")
+                // If a Dexcom G7 sensor note – surface severity; otherwise N/A
+                if let status = self.dexcomG7SensorStatus(after: lastBGTime) {
+                    self.infoManager.updateInfoData(type: .sensorStatus, value: status)
                     self.infoManager.setPriority(true, for: .sensorStatus)
                 } else {
                     self.infoManager.updateInfoData(type: .sensorStatus, value: "N/A")
@@ -539,9 +539,9 @@ extension MainViewController {
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.label, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: 0)
 
-                // If a Dexcom G7 sensor note exists after the latest BG, surface it as sensor error, otherwise N/A
-                if self.hasDexcomG7NoteTreatment(after: lastBGTime) {
-                    self.infoManager.updateInfoData(type: .sensorStatus, value: "Fel ⚠️")
+                // If a Dexcom G7 sensor note – surface severity; otherwise N/A
+                if let status = self.dexcomG7SensorStatus(after: lastBGTime) {
+                    self.infoManager.updateInfoData(type: .sensorStatus, value: status)
                     self.infoManager.setPriority(true, for: .sensorStatus)
                 } else {
                     self.infoManager.updateInfoData(type: .sensorStatus, value: "N/A")
@@ -639,16 +639,30 @@ extension MainViewController {
         }
     }
     
-    /// Returns true if there is a Nightscout Note treatment AFTER the latest BG timestamp
-    /// that contains "Dexcom G7" (used to surface sensor issues when BG becomes stale).
-    private func hasDexcomG7NoteTreatment(after latestBGTime: TimeInterval) -> Bool {
+    /// Returns a sensor-status string based on Dexcom G7 Nightscout Note treatments AFTER the latest BG timestamp.
+    /// We use the emoji prefix in the note to infer severity:
+    /// - "⛔️ Dexcom G7"  -> "Fel ⛔️"
+    /// - "⚠️ Dexcom G7" -> "Fel ⚠️"
+    /// Returns nil if no matching note exists.
+    private func dexcomG7SensorStatus(after latestBGTime: TimeInterval) -> String? {
         // noteGraphData is populated from NS treatments (Notes.swift)
         // noteStruct.date is in seconds since 1970.
-        guard !noteGraphData.isEmpty else { return false }
+        guard !noteGraphData.isEmpty else { return nil }
 
-        return noteGraphData.contains(where: { dot in
-            dot.date > latestBGTime && dot.note.localizedCaseInsensitiveContains("Dexcom G7")
-        })
+        // Only consider notes newer than the latest BG
+        let relevant = noteGraphData.filter { $0.date > latestBGTime }
+        guard !relevant.isEmpty else { return nil }
+
+        // Highest severity wins (⛔️ over ⚠️)
+        if relevant.contains(where: { $0.note.localizedCaseInsensitiveContains("⛔️ Dexcom G7") }) {
+            return "Fel ⛔️"
+        }
+
+        if relevant.contains(where: { $0.note.localizedCaseInsensitiveContains("⚠️ Dexcom G7") }) {
+            return "Fel ⚠️"
+        }
+
+        return nil
     }
 }
 
