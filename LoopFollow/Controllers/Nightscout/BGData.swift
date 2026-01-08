@@ -525,12 +525,34 @@ extension MainViewController {
             if deltaTime >= 11 { // Data is stale for 11 min +
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.systemRed, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: 0)
+
+                // If a Dexcom G7 sensor note exists after the latest BG, surface it as sensor error, otherwise N/A
+                if self.hasDexcomG7NoteTreatment(after: lastBGTime) {
+                    self.infoManager.updateInfoData(type: .sensorStatus, value: "Fel ⚠️")
+                    self.infoManager.setPriority(true, for: .sensorStatus)
+                } else {
+                    self.infoManager.updateInfoData(type: .sensorStatus, value: "N/A")
+                    self.infoManager.setPriority(false, for: .sensorStatus)
+                }
+
             } else if deltaTime >= 6 { // Data is stale for 6-11 min
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.label, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: 0)
+
+                // If a Dexcom G7 sensor note exists after the latest BG, surface it as sensor error, otherwise N/A
+                if self.hasDexcomG7NoteTreatment(after: lastBGTime) {
+                    self.infoManager.updateInfoData(type: .sensorStatus, value: "Fel ⚠️")
+                    self.infoManager.setPriority(true, for: .sensorStatus)
+                } else {
+                    self.infoManager.updateInfoData(type: .sensorStatus, value: "N/A")
+                    self.infoManager.setPriority(false, for: .sensorStatus)
+                }
+
             } else { // Data is fresh
                 attributeString.addAttribute(.strikethroughColor, value: UIColor.clear, range: NSRange(location: 0, length: attributeString.length))
                 self.updateBadge(val: latestBG)
+                self.infoManager.updateInfoData(type: .sensorStatus, value: "OK 🟢")
+                self.infoManager.setPriority(false, for: .sensorStatus)
             }
             self.BGText.attributedText = attributeString
             
@@ -615,6 +637,18 @@ extension MainViewController {
                 self.contactImageUpdater.updateContactImage(bgValue: bgTextStr, extra: extra, extra2: extra2, extra3: extra3, iob: iob, cob: cob, stale: deltaTime >= 6)//>= 12)
             }
         }
+    }
+    
+    /// Returns true if there is a Nightscout Note treatment AFTER the latest BG timestamp
+    /// that contains "Dexcom G7" (used to surface sensor issues when BG becomes stale).
+    private func hasDexcomG7NoteTreatment(after latestBGTime: TimeInterval) -> Bool {
+        // noteGraphData is populated from NS treatments (Notes.swift)
+        // noteStruct.date is in seconds since 1970.
+        guard !noteGraphData.isEmpty else { return false }
+
+        return noteGraphData.contains(where: { dot in
+            dot.date > latestBGTime && dot.note.localizedCaseInsensitiveContains("Dexcom G7")
+        })
     }
 }
 
