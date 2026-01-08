@@ -965,7 +965,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         }
     }
 
-    private var selectedPeriod: PeriodOption = .d14
+    private var selectedPeriod: PeriodOption = .d7
 
     private lazy var periodControl: UISegmentedControl = {
         let items = PeriodOption.allCases.map { $0.title }
@@ -1204,13 +1204,19 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         }
 
         let dsAll = BarChartDataSet(entries: entriesAll, label: "Alla värden")
-        dsAll.setColor(UIColor.systemRed.withAlphaComponent(0.5))
+        dsAll.setColor(UIColor(
+            red: 76.0/255.0,
+            green: 179.0/255.0,
+            blue: 72.0/255.0,
+            alpha: 1.0
+        ))
+        
         dsAll.drawValuesEnabled = false
         dsAll.barBorderColor = .black
         dsAll.barBorderWidth = 0.5
 
         let dsNS = BarChartDataSet(entries: entriesNS, label: "Uppladdningar Trio ⇢ NS")
-        dsNS.setColor(UIColor.systemBlue.withAlphaComponent(0.5))
+        dsNS.setColor(UIColor.systemPurple.withAlphaComponent(0.7))
         dsNS.drawValuesEnabled = false
         dsNS.barBorderColor = .black
         dsNS.barBorderWidth = 0.5
