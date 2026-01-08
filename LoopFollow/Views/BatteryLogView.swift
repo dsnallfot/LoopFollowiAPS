@@ -394,7 +394,9 @@ final class BatteryLogStatsViewController: ThemedViewController {
         leftAxis.gridLineDashLengths = [2, 2]
         leftAxis.gridColor = UIColor.label.withAlphaComponent(0.2)
 
-        leftAxis.drawAxisLineEnabled = false
+        leftAxis.drawAxisLineEnabled = true
+        leftAxis.axisLineColor = UIColor.label.withAlphaComponent(1.0)
+        leftAxis.axisLineWidth = 0.5
         leftAxis.labelTextColor = .secondaryLabel
     }
 
@@ -402,11 +404,13 @@ final class BatteryLogStatsViewController: ThemedViewController {
         let x = dayChartView.xAxis
         x.labelPosition = .bottom
         x.drawGridLinesEnabled = false
-        x.drawAxisLineEnabled = false
+        x.drawAxisLineEnabled = true
+        x.axisLineColor = UIColor.label.withAlphaComponent(1.0)
+        x.axisLineWidth = 0.5
         x.labelTextColor = .secondaryLabel
         x.granularity = 1
         x.axisMinimum = 0
-        x.axisMaximum = 24
+        x.axisMaximum = 96
         x.setLabelCount(5, force: true)
         x.valueFormatter = dayXAxisFormatter
 
@@ -525,27 +529,30 @@ final class BatteryLogStatsViewController: ThemedViewController {
         // Sort ascending by time
         let sorted = samples.sorted { $0.date < $1.date }
 
-        // Pick the FIRST sample per hour (local time)
-        var firstByHour: [Int: BatterySampleJSON] = [:]
+        // Pick the FIRST sample per 15-minute bucket (local time)
+        // Bucket index: 0..95 (each is 15 minutes)
+        var firstByQuarter: [Int: BatterySampleJSON] = [:]
         let cal = Calendar.current
         for s in sorted {
             let d = Date(timeIntervalSince1970: s.date)
             let hour = cal.component(.hour, from: d)
-            if firstByHour[hour] == nil {
-                firstByHour[hour] = s
+            let minute = cal.component(.minute, from: d)
+            let quarter = hour * 4 + (minute / 15)
+            if quarter >= 0 && quarter < 96, firstByQuarter[quarter] == nil {
+                firstByQuarter[quarter] = s
             }
         }
 
         var entries: [BarChartDataEntry] = []
         var colors: [UIColor] = []
 
-        for hour in 0..<24 {
-            if let s = firstByHour[hour] {
-                entries.append(BarChartDataEntry(x: Double(hour), y: s.percent))
+        for q in 0..<96 {
+            if let s = firstByQuarter[q] {
+                entries.append(BarChartDataEntry(x: Double(q), y: s.percent))
                 colors.append(colorForBattery(percent: s.percent, isCharging: s.isCharging))
             } else {
-                // No data for this hour -> invisible bar
-                entries.append(BarChartDataEntry(x: Double(hour), y: 0))
+                // No data for this 15-min bucket -> invisible bar (gap)
+                entries.append(BarChartDataEntry(x: Double(q), y: 0))
                 colors.append(UIColor.clear)
             }
         }
@@ -556,7 +563,7 @@ final class BatteryLogStatsViewController: ThemedViewController {
         set.highlightEnabled = false
 
         let data = BarChartData(dataSet: set)
-        data.barWidth = 0.8
+        data.barWidth = 0.9
 
         await MainActor.run {
             self.dayChartView.data = data
@@ -664,10 +671,10 @@ private final class DayBatteryXAxisFormatter: AxisValueFormatter {
         let i = Int(round(value))
         switch i {
         case 0: return "00"
-        case 6: return "06"
-        case 12: return "12"
-        case 18: return "18"
-        case 24: return "24"
+        case 24: return "06"
+        case 48: return "12"
+        case 72: return "18"
+        case 96: return "24"
         default: return ""
         }
     }
