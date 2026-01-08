@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import Charts
 
 // MARK: - Battery Log
 
@@ -42,7 +43,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Trio Batterilogg"
+        title = "Trio batterilogg"
         updateBackgroundForCurrentMode()
 
         setupNavigationBar()
@@ -196,50 +197,498 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     }
 }
 
-/// Placeholder stats view – we’ll design charts later.
-final class BatteryLogStatsViewController: ThemedTableViewController {
+/// Battery stats view with Day / Week visualization.
+final class BatteryLogStatsViewController: ThemedViewController {
 
-    init() {
-        super.init(style: .insetGrouped)
+    private enum Mode: Int {
+        case day = 0
+        case week = 1
     }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
+    private var mode: Mode = .day
+    private var selectedDate: Date = Date()
+
+    private let headerStack = UIStackView()
+
+    private let datePicker: UIDatePicker = {
+        let dp = UIDatePicker()
+        dp.datePickerMode = .date
+        dp.preferredDatePickerStyle = .compact
+        dp.translatesAutoresizingMaskIntoConstraints = false
+        return dp
+    }()
+
+    private let modeSegment: UISegmentedControl = {
+        let s = UISegmentedControl(items: ["Dag", "Vecka"])
+        s.selectedSegmentIndex = 0
+        s.translatesAutoresizingMaskIntoConstraints = false
+        return s
+    }()
+
+    private let dayChartView: BarChartView = {
+        let v = BarChartView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.doubleTapToZoomEnabled = false
+        v.pinchZoomEnabled = false
+        v.scaleXEnabled = false
+        v.scaleYEnabled = false
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        return v
+    }()
+
+    private let weekChartView: CandleStickChartView = {
+        let v = CandleStickChartView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.doubleTapToZoomEnabled = false
+        v.pinchZoomEnabled = false
+        v.scaleXEnabled = false
+        v.scaleYEnabled = false
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        return v
+    }()
+
+    // Formatters
+    private let dayXAxisFormatter = DayBatteryXAxisFormatter()
+    private let weekXAxisFormatter = WeekBatteryXAxisFormatter()
+    private let yAxisFormatter = BatteryYAxisValueFormatter()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        updateBackgroundForCurrentMode()
-        tableView.backgroundColor = .clear
-        tableView.isOpaque = false
-        tableView.layer.backgroundColor = UIColor.clear.cgColor
         title = "Batteristatistik"
+        updateBackgroundForCurrentMode()
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+        setupNavigationBar()
+        setupHeader()
+        setupCharts()
+        setupConstraints()
+
+        // Date picker bounds follow cache retention
+        let cal = Calendar.current
+        if let oldest = cal.date(byAdding: .day, value: -BatteryCache.retentionDays + 1, to: Date()) {
+            datePicker.minimumDate = oldest
+        }
+        datePicker.maximumDate = Date()
+        datePicker.date = selectedDate
+
+        modeSegment.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
+        datePicker.addTarget(self, action: #selector(dateChanged(_:)), for: .valueChanged)
+
+        applyMode(.day, keepingDate: selectedDate)
+    }
+
+    // MARK: - UI setup
+
+    private func setupNavigationBar() {
+        let done = UIBarButtonItem(
             title: "Klar",
             style: .plain,
             target: self,
             action: #selector(dismissSelf)
         )
 
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "BatteryStatsCell")
+        let prev = UIBarButtonItem(
+            image: UIImage(systemName: "chevron.left"),
+            style: .plain,
+            target: self,
+            action: #selector(previousTapped)
+        )
+
+        let next = UIBarButtonItem(
+            image: UIImage(systemName: "chevron.right"),
+            style: .plain,
+            target: self,
+            action: #selector(nextTapped)
+        )
+
+        navigationItem.rightBarButtonItem = done
+        navigationItem.leftBarButtonItems = [prev, next]
     }
+
+    private func setupHeader() {
+        headerStack.axis = .horizontal
+        headerStack.alignment = .center
+        headerStack.distribution = .fill
+        headerStack.spacing = 8
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(headerStack)
+        headerStack.addArrangedSubview(datePicker)
+        headerStack.addArrangedSubview(UIView())
+        headerStack.addArrangedSubview(modeSegment)
+
+        // Keep compact sizing similar to other screens
+        datePicker.setContentHuggingPriority(.required, for: .horizontal)
+        datePicker.setContentCompressionResistancePriority(.required, for: .horizontal)
+        modeSegment.setContentHuggingPriority(.required, for: .horizontal)
+        modeSegment.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        datePicker.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        datePicker.widthAnchor.constraint(lessThanOrEqualToConstant: 130).isActive = true
+    }
+
+    private func setupCharts() {
+        view.addSubview(dayChartView)
+        view.addSubview(weekChartView)
+
+        configureYAxis(for: dayChartView.leftAxis, rightAxis: dayChartView.rightAxis)
+        configureYAxis(for: weekChartView.leftAxis, rightAxis: weekChartView.rightAxis)
+
+        configureDayXAxis()
+        configureWeekXAxis()
+
+        // Initial visibility
+        dayChartView.isHidden = false
+        weekChartView.isHidden = true
+
+        // Background / grid aesthetics
+        dayChartView.backgroundColor = .clear
+        weekChartView.backgroundColor = .clear
+    }
+
+    private func setupConstraints() {
+        let safe = view.safeAreaLayoutGuide
+
+        NSLayoutConstraint.activate([
+            headerStack.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
+            headerStack.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            headerStack.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
+
+            dayChartView.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 10),
+            dayChartView.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            dayChartView.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
+            dayChartView.heightAnchor.constraint(equalToConstant: 300),
+            dayChartView.bottomAnchor.constraint(lessThanOrEqualTo: safe.bottomAnchor, constant: -8),
+
+            weekChartView.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 10),
+            weekChartView.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            weekChartView.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
+            weekChartView.heightAnchor.constraint(equalToConstant: 300),
+            weekChartView.bottomAnchor.constraint(lessThanOrEqualTo: safe.bottomAnchor, constant: -8)
+        ])
+    }
+
+    // MARK: - Axis configuration
+
+    private func configureYAxis(for leftAxis: YAxis, rightAxis: YAxis) {
+        rightAxis.enabled = false
+
+        leftAxis.axisMinimum = 0
+        leftAxis.axisMaximum = 100
+
+        // Grid every 10%
+        leftAxis.granularityEnabled = true
+        leftAxis.granularity = 10
+
+        // Force ticks across the full range (0..100) so 50% reliably appears
+        leftAxis.setLabelCount(11, force: true)
+        leftAxis.valueFormatter = yAxisFormatter
+        leftAxis.drawLabelsEnabled = true
+
+        leftAxis.drawGridLinesEnabled = true
+        leftAxis.gridLineDashLengths = [2, 2]
+        leftAxis.gridColor = UIColor.label.withAlphaComponent(0.2)
+
+        leftAxis.drawAxisLineEnabled = false
+        leftAxis.labelTextColor = .secondaryLabel
+    }
+
+    private func configureDayXAxis() {
+        let x = dayChartView.xAxis
+        x.labelPosition = .bottom
+        x.drawGridLinesEnabled = false
+        x.drawAxisLineEnabled = false
+        x.labelTextColor = .secondaryLabel
+        x.granularity = 1
+        x.axisMinimum = 0
+        x.axisMaximum = 24
+        x.setLabelCount(5, force: true)
+        x.valueFormatter = dayXAxisFormatter
+
+        dayChartView.leftAxis.spaceTop = 5
+        dayChartView.leftAxis.spaceBottom = 0
+    }
+
+    private func configureWeekXAxis() {
+        let x = weekChartView.xAxis
+        x.labelPosition = .bottom
+        x.drawGridLinesEnabled = false
+        x.drawAxisLineEnabled = false
+        x.labelTextColor = .secondaryLabel
+        x.granularity = 1
+        x.axisMinimum = 0
+        x.axisMaximum = 6
+        x.setLabelCount(7, force: true)
+        x.valueFormatter = weekXAxisFormatter
+
+        weekChartView.leftAxis.spaceTop = 5
+        weekChartView.leftAxis.spaceBottom = 0
+    }
+
+    // MARK: - Actions
 
     @objc private func dismissSelf() {
         dismiss(animated: true)
     }
 
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1
+    @objc private func modeChanged(_ sender: UISegmentedControl) {
+        let newMode: Mode = sender.selectedSegmentIndex == 0 ? .day : .week
+        applyMode(newMode, keepingDate: selectedDate)
     }
 
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "BatteryStatsCell", for: indexPath)
-        cell.textLabel?.numberOfLines = 0
-        cell.textLabel?.text = "Graf/visualisering kommer i nästa steg.\n\nJust nu bygger vi bara upp batterihistoriken lokalt (upp till 91 dagar)."
-        cell.backgroundColor = .clear
-        cell.contentView.backgroundColor = .clear
-        cell.selectionStyle = .none
-        return cell
+    @objc private func dateChanged(_ sender: UIDatePicker) {
+        selectedDate = sender.date
+        if mode == .week {
+            // Snap to start-of-week so week navigation behaves consistently
+            selectedDate = startOfWeek(for: selectedDate)
+            datePicker.date = selectedDate
+        }
+        reload()
+    }
+
+    @objc private func previousTapped() {
+        let cal = Calendar.current
+        switch mode {
+        case .day:
+            selectedDate = cal.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+        case .week:
+            selectedDate = cal.date(byAdding: .day, value: -7, to: selectedDate) ?? selectedDate
+            selectedDate = startOfWeek(for: selectedDate)
+        }
+        datePicker.date = selectedDate
+        reload()
+    }
+
+    @objc private func nextTapped() {
+        let cal = Calendar.current
+        let today = Date()
+        switch mode {
+        case .day:
+            selectedDate = cal.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+        case .week:
+            selectedDate = cal.date(byAdding: .day, value: 7, to: selectedDate) ?? selectedDate
+            selectedDate = startOfWeek(for: selectedDate)
+        }
+
+        // Prevent navigating into the future
+        if selectedDate > today {
+            selectedDate = today
+            if mode == .week { selectedDate = startOfWeek(for: selectedDate) }
+        }
+
+        datePicker.date = selectedDate
+        reload()
+    }
+
+    // MARK: - Mode
+
+    private func applyMode(_ newMode: Mode, keepingDate date: Date) {
+        mode = newMode
+        modeSegment.selectedSegmentIndex = newMode.rawValue
+
+        switch newMode {
+        case .day:
+            dayChartView.isHidden = false
+            weekChartView.isHidden = true
+            selectedDate = date
+            datePicker.date = selectedDate
+
+        case .week:
+            dayChartView.isHidden = true
+            weekChartView.isHidden = false
+            selectedDate = startOfWeek(for: date)
+            datePicker.date = selectedDate
+        }
+
+        reload()
+    }
+
+    // MARK: - Data loading + chart building
+
+    private func reload() {
+        switch mode {
+        case .day:
+            Task { await buildDayChart(for: selectedDate) }
+        case .week:
+            Task { await buildWeekChart(startingAt: startOfWeek(for: selectedDate)) }
+        }
+    }
+
+    private func buildDayChart(for date: Date) async {
+        let samples = await BatteryCache.loadDay(date)
+
+        // Sort ascending by time
+        let sorted = samples.sorted { $0.date < $1.date }
+
+        // Pick the FIRST sample per hour (local time)
+        var firstByHour: [Int: BatterySampleJSON] = [:]
+        let cal = Calendar.current
+        for s in sorted {
+            let d = Date(timeIntervalSince1970: s.date)
+            let hour = cal.component(.hour, from: d)
+            if firstByHour[hour] == nil {
+                firstByHour[hour] = s
+            }
+        }
+
+        var entries: [BarChartDataEntry] = []
+        var colors: [UIColor] = []
+
+        for hour in 0..<24 {
+            if let s = firstByHour[hour] {
+                entries.append(BarChartDataEntry(x: Double(hour), y: s.percent))
+                colors.append(colorForBattery(percent: s.percent, isCharging: s.isCharging))
+            } else {
+                // No data for this hour -> invisible bar
+                entries.append(BarChartDataEntry(x: Double(hour), y: 0))
+                colors.append(UIColor.clear)
+            }
+        }
+
+        let set = BarChartDataSet(entries: entries, label: "")
+        set.colors = colors
+        set.drawValuesEnabled = false
+        set.highlightEnabled = false
+
+        let data = BarChartData(dataSet: set)
+        data.barWidth = 0.8
+
+        await MainActor.run {
+            self.dayChartView.data = data
+            self.dayChartView.notifyDataSetChanged()
+        }
+    }
+
+    private func buildWeekChart(startingAt weekStart: Date) async {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: weekStart)
+        let end = cal.date(byAdding: .day, value: 6, to: start) ?? start
+
+        // Load all samples in the week window (inclusive).
+        let endOfLastDay = cal.date(byAdding: .day, value: 1, to: end)!.addingTimeInterval(-1)
+        let samples = await BatteryCache.loadWindow(from: start, to: endOfLastDay)
+
+        // Build min/max per day
+        var perDay: [[BatterySampleJSON]] = Array(repeating: [], count: 7)
+        for s in samples {
+            let d = Date(timeIntervalSince1970: s.date)
+            let idx = cal.dateComponents([.day], from: start, to: cal.startOfDay(for: d)).day ?? 0
+            if idx >= 0 && idx < 7 {
+                perDay[idx].append(s)
+            }
+        }
+
+        var candleEntries: [CandleChartDataEntry] = []
+
+        for i in 0..<7 {
+            let daySamples = perDay[i].sorted { $0.date < $1.date }
+            let dayDate = cal.date(byAdding: .day, value: i, to: start) ?? start
+
+            if daySamples.isEmpty {
+                // Empty day -> invisible candle at 0
+                candleEntries.append(CandleChartDataEntry(x: Double(i), shadowH: 0, shadowL: 0, open: 0, close: 0))
+                continue
+            }
+
+            let percents = daySamples.map { $0.percent }
+            let hi = percents.max() ?? 0
+            let lo = percents.min() ?? 0
+
+            // Use open/close to create a body; keep it consistent (open=hi, close=lo).
+            candleEntries.append(CandleChartDataEntry(x: Double(i), shadowH: hi, shadowL: lo, open: hi, close: lo))
+
+            // Label for x-axis
+            weekXAxisFormatter.setLabel(forIndex: i, date: dayDate)
+        }
+
+        let set = CandleChartDataSet(entries: candleEntries, label: "")
+        set.drawValuesEnabled = false
+        set.highlightEnabled = false
+        set.shadowWidth = 1
+        // Single color for all week candles (focus is on day-to-day range differences)
+        let c = UIColor.systemGreen
+        set.shadowColor = c
+        set.increasingColor = c
+        set.decreasingColor = c
+        set.neutralColor = c
+        set.shadowColorSameAsCandle = true
+        set.formLineWidth = 0
+        set.barSpace = 0.2
+
+        let data = CandleChartData(dataSet: set)
+
+        await MainActor.run {
+            self.weekChartView.data = data
+            self.weekChartView.notifyDataSetChanged()
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func colorForBattery(percent: Double, isCharging: Bool) -> UIColor {
+        if isCharging { return .systemPurple }
+        if percent >= 50 { return .systemGreen }
+        if percent >= 20 { return .systemOrange }
+        return .systemRed
+    }
+
+    private func startOfWeek(for date: Date) -> Date {
+        let cal = Calendar.current
+        // Use user's locale/calendar settings
+        if let interval = cal.dateInterval(of: .weekOfYear, for: date) {
+            return cal.startOfDay(for: interval.start)
+        }
+        return cal.startOfDay(for: date)
+    }
+}
+
+// MARK: - Axis formatters
+
+private final class BatteryYAxisValueFormatter: AxisValueFormatter {
+    func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+        let v = Int(round(value))
+        if v == 0 || v == 50 || v == 100 {
+            return "\(v) %"
+        }
+        return ""
+    }
+}
+
+private final class DayBatteryXAxisFormatter: AxisValueFormatter {
+    func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+        let i = Int(round(value))
+        switch i {
+        case 0: return "00"
+        case 6: return "06"
+        case 12: return "12"
+        case 18: return "18"
+        case 24: return "24"
+        default: return ""
+        }
+    }
+}
+
+private final class WeekBatteryXAxisFormatter: AxisValueFormatter {
+
+    private var labels: [Int: String] = [:]
+    private let df: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "sv_SE")
+        f.dateFormat = "dd/MM"
+        return f
+    }()
+
+    func setLabel(forIndex idx: Int, date: Date) {
+        labels[idx] = df.string(from: date)
+    }
+
+    func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+        let i = Int(round(value))
+        return labels[i] ?? ""
     }
 }

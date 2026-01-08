@@ -56,7 +56,7 @@ class TrioOrefViewModel: ObservableObject {
                         formatter.dateFormat = "HH:mm:ss"
                         formatter.timeZone = .current
                         let localTime = formatter.string(from: parsedDate)
-                        self.formattedTitle = "Trio Oref Status: \(localTime)"
+                        self.formattedTitle = "Trio oref status: \(localTime)"
                         LogManager.shared.log(category: .trio, message: "✅ Parsed and displayed local date: \(localTime)", isDebug: true)
                     } else {
                         LogManager.shared.log(category: .trio, message: "⚠️ Could not parse oref2.date: \(oref2.date)", isDebug: true)
