@@ -638,7 +638,7 @@ final class BatteryLogStatsViewController: ThemedViewController {
     // MARK: - Helpers
 
     private func colorForBattery(percent: Double, isCharging: Bool) -> UIColor {
-        if isCharging { return .systemPurple }
+        if isCharging { return .systemBlue }
         if percent >= 50 { return .systemGreen }
         if percent >= 20 { return .systemOrange }
         return .systemRed
