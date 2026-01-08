@@ -339,6 +339,135 @@ final class NightscoutCache {
     }
 }
 
+// MARK: - Battery history cache (local only, built incrementally from deviceStatus)
+
+/// One battery reading.
+struct BatterySampleJSON: Codable {
+    let date: TimeInterval      // seconds since 1970
+    let percent: Double         // 0-100
+    let isCharging: Bool
+}
+
+/// One day’s battery payload on disk.
+private struct BatteryDayPayload: Codable {
+    var samples: [BatterySampleJSON]
+}
+
+/// Local disk cache for uploader battery readings (built over time).
+final class BatteryCache {
+
+    /// Keep up to ~3 months to match other logs.
+    static var retentionDays = 91
+
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withFullDate]
+        return f
+    }()
+
+    private static var dir: URL = {
+        let d = FileManager.default
+            .urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("BatteryCache", isDirectory: true)
+        return d
+    }()
+
+    /// Append a single battery sample to the appropriate day file. Best-effort only.
+    /// Deduplicates by timestamp (last one wins).
+    static func appendSample(timestamp: TimeInterval, batteryPercent: Double, isCharging: Bool) {
+        let cal = Calendar.current
+        let day = cal.startOfDay(for: Date(timeIntervalSince1970: timestamp))
+
+        let sample = BatterySampleJSON(date: timestamp, percent: batteryPercent, isCharging: isCharging)
+
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+            var payload: BatteryDayPayload
+            if let existing = try? readDay(day) {
+                payload = existing
+            } else {
+                payload = BatteryDayPayload(samples: [])
+            }
+
+            // Deduplicate by timestamp (last wins)
+            var byTs: [TimeInterval: BatterySampleJSON] = [:]
+            for s in payload.samples { byTs[s.date] = s }
+            byTs[sample.date] = sample
+
+            payload.samples = byTs.values.sorted { $0.date < $1.date }
+
+            try writeDay(date: day, payload: payload)
+
+            purgeOldFiles()
+        } catch {
+            // Best-effort cache only; ignore write errors.
+        }
+    }
+
+    /// Load samples between start and end (inclusive). Returns ascending by time.
+    static func loadWindow(from start: Date, to end: Date) async -> [BatterySampleJSON] {
+        var all: [BatterySampleJSON] = []
+        let cal = Calendar.current
+        var day = cal.startOfDay(for: start)
+        let last = cal.startOfDay(for: end)
+
+        while day <= last {
+            if let dayData = try? readDay(day) {
+                all += dayData.samples
+            }
+            day = cal.date(byAdding: .day, value: 1, to: day)!
+        }
+
+        let s = start.timeIntervalSince1970
+        let e = end.timeIntervalSince1970
+        all = all.filter { $0.date >= s && $0.date <= e }
+        return all.sorted { $0.date < $1.date }
+    }
+
+    /// Load one calendar day (local time) worth of samples. Returns ascending by time.
+    static func loadDay(_ date: Date) async -> [BatterySampleJSON] {
+        let cal = Calendar.current
+        let day = cal.startOfDay(for: date)
+        return (try? readDay(day))?.samples.sorted { $0.date < $1.date } ?? []
+    }
+
+    /// Delete cached files older than `retentionDays` calendar days.
+    static func purgeOldFiles() {
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: Date())
+        let oldestToKeep = calendar.date(byAdding: .day, value: -retentionDays, to: todayStart)!
+
+        for url in (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? [] {
+            guard let dayDate = isoFormatter.date(from: url.deletingPathExtension().lastPathComponent) else {
+                continue
+            }
+            let localDayStart = calendar.startOfDay(for: dayDate)
+            if localDayStart < oldestToKeep {
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+    }
+
+    // MARK: - Private helpers
+
+    private static func fileURL(for date: Date) -> URL {
+        let dayStr = isoFormatter.string(from: Calendar.current.startOfDay(for: date))
+        return dir.appendingPathComponent(dayStr).appendingPathExtension("json")
+    }
+
+    private static func readDay(_ date: Date) throws -> BatteryDayPayload {
+        let url = fileURL(for: date)
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(BatteryDayPayload.self, from: data)
+    }
+
+    private static func writeDay(date: Date, payload: BatteryDayPayload) throws {
+        let data = try JSONEncoder().encode(payload)
+        try data.write(to: fileURL(for: date), options: .atomic)
+    }
+}
+
 // MARK: - NS-only SGV cache for GlucoseView
 
 /// Lightweight per-day payload for NS-only glucose cache (no treatments).

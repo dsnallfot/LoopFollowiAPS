@@ -59,9 +59,9 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         let trioExpiration = ProfileManager.shared.trioExpirationFormatted ?? "Unknown"
 
         form
-        +++ Section("Historik & Statistik")
+        +++ Section("Historik & statistik")
         <<< ButtonRow() {
-            $0.title = "Aggregerad Statistik"
+            $0.title = "Aggregerad statistik"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     self.presentStatsView()
@@ -116,7 +116,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             }
         
         <<< ButtonRow() {
-                $0.title = "Pumpbyten Logg"
+                $0.title = "Pumpbyten logg"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
                         let pumpHistoryVC = PumpHistoryViewController()
@@ -127,7 +127,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             }
         
         <<< ButtonRow() {
-                $0.title = "Sensorbyten Logg"
+                $0.title = "Sensorbyten logg"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
                         let sensorHistoryVC = SensorHistoryViewController()
@@ -137,9 +137,9 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                 )
             }
         
-        +++ Section("\nTrio Inställningar och status")
+        +++ Section("\nTrio inställningar och status")
         <<< ButtonRow() {
-            $0.title = "Trio Användarinställningar"
+            $0.title = "Trio användarinställningar"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -148,7 +148,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                         .environment(\.colorScheme, isDark ? .dark : .light)
 
                     let hostingController = UIHostingController(rootView: trioView)
-                    hostingController.title = "Trio Användarinställningar"
+                    hostingController.title = "Trio användarinställningar"
 
                     hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
                         title: "Klar",
@@ -189,7 +189,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         
         <<< ButtonRow() {
-            $0.title = "Trio Oref Status"
+            $0.title = "Trio oref status"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -236,7 +236,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             )
         }
         <<< ButtonRow() {
-            $0.title = "Trio Profilinställningar"
+            $0.title = "Trio profilinställningar"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -245,7 +245,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                         .environment(\.colorScheme, isDark ? .dark : .light)
 
                     let hostingController = UIHostingController(rootView: profileSchedulesView)
-                    hostingController.title = "Trio Profilinställningar"
+                    hostingController.title = "Trio profilinställningar"
 
                     hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
                         title: "Klar",
@@ -285,7 +285,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() {
-            $0.title = "Trio Inställningslogg"
+            $0.title = "Trio inställningslogg"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let settingsLogVC = TrioSettingsLogView()
@@ -316,7 +316,18 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() {
-                $0.title = "Trio Omstartslogg"
+                $0.title = "Trio batterilogg"
+                $0.presentationMode = .show(
+                    controllerProvider: .callback(builder: {
+                        let batteryVC = BatteryLogViewController()
+                        return UINavigationController(rootViewController: batteryVC)
+                    }),
+                    onDismiss: nil
+                )
+            }
+        
+        <<< ButtonRow() {
+                $0.title = "Trio omstartslogg"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
                         let restartsVC = TrioRestartsView()

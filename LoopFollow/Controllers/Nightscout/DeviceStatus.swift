@@ -247,6 +247,17 @@ extension MainViewController {
                     let batteryDisplay = String(format: "%.0f", upbat) + " %" + batteryStatus
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
+
+                    // Persist battery history locally (best-effort) so we can visualize it over time.
+                    // Prefer the deviceStatus created_at timestamp when available.
+                    let sampleTime: TimeInterval
+                    if let createdAtString = lastDeviceStatus?["created_at"] as? String,
+                       let createdAtDate = formatter.date(from: createdAtString) {
+                        sampleTime = createdAtDate.timeIntervalSince1970
+                    } else {
+                        sampleTime = Date().timeIntervalSince1970
+                    }
+                    BatteryCache.appendSample(timestamp: sampleTime, batteryPercent: upbat, isCharging: isCharging)
                 }
                 // Call updateOverrideObservables() before processing SMB/UAM info.
                 updateOverrideObservables()
