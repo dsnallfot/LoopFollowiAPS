@@ -24,6 +24,27 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     private var entries: [BatteryEntry] = []
     private var selectedDate: Date = Date()
 
+    // Toggle to show only missing rows
+    private var showOnlyMissingBattery: Bool = false
+
+    /// Row model for the table (battery + missing slots)
+    private enum BatteryRow {
+        case battery(BatteryEntry)
+        case missing(Date)
+
+        var date: Date {
+            switch self {
+            case .battery(let e): return e.date
+            case .missing(let d): return d
+            }
+        }
+
+        var isMissing: Bool {
+            if case .missing = self { return true }
+            return false
+        }
+    }
+
     private let tableView = UITableView(frame: .zero, style: .plain)
 
     private let datePicker: UIDatePicker = {
@@ -41,6 +62,98 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
         f.dateFormat = "HH:mm:ss"
         return f
     }()
+
+    // Build per-day rows, inserting missing 5‑min slots when gaps exceed ~6 minutes.
+    private var dayRowsIncludingMissing: [BatteryRow] {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: selectedDate)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return [] }
+
+        let dayEntriesAsc = entries
+            .filter { $0.date >= start && $0.date < end }
+            .sorted { $0.date < $1.date }
+
+        guard !dayEntriesAsc.isEmpty else { return [] }
+
+        var rows: [BatteryRow] = []
+        rows.reserveCapacity(dayEntriesAsc.count)
+
+        for idx in 0..<dayEntriesAsc.count {
+            let current = dayEntriesAsc[idx]
+            rows.append(.battery(current))
+
+            if idx < dayEntriesAsc.count - 1 {
+                let next = dayEntriesAsc[idx + 1]
+                let gap = next.date.timeIntervalSince(current.date)
+
+                // Threshold: if more than 6 min, we consider at least one missing 5‑min slot
+                if gap > 360 {
+                    let missingCount = Int(floor((gap - 360) / 300)) + 1
+                    if missingCount > 0 {
+                        for i in 1...missingCount {
+                            let missingDate = current.date.addingTimeInterval(Double(i) * 300)
+                            if missingDate < next.date {
+                                rows.append(.missing(missingDate))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tail-gap: insert missing slots after last actual value.
+        let now = Date()
+        if let lastActual = dayEntriesAsc.last {
+            if cal.isDate(selectedDate, inSameDayAs: now) {
+                // Today → fill to "now"
+                let gapToNow = now.timeIntervalSince(lastActual.date)
+                if gapToNow > 360 {
+                    let missingCount = Int(floor((gapToNow - 360) / 300)) + 1
+                    if missingCount > 0 {
+                        for i in 1...missingCount {
+                            let missingDate = lastActual.date.addingTimeInterval(Double(i) * 300)
+                            if missingDate <= now {
+                                rows.append(.missing(missingDate))
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Historic day → fill to end-of-day (24:00)
+                let gapToEnd = end.timeIntervalSince(lastActual.date)
+                if gapToEnd > 360 {
+                    let missingCount = Int(floor((gapToEnd - 360) / 300)) + 1
+                    if missingCount > 0 {
+                        for i in 1...missingCount {
+                            let missingDate = lastActual.date.addingTimeInterval(Double(i) * 300)
+                            if missingDate < end {
+                                rows.append(.missing(missingDate))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Table wants newest first
+        return rows.sorted { $0.date > $1.date }
+    }
+
+    private var filteredRows: [BatteryRow] {
+        let rows = dayRowsIncludingMissing
+        if showOnlyMissingBattery {
+            let missing = rows.filter { $0.isMissing }
+            if missing.isEmpty {
+                // Insert a synthetic placeholder missing row at noon
+                let cal = Calendar.current
+                let start = cal.startOfDay(for: selectedDate)
+                let placeholderDate = cal.date(byAdding: .hour, value: 12, to: start) ?? start
+                return [.missing(placeholderDate)]
+            }
+            return missing
+        }
+        return rows
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -65,6 +178,17 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     }
 
     private func setupNavigationBar() {
+
+        let filter = UIBarButtonItem(
+            image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(toggleMissingOnly)
+        )
+        filter.tintColor = .label
+
+        navigationItem.leftBarButtonItems = [filter]
+
         let done = UIBarButtonItem(
             title: "Klar",
             style: .plain,
@@ -81,6 +205,19 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
         stats.tintColor = .label
 
         navigationItem.rightBarButtonItems = [done, stats]
+    }
+    @objc private func toggleMissingOnly() {
+        showOnlyMissingBattery.toggle()
+
+        if let filterButton = navigationItem.leftBarButtonItems?.last {
+            let name = showOnlyMissingBattery
+                ? "line.3.horizontal.decrease.circle.fill"
+                : "line.3.horizontal.decrease.circle"
+            filterButton.image = UIImage(systemName: name)
+            filterButton.tintColor = showOnlyMissingBattery ? .systemBlue : .label
+        }
+
+        tableView.reloadData()
     }
 
     @objc private func doneTapped() {
@@ -164,7 +301,11 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     // MARK: - UITableViewDataSource
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return max(entries.count, 1)
+        // When no battery data exists at all, keep a single placeholder row.
+        if entries.isEmpty {
+            return 1
+        }
+        return max(filteredRows.count, 1)
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -172,24 +313,56 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
             return UITableViewCell(style: .value1, reuseIdentifier: "BatteryCell")
         }
 
-        if entries.isEmpty {
-            cell.textLabel?.text = "Inga batteridata"
-            cell.detailTextLabel?.text = ""
-            cell.backgroundColor = .clear
-            cell.contentView.backgroundColor = .clear
-            cell.selectionStyle = .none
-            return cell
-        }
-
-        let e = entries[indexPath.row]
-        let timeStr = timeFormatter.string(from: e.date)
-        let charging = e.isCharging ? "⚡" : ""
-
-        cell.textLabel?.text = String(format: "%.0f%% %@", e.percent, charging)
-        cell.detailTextLabel?.text = timeStr
         cell.backgroundColor = .clear
         cell.contentView.backgroundColor = .clear
         cell.selectionStyle = .none
+        cell.textLabel?.font = .systemFont(ofSize: 17)
+
+        // No raw data at all
+        if entries.isEmpty {
+            cell.textLabel?.text = "Inga batteridata"
+            cell.detailTextLabel?.text = ""
+            return cell
+        }
+
+        let rows = filteredRows
+        if rows.isEmpty {
+            cell.textLabel?.text = "Inga batteridata"
+            cell.detailTextLabel?.text = ""
+            return cell
+        }
+
+        let row = rows[indexPath.row]
+
+        switch row {
+        case .battery(let e):
+            let timeStr = timeFormatter.string(from: e.date)
+            let charging = e.isCharging ? "⚡" : ""
+            cell.textLabel?.text = String(format: "%.0f%% %@", e.percent, charging)
+            cell.detailTextLabel?.text = timeStr
+            cell.backgroundColor = .clear
+            cell.contentView.backgroundColor = .clear
+
+        case .missing(let date):
+            // Detect placeholder: no actual missing rows and showOnlyMissingBattery = true
+            let isPlaceholder = showOnlyMissingBattery && dayRowsIncludingMissing.filter { $0.isMissing }.isEmpty
+            if isPlaceholder {
+                cell.textLabel?.text = "Inga saknade värden denna dag 👍"
+                cell.detailTextLabel?.text = ""
+                cell.textLabel?.font = .systemFont(ofSize: 17)
+                let tint = UIColor.systemGreen.withAlphaComponent(0.12)
+                cell.backgroundColor = tint
+                cell.contentView.backgroundColor = tint
+            } else {
+                cell.textLabel?.text = "[Batteristatus saknas]"
+                cell.detailTextLabel?.text = timeFormatter.string(from: date)
+                let tint = UIColor.systemRed.withAlphaComponent(0.15)
+                cell.backgroundColor = tint
+                cell.contentView.backgroundColor = tint
+                cell.textLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+            }
+        }
+
         return cell
     }
 
@@ -349,7 +522,7 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         view.addSubview(dayChartView)
         view.addSubview(weekChartView)
         view.addSubview(dayLegendLabel)
-        updateDayLegendText()
+        updateLegendText(for: .day)
 
         dayChartView.delegate = self
         weekChartView.delegate = self
@@ -435,7 +608,7 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         x.granularity = 1
         x.axisMinimum = 0
         x.axisMaximum = 96
-        x.setLabelCount(5, force: true)
+        x.setLabelCount(9, force: true)
         x.valueFormatter = dayXAxisFormatter
 
         dayChartView.leftAxis.spaceTop = 5
@@ -531,18 +704,19 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
             dayChartView.isHidden = false
             weekChartView.isHidden = true
             dayLegendLabel.isHidden = false
+            updateLegendText(for: .day)
             selectedDate = date
             datePicker.date = selectedDate
 
         case .week:
             dayChartView.isHidden = true
             weekChartView.isHidden = false
-            dayLegendLabel.isHidden = true
+            dayLegendLabel.isHidden = false   // 👈 fortfarande synlig
+            updateLegendText(for: .week)
             selectedDate = startOfWeek(for: date)
             datePicker.date = selectedDate
         }
 
-        // Caller decides when to reload (avoids duplicate reloads during tap navigation)
         reload()
     }
 
@@ -593,7 +767,6 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
 
         let set = BarChartDataSet(entries: entries, label: "")
         set.colors = colors
-        set.drawValuesEnabled = false
         set.drawValuesEnabled = false
         set.highlightEnabled = true
 
@@ -673,28 +846,43 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
 
     // MARK: - Helpers
 
-    private func updateDayLegendText() {
-        let a = NSMutableAttributedString(string: "Batteristatus:  ")
+    private func updateLegendText(for mode: Mode) {
+        switch mode {
 
-        func add(_ title: String, color: UIColor) {
-            let sq = NSAttributedString(
+        case .day:
+            let a = NSMutableAttributedString(string: "Batteristatus:   ")
+
+            func add(_ title: String, color: UIColor) {
+                a.append(NSAttributedString(
+                    string: "■ ",
+                    attributes: [.foregroundColor: color]
+                ))
+                a.append(NSAttributedString(
+                    string: title,
+                    attributes: [.foregroundColor: UIColor.secondaryLabel]
+                ))
+            }
+
+            add("Laddar  ", color: .systemBlue)
+            add("Bra  ", color: .systemGreen)
+            add("Låg  ", color: .systemOrange)
+            add("Akut låg", color: .systemRed)
+
+            dayLegendLabel.attributedText = a
+
+        case .week:
+            let a = NSMutableAttributedString()
+            a.append(NSAttributedString(
                 string: "■ ",
-                attributes: [.foregroundColor: color]
-            )
-            let txt = NSAttributedString(
-                string: title,
+                attributes: [.foregroundColor: UIColor.systemGreen]
+            ))
+            a.append(NSAttributedString(
+                string: "Max/min batteriprocent per dag",
                 attributes: [.foregroundColor: UIColor.secondaryLabel]
-            )
-            a.append(sq)
-            a.append(txt)
+            ))
+
+            dayLegendLabel.attributedText = a
         }
-
-        add("Laddar  ", color: .systemBlue)
-        add("Bra  ", color: .systemGreen)
-        add("Låg  ", color: .systemOrange)
-        add("Akut låg", color: .systemRed)
-
-        dayLegendLabel.attributedText = a
     }
 
     private func colorForBattery(percent: Double, isCharging: Bool) -> UIColor {
@@ -770,9 +958,13 @@ private final class DayBatteryXAxisFormatter: AxisValueFormatter {
         let i = Int(round(value))
         switch i {
         case 0: return "00"
+        case 12: return "03"
         case 24: return "06"
+        case 36: return "09"
         case 48: return "12"
+        case 60: return "15"
         case 72: return "18"
+        case 84: return "21"
         case 96: return "24"
         default: return ""
         }
