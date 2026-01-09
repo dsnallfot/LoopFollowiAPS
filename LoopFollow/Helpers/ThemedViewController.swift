@@ -339,10 +339,10 @@ extension UIPickerView {
 }
 
 extension View {
-    func themedCardBackground(opacity: CGFloat = 0.3) -> some View {
+    func themedCardBackground(opacity: CGFloat = 0.1) -> some View {
         self
             .background(
-                Color(uiColor: .systemBackground)
+                Color(uiColor: .systemGray)
                     .opacity(opacity)
             )
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))

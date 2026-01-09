@@ -183,7 +183,7 @@ struct DailyStatsView: View {
                                         .background({
                                             // Bas: varannan rad ljusgrå
                                             let baseColor: Color = index % 2 == 0
-                                            ? Color(.systemBackground.withAlphaComponent(0.3))
+                                            ? Color(.systemGray.withAlphaComponent(0.1))
                                             : Color.clear
                                             
                                             // Highlight: bästa / sämsta dag enligt aktuell TITR/TIR-vy

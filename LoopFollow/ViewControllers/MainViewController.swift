@@ -285,7 +285,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         // 2. Create the circle view
         let circleView = UIView()
         circleView.translatesAutoresizingMaskIntoConstraints = false
-        circleView.backgroundColor = .systemBackground.withAlphaComponent(0.3)
+        circleView.backgroundColor = .systemGray.withAlphaComponent(0.1)
         circleView.layer.cornerRadius = 32.5 // half of 65 -> a perfect circle
         circleView.layer.masksToBounds = true
 

@@ -40,7 +40,7 @@ struct SearchBar: UIViewRepresentable {
         searchBar.autocapitalizationType = .none
         searchBar.searchBarStyle = .minimal
         if #available(iOS 13.0, *) {
-            searchBar.searchTextField.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.3)
+            searchBar.searchTextField.backgroundColor = UIColor.systemGray.withAlphaComponent(0.1)
         }
         return searchBar
     }

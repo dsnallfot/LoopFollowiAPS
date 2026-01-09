@@ -42,7 +42,7 @@ class AddManualSensorNoteViewController: ThemedViewController {
     private let notesTextField: UITextField = {
         let textField = UITextField()
         textField.borderStyle = .roundedRect
-        textField.backgroundColor = .systemBackground.withAlphaComponent(0.3)
+        textField.backgroundColor = .systemGray.withAlphaComponent(0.1)
         textField.placeholder = "Sensorregistrering"
         return textField
     }()
