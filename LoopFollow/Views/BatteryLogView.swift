@@ -55,6 +55,16 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
         dp.locale = Locale(identifier: "sv_SE")
         return dp
     }()
+    
+    private let statsLabel: UILabel = {
+        let l = UILabel()
+        l.translatesAutoresizingMaskIntoConstraints = false
+        l.font = .systemFont(ofSize: 13)
+        l.textColor = .secondaryLabel
+        l.textAlignment = .right
+        l.text = "Batteristatusar: –"
+        return l
+    }()
 
     private let timeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -218,6 +228,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
         }
 
         tableView.reloadData()
+        updateStatsLabel()
     }
 
     @objc private func doneTapped() {
@@ -256,8 +267,20 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     }
 
     private func setupHeader() {
-        // Simple header: date picker only (day filter)
-        view.addSubview(datePicker)
+        let spacer = UIView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let row = UIStackView(arrangedSubviews: [datePicker, spacer, statsLabel])
+        row.axis = .horizontal
+        row.spacing = 6
+        row.alignment = .center
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.tag = 999
+
+        view.addSubview(row)
+
         datePicker.setContentHuggingPriority(.required, for: .horizontal)
         datePicker.setContentCompressionResistancePriority(.required, for: .horizontal)
         datePicker.heightAnchor.constraint(equalToConstant: 30).isActive = true
@@ -267,11 +290,14 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     private func setupConstraints() {
         let safe = view.safeAreaLayoutGuide
 
-        NSLayoutConstraint.activate([
-            datePicker.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
-            datePicker.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+        guard let headerRow = view.subviews.first(where: { $0.tag == 999 }) else { return }
 
-            tableView.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 8),
+        NSLayoutConstraint.activate([
+            headerRow.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
+            headerRow.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            headerRow.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
+
+            tableView.topAnchor.constraint(equalTo: headerRow.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -281,6 +307,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     @objc private func dateChanged(_ sender: UIDatePicker) {
         selectedDate = sender.date
         loadDay(selectedDate)
+        updateStatsLabel()
     }
 
     private func loadDay(_ date: Date) {
@@ -294,8 +321,61 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
                 // Newest first
                 self.entries = mapped.sorted { $0.date > $1.date }
                 self.tableView.reloadData()
+                self.updateStatsLabel()
             }
         }
+    }
+    
+    private func expectedBatterySlots(for day: Date, upTo now: Date? = nil) -> Int {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: day)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return 288 }
+
+        let upper = min(now ?? end, end)
+        let seconds = max(0, upper.timeIntervalSince(start))
+        return max(1, Int(floor(seconds / 300.0)))
+    }
+    
+    private func updateStatsLabel() {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: selectedDate)
+        guard let end = cal.date(byAdding: .day, value: 1, to: start) else {
+            statsLabel.text = "Batteristatusar: –"
+            return
+        }
+
+        let now = Date()
+        let isToday = cal.isDate(selectedDate, inSameDayAs: now)
+
+        let actualCount = entries.filter { $0.date >= start && $0.date < end }.count
+
+        let expectedCount: Int = isToday
+            ? expectedBatterySlots(for: selectedDate, upTo: now)
+            : expectedBatterySlots(for: selectedDate)
+
+        var expectedCountAdjusted = max(actualCount, expectedCount)
+
+        // Om vi har saknade slots – undvik 100 % för tidigt
+        let missingCount = dayRowsIncludingMissing.filter { $0.isMissing }.count
+        if missingCount > 0 && expectedCountAdjusted == expectedCount {
+            expectedCountAdjusted += 1
+        }
+
+        let pct = expectedCountAdjusted > 0
+            ? Int(round(Double(actualCount) / Double(expectedCountAdjusted) * 100.0))
+            : 0
+
+        let emoji: String
+        if pct > 95 {
+            emoji = " 🟢"
+        } else if pct > 90 {
+            emoji = " 🟡"
+        } else {
+            emoji = " 🔴"
+        }
+
+        statsLabel.text =
+            "Batteristatusar:  \(actualCount)/\(expectedCount)  \(pct)%" + emoji
     }
 
     // MARK: - UITableViewDataSource
