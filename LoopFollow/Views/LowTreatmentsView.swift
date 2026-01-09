@@ -1456,7 +1456,7 @@ private enum Row: Int, CaseIterable {
         cell.backgroundView = nil
         if #available(iOS 14.0, *) {
             var bg = UIBackgroundConfiguration.clear()
-            bg.backgroundColor = .clear
+            bg.backgroundColor = .black.withAlphaComponent(0.1)
             cell.backgroundConfiguration = bg
         }
 

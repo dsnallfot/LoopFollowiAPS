@@ -11,25 +11,40 @@ import SwiftUI
 @available(iOS 16.0, *)
 struct NightscoutSettingsView: View {
     @ObservedObject var viewModel: NightscoutSettingsViewModel
-
+    
     var body: some View {
         ZStack {
             ThemeBackground()
                 .ignoresSafeArea()
-
+            
             Form {
-                urlSection
-                tokenSection
-                statusSection
+                Section(header: Text("URL & Token")) {
+                    TextField("URL", text: $viewModel.nightscoutURL)
+                        .textContentType(.URL)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .onChange(of: viewModel.nightscoutURL) { newValue in
+                            viewModel.processURL(newValue)
+                        }
+                    
+                    TextField("Token", text: $viewModel.nightscoutToken)
+                        .textContentType(.password)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    
+                    Text(viewModel.nightscoutStatus)
+                }
+                .listRowBackground(Color.black.opacity(0.1))
             }
-            // Let gradient show through the Form background
             .scrollContentBackground(.hidden)
             .background(Color.clear)
         }
-        .onDisappear {
-            viewModel.dismiss()
-        }
+        //.onDisappear {
+        //    viewModel.dismiss()
+        //}
     }
+}
+/*
 
     // MARK: - Subviews / Computed Properties
 
@@ -42,11 +57,10 @@ struct NightscoutSettingsView: View {
                 .onChange(of: viewModel.nightscoutURL) { newValue in
                     viewModel.processURL(newValue)
                 }
-            Divider().opacity(0.35)
         } header: {
             Text("URL")
         }
-        .listRowBackground(Color.clear)
+        .listRowBackground(Color.black.opacity(0.1))
     }
 
     private var tokenSection: some View {
@@ -55,20 +69,19 @@ struct NightscoutSettingsView: View {
                 .textContentType(.password)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
-            Divider().opacity(0.35)
         } header: {
             Text("Token")
         }
-        .listRowBackground(Color.clear)
+        .listRowBackground(Color.black.opacity(0.1))
     }
 
     private var statusSection: some View {
         Section {
             Text(viewModel.nightscoutStatus)
-            Divider().opacity(0.35)
         } header: {
             Text("Status")
         }
-        .listRowBackground(Color.clear)
+        .listRowBackground(Color.black.opacity(0.1))
     }
 }
+*/

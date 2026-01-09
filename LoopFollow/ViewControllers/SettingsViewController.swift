@@ -834,7 +834,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
     func presentNightscoutSettingsView() {
         let viewModel = NightscoutSettingsViewModel()
-        viewModel.delegate = self
+        //viewModel.delegate = self
 
         let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
         let view = NightscoutSettingsView(viewModel: viewModel)

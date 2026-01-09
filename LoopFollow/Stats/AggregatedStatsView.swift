@@ -289,7 +289,7 @@ struct StatCard: View {
                     .padding(8)
             }
         }
-        .background(Color(.systemBackground.withAlphaComponent(0.5)))
+        .background(Color(.black.withAlphaComponent(0.1)))
         .cornerRadius(15)
         .overlay {
             if isTooltipVisible {
@@ -302,30 +302,30 @@ struct StatCard: View {
                             Text(title)
                                 .font(.caption)
                                 .fontWeight(.bold)
-                                .tint(.primary)
+                                .foregroundColor(.white)
                             Spacer()
                             if let arrow = trendArrow, arrow != .none {
                                 Text(arrow.rawValue)
                                     .font(.subheadline)
                                     .fontWeight(.bold)
                                     //.foregroundColor(color)
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.white)
                             }
                         }
                         if let arrow = trendArrow, arrow != .none {
                             if let percentText = tooltipPercentChangeText {
                                 Text(percentText)
                                     .font(.caption2)
-                                    .tint(.primary)
+                                    .foregroundColor(.white)
                             } else {
                                 Text("Ingen trenddata")
                                     .font(.caption2)
-                                    .tint(.primary)
+                                    .foregroundColor(.white)
                             }
                         } else {
                             Text("Ingen trenddata")
                                 .font(.caption2)
-                                .tint(.primary)
+                                .foregroundColor(.white)
                         }
 
                         if let pair = tooltipValuePair {
@@ -336,7 +336,7 @@ struct StatCard: View {
 
                             Text(tooltipChangeString(for: pair))
                                 .font(.caption2)
-                                .tint(.primary)
+                                .foregroundColor(.white)
                         }
                     }
                     .padding(10)

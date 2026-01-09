@@ -37,7 +37,7 @@ struct ContactSettingsView: View {
                             }
                         }
                 }
-                .listRowBackground(Color.clear)
+                .listRowBackground(Color.black.opacity(0.1))
 
                 if viewModel.contactEnabled {
                     Section(header: Text("Extra information")) {
@@ -60,7 +60,7 @@ struct ContactSettingsView: View {
                         Toggle("Visa också 10m delta", isOn: $viewModel.contactFifteenMinutes)
                             .toggleStyle(SwitchToggleStyle())
                     }
-                    .listRowBackground(Color.clear)
+                    .listRowBackground(Color.black.opacity(0.1))
                 }
             }
             // Let gradient show through the Form background
