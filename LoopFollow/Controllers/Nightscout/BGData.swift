@@ -587,12 +587,24 @@ extension MainViewController {
             var fifteenMinColorString: String = ""
             if deltaTime >= 6 {
                 fifteenMinColorString = " ❔ "
+                let sensorTrendString = "N/A"
+                self.infoManager.updateInfoData(type: .sensorTrend, value: sensorTrendString)
+                self.infoManager.setPriority(true, for: .sensorTrend)
             } else if fifteenMinValue < 3.9 {
                 fifteenMinColorString = " 🆘 "
+                let sensorTrendString = "\(fifteenMinString) mmol/L 🆘"
+                self.infoManager.updateInfoData(type: .sensorTrend, value: sensorTrendString)
+                self.infoManager.setPriority(true, for: .sensorTrend)
             } else if fifteenMinValue > 7.8 {
                 fifteenMinColorString = " ⚠️ "
+                let sensorTrendString = "\(fifteenMinString) mmol/L ⚠️"
+                self.infoManager.updateInfoData(type: .sensorTrend, value: sensorTrendString)
+                self.infoManager.setPriority(true, for: .sensorTrend)
             } else {
                 fifteenMinColorString = " ✅ "
+                let sensorTrendString = "\(fifteenMinString) mmol/L ✅"
+                self.infoManager.updateInfoData(type: .sensorTrend, value: sensorTrendString)
+                self.infoManager.setPriority(false, for: .sensorTrend)
             }
             
             var cob = "N/A g"
