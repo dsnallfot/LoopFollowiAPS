@@ -29,7 +29,7 @@ struct AGPView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .background(Color(.black.withAlphaComponent(0.1)))
+            .background(Color(.systemBackground.withAlphaComponent(0.3)))
             .cornerRadius(15)
         }
     }

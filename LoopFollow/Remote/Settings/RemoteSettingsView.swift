@@ -63,7 +63,7 @@ struct RemoteSettingsView: View {
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
-                .listRowBackground(Color.black.opacity(0.1))
+                .listRowBackground(Color(UIColor.systemBackground).opacity(0.3))
 
                 // User Information Section
                 if viewModel.remoteType != .none {
@@ -77,7 +77,7 @@ struct RemoteSettingsView: View {
                                 .multilineTextAlignment(.trailing)
                         }
                     }
-                    .listRowBackground(Color.black.opacity(0.1))
+                    .listRowBackground(Color(UIColor.systemBackground).opacity(0.3))
                 }
 
                 // Trio Remote Control Settings Section
@@ -115,7 +115,7 @@ struct RemoteSettingsView: View {
                         }
 
                     }
-                    .listRowBackground(Color.black.opacity(0.1))
+                    .listRowBackground(Color(UIColor.systemBackground).opacity(0.3))
 
                     // Guardrails Section
                     Section(header: Text("Maxgränser")) {
@@ -195,7 +195,7 @@ struct RemoteSettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .listRowBackground(Color.black.opacity(0.1))
+                    .listRowBackground(Color(UIColor.systemBackground).opacity(0.3))
 
                     // Meal Section
                     Section(header: Text("Måltidsinställningar")) {
@@ -205,7 +205,7 @@ struct RemoteSettingsView: View {
                         Toggle("Måltid med Fett/Protein", isOn: $viewModel.mealWithFatProtein)
                             .toggleStyle(SwitchToggleStyle())
                     }
-                    .listRowBackground(Color.black.opacity(0.1))
+                    .listRowBackground(Color(UIColor.systemBackground).opacity(0.3))
 
                     Section(header: Text("Debug / Info")) {
                         Text("Device Token: \(Storage.shared.deviceToken.value)")
@@ -213,7 +213,7 @@ struct RemoteSettingsView: View {
                         Text("Team ID: \(Storage.shared.teamId.value ?? "")")
                         Text("Bundle ID: \(Storage.shared.bundleId.value)")
                     }
-                    .listRowBackground(Color.black.opacity(0.1))
+                    .listRowBackground(Color(UIColor.systemBackground).opacity(0.3))
                 }
             }
             // Let the gradient show through the Form/List background

@@ -45,7 +45,7 @@ private struct UISearchBarRepresentable: UIViewRepresentable {
         sb.returnKeyType = .done
         sb.enablesReturnKeyAutomatically = false
         if #available(iOS 13.0, *) {
-            sb.searchTextField.backgroundColor = UIColor.black.withAlphaComponent(0.1)
+            sb.searchTextField.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.3)
         }
         return sb
     }
@@ -111,7 +111,7 @@ struct TrioOrefView: View {
                             .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 2)
-                    .listRowBackground(Color.black.opacity(0.1))
+                    .listRowBackground(Color(UIColor.systemBackground).opacity(0.3))
                 }
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)

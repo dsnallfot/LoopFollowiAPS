@@ -88,7 +88,7 @@ class ThemedViewController: UIViewController {
 
             gradientView = gv
         } else {
-            view.backgroundColor = .systemGray6
+            view.backgroundColor = .systemBackground
         }
     }
 }
@@ -152,10 +152,10 @@ class ThemedFormViewController: FormViewController {
             // Force already-created cells to redraw with the updated appearance.
             tableView.reloadData()
         } else {
-            view.backgroundColor = .systemGray6
+            view.backgroundColor = .systemBackground
 
             // Light mode: keep form looking native. (You can switch to .clear later if you want.)
-            tableView.backgroundColor = .systemGray6
+            tableView.backgroundColor = .systemBackground
             tableView.backgroundView = nil
             
             // Restore default-ish look in light mode.
@@ -173,7 +173,7 @@ class ThemedFormViewController: FormViewController {
 // MARK: - Theming (UITableViewController)
 
 /// Same theme logic as `ThemedViewController`, but adapted for `UITableViewController`.
-/// Sets gradient in dark mode and `.systemGray6` in light mode.
+/// Sets gradient in dark mode and `.systemBackground` in light mode.
 class ThemedTableViewController: UITableViewController {
 
     private weak var gradientView: GradientView?
@@ -220,11 +220,11 @@ class ThemedTableViewController: UITableViewController {
             tableView.backgroundView = gv
             gradientView = gv
         } else {
-            view.backgroundColor = .systemGray6
-            tableView.backgroundColor = .systemGray6
+            view.backgroundColor = .systemBackground
+            tableView.backgroundColor = .systemBackground
             tableView.backgroundView = nil
             tableView.isOpaque = true
-            tableView.layer.backgroundColor = UIColor.systemGray6.cgColor
+            tableView.layer.backgroundColor = UIColor.systemBackground.cgColor
             // Ensure gradientView is nil already (cleanup)
             gradientView = nil
         }
@@ -247,7 +247,7 @@ struct ThemeBackground: View {
                     endPoint: .trailing
                 )
             } else {
-                Color(UIColor.systemGray6)
+                Color(UIColor.systemBackground)
             }
         }
         .ignoresSafeArea()
@@ -275,7 +275,7 @@ extension UIPickerView {
 
         guard style == .dark else {
             // Light mode: keep it clean and native-ish.
-            backgroundColor = .systemGray6
+            backgroundColor = .systemBackground
             return
         }
 
@@ -339,7 +339,7 @@ extension UIPickerView {
 }
 
 extension View {
-    func themedCardBackground(opacity: CGFloat = 0.5) -> some View {
+    func themedCardBackground(opacity: CGFloat = 0.3) -> some View {
         self
             .background(
                 Color(uiColor: .systemBackground)

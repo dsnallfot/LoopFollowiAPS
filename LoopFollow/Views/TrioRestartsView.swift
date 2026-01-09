@@ -839,7 +839,7 @@ final class TrioRestartsStatsViewController: ThemedTableViewController {
         cell.backgroundView = nil
         if #available(iOS 14.0, *) {
             var bg = UIBackgroundConfiguration.clear()
-            bg.backgroundColor = .black.withAlphaComponent(0.1)
+            bg.backgroundColor = .systemBackground.withAlphaComponent(0.3)
             cell.backgroundConfiguration = bg
         }
         cell.textLabel?.backgroundColor = .clear
