@@ -734,12 +734,6 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         cell.contentView.backgroundColor = .clear
         cell.backgroundView = nil
         cell.selectedBackgroundView = nil
-
-        if #available(iOS 14.0, *) {
-            var bg = UIBackgroundConfiguration.clear()
-            bg.backgroundColor = .clear
-            cell.backgroundConfiguration = bg
-        }
         
         let treatment = filteredTreatments[indexPath.row]
         // Check if this override is pending upload
@@ -892,7 +886,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         cell.selectionStyle = .default
         // Subtle selection highlight that still shows the gradient
         let selected = UIView()
-        selected.backgroundColor = UIColor.white.withAlphaComponent(0.08)
+        selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
         selected.layer.cornerRadius = 10
         selected.layer.masksToBounds = true
         cell.selectedBackgroundView = selected
@@ -909,21 +903,11 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             if Date() < exerciseEndTime {
                 cell.backgroundColor = UIColor.systemPurple.withAlphaComponent(0.3)
                 cell.contentView.backgroundColor = cell.backgroundColor
-                if #available(iOS 14.0, *) {
-                    var bg = UIBackgroundConfiguration.clear()
-                    bg.backgroundColor = cell.backgroundColor
-                    cell.backgroundConfiguration = bg
-                }
             } else {
                 cell.backgroundColor = (duplicateCount > 1)
                     ? UIColor.systemRed.withAlphaComponent(0.3)
                     : UIColor.clear
                 cell.contentView.backgroundColor = cell.backgroundColor
-                if #available(iOS 14.0, *) {
-                    var bg = UIBackgroundConfiguration.clear()
-                    bg.backgroundColor = cell.backgroundColor
-                    cell.backgroundConfiguration = bg
-                }
             }
         } else if treatment.eventType == "Temp Basal" {
             // Find the newest Temp Basal treatment.
@@ -931,32 +915,17 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                treatment.timestamp == newestTempBasal.timestamp {
                 cell.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.25)
                 cell.contentView.backgroundColor = cell.backgroundColor
-                if #available(iOS 14.0, *) {
-                    var bg = UIBackgroundConfiguration.clear()
-                    bg.backgroundColor = cell.backgroundColor
-                    cell.backgroundConfiguration = bg
-                }
             } else {
                 cell.backgroundColor = (duplicateCount > 1)
                     ? UIColor.systemRed.withAlphaComponent(0.3)
                     : UIColor.clear
                 cell.contentView.backgroundColor = cell.backgroundColor
-                if #available(iOS 14.0, *) {
-                    var bg = UIBackgroundConfiguration.clear()
-                    bg.backgroundColor = cell.backgroundColor
-                    cell.backgroundConfiguration = bg
-                }
             }
         } else {
             cell.backgroundColor = (duplicateCount > 1 && treatment.eventType != "Note")
                 ? UIColor.systemRed.withAlphaComponent(0.3)
                 : UIColor.clear
             cell.contentView.backgroundColor = cell.backgroundColor
-            if #available(iOS 14.0, *) {
-                var bg = UIBackgroundConfiguration.clear()
-                bg.backgroundColor = cell.backgroundColor
-                cell.backgroundConfiguration = bg
-            }
         }
 
         

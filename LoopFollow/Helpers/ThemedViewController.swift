@@ -168,6 +168,47 @@ class ThemedFormViewController: FormViewController {
             tableView.reloadData()
         }
     }
+
+    // MARK: - Row selection styling (Eureka)
+
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        // Only apply the gradient-style selection overlay in dark mode where the gradient is visible.
+        guard traitCollection.userInterfaceStyle == .dark else {
+            cell.selectedBackgroundView = nil
+            return
+        }
+
+        // Avoid iOS 14+ backgroundConfiguration overriding our transparent/gradient look.
+        if #available(iOS 14.0, *) {
+            cell.backgroundConfiguration = nil
+        }
+
+        // Ensure transparent base so the gradient shows.
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+
+        // Match Treatments-style selection highlight (subtle overlay over the gradient)
+        // Only for rows that are actually selectable/tappable (Eureka disables selection on many rows).
+        let isSelectable: Bool = {
+            // If selection is explicitly disabled, respect that.
+            if cell.selectionStyle == .none { return false }
+            // If interaction is disabled, don't show selection.
+            if !cell.isUserInteractionEnabled { return false }
+            // If content view interaction is disabled, don't show selection.
+            if !cell.contentView.isUserInteractionEnabled { return false }
+            return true
+        }()
+
+        if isSelectable {
+            let selected = UIView()
+            selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
+            selected.layer.cornerRadius = 10
+            selected.layer.masksToBounds = true
+            cell.selectedBackgroundView = selected
+        } else {
+            cell.selectedBackgroundView = nil
+        }
+    }
 }
 
 // MARK: - Theming (UITableViewController)

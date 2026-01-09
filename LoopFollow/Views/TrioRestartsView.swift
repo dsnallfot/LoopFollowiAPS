@@ -243,9 +243,7 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
         cell.contentView.backgroundColor = .clear
         cell.backgroundView = nil
         if #available(iOS 14.0, *) {
-            var bg = UIBackgroundConfiguration.clear()
-            bg.backgroundColor = .clear
-            cell.backgroundConfiguration = bg
+            cell.backgroundConfiguration = nil
         }
         cell.textLabel?.backgroundColor = .clear
         cell.detailTextLabel?.backgroundColor = .clear
@@ -273,6 +271,13 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
 
         cell.selectionStyle = .default
         cell.accessoryType = .none
+        // Match Treatments-style selection highlight (subtle overlay over the gradient)
+        cell.selectionStyle = .default
+        let selected = UIView()
+        selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
+        selected.layer.cornerRadius = 10
+        selected.layer.masksToBounds = true
+        cell.selectedBackgroundView = selected
         return cell
     }
     
@@ -280,8 +285,6 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
         let entry = entries[indexPath.row]
         let startDate = entry.date
 
-        // Låt raden highlightas kort enligt default-beteende
-        tableView.deselectRow(at: indexPath, animated: true)
 
         // Hitta MainViewController via root UITabBarController för att få events,
         // men presentera modalen härifrån så vi kommer tillbaka hit när den stängs.
@@ -338,7 +341,9 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
 
         nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
 
-        self.present(nav, animated: true)
+        self.present(nav, animated: true) { [weak self] in
+            self?.tableView.deselectRow(at: indexPath, animated: true)
+        }
     }
 
     // MARK: - UITableViewDelegate

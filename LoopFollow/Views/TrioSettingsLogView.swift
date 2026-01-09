@@ -304,6 +304,12 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
         cell.contentView.backgroundColor = .clear
         cell.selectionStyle = .default
         cell.accessoryType = .none
+        // Match Treatments-style selection highlight (subtle overlay over the gradient)
+        let selected = UIView()
+        selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
+        selected.layer.cornerRadius = 10
+        selected.layer.masksToBounds = true
+        cell.selectedBackgroundView = selected
         return cell
     }
     
@@ -315,8 +321,6 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
         timeFormatter.dateFormat = "dd MMM HH:mm:ss"
         let timeString = timeFormatter.string(from: entry.date)
 
-        // Låt raden highlightas kort enligt default-beteende
-        tableView.deselectRow(at: indexPath, animated: true)
 
         // Titel = datum/tid, Message = hela note-texten
         let titleString = timeString //DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
@@ -326,10 +330,13 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
 
         alert.addAction(UIAlertAction(title: "Analys", style: .default, handler: { [weak self] _ in
             guard let self else { return }
+            tableView.deselectRow(at: indexPath, animated: true)
             self.presentAnalysisModal(startDate: entry.date)
         }))
 
-        alert.addAction(UIAlertAction(title: "Ok", style: .cancel, handler: nil))
+        alert.addAction(UIAlertAction(title: "Ok", style: .cancel, handler: { _ in
+            tableView.deselectRow(at: indexPath, animated: true)
+        }))
 
         present(alert, animated: true)
     }

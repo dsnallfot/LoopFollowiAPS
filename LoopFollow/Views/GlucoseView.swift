@@ -856,6 +856,19 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
 
         let row = filteredRows[indexPath.row]
 
+        // Ensure selection overlay renders over our gradient (avoid iOS 14+ backgroundConfiguration overriding)
+        if #available(iOS 14.0, *) {
+            cell.backgroundConfiguration = nil
+        }
+
+        // Match Treatments-style selection highlight (subtle overlay over the gradient)
+        cell.selectionStyle = .default
+        let selected = UIView()
+        selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
+        selected.layer.cornerRadius = 10
+        selected.layer.masksToBounds = true
+        cell.selectedBackgroundView = selected
+
         switch row {
         case .glucose(let entry):
             cell.textLabel?.text = String(format: "%.1f mmol/L", entry.mmol)
@@ -892,7 +905,6 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         }
 
         cell.accessoryType = .none
-        cell.selectionStyle = .default
         return cell
     }
 
