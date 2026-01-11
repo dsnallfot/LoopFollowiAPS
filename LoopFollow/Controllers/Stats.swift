@@ -78,7 +78,30 @@ class StatsData {
         } else {
             a1C = (46.7 + Float(avgBG)) / 28.7
         }
-         
+        
+        /*
+        // --- Sanity log (debug) ---
+        let lowLine = Float(UserDefaultsRepository.lowLine.value)
+        let highLine = Float(UserDefaultsRepository.highLine.value)
+
+        let minTs = bgData.min(by: { $0.date < $1.date })?.date ?? 0
+        let maxTs = bgData.max(by: { $0.date < $1.date })?.date ?? 0
+
+        // Note: countLow/countRange/countHigh are computed above using lowLine/highLine.
+        // We also log boundary hits to help compare with other calculators.
+        let exactlyLowCount = bgData.reduce(0) { $0 + (Float($1.sgv) == lowLine ? 1 : 0) }
+        let exactlyHighCount = bgData.reduce(0) { $0 + (Float($1.sgv) == highLine ? 1 : 0) }
+
+        print(
+            "[Sanity][StatsData] total=\(bgData.count) lowLine=\(lowLine) highLine=\(highLine) " +
+            "lowCount=\(countLow) rangeCount=\(countRange) highCount=\(countHigh) " +
+            "exactlyLow=\(exactlyLowCount) exactlyHigh=\(exactlyHighCount) " +
+            "min=\(Date(timeIntervalSince1970: minTs)) max=\(Date(timeIntervalSince1970: maxTs)) " +
+            "pctLow=\(percentLow) pctRange=\(percentRange) pctHigh=\(percentHigh)"
+        )
+        // --- End sanity log ---
+        */
+        
     }
 
 }

@@ -31,38 +31,51 @@ class StatsDataFetcher {
             case let .success(entriesResponse):
                 var nsData = entriesResponse
                 DispatchQueue.main.async {
-                    // Transform NS data
+                    // Transform NS data: normalize to seconds and round to whole seconds
                     for i in 0 ..< nsData.count {
                         nsData[i].date /= 1000
-                        nsData[i].date.round(FloatingPointRoundingRule.toNearestOrEven)
+                        nsData[i].date = nsData[i].date.rounded(.toNearestOrEven)
                     }
 
-                    var nsData2: [ShareGlucoseData] = []
-                    var lastAddedTime = Double.infinity
-                    var lastAddedSGV: Int?
-                    let minInterval: Double = 30
-
+                    // De-duplicate by timestamp (second-resolution) keeping the latest entry per second.
+                    // Nightscout/clients can sometimes return duplicate SGVs for the same second.
+                    var bySecond: [Int: ShareGlucoseData] = [:]
+                    bySecond.reserveCapacity(nsData.count)
                     for reading in nsData {
-                        if (lastAddedSGV == nil || lastAddedSGV != reading.sgv) || (lastAddedTime - reading.date >= minInterval) {
-                            nsData2.append(reading)
-                            lastAddedTime = reading.date
-                            lastAddedSGV = reading.sgv
+                        let key = Int(reading.date)
+                        if let existing = bySecond[key] {
+                            // Keep the one with the latest raw timestamp (safety)
+                            if reading.date > existing.date {
+                                bySecond[key] = reading
+                            }
+                        } else {
+                            bySecond[key] = reading
                         }
                     }
+
+                    var nsDeduped = Array(bySecond.values)
+                    nsDeduped.sort { $0.date < $1.date }
 
                     let now = Date().timeIntervalSince1970
                     let horizonDays = self.maxCachedDays
                     let horizonCutoff = now - horizonDays * 24 * 60 * 60
                     let reloadCutoff = now - self.reloadWindowDays * 24 * 60 * 60
 
-                    // Behåll bara data inom [now - horizonDays)
+                    // Keep only data within [now - horizonDays)
                     mainVC.statsBGData.removeAll { $0.date < horizonCutoff }
 
-                    let existingDates = Set(mainVC.statsBGData.map { Int($0.date) })
-                    for reading in nsData2 {
-                        if !existingDates.contains(Int(reading.date)), reading.date >= horizonCutoff {
-                            mainVC.statsBGData.append(reading)
-                        }
+                    // IMPORTANT: For the recent reload window, replace data rather than only appending.
+                    // This prevents duplicates when overlapping refetches happen and allows corrected SGVs to update.
+                    mainVC.statsBGData.removeAll { $0.date >= reloadCutoff }
+
+                    // Merge in deduped NS data within the horizon
+                    var existingDates = Set(mainVC.statsBGData.map { Int($0.date) })
+                    for reading in nsDeduped {
+                        guard reading.date >= horizonCutoff else { continue }
+                        let ts = Int(reading.date)
+                        if existingDates.contains(ts) { continue }
+                        mainVC.statsBGData.append(reading)
+                        existingDates.insert(ts)
                     }
 
                     mainVC.statsBGData.sort { $0.date < $1.date }

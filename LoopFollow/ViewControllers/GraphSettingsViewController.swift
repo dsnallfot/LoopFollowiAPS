@@ -200,7 +200,7 @@ class GraphSettingsViewController: ThemedFormViewController {
         <<< StepperRow("minBGScale") { row in
             row.title = "Min BG skala"
             row.cell.stepper.stepValue = 1
-            row.cell.stepper.minimumValue = Double(UserDefaultsRepository.highLine.value)
+            row.cell.stepper.minimumValue = Double(UserDefaultsRepository.minBGScale.value)
             row.cell.stepper.maximumValue = 400
             row.value = Double(UserDefaultsRepository.minBGScale.value)
             row.displayValueFor = { value in
@@ -226,49 +226,59 @@ class GraphSettingsViewController: ThemedFormViewController {
         }
         <<< StepperRow("lowLine") { row in
             row.title = "Lågt BG linje"
-            row.cell.stepper.stepValue = 1
-            row.cell.stepper.minimumValue = 40
-            row.cell.stepper.maximumValue = 120
+            row.cell.stepper.stepValue = 10
+            row.cell.stepper.minimumValue = 20
+            row.cell.stepper.maximumValue = 100
             row.value = Double(UserDefaultsRepository.lowLine.value)
             row.displayValueFor = { value in
                 guard let value = value else { return nil }
                 return Localizer.toDisplayUnits(String(value))
             }
         }.onChange { [weak self] row in
-                guard let value = row.value else { return }
-                UserDefaultsRepository.lowLine.value = Float(value)
-            // Force main screen update
-            //guard let mainScreen = self?.tabBarController!.viewControllers?[0] as? MainViewController else { return }
-            //mainScreen.updateBGGraphSettings()
-            
+            guard let value = row.value else { return }
+
+            // Snap to nearest multiple of 10 to avoid odd values (e.g. 141) when stepper value has changed over time.
+            let snapped = (value / 10.0).rounded() * 10.0
+            if snapped != value {
+                row.value = snapped
+                row.updateCell()
+            }
+
+            UserDefaultsRepository.lowLine.value = Float(snapped)
+
             // tell main screen to update
-            if let appState = self!.appStateController {
-               appState.chartSettingsChanged = true
-               appState.chartSettingsChanges |= ChartSettingsChangeEnum.lowLineChanged.rawValue
-             }
+            if let appState = self?.appStateController {
+                appState.chartSettingsChanged = true
+                appState.chartSettingsChanges |= ChartSettingsChangeEnum.lowLineChanged.rawValue
+            }
         }
         <<< StepperRow("highLine") { row in
             row.title = "Högt BG linje"
-            row.cell.stepper.stepValue = 1
+            row.cell.stepper.stepValue = 10
             row.cell.stepper.minimumValue = 120
-            row.cell.stepper.maximumValue = 400
+            row.cell.stepper.maximumValue = 300
             row.value = Double(UserDefaultsRepository.highLine.value)
             row.displayValueFor = { value in
                 guard let value = value else { return nil }
                 return Localizer.toDisplayUnits(String(value))
             }
         }.onChange { [weak self] row in
-                guard let value = row.value else { return }
-                UserDefaultsRepository.highLine.value = Float(value)
-            // Force main screen update
-            //guard let mainScreen = self?.tabBarController!.viewControllers?[0] as? MainViewController else { return }
-            //mainScreen.updateBGGraphSettings()
-            
+            guard let value = row.value else { return }
+
+            // Snap to nearest multiple of 10 to avoid odd values (e.g. 141) when stepper value has changed over time.
+            let snapped = (value / 10.0).rounded() * 10.0
+            if snapped != value {
+                row.value = snapped
+                row.updateCell()
+            }
+
+            UserDefaultsRepository.highLine.value = Float(snapped)
+
             // let app state know of the change
-            if let appState = self!.appStateController {
-               appState.chartSettingsChanged = true
-               appState.chartSettingsChanges |= ChartSettingsChangeEnum.highLineChanged.rawValue
-             }
+            if let appState = self?.appStateController {
+                appState.chartSettingsChanged = true
+                appState.chartSettingsChanges |= ChartSettingsChangeEnum.highLineChanged.rawValue
+            }
         }
         <<< StepperRow("downloadDays") { row in
             // NS supports up to 4 days

@@ -358,17 +358,20 @@ extension MainViewController {
 
         // 2. Börja med befintlig historik inom fönstret
         var merged: [ShareGlucoseData] = statsBGData
-        var existing = Set(merged.map { Int($0.date) })
+
+        // De-dupe keys by 5-minute buckets to avoid double-counting between NS + live sources.
+        // Use rounded bucket to be robust to small timestamp jitter.
+        var existingBuckets = Set(merged.map { Int(($0.date / 300.0).rounded()) })
 
         // 3. Lägg till live-BG från huvudgrafen inom [horizonCutoff, now]
         for reading in bgData {
             let t = reading.date
             if t < horizonCutoff || t > now { continue }
 
-            let key = Int(t)
-            if !existing.contains(key) {
+            let bucket = Int(((t) / 300.0).rounded())
+            if !existingBuckets.contains(bucket) {
                 merged.append(reading)
-                existing.insert(key)
+                existingBuckets.insert(bucket)
             }
         }
 
@@ -695,16 +698,39 @@ class StatsDataService {
         let start = interval.start.timeIntervalSince1970
         let end = interval.end.timeIntervalSince1970
 
-        //let filtered = mainVC.statsBGData.filter { $0.date >= start && $0.date <= end }
         let filtered = mainVC.statsBGData.filter { $0.date >= start && $0.date < end }
+
+        // De-dupe by 5-minute CGM buckets to avoid double-counting when sources overlap.
+        let deduped = Self.dedupeBGByFiveMinuteBucket(filtered)
 
         LogManager.shared.log(
             category: .analysis,
-            message: "getBGData(in:) – interval start=\(interval.start), end=\(interval.end), count=\(filtered.count)",
+            message: "getBGData(in:) – interval start=\(interval.start), end=\(interval.end), raw=\(filtered.count), deduped=\(deduped.count)",
             isDebug: false
         )
 
-        return filtered
+        return deduped
+    }
+    
+    /// De-duplicate BG readings by 5-minute buckets (300s). Keeps the newest reading per bucket.
+    private static func dedupeBGByFiveMinuteBucket(_ input: [ShareGlucoseData]) -> [ShareGlucoseData] {
+        guard !input.isEmpty else { return [] }
+
+        var byBucket: [Int: ShareGlucoseData] = [:]
+        byBucket.reserveCapacity(input.count)
+
+        for r in input {
+            let bucket = Int((r.date / 300.0).rounded()) // robust to jitter
+            if let existing = byBucket[bucket] {
+                if r.date > existing.date {
+                    byBucket[bucket] = r
+                }
+            } else {
+                byBucket[bucket] = r
+            }
+        }
+
+        return byBucket.values.sorted(by: { $0.date < $1.date })
     }
 
     func getBGCheckDates(in interval: DateInterval) -> [TimeInterval] {

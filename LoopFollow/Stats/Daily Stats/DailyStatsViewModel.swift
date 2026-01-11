@@ -76,40 +76,43 @@ final class DailyStatsViewModel: ObservableObject {
     }
 
     /// Endast dagar med tillräckligt många glukosvärden (för att slippa med halva dagar).
-    /// För dagens datum är vi mer tillåtande (så fort vi har ett medelvärde).
+    /// För dagens datum är vi mer tillåtande (så fort vi har något glukosvärde).
     /// Om inga dagar alls uppfyller kraven (t.ex. p.g.a. för få värden per dag),
-    /// faller vi tillbaka till att visa alla dagar som har ett medelvärde.
+    /// faller vi tillbaka till att visa alla dagar som har någon form av glukosdata.
     var rowsWithSufficientGlucose: [DailyStatRow] {
         let calendar = Calendar.current
 
         // Primär, strikt filtrering
         let strict = rows.filter { row in
-            // Dagens datum: inkludera alltid om vi har något glukosvärde (mean != nil)
+            // Dagens datum: inkludera alltid om vi har något glukosvärde
             if calendar.isDateInToday(row.date) {
-                return row.glucoseCount ?? 0 > 0
+                return (row.glucoseCount ?? 0) > 0
             }
 
             // Äldre dagar: kräver minst minGlucoseReadingsPerDay värden
-            if let _ = row.meanGlucoseMmol,
-               let count = row.glucoseCount {
+            if row.meanGlucoseMmol != nil, let count = row.glucoseCount {
                 return count >= minGlucoseReadingsPerDay
-            } else {
-                return false
             }
+            return false
         }
 
-        if strict.isEmpty {
-            let fallback = rows.filter { $0.meanGlucoseMmol != nil || ($0.glucoseCount ?? 0) > 0 }
-            if !fallback.isEmpty {
-                return fallback
-            }
-            return rows
+        // Om vi fick minst en dag med tillräckligt många värden, använd den strikta listan.
+        if !strict.isEmpty {
+            return strict
         }
 
-        // Fallback: om den strikta filtreringen inte gav några dagar alls,
-        // visa hellre alla dagar som har ett medelvärde beräknat.
-        let fallback = rows.filter { $0.meanGlucoseMmol != nil }
-        return fallback
+        // Annars: visa hellre dagar som har någon form av glukosdata
+        let fallback = rows.filter { $0.meanGlucoseMmol != nil || rowHasAnyGlucoseCount($0) }
+        if !fallback.isEmpty {
+            return fallback
+        }
+
+        // Sista utväg
+        return rows
+    }
+
+    private func rowHasAnyGlucoseCount(_ row: DailyStatRow) -> Bool {
+        (row.glucoseCount ?? 0) > 0
     }
 
     var percentageOfDaysMeetingTarget: Double {
@@ -253,10 +256,10 @@ final class DailyStatsViewModel: ObservableObject {
 
             // 5. Konstanter för beräkningar
             let mgToMmol = GlucoseConversion.mgDlToMmolL
-            let lowThresholdMgdL = 3.9 * 18.0182
-            let tightLowMgdL = 3.9 * 18.0182
-            let tightHighMgdL = 7.8 * 18.0182
-            let tirHighMgdL = 10.0 * 18.0182
+            let lowThresholdMgdL = Double(UserDefaultsRepository.lowLine.value)
+            let tightLowMgdL = Double(UserDefaultsRepository.lowLine.value)
+            let tightHighMgdL = Double(UserDefaultsRepository.highLine.value)
+            let tirHighMgdL = 180.0
 
             // 6. Bygg EN rad per kalenderdag, alltid exakt daysToShow st
             var allRows: [DailyStatRow] = []
@@ -312,6 +315,32 @@ final class DailyStatsViewModel: ObservableObject {
                     let tirCount = sgvValues.filter { $0 >= tightLowMgdL && $0 <= tirHighMgdL }.count
                     timeInRangePercent = (Double(tirCount) / count) * 100.0
                 }
+
+                /*
+                // --- Sanity log (debug): glucose count per day ---
+                #if DEBUG
+                let dayString: String = {
+                    let df = DateFormatter()
+                    df.dateFormat = "yyyy-MM-dd"
+                    df.timeZone = TimeZone.current
+                    return df.string(from: dayStart)
+                }()
+
+                let countText = glucoseCountForDay.map(String.init) ?? "0"
+                let lowText = lowPercent.map { String(format: "%.1f", $0) } ?? "-"
+                let titrText = tightRangePercent.map { String(format: "%.1f", $0) } ?? "-"
+                let tirText = timeInRangePercent.map { String(format: "%.1f", $0) } ?? "-"
+
+                let suffix = (glucoseCountForDay ?? 0) < self.minGlucoseReadingsPerDay && !calendar.isDateInToday(dayStart) ? " ⚠️<\(self.minGlucoseReadingsPerDay)" : ""
+
+                LogManager.shared.log(
+                    category: .analysis,
+                    message: "[DailyStats][Sanity] day=\(dayString) glucoseCount=\(countText)\(suffix) low%=\(lowText) TITR%=\(titrText) TIR%=\(tirText)",
+                    isDebug: true
+                )
+                #endif
+                // --- End sanity log ---
+                */
 
                 // Kolhydrater
                 let carbs = carbsPerDay[dayStart]
