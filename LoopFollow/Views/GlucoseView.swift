@@ -60,8 +60,8 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     }()
 
     private let modeSegmentedControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["Alla värden", "Uppladdningar Trio ⇢ NS"])
-        sc.selectedSegmentIndex = 0
+        let sc = UISegmentedControl(items: ["Alla Dexcomvärden", "Uppladdningar Trio ⇢ NS"])
+        sc.selectedSegmentIndex = 1
         sc.translatesAutoresizingMaskIntoConstraints = false
         return sc
     }()
@@ -1283,7 +1283,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             chartView.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 12),
             chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4)
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor)//, constant: -4)
         ])
 
         tableView.tableHeaderView = container
@@ -1326,7 +1326,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             entriesNS.append(BarChartDataEntry(x: Double(i), y: pctNS))
         }
 
-        let dsAll = BarChartDataSet(entries: entriesAll, label: "Alla värden")
+        let dsAll = BarChartDataSet(entries: entriesAll, label: "Alla Dexcomvärden")
         dsAll.setColor(UIColor(
             red: 76.0/255.0,
             green: 179.0/255.0,
@@ -1445,10 +1445,30 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         case worstAllDay
     }
 
-    override func numberOfSections(in tableView: UITableView) -> Int { 1 }
+    override func numberOfSections(in tableView: UITableView) -> Int { 2 }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        Row.allCases.count
+        switch section {
+        case 0:
+            // Dexcom inkl backfill
+            return 2
+        case 1:
+            // Trio uppladdningar realtid
+            return 5
+        default:
+            return 0
+        }
+    }
+
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        switch section {
+        case 0:
+            return "Dexcom glukosvärden (inkl backfill)"
+        case 1:
+            return "Trio uppladdningar (realtid)"
+        default:
+            return nil
+        }
     }
 
     private func percentString(_ value: Double) -> String {
@@ -1482,38 +1502,27 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         cell.textLabel?.backgroundColor = .clear
         cell.detailTextLabel?.backgroundColor = .clear
 
-        let row = Row(rawValue: indexPath.row)!
-
         let expectedPerDay = expectedCountsForSelectedDays()
-
         let totalExpected = Double(expectedPerDay.reduce(0, +))
         let totalAll = Double(selectedCountsAllValues.reduce(0, +))
         let totalNS  = Double(selectedCountsNSOnly.reduce(0, +))
-
         let avgAllPct = totalExpected > 0 ? (totalAll / totalExpected * 100.0) : 0
         let avgNSPct  = totalExpected > 0 ? (totalNS / totalExpected * 100.0) : 0
-
         let missedAllPerDay = zip(selectedCountsAllValues, expectedPerDay)
             .map { Double(max(0, $1 - $0)) }
-
         let missedNSPerDay = zip(selectedCountsNSOnly, expectedPerDay)
             .map { Double(max(0, $1 - $0)) }
-
         let avgMissAll = avg(missedAllPerDay)
         let avgMissNS  = avg(missedNSPerDay)
-
-        let avgMinutesNoAll = avgMissAll * 5.0
-
+        let avgMinutesNoAll = avgMissNS * 5.0
         // Best/worst day for "All values"
         var bestPct: Double = 0
         var bestDate: Date?
         var worstPct: Double = 101
         var worstDate: Date?
-
         for (i, day) in selectedDays.enumerated() {
             let expected = Double(expectedPerDay[i])
             guard expected > 0 else { continue }
-
             let pct = Double(selectedCountsNSOnly[i]) / expected * 100.0
             if pct > bestPct {
                 bestPct = pct
@@ -1525,44 +1534,70 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             }
         }
 
-        switch row {
-        case .avgAllPct:
-            cell.textLabel?.text = "Medel BG-värden (Alla)"
-            cell.detailTextLabel?.text = percentString(avgAllPct)
+        switch indexPath.section {
+        case 0:
+            // Dexcom inkl backfill
+            switch indexPath.row {
+            case 0:
+                cell.textLabel?.text = "Medel glukosvärden"
+                cell.detailTextLabel?.text = percentString(avgAllPct)
 
-        case .avgMissedAllPerDay:
-            cell.textLabel?.text = "Medel missade BG-värden/dag"
-            cell.detailTextLabel?.text = "\(countString(avgMissAll)) st"
-            
-        case .avgTrioPct:
-            cell.textLabel?.text = "Medel BG-uppladdningar (Trio)"
-            cell.detailTextLabel?.text = percentString(avgNSPct)
+            case 1:
+                cell.textLabel?.text = "Medel saknade värden/dag"
+                cell.detailTextLabel?.text = "\(countString(avgMissAll)) st"
 
-        case .avgMissedTrioPerDay:
-            cell.textLabel?.text = "Medel missade uppladdningar/dag"
-            cell.detailTextLabel?.text = "\(countString(avgMissNS)) st"
-
-        case .avgMinutesWithoutAll:
-            cell.textLabel?.text = "Medel tid/dag utan BG-värden"
-            cell.detailTextLabel?.text = "\(countString(avgMinutesNoAll)) min"
-
-        case .bestAllDay:
-            cell.textLabel?.text = "Bästa dag Trio->NS"
-            if let d = bestDate {
-                cell.detailTextLabel?.text = "\(percentString(bestPct)) • \(dfISO.string(from: d))"
-            } else {
-                cell.detailTextLabel?.text = "–"
+            default:
+                break
             }
 
-        case .worstAllDay:
-            cell.textLabel?.text = "Sämsta dag Trio->NS"
-            if let d = worstDate {
-                cell.detailTextLabel?.text = "\(percentString(worstPct)) • \(dfISO.string(from: d))"
-            } else {
-                cell.detailTextLabel?.text = "–"
+        case 1:
+            // Trio uppladdningar realtid
+            switch indexPath.row {
+            case 0:
+                cell.textLabel?.text = "Medel lyckade/dag"
+                cell.detailTextLabel?.text = percentString(avgNSPct)
+
+            case 1:
+                cell.textLabel?.text = "Medel missar/dag"
+                cell.detailTextLabel?.text = "\(countString(avgMissNS)) st"
+
+            case 2:
+                cell.textLabel?.text = "Medel tid/dag utan värden"
+                cell.detailTextLabel?.text = "\(countString(avgMinutesNoAll)) min"
+
+            case 3:
+                cell.textLabel?.text = "Bästa dag"
+                if let d = bestDate {
+                    cell.detailTextLabel?.text = "\(percentString(bestPct)) • \(dfISO.string(from: d))"
+                } else {
+                    cell.detailTextLabel?.text = "–"
+                }
+
+            case 4:
+                cell.textLabel?.text = "Sämsta dag"
+                if let d = worstDate {
+                    cell.detailTextLabel?.text = "\(percentString(worstPct)) • \(dfISO.string(from: d))"
+                } else {
+                    cell.detailTextLabel?.text = "–"
+                }
+
+            default:
+                break
             }
+
+        default:
+            break
         }
 
         return cell
+    }
+    
+    override func tableView(_ tableView: UITableView,
+                            willDisplayHeaderView view: UIView,
+                            forSection section: Int) {
+        if let header = view as? UITableViewHeaderFooterView {
+            header.textLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+            header.textLabel?.textColor = .secondaryLabel
+        }
     }
 }
