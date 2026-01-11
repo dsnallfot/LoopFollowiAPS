@@ -787,6 +787,113 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             }
         }
     }
+    
+    /// Visar sensorstatus / Dexcom-noteringar som förklaring till saknade värden.
+    /// Letar efter en Nightscout-treatment av typen "Note" inom ±1 minut från den saknade tidsstämpeln.
+    /// Om noteringen innehåller "Dexcom" visas hela notes-strängen.
+    private func showSensorStatusAlert(forMissingDate missingDate: Date,
+                                       reason: MissingReason,
+                                       onDismiss: @escaping () -> Void) {
+        Task {
+            let note = await self.fetchDexcomNoteTreatment(around: missingDate, toleranceSeconds: 60)
+
+            await MainActor.run {
+                let timeFormatter = DateFormatter()
+                timeFormatter.locale = Locale(identifier: "sv_SE")
+                timeFormatter.dateFormat = "dd MMM HH:mm:ss"
+
+                let titleTime: String
+                let message: String
+
+                if let note = note,
+                   let fullNote = note.rawData["notes"] as? String {
+
+                    // created_at/timestamp från noten används i rubriken
+                    titleTime = timeFormatter.string(from: note.timestamp)
+
+                    var msg = fullNote
+                    if let enteredBy = note.rawData["enteredBy"] as? String, !enteredBy.isEmpty {
+                        msg += "\nInlagt av: \(enteredBy)"
+                    }
+                    message = msg
+
+                } else {
+                    // Ingen Dexcom-notering hittades i spannet — fallback-texter.
+                    titleTime = timeFormatter.string(from: missingDate)
+
+                    switch reason {
+                    case .sensor:
+                        message =
+                        """
+                        Ingen Dexcom-notering hittades i anslutning till det saknade glukosvärdet.
+
+                        Detta beror oftast på tappad signal (bluetooth) mellan sensorn och den mottagande telefonen, eller att värdet inte kunde laddas upp till varesig Dexcom Share eller Nightscout (t.ex. server-/nätverksproblem).
+                        """
+                    case .trioUpload:
+                        message =
+                        """
+                        Ingen Dexcom-notering hittades i anslutning till det saknade glukosvärdet.
+
+                        Detta beror på att Trio → Nightscout-uppladdningen misslyckadades (t.ex. nätverksproblem eller andra problem med Trio-appen).
+                        """
+                    }
+                }
+
+                let alert = UIAlertController(
+                    title: "\(titleTime)\n\nSensorstatus",
+                    message: message,
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+                    onDismiss()
+                })
+                self.present(alert, animated: true, completion: nil)
+            }
+        }
+    }
+
+    /// Hämtar en "Note"-treatment inom ett tidsfönster runt en timestamp och filtrerar på Dexcom.
+    /// - Returns: Den närmast matchande noteringen (i tid) om någon hittas.
+    private func fetchDexcomNoteTreatment(around date: Date, toleranceSeconds: TimeInterval) async -> Treatment? {
+        let start = date.addingTimeInterval(-toleranceSeconds)
+        let end = date.addingTimeInterval(toleranceSeconds)
+
+        // Hämta treatments från cachefönster. (Vi behöver bara treatments.)
+        let (_, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
+
+        // Mappa cache-objekten till Treatment för enkel filtrering.
+        let treatments: [Treatment] = treatsJSON.compactMap { tjson in
+            Treatment(dictionary: [
+                "_id":       tjson._id as AnyObject,
+                "eventType": tjson.eventType as AnyObject,
+                "enteredBy": tjson.enteredBy as AnyObject,
+                "created_at": ISO8601DateFormatter().string(from: tjson.created_at) as AnyObject,
+                "rate":      tjson.rate as AnyObject,
+                "absolute":  tjson.absolute as AnyObject,
+                "insulin":   tjson.insulin as AnyObject,
+                "carbs":     tjson.carbs as AnyObject,
+                "amount":    tjson.amount as AnyObject,
+                "foodType":  tjson.foodType as AnyObject,
+                "notes":     tjson.notes as AnyObject,
+                "glucose":   tjson.glucose as AnyObject,
+                "units":     tjson.units as AnyObject,
+                "duration":  tjson.tempBasalDuration as AnyObject
+            ])
+        }
+
+        let candidates = treatments.filter {
+            $0.eventType == "Note" &&
+            (($0.rawData["notes"] as? String)?
+                .localizedCaseInsensitiveContains("Dexcom") ?? false)
+        }
+
+        guard !candidates.isEmpty else { return nil }
+
+        // Välj den notering som är närmast den saknade tidsstämpeln.
+        return candidates.min(by: {
+            abs($0.timestamp.timeIntervalSince(date)) < abs($1.timestamp.timeIntervalSince(date))
+        })
+    }
 
     /// Formatterar reason-strängen ungefär som i MainView/Graphs för BG-popupen.
     private func formatGraphReason(_ reason: String) -> String {
@@ -923,9 +1030,12 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
                     tableView.deselectRow(at: indexPath, animated: true)
                 }
             }
-        case .missing(_, _):
-            DispatchQueue.main.async {
-                tableView.deselectRow(at: indexPath, animated: true)
+
+        case .missing(let date, let reason):
+            showSensorStatusAlert(forMissingDate: date, reason: reason) {
+                DispatchQueue.main.async {
+                    tableView.deselectRow(at: indexPath, animated: true)
+                }
             }
         }
     }
