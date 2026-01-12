@@ -8,6 +8,11 @@
 
 import SwiftUI
 import UIKit
+@available(iOS 16.0, *)
+private struct PreferenceKeyItem: Identifiable {
+    let key: String
+    var id: String { key }
+}
 private struct PinnedSearchBar: View {
     @Binding var text: String
     let placeholder: String
@@ -82,6 +87,7 @@ private struct UISearchBarRepresentable: UIViewRepresentable {
 struct TrioPreferencesView: View {
     @ObservedObject var viewModel = TrioPreferencesViewModel()
     @State private var searchText: String = ""
+    @State private var selectedPreferenceKeyForLog: PreferenceKeyItem?
 
     var filteredPreferences: [PreferenceEntry] {
         if searchText.isEmpty {
@@ -109,10 +115,32 @@ struct TrioPreferencesView: View {
                     }
                     .padding(.vertical, 2)
                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                    .onTapGesture {
+                        selectedPreferenceKeyForLog = PreferenceKeyItem(key: entry.key)
+                    }
                 }
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
             }
+            .sheet(item: $selectedPreferenceKeyForLog) { item in
+                SettingsLogModal(initialSearchText: item.key)
+            }
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct SettingsLogModal: UIViewControllerRepresentable {
+    let initialSearchText: String
+
+    func makeUIViewController(context: Context) -> UINavigationController {
+        let vc = TrioSettingsLogView(initialSearchText: initialSearchText)
+        return UINavigationController(rootViewController: vc)
+    }
+
+    func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
+        if let vc = uiViewController.viewControllers.first as? TrioSettingsLogView {
+            vc.setSearchTextAndFilter(initialSearchText)
         }
     }
 }

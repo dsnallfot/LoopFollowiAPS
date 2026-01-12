@@ -32,6 +32,8 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
         return sb
     }()
     
+    private let initialSearchText: String?
+
     private let topSearchContainer: UIView = {
         let v = UIView()
         v.translatesAutoresizingMaskIntoConstraints = false
@@ -60,6 +62,16 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
 
     private var activityIndicator: UIActivityIndicatorView?
 
+    init(initialSearchText: String? = nil) {
+        self.initialSearchText = initialSearchText
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        self.initialSearchText = nil
+        super.init(coder: coder)
+    }
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -68,6 +80,10 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
 
         setupNavigationBar()
         searchBar.delegate = self
+        // Pre-filter directly when opened from TrioPreferencesView
+        if let initial = initialSearchText, !initial.isEmpty {
+            searchBar.text = initial
+        }
         // Make search text field background partially translucent for blend
         if #available(iOS 13.0, *) {
             searchBar.searchTextField.backgroundColor = UIColor.systemGray.withAlphaComponent(0.1)
@@ -78,6 +94,8 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
         navigationItem.hidesSearchBarWhenScrolling = false
 
         loadSettings()
+        // Apply filter immediately (will also be applied again after load finishes)
+        applyFilter(searchText: searchBar.text)
     }
 
     // MARK: - Nav bar
@@ -241,14 +259,36 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
         }
     }
 
+    func setSearchTextAndFilter(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        // Ensure UI updates happen on the main thread
+        DispatchQueue.main.async {
+            if self.searchBar.text != trimmed {
+                self.searchBar.text = trimmed
+            }
+            self.applyFilter(searchText: trimmed)
+        }
+    }
+
     private func applyFilter(searchText: String?) {
-        let q = (searchText ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let raw = (searchText ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Normalize so that searches are tolerant to formatting differences like "adjustmentFactor" vs "adjustment_Factor"
+        func normalize(_ s: String) -> String {
+            return s
+                .lowercased()
+                .replacingOccurrences(of: "_", with: "")
+        }
+
+        let q = normalize(raw)
+
         if q.isEmpty {
             entries = allEntries
         } else {
-            let lower = q.lowercased()
-            entries = allEntries.filter { $0.note.lowercased().contains(lower) }
+            entries = allEntries.filter { normalize($0.note).contains(q) }
         }
+
         tableView.reloadData()
     }
 

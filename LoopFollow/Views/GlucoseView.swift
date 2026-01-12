@@ -32,7 +32,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         case trioUpload   // Trio/NS upload missing, but sensor (Dexcom) has the value
     }
 
-    private var dataMode: GlucoseDataMode = .allValues
+    private var dataMode: GlucoseDataMode = .nsOnly
     
     // How many days back the manual backfill refresh should fetch (used by reload button)
     private let backfillDays = 14
@@ -245,6 +245,10 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         title = "Glukoslogg"
         //view.backgroundColor = .systemBackground
         updateBackgroundForCurrentMode()
+
+        // Default to Trio → Nightscout uploads when opening this modal
+        dataMode = .nsOnly
+        modeSegmentedControl.selectedSegmentIndex = 1
 
         setupNavigationBar()
         setupTableView()
@@ -827,14 +831,14 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
                         """
                         Ingen Dexcom-notering hittades i anslutning till det saknade glukosvärdet.
 
-                        Detta beror oftast på tappad signal (bluetooth) mellan sensorn och den mottagande telefonen, eller att värdet inte kunde laddas upp till varesig Dexcom Share eller Nightscout (t.ex. server-/nätverksproblem).
+                        Detta beror oftast på tappad bluetoothsignal mellan sensorn och den mottagande telefonen, eller att värdet inte kunde laddas upp till varesig Dexcom Share eller Nightscout (t.ex. server-/nätverksproblem).
                         """
                     case .trioUpload:
                         message =
                         """
                         Ingen Dexcom-notering hittades i anslutning till det saknade glukosvärdet.
 
-                        Detta beror på att Trio → Nightscout-uppladdningen misslyckadades (t.ex. nätverksproblem eller andra problem med Trio-appen).
+                        Detta beror på att Trio → Nightscout-uppladdningen misslyckadades (t.ex. bluetooth-/nätverksproblem eller andra problem med Trio-appen).
                         """
                     }
                 }
@@ -1032,6 +1036,12 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             }
 
         case .missing(let date, let reason):
+            // Do not show alert for placeholder row ("Inga saknade värden denna dag")
+            let isPlaceholder = showOnlyMissingGlucose && dayRowsIncludingMissing.filter { $0.isMissing }.isEmpty
+            if isPlaceholder {
+                tableView.deselectRow(at: indexPath, animated: true)
+                return
+            }
             showSensorStatusAlert(forMissingDate: date, reason: reason) {
                 DispatchQueue.main.async {
                     tableView.deselectRow(at: indexPath, animated: true)
