@@ -180,9 +180,9 @@ struct ProfileSchedulesView: View {
                                 scheduleRow(entry, isBold: entry.time == "Total daglig basal")
                                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                                     .contentShape(Rectangle())
-                                    .onTapGesture { openSettingsLog(for: "Basalprofil") }
                             }
                         }
+                        .onTapGesture { openSettingsLog(for: "Basalprofil") }
                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
 
                         Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
@@ -190,9 +190,9 @@ struct ProfileSchedulesView: View {
                                 scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
                                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                                     .contentShape(Rectangle())
-                                    .onTapGesture { openSettingsLog(for: "Basalprofil") }
                             }
                         }
+                        .onTapGesture { openSettingsLog(for: "Basalprofil") }
                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                     }
 
@@ -202,9 +202,9 @@ struct ProfileSchedulesView: View {
                                 scheduleRow(entry)
                                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                                     .contentShape(Rectangle())
-                                    .onTapGesture { openSettingsLog(for: "CR-profil") }
                             }
                         }
+                        .onTapGesture { openSettingsLog(for: "CR-profil") }
                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                     }
 
