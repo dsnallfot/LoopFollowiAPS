@@ -117,7 +117,7 @@ struct TrioPreferencesView: View {
                         }
                         HStack(spacing: 6) {
                             if let last = viewModel.latestChangeDate(forKey: entry.key) {
-                                Image(systemName: "arrow.clockwise")
+                                Image(systemName: "arrow.clockwise.circle.fill")
                                     .font(.caption2)
                                     .foregroundColor(.purple)
 

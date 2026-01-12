@@ -273,14 +273,36 @@ struct ProfileSchedulesView: View {
                 } label: {
                     Image(systemName: "info")
                 }
-                .accessibilityLabel("Profil laddades ner")
+                .accessibilityLabel("Profil laddades ner:")
             }
         }
-        .alert("Profil laddades ner", isPresented: $showProfileUpdatedAlert) {
+        .alert(
+            "Profil uppdaterades \n\(ProfileManager.shared.profileCreatedAtFormatted ?? "Okänt")",
+            isPresented: $showProfileUpdatedAlert
+        ) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text(ProfileManager.shared.profileCreatedAtFormatted ?? "Okänt")
+            Text("""
+            
+            Senaste ändringsdatum
+            • Målprofil: \(fmt(viewModel.lastChangedTargetProfile))
+            • Basalprofil: \(fmt(viewModel.lastChangedBasalProfile))
+            • CR-profil: \(fmt(viewModel.lastChangedCRProfile))
+            • ISF-profil: \(fmt(viewModel.lastChangedISFProfile))
+            """)
         }
+    }
+    
+    private var shortDateFormatter: DateFormatter {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyyy-MM-dd"
+        return df
+    }
+
+    private func fmt(_ date: Date?) -> String {
+        guard let date else { return "N/A" }
+        return shortDateFormatter.string(from: date)
     }
 
     @ViewBuilder
@@ -301,7 +323,7 @@ struct ProfileSchedulesView: View {
             Spacer()
             if let d = lastChanged {
                 HStack(spacing: 4) {
-                    Image(systemName: "arrow.clockwise")
+                    Image(systemName: "arrow.clockwise.circle.fill")
                     Text(d.formatted(.dateTime.year().month().day()))
                 }
                 .font(.caption2)
