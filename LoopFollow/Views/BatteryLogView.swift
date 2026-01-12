@@ -621,8 +621,8 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         dayChartView.backgroundColor = .clear
         weekChartView.backgroundColor = .clear
 
-        // Ensure content isn't clipped at edges
-        weekChartView.setExtraOffsets(left: 8, top: 0, right: 8, bottom: 0)
+        // Ensure content isn't clipped at edges, and give extra room for edge labels
+        weekChartView.setExtraOffsets(left: 14, top: 0, right: 14, bottom: 0)
     }
 
     private func setupConstraints() {
@@ -669,7 +669,7 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
 
         leftAxis.drawGridLinesEnabled = true
         leftAxis.gridLineDashLengths = [2, 2]
-        leftAxis.gridColor = UIColor.label.withAlphaComponent(0.2)
+        leftAxis.gridColor = UIColor.label.withAlphaComponent(0.5)
 
         leftAxis.drawAxisLineEnabled = true
         leftAxis.axisLineColor = UIColor.label.withAlphaComponent(1.0)
@@ -703,17 +703,23 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         x.axisLineColor = UIColor.label.withAlphaComponent(1.0)
         x.axisLineWidth = 0.5
         x.labelTextColor = .secondaryLabel
+        // We want ticks at integer day indices (0...6). When using padded min/max (-0.5..6.5),
+        // do NOT force label count; forced labels are evenly distributed across the padded range
+        // (step = 7/6) and would produce non-integer values that get rounded by the formatter.
+        x.granularityEnabled = true
         x.granularity = 1
+
         // Add half-step padding so day 0 and day 6 candles are not clipped
         x.axisMinimum = -0.5
         x.axisMaximum = 6.5
-        x.setLabelCount(7, force: true)
+
+        // Hint desired count, but do not force.
+        x.setLabelCount(7, force: false)
         x.valueFormatter = weekXAxisFormatter
-/*
-        // Extra spacing at chart edges (defensive)
-        x.spaceMin = 0.5
-        x.spaceMax = 0.5
-*/
+
+        // Keep first/last labels visible (prevents clipping/vanishing at edges)
+        x.avoidFirstLastClippingEnabled = false
+
         weekChartView.leftAxis.spaceTop = 5
         weekChartView.leftAxis.spaceBottom = 0
     }
@@ -860,7 +866,8 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
     }
 
     private func buildWeekChart(startingAt weekStart: Date) async {
-        let cal = Calendar.current
+        var cal = Calendar.current
+        cal.firstWeekday = 2 // Monday
         let start = cal.startOfDay(for: weekStart)
         let end = cal.date(byAdding: .day, value: 6, to: start) ?? start
 
@@ -879,13 +886,16 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         }
 
         var candleEntries: [CandleChartDataEntry] = []
+        weekXAxisFormatter.reset()
 
         for i in 0..<7 {
             let daySamples = perDay[i].sorted { $0.date < $1.date }
             let dayDate = cal.date(byAdding: .day, value: i, to: start) ?? start
 
+            // ✅ Always set x-axis label (even if the day has no samples)
+            weekXAxisFormatter.setLabel(forIndex: i, date: dayDate)
+
             if daySamples.isEmpty {
-                // Empty day -> invisible candle at 0
                 candleEntries.append(CandleChartDataEntry(x: Double(i), shadowH: 0, shadowL: 0, open: 0, close: 0))
                 continue
             }
@@ -894,11 +904,7 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
             let hi = percents.max() ?? 0
             let lo = percents.min() ?? 0
 
-            // Use open/close to create a body; keep it consistent (open=hi, close=lo).
             candleEntries.append(CandleChartDataEntry(x: Double(i), shadowH: hi, shadowL: lo, open: hi, close: lo))
-
-            // Label for x-axis
-            weekXAxisFormatter.setLabel(forIndex: i, date: dayDate)
         }
 
         let set = CandleChartDataSet(entries: candleEntries, label: "")
@@ -943,10 +949,10 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
                 ))
             }
 
-            add("Laddar  ", color: .systemBlue)
-            add("Bra  ", color: .systemGreen)
-            add("Låg  ", color: .systemOrange)
-            add("Akut låg", color: .systemRed)
+            add("Laddar  ", color: .systemBlue.withAlphaComponent(0.8))
+            add("Bra  ", color: .systemGreen.withAlphaComponent(0.8))
+            add("Låg  ", color: .systemOrange.withAlphaComponent(0.8))
+            add("Akut låg", color: .systemRed.withAlphaComponent(0.8))
 
             dayLegendLabel.attributedText = a
 
@@ -966,14 +972,15 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
     }
 
     private func colorForBattery(percent: Double, isCharging: Bool) -> UIColor {
-        if isCharging { return .systemBlue }
-        if percent >= 50 { return .systemGreen }
-        if percent >= 20 { return .systemOrange }
+        if isCharging { return .systemBlue.withAlphaComponent(0.8) }
+        if percent >= 50 { return .systemGreen.withAlphaComponent(0.8) }
+        if percent >= 20 { return .systemOrange.withAlphaComponent(0.8) }
         return .systemRed
     }
 
     private func startOfWeek(for date: Date) -> Date {
-        let cal = Calendar.current
+        var cal = Calendar.current
+        cal.firstWeekday = 2 // Monday
         // Use user's locale/calendar settings
         if let interval = cal.dateInterval(of: .weekOfYear, for: date) {
             return cal.startOfDay(for: interval.start)
@@ -1026,7 +1033,7 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
 private final class BatteryYAxisValueFormatter: AxisValueFormatter {
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
         let v = Int(round(value))
-        if v == 0 || v == 50 || v == 100 {
+        if v == 0 || v == 10 || v == 20 || v == 30 || v == 40 || v == 50 || v == 60 || v == 70 || v == 80 || v == 90 || v == 100 {
             return "\(v) %"
         }
         return ""
@@ -1068,5 +1075,9 @@ private final class WeekBatteryXAxisFormatter: AxisValueFormatter {
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
         let i = Int(round(value))
         return labels[i] ?? ""
+    }
+    
+    func reset() {
+        labels.removeAll()
     }
 }
