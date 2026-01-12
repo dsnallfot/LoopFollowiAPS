@@ -27,6 +27,7 @@ class ProfileSchedulesViewModel: ObservableObject {
     @Published var lastChangedBasalProfile: Date?
     @Published var lastChangedCRProfile: Date?
     @Published var lastChangedISFProfile: Date?
+    @Published var lastChangedTargetProfile: Date?
     
     private var minCarbImpact: Double = 8 // Default value, will be fetched
 
@@ -293,7 +294,7 @@ class ProfileSchedulesViewModel: ObservableObject {
             var latest: [String: Date] = [:]
 
             // Behåll termerna som du vill att de ska vara “mänskliga”
-            let rawTargets = ["Basalprofil", "CR-profil", "ISF-profil"]
+            let rawTargets = ["Basalprofil", "CR-profil", "ISF-profil", "Mål-profil"]
 
             for t in treatments {
                 guard t.eventType == "Note", let note = t.notes else { continue }
@@ -317,11 +318,13 @@ class ProfileSchedulesViewModel: ObservableObject {
             let basal = latest[normalize("Basalprofil")]
             let cr    = latest[normalize("CR-profil")]
             let isf   = latest[normalize("ISF-profil")]
+            let target   = latest[normalize("Mål-profil")]
 
             await MainActor.run {
                 self.lastChangedBasalProfile = basal
                 self.lastChangedCRProfile = cr
                 self.lastChangedISFProfile = isf
+                self.lastChangedTargetProfile = target
             }
         }
     }

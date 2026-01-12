@@ -117,7 +117,7 @@ struct TrioPreferencesView: View {
                         }
                         HStack(spacing: 6) {
                             if let last = viewModel.latestChangeDate(forKey: entry.key) {
-                                Image(systemName: "info.circle.fill")
+                                Image(systemName: "arrow.clockwise")
                                     .font(.caption2)
                                     .foregroundColor(.purple)
 
@@ -137,7 +137,16 @@ struct TrioPreferencesView: View {
                 .background(Color.clear)
             }
             .sheet(item: $selectedPreferenceKeyForLog) { item in
-                SettingsLogModal(initialSearchText: item.key)
+                ZStack {
+                    // Lägg till bakgrunden här för att fylla hela modalen
+                    ThemeBackground()
+                        .ignoresSafeArea()
+                    
+                    // Din wrapper ovanpå bakgrunden
+                    SettingsLogModal(initialSearchText: item.key)
+                }
+                // Om du vill att handtaget högst upp på sheetet ska synas tydligt:
+                //.presentationDragIndicator(.visible)
             }
         }
     }

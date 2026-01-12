@@ -165,10 +165,12 @@ struct ProfileSchedulesView: View {
 
                 List {
                     if selectedSection == .targets {
-                        Section(header: Text("🟪 Mål (mmol/L)")) {
+                            Section(header: sectionHeader(title: "🟪 Mål (mmol/L)", lastChanged: viewModel.lastChangedTargetProfile)) {
                             ForEach(viewModel.targetEntries) { entry in
                                 scheduleRow(entry)
                                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { openSettingsLog(for: "Mål-profil") }
                             }
                         }
                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
@@ -255,7 +257,14 @@ struct ProfileSchedulesView: View {
             }
         }
         .sheet(item: $selectedLogSearchItem) { item in
-            SettingsLogModal(initialSearchText: item.term)
+            ZStack {
+                // Lägg till bakgrunden här för att fylla hela modalen
+                ThemeBackground()
+                    .ignoresSafeArea()
+                
+                // Din wrapper ovanpå bakgrunden
+                SettingsLogModal(initialSearchText: item.term)
+            }
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -264,10 +273,10 @@ struct ProfileSchedulesView: View {
                 } label: {
                     Image(systemName: "info")
                 }
-                .accessibilityLabel("Profil uppdaterades senast")
+                .accessibilityLabel("Profil laddades ner")
             }
         }
-        .alert("Profil uppdaterades senast", isPresented: $showProfileUpdatedAlert) {
+        .alert("Profil laddades ner", isPresented: $showProfileUpdatedAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(ProfileManager.shared.profileCreatedAtFormatted ?? "Okänt")
@@ -292,7 +301,7 @@ struct ProfileSchedulesView: View {
             Spacer()
             if let d = lastChanged {
                 HStack(spacing: 4) {
-                    Image(systemName: "info.circle.fill")
+                    Image(systemName: "arrow.clockwise")
                     Text(d.formatted(.dateTime.year().month().day()))
                 }
                 .font(.caption2)
@@ -308,11 +317,29 @@ private struct SettingsLogModal: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UINavigationController {
         let vc = TrioSettingsLogView(initialSearchText: initialSearchText)
-        return UINavigationController(rootViewController: vc)
+        let nav = UINavigationController(rootViewController: vc)
+        
+        // 1. Gör Navigationsbaren helt transparent (kopierat från din fungerande kod)
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        
+        // Se till att titeln syns (kan behövas om texten är vit/svart mot bakgrunden)
+        // appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
+        
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+        
+        // 2. Sätt bakgrunden på själva navigation viewn till transparent
+        nav.view.backgroundColor = .clear
+        
+        return nav
     }
 
     func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
         if let vc = uiViewController.viewControllers.first as? TrioSettingsLogView {
+            // OBS: Detta anrop kan orsaka oönskad loop om du skriver i sökfältet
+            // och SwiftUI uppdaterar vyn. Kontrollera att logiken i TrioSettingsLogView hanterar dubbletter.
             vc.setSearchTextAndFilter(initialSearchText)
         }
     }
