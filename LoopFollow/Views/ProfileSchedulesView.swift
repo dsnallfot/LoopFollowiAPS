@@ -10,11 +10,18 @@ import SwiftUI
 import Charts
 
 @available(iOS 16.0, *)
+private struct LogSearchItem: Identifiable {
+    let term: String
+    var id: String { term }
+}
+
+@available(iOS 16.0, *)
 struct ProfileSchedulesView: View {
     @ObservedObject var viewModel = ProfileSchedulesViewModel()
     
     @State private var selectedSection: SectionType = .targets // Default section
     @State private var showProfileUpdatedAlert: Bool = false
+    @State private var selectedLogSearchItem: LogSearchItem?
 
     enum SectionType: String, CaseIterable {
         case targets = "Mål"
@@ -133,6 +140,10 @@ struct ProfileSchedulesView: View {
         
         return outputData
     }
+    
+    private func openSettingsLog(for term: String) {
+        selectedLogSearchItem = LogSearchItem(term: term)
+    }
 
     var body: some View {
         ZStack {
@@ -164,10 +175,12 @@ struct ProfileSchedulesView: View {
                     }
 
                     if selectedSection == .basal {
-                        Section(header: Text("🟪 Basal (E/h)")) {
+                        Section(header: sectionHeader(title: "🟪 Basal (E/h)", lastChanged: viewModel.lastChangedBasalProfile)) {
                             ForEach(viewModel.basalEntries) { entry in
                                 scheduleRow(entry, isBold: entry.time == "Total daglig basal")
                                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { openSettingsLog(for: "Basalprofil") }
                             }
                         }
                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
@@ -176,40 +189,46 @@ struct ProfileSchedulesView: View {
                             ForEach(viewModel.basalIOBEntries) { entry in
                                 scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
                                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { openSettingsLog(for: "Basalprofil") }
                             }
                         }
                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                     }
 
                     if selectedSection == .cr {
-                        Section(header: Text("🟪 Insulinkvoter CR (g/E)")) {
+                        Section(header: sectionHeader(title: "🟪 Insulinkvoter (g/E)", lastChanged: viewModel.lastChangedCRProfile)) {
                             ForEach(viewModel.carbRatioEntries) { entry in
                                 scheduleRow(entry)
                                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { openSettingsLog(for: "CR-profil") }
                             }
                         }
                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                     }
 
                     if selectedSection == .isf {
-                        Section(header: Text("🟪 Insulinkänslighet ISF (mmol/L/E)")) {
+                        Section(header: sectionHeader(title: "🟪 Känslighet (mmol/L/E)", lastChanged: viewModel.lastChangedISFProfile)) {
                             ForEach(viewModel.isfEntries) { entry in
                                 scheduleRow(entry)
                                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { openSettingsLog(for: "ISF-profil") }
                             }
                         }
                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                     }
 
-                    if selectedSection == .csf {
-                        Section(header: Text("🟪 Kh-känslighet CSF (mmol/L/g)")) {
-                            ForEach(viewModel.csfEntries) { entry in
-                                scheduleRow(entry)
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                        if selectedSection == .csf {
+                            Section(header: Text("🟪 Kh-känslighet (mmol/L/g)")) {
+                                ForEach(viewModel.csfEntries) { entry in
+                                    scheduleRow(entry)
+                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                }
                             }
-                        }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                    }
+                                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            }
 
                     if selectedSection == .cHr {
                         Section(header: Text("🟪 Minsta absorption Kh (g/h)")) {
@@ -234,6 +253,9 @@ struct ProfileSchedulesView: View {
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
             }
+        }
+        .sheet(item: $selectedLogSearchItem) { item in
+            SettingsLogModal(initialSearchText: item.term)
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -260,6 +282,38 @@ struct ProfileSchedulesView: View {
             Spacer()
             Text(entry.value)
                 .font(isBold ? .headline.bold() : .subheadline)
+        }
+    }
+    
+    @ViewBuilder
+    private func sectionHeader(title: String, lastChanged: Date?) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            if let d = lastChanged {
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle.fill")
+                    Text(d.formatted(.dateTime.year().month().day()))
+                }
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct SettingsLogModal: UIViewControllerRepresentable {
+    let initialSearchText: String
+
+    func makeUIViewController(context: Context) -> UINavigationController {
+        let vc = TrioSettingsLogView(initialSearchText: initialSearchText)
+        return UINavigationController(rootViewController: vc)
+    }
+
+    func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {
+        if let vc = uiViewController.viewControllers.first as? TrioSettingsLogView {
+            vc.setSearchTextAndFilter(initialSearchText)
         }
     }
 }

@@ -24,11 +24,15 @@ class ProfileSchedulesViewModel: ObservableObject {
     @Published var minCarbsEntries: [ScheduleEntry] = []
     @Published var smbEntries: [ScheduleEntry] = []
     @Published var basalIOBEntries: [ScheduleEntry] = []
+    @Published var lastChangedBasalProfile: Date?
+    @Published var lastChangedCRProfile: Date?
+    @Published var lastChangedISFProfile: Date?
     
     private var minCarbImpact: Double = 8 // Default value, will be fetched
 
     init() {
         fetchProfileData()
+        scanCachedProfileNoteTreatments()
     }
 
     func fetchProfileData() {
@@ -268,4 +272,57 @@ class ProfileSchedulesViewModel: ObservableObject {
             let hours = seconds / 3600
             return String(format: "%02d:00", hours)
         }
+    
+    private func normalize(_ s: String) -> String {
+        return s
+            .lowercased()
+            .replacingOccurrences(of: "_", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: " ", with: "")
+    }
+
+    private func scanCachedProfileNoteTreatments() {
+        Task {
+            let now = Date()
+            let cal = Calendar.current
+            let start = cal.date(byAdding: .day, value: -NightscoutCache.retentionDays, to: now)
+                ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
+
+            let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
+
+            var latest: [String: Date] = [:]
+
+            // Behåll termerna som du vill att de ska vara “mänskliga”
+            let rawTargets = ["Basalprofil", "CR-profil", "ISF-profil"]
+
+            for t in treatments {
+                guard t.eventType == "Note", let note = t.notes else { continue }
+                guard note.contains("Justerad") || note.contains("ändrades") else { continue }
+
+                let n = normalize(note) // tar bort _ - och mellanslag osv
+
+                for raw in rawTargets {
+                    let target = normalize(raw)               // <-- nyckeln här!
+                    guard n.contains(target) else { continue }
+
+                    if let existing = latest[target] {
+                        if t.created_at > existing { latest[target] = t.created_at }
+                    } else {
+                        latest[target] = t.created_at
+                    }
+                }
+            }
+
+            // Swift 6-snapshot
+            let basal = latest[normalize("Basalprofil")]
+            let cr    = latest[normalize("CR-profil")]
+            let isf   = latest[normalize("ISF-profil")]
+
+            await MainActor.run {
+                self.lastChangedBasalProfile = basal
+                self.lastChangedCRProfile = cr
+                self.lastChangedISFProfile = isf
+            }
+        }
+    }
 }

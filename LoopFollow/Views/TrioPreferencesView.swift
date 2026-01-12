@@ -107,11 +107,25 @@ struct TrioPreferencesView: View {
 
                 List(filteredPreferences) { entry in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(entry.key)
-                            .font(.headline)
-                        Text(entry.value)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        HStack(spacing: 6) {
+                            Text(entry.key)
+                                .font(.headline)
+                            Spacer()
+                            Text(entry.value)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        HStack(spacing: 6) {
+                            if let last = viewModel.latestChangeDate(forKey: entry.key) {
+                                Image(systemName: "info.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundColor(.purple)
+
+                                Text("Senast ändrad: \(last.formatted(.dateTime.year().month().day()))")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
                     }
                     .padding(.vertical, 2)
                     .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
