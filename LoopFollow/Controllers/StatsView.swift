@@ -72,17 +72,39 @@ extension MainViewController {
             // Choose data scope for stats
             let statsSourceData: [ShareGlucoseData]
 
-            if showOnlyTodayStats {
+            switch statsScopeMode {
+            case .today:
                 // Today 00:00 (local) -> now
                 let now = Date()
                 let startOfToday = Calendar.current.startOfDay(for: now).timeIntervalSince1970
                 let nowTI = now.timeIntervalSince1970
                 statsSourceData = bgData.filter { $0.date >= startOfToday && $0.date <= nowTI }
-            } else {
+
+            case .schoolday:
+                // Schoolday: 08:00 -> 16:00 (or 08:00 -> now if before 16:00).
+                // If before 08:00: show N/A for all values.
+                let now = Date()
+                let cal = Calendar.current
+                let startOfToday = cal.startOfDay(for: now)
+
+                let start08 = cal.date(bySettingHour: 8, minute: 0, second: 0, of: startOfToday)
+                    ?? startOfToday.addingTimeInterval(8 * 3600)
+                let end16 = cal.date(bySettingHour: 16, minute: 0, second: 0, of: startOfToday)
+                    ?? startOfToday.addingTimeInterval(16 * 3600)
+
+                if now < start08 {
+                    statsSourceData = []
+                } else {
+                    let end = min(now, end16)
+                    let startTI = start08.timeIntervalSince1970
+                    let endTI = end.timeIntervalSince1970
+                    statsSourceData = bgData.filter { $0.date >= startTI && $0.date <= endTI }
+                }
+
+            case .period:
                 // Existing behavior: use the requested download window (last 24h if >1 day loaded)
                 var lastDayOfData = bgData
                 let graphHours = 24 * UserDefaultsRepository.downloadDays.value
-                // If we loaded more than 1 day of data, only use the last day for the stats
                 if graphHours > 24 {
                     let oneDayAgo = dateTimeUtils.getTimeIntervalNHoursAgo(N: 24)
                     var startIndex = 0
@@ -96,6 +118,16 @@ extension MainViewController {
 
             // If no data in the chosen scope, don't update the stats UI
             guard statsSourceData.count > 0 else {
+                statsLowPercent.text = "N/A"
+                statsInRangePercent.text = "N/A"
+                statsHighPercent.text = "N/A"
+                statsAvgBG.text = "N/A"
+                statsEstA1C.text = "N/A"
+                statsStdDev.text = "N/A"
+
+                // Clear pie
+                statsPieChart.data = nil
+                statsPieChart.notifyDataSetChanged()
                 return
             }
 

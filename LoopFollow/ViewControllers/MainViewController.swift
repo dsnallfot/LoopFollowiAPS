@@ -126,12 +126,24 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     var lastOverrideStartTime: TimeInterval = 0
     var lastOverrideEndTime: TimeInterval = 0
     
-    private static let showOnlyTodayStatsKey = "showOnlyTodayStats"
+    private static let statsScopeModeKey = "statsScopeMode" // 0=period, 1=today, 2=schoolday
 
-    var showOnlyTodayStats: Bool = false {
+    enum StatsScopeMode: Int {
+        case period = 0
+        case today = 1
+        case schoolday = 2
+    }
+
+    var statsScopeMode: StatsScopeMode = .period {
         didSet {
-            UserDefaults.standard.set(showOnlyTodayStats, forKey: Self.showOnlyTodayStatsKey)
+            UserDefaults.standard.set(statsScopeMode.rawValue, forKey: Self.statsScopeModeKey)
         }
+    }
+
+    // Backwards-compatible convenience (om du råkar referera showOnlyTodayStats på andra ställen)
+    var showOnlyTodayStats: Bool {
+        get { statsScopeMode == .today }
+        set { statsScopeMode = newValue ? .today : .period }
     }
     
     private func hoursInScopeString() -> String {
@@ -140,20 +152,48 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     }
 
     private func updateStatsHeadlineText() {
-        if showOnlyTodayStats {
-            statsHeadline.text = "Statistik idag  ❮ ❯"
-        } else {
-            statsHeadline.text = "Statistik för \(hoursInScopeString())  ❮ ❯"
+        switch statsScopeMode {
+        case .period:
+            statsHeadline.text = "  Statistik \(hoursInScopeString())  ❮ ❯"
+        case .today:
+            statsHeadline.text = "  Statistik idag  ❮ ❯"
+        case .schoolday:
+            statsHeadline.text = "  Statistik skoldag 08-16  ❮ ❯"
         }
     }
 
-    @objc private func handleStatsStackSwipe(_ gesture: UISwipeGestureRecognizer) {
-        // Toggle scope
-        showOnlyTodayStats.toggle()
+    @objc private func handleStatsStackSwipeRight(_ gesture: UISwipeGestureRecognizer) {
+        // Cycle scope: period -> today -> schoolday -> period
+        switch statsScopeMode {
+        case .period:
+            statsScopeMode = .today
+        case .today:
+            statsScopeMode = .schoolday
+        case .schoolday:
+            statsScopeMode = .period
+        }
+
         updateStatsHeadlineText()
         updateStats()
 
-        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+    
+    @objc private func handleStatsStackSwipeLeft(_ gesture: UISwipeGestureRecognizer) {
+        // Cycle scope: period -> schoolday -> today -> period
+        switch statsScopeMode {
+        case .period:
+            statsScopeMode = .schoolday
+        case .schoolday:
+            statsScopeMode = .today
+        case .today:
+            statsScopeMode = .period
+        }
+
+        updateStatsHeadlineText()
+        updateStats()
+
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
     }
@@ -198,7 +238,8 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     override func viewDidLoad() {
         super.viewDidLoad()
         // Restore last selected stats scope
-        showOnlyTodayStats = UserDefaults.standard.bool(forKey: Self.showOnlyTodayStatsKey)
+        let raw = UserDefaults.standard.integer(forKey: Self.statsScopeModeKey)
+        statsScopeMode = StatsScopeMode(rawValue: raw) ?? .period
 
         //Migration of UserDefaultsRepository -> Storage handling
         if !UserDefaultsRepository.backgroundRefresh.value {
@@ -313,12 +354,12 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         let tapGestureStats = UITapGestureRecognizer(target: self, action: #selector(showStatsFromStack))
         statsStack.addGestureRecognizer(tapGestureStats)
 
-        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleStatsStackSwipe(_:)))
+        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleStatsStackSwipeLeft(_:)))
         swipeLeft.direction = .left
         swipeLeft.cancelsTouchesInView = false
         statsStack.addGestureRecognizer(swipeLeft)
 
-        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleStatsStackSwipe(_:)))
+        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleStatsStackSwipeRight(_:)))
         swipeRight.direction = .right
         swipeRight.cancelsTouchesInView = false
         statsStack.addGestureRecognizer(swipeRight)
