@@ -191,8 +191,13 @@ struct AnalyzeDeviationsView: View {
     @ObservedObject var viewModel: TrioPreferencesViewModel
     @State private var mode: ChartMode = .dev30m
 
-    private var devRows: [TrioPreferencesViewModel.DevPoint] { viewModel.devPoints }
-    private var iobCobRows: [TrioPreferencesViewModel.IobCobPoint] { viewModel.iobCobPoints }
+    private var devRows: [TrioPreferencesViewModel.DevPoint] {
+        viewModel.devPoints.sorted(by: { $0.date > $1.date })
+    }
+
+    private var iobCobRows: [TrioPreferencesViewModel.IobCobPoint] {
+        viewModel.iobCobPoints.sorted(by: { $0.date > $1.date })
+    }
 
     private var timeFormatter: DateFormatter {
         let df = DateFormatter()
