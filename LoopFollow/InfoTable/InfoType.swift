@@ -47,7 +47,7 @@ enum InfoType: Int, CaseIterable {
         case .btPing: return "BLE heartbeat"
         case .sensorStatus: return "Sensorstatus"
         case .sensorTrend: return "Sensortrend"
-        case .tirNeeded: return "TIR för målgång idag"
+        case .tirNeeded: return "TIR kvar→mål"
         }
     }
 

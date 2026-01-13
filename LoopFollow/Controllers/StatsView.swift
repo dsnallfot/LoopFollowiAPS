@@ -59,14 +59,17 @@ extension MainViewController {
             let neededMinutes = targetMinutes - inRangeMinutesSoFar
 
             if neededMinutes <= 0 {
-                return "✅"
+                // Show surplus as negative time + checkmark (e.g. -02:15 ⭐️)
+                return "-\(minutesToHHMM(abs(neededMinutes))) ⭐️"
             }
 
             if neededMinutes > remainingMinutes {
-                return "🚫"
+                // Show required time even when it's impossible to catch up (e.g. 02:35 ❌)
+                return "+\(minutesToHHMM(neededMinutes)) ❌"
             }
 
-            return minutesToHHMM(neededMinutes)
+            // Normal case: show needed time
+            return "+\(minutesToHHMM(neededMinutes))"
         }
         if bgData.count > 0 {
             // Choose data scope for stats
