@@ -848,11 +848,11 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             if let type = infoManager.infoTypeForRow(rowIndexPath) {
                 switch type {
                 case .iob, .tdd:
-                    cell.textLabel?.textColor = .systemBlue
-                    cell.detailTextLabel?.textColor = .systemBlue
+                    cell.textLabel?.textColor = .insulin
+                    cell.detailTextLabel?.textColor = .insulin
                 case .cob, .carbsToday:
-                    cell.textLabel?.textColor = .systemOrange
-                    cell.detailTextLabel?.textColor = .systemOrange
+                    cell.textLabel?.textColor = .carbs
+                    cell.detailTextLabel?.textColor = .carbs
                 case .minMax, .bgi, .dev, .totIob, .SMBUAMmin, .smbRatio, .af, .autosensMinMax, .target:
                     cell.textLabel?.textColor = .secondaryLabel
                     cell.detailTextLabel?.textColor = .secondaryLabel

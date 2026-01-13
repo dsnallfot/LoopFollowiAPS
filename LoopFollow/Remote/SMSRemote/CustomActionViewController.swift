@@ -3,7 +3,7 @@
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2024-03-25.
-//  Copyright © 2024 Jon Fawcett. All rights reserved.
+
 //
 
 import UIKit

@@ -3,7 +3,7 @@
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2025-04-22.
-//  Copyright © 2025 Jon Fawcett. All rights reserved.
+
 //
 
 import HealthKit

@@ -3,7 +3,7 @@
 //  LoopFollow
 //
 //  Created by Jonas Björkert on 2023-04-09.
-//  Copyright © 2023 Jon Fawcett. All rights reserved.
+
 //
 
 import Foundation

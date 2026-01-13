@@ -3,7 +3,7 @@
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2025-12-31.
-//  Copyright © 2025 Jon Fawcett. All rights reserved.
+
 //
 
 import SwiftUI
@@ -387,5 +387,14 @@ extension View {
                     .opacity(opacity)
             )
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+extension UIColor {
+    static var insulin: UIColor {
+        UIColor(named: "Insulin") ?? .systemTeal
+    }
+    static var carbs: UIColor {
+        UIColor(named: "LoopYellow") ?? .systemOrange
     }
 }

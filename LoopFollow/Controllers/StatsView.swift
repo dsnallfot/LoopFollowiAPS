@@ -15,6 +15,59 @@ extension MainViewController {
 
     func updateStats()
     {
+        func minutesToHHMM(_ minutes: Double) -> String {
+            let total = max(0, Int(ceil(minutes)))
+            let h = total / 60
+            let m = total % 60
+            return String(format: "%02d:%02d", h, m)
+        }
+
+        func computeTirNeededString() -> String {
+            
+            // Use BG data from 00:00 (local) to now
+            let now = Date()
+            let cal = Calendar.current
+            let startOfToday = cal.startOfDay(for: now)
+            let startTI = startOfToday.timeIntervalSince1970
+            let nowTI = now.timeIntervalSince1970
+            // Target: 50% in range for *today's actual length* (DST-safe: 23h/24h/25h days)
+            let startOfTomorrow = cal.date(byAdding: .day, value: 1, to: startOfToday)
+            let totalDayMinutes: Double = {
+                if let startOfTomorrow {
+                    return max(0.0, (startOfTomorrow.timeIntervalSince1970 - startTI) / 60.0)
+                }
+                return 24.0 * 60.0
+            }()
+            let targetMinutes: Double = totalDayMinutes * 0.5
+            let todayOfData = bgData.filter { $0.date >= startTI && $0.date <= nowTI }
+            guard todayOfData.count > 0 else {
+                return ""
+            }
+
+            // Percent in range for today so far
+            let statsToday = StatsData(bgData: todayOfData)
+            let fractionInRange = Double(max(0.0, min(1.0, statsToday.percentRange / 100.0)))
+
+            // Translate percent into time-in-range for today so far
+            let elapsedMinutes = max(0.0, (nowTI - startTI) / 60.0)
+            let inRangeMinutesSoFar = elapsedMinutes * fractionInRange
+
+            // Remaining time today (DST-safe totalDayMinutes)
+            let remainingMinutes = max(0.0, totalDayMinutes - elapsedMinutes)
+
+            // How much in-range is still needed to hit 12h by midnight
+            let neededMinutes = targetMinutes - inRangeMinutesSoFar
+
+            if neededMinutes <= 0 {
+                return "✅"
+            }
+
+            if neededMinutes > remainingMinutes {
+                return "🚫"
+            }
+
+            return minutesToHHMM(neededMinutes)
+        }
         if bgData.count > 0 {
             var lastDayOfData = bgData
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
@@ -29,6 +82,9 @@ extension MainViewController {
             }
             
             let stats = StatsData(bgData: lastDayOfData)
+            // TIR needed (today 00:00 -> now) to reach 50% TIR (12h) by midnight
+            let tirNeededString = computeTirNeededString()
+            self.infoManager.updateInfoData(type: .tirNeeded, value: tirNeededString)
             
             statsLowPercent.text = String(format:"%.1f", stats.percentLow) + "%"
             statsInRangePercent.text = String(format:"%.1f", stats.percentRange) + "%"

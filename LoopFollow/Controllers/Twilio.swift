@@ -3,7 +3,7 @@
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2024-04-05.
-//  Copyright © 2024 Jon Fawcett. All rights reserved.
+
 //
 
 // Twilio.swift

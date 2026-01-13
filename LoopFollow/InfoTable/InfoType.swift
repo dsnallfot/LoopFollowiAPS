@@ -3,13 +3,13 @@
 //  LoopFollow
 //
 //  Created by Jonas Björkert on 2024-07-11.
-//  Copyright © 2024 Jon Fawcett. All rights reserved.
+
 //
 
 import Foundation
 
 enum InfoType: Int, CaseIterable {
-    case iob, cob, basal, override, battery, pump, sage, cage, recBolus, minMax, carbsToday, autosens, profile, target, isf, carbRatio, updated, tdd, iage, carbReq, af, smbRatio, pumpStatus, smbStatus, SMBUAMmin, autosensMinMax, maxSMB, overridePercentage, bgi, dev, totIob, btPing, sensorStatus, sensorTrend
+    case iob, cob, basal, override, battery, pump, sage, cage, recBolus, minMax, carbsToday, autosens, profile, target, isf, carbRatio, updated, tdd, iage, carbReq, af, smbRatio, pumpStatus, smbStatus, SMBUAMmin, autosensMinMax, maxSMB, overridePercentage, bgi, dev, totIob, btPing, sensorStatus, sensorTrend, tirNeeded
 
     var name: String {
         switch self {
@@ -47,6 +47,7 @@ enum InfoType: Int, CaseIterable {
         case .btPing: return "BLE heartbeat"
         case .sensorStatus: return "Sensorstatus"
         case .sensorTrend: return "Sensortrend"
+        case .tirNeeded: return "TIR för målgång idag"
         }
     }
 

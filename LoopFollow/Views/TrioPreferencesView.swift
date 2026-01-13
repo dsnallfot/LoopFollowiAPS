@@ -3,7 +3,7 @@
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2025-02-23.
-//  Copyright © 2025 Jon Fawcett. All rights reserved.
+
 //
 
 import SwiftUI
@@ -246,10 +246,10 @@ struct AnalyzeDeviationsView: View {
                         } else {
                             HStack {
                                 Text("COB (g)")
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(Color(.carbs))
                                 Spacer()
                                 Text("IOB (E)")
-                                    .foregroundColor(.teal)
+                                    .foregroundColor(Color(.insulin))
                             }
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
@@ -549,7 +549,7 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
         }
 
         let cobSet = LineChartDataSet(entries: cobEntries, label: "COB")
-        cobSet.setColor(UIColor.orange.withAlphaComponent(0.85))
+        cobSet.setColor(UIColor.carbs)
         cobSet.lineWidth = 2
         cobSet.drawValuesEnabled = false
         cobSet.drawCirclesEnabled = false
@@ -559,7 +559,7 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
         cobSet.axisDependency = .left
 
         let iobSet = LineChartDataSet(entries: iobEntries, label: "IOB")
-        iobSet.setColor(UIColor.systemTeal.withAlphaComponent(0.85))
+        iobSet.setColor(.insulin)
         iobSet.lineWidth = 2
         iobSet.drawValuesEnabled = false
         iobSet.drawCirclesEnabled = false
