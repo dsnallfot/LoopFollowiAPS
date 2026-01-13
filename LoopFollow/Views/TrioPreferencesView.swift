@@ -196,6 +196,7 @@ struct AnalyzeDeviationsView: View {
         return df
     }
 
+
     var body: some View {
         ZStack {
             ThemeBackground()
@@ -206,10 +207,14 @@ struct AnalyzeDeviationsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     
                     if viewModel.devIsLoading {
-                        Text("Hämtar device status…")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
+                        HStack(spacing: 6) {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Hämtar device status…")
+                        }
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
                     } else if let err = viewModel.devLastError {
                         Text("Fel: \(err)")
                             .font(.footnote)

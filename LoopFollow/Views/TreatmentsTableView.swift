@@ -196,12 +196,20 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         // treatments from Nightscout and update NightscoutCache, which in
         // turn triggers a "TreatmentsCacheUpdated" notification.
         //let cal = Calendar.current
-        let dayStart = cal.startOfDay(for: selectedDate)
-        NotificationCenter.default.post(
-            name: NSNotification.Name("RefreshTreatmentsCacheForDay"),
-            object: nil,
-            userInfo: ["day": dayStart]
-        )
+
+        // IMPORTANT:
+        // If the selected date is today, do NOT trigger a day-based cache refresh here.
+        // A day-based refresh (midnight→midnight) can overwrite the rolling-window
+        // treatments cache and cause MainViewController to temporarily lose pre-midnight
+        // treatments in the chart until the next scheduled treatments task repopulates.
+        if !cal.isDate(selectedDate, inSameDayAs: Date()) {
+            let dayStart = cal.startOfDay(for: selectedDate)
+            NotificationCenter.default.post(
+                name: NSNotification.Name("RefreshTreatmentsCacheForDay"),
+                object: nil,
+                userInfo: ["day": dayStart]
+            )
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -523,12 +531,25 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     /// Load treatments for a full calendar day from NightscoutCache or fall back to dynamic fetch
     private func loadTreatments(for date: Date) {
         let cal = Calendar.current
-        let start = cal.startOfDay(for: date)
-        let end = cal.date(byAdding: .day, value: 1, to: start)!
-        
+
+        let start: Date
+        let end: Date
+
+        if cal.isDate(date, inSameDayAs: Date()) {
+            // Rolling window for “today”: match MainViewController’s chart window
+            // (graphHours = 24 * downloadDays) up to now.
+            let hours = 24 * max(1, UserDefaultsRepository.downloadDays.value)
+            start = Date().addingTimeInterval(-Double(hours) * 60 * 60)
+            end = Date()
+        } else {
+            // Specific calendar day window
+            start = cal.startOfDay(for: date)
+            end = cal.date(byAdding: .day, value: 1, to: start)!
+        }
+
         // Visa alltid någon form av "loading" medan vi läser cachen.
         showRefreshIndicator()
-        
+
         Task {
             // För alla datum (inkl. idag) försöker vi först läsa från NightscoutCache.
             let (_, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
@@ -550,7 +571,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     "duration": tjson.tempBasalDuration as AnyObject
                 ])
             }
-            
+
             DispatchQueue.main.async {
                 if !newTreatments.isEmpty {
                     // Cache-data fanns – visa den och avsluta.
@@ -561,9 +582,9 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     // Ingen cache-data för den här dagen: fall back till live-fetch.
                     // Stäng av nuvarande indikator, fallback-metoderna sköter sin egen show/hide.
                     self.hideRefreshIndicator()
-                    
+
                     if cal.isDate(date, inSameDayAs: Date()) {
-                        // För "idag" använder vi en 24h-fönster-fall-back (som tidigare implementation).
+                        // För "idag" använder vi en rolling-window-fall-back (matchar downloadDays).
                         self.fetchDynamicTreatmentsForToday24h()
                     } else {
                         // För andra dagar hämtar vi ett lokalt kalenderdygn.
@@ -574,23 +595,24 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         }
     }
 
-    /// Fallback: hämta de senaste 24 timmarna för dagens datum direkt från Nightscout
+    /// Fallback: hämta de senaste N dagar (rolling window) för dagens datum direkt från Nightscout
     /// (används bara om cachen saknar data för idag).
     private func fetchDynamicTreatmentsForToday24h() {
         // Visa loading-indikator för nätverksanropet.
         showRefreshIndicator()
-        
+
         let now = Date()
-        let since = now.addingTimeInterval(-24 * 60 * 60)
+        let hours = 24 * max(1, UserDefaultsRepository.downloadDays.value)
+        let since = now.addingTimeInterval(-Double(hours) * 60 * 60)
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime]
         iso.timeZone = TimeZone(secondsFromGMT: 0)
-        
+
         let params: [String: String] = [
             "find[created_at][$gte]": iso.string(from: since),
             "find[created_at][$lte]": iso.string(from: now)
         ]
-        
+
         NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
             DispatchQueue.main.async {
                 if case .success(let raw) = result,
@@ -910,12 +932,27 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 cell.contentView.backgroundColor = cell.backgroundColor
             }
         } else if treatment.eventType == "Temp Basal" {
-            // Find the newest Temp Basal treatment.
-            if let newestTempBasal = treatments.first(where: { $0.eventType == "Temp Basal" }),
-               treatment.timestamp == newestTempBasal.timestamp {
-                cell.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.25)
-                cell.contentView.backgroundColor = cell.backgroundColor
+            let cal = Calendar.current
+
+            // Only highlight the newest Temp Basal when we're viewing "today".
+            if cal.isDate(selectedDate, inSameDayAs: Date()) {
+                // Find the newest Temp Basal that occurred today (rolling window may include yesterday).
+                let newestTempBasalToday = treatments
+                    .filter { $0.eventType == "Temp Basal" && cal.isDate($0.timestamp, inSameDayAs: Date()) }
+                    .max(by: { $0.timestamp < $1.timestamp })
+
+                if let newest = newestTempBasalToday,
+                   treatment.timestamp == newest.timestamp {
+                    cell.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.25)
+                    cell.contentView.backgroundColor = cell.backgroundColor
+                } else {
+                    cell.backgroundColor = (duplicateCount > 1)
+                        ? UIColor.systemRed.withAlphaComponent(0.3)
+                        : UIColor.clear
+                    cell.contentView.backgroundColor = cell.backgroundColor
+                }
             } else {
+                // Not viewing today: never apply the blue "newest" highlight.
                 cell.backgroundColor = (duplicateCount > 1)
                     ? UIColor.systemRed.withAlphaComponent(0.3)
                     : UIColor.clear
@@ -1902,5 +1939,137 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         try? NightscoutCache.writeDay(date: dayStart,
                                       sgv: payload.sgv,
                                       treatments: payload.treatments)
+    }
+
+    // MARK: - Rolling Window Freshness Refresh for Today
+
+    /// Lightweight refresh for “today”: fetch rolling window from Nightscout,
+    /// update the table, and overwrite the treatments portion of NightscoutCache
+    /// for the affected days so MainVC can update immediately and deletions/edits
+    /// are reflected (not just additions).
+    private func refreshRollingTreatmentsForToday() {
+        let now = Date()
+        let hours = 24 * max(1, UserDefaultsRepository.downloadDays.value)
+        let since = now.addingTimeInterval(-Double(hours) * 60 * 60)
+
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+        iso.timeZone = TimeZone(secondsFromGMT: 0)
+
+        let params: [String: String] = [
+            "find[created_at][$gte]": iso.string(from: since),
+            "find[created_at][$lte]": iso.string(from: now)
+        ]
+
+        NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
+            DispatchQueue.main.async {
+                guard case .success(let raw) = result,
+                      let entries = raw as? [[String: AnyObject]] else {
+                    return
+                }
+
+                // Parse fetched treatments
+                let fetched = entries.compactMap { Treatment(dictionary: $0) }
+
+                // Update table contents (even if empty)
+                self.treatments = fetched.sorted { $0.timestamp > $1.timestamp }
+                self.tableView.reloadData()
+                self.updateDuplicateIndicator()
+
+                // Overwrite cache treatments for all days in the rolling window
+                self.overwriteTreatmentsCacheForRollingWindow(
+                    start: since,
+                    end: now,
+                    fetchedTreatments: fetched
+                )
+
+                // Notify MainVC that cache has fresh treatment data
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("TreatmentsCacheUpdated"),
+                    object: nil
+                )
+            }
+        }
+    }
+
+    /// Overwrite the *treatments* slice of the NightscoutCache for each calendar day
+    /// covered by the rolling window. We preserve cached SGV data for each day.
+    private func overwriteTreatmentsCacheForRollingWindow(start: Date, end: Date, fetchedTreatments: [Treatment]) {
+        let cal = Calendar.current
+
+        // Build the set of day-starts to rewrite (inclusive range)
+        let startDay = cal.startOfDay(for: start)
+        let endDay = cal.startOfDay(for: end)
+
+        var dayCursor = startDay
+        while dayCursor <= endDay {
+            // Treatments that belong to this local calendar day
+            let dayStart = dayCursor
+            guard let nextDay = cal.date(byAdding: .day, value: 1, to: dayStart) else { break }
+
+            let dayTreatments = fetchedTreatments.filter { t in
+                t.timestamp >= dayStart && t.timestamp < nextDay
+            }
+
+            // Preserve existing SGV data for this day if present
+            let existingPayload = try? NightscoutCache.readDay(dayStart)
+            let preservedSGV = existingPayload?.sgv ?? []
+
+            // Convert Treatment -> CachedTreatment (NightscoutCache model)
+            // by going through the same mapping used elsewhere: we rely on upsertTreatment
+            // only for conversion convenience, but we overwrite the day file below.
+            // We build cached treatments by re-reading the day after per-doc upserts.
+
+            // First: upsert all treatments for this day so the cache has valid encoded objects
+            // (this does NOT delete anything by itself).
+            for t in dayTreatments {
+                // If we have rawData for a treatment, prefer using that for upsert.
+                // Otherwise, fall back to a minimal document.
+                var doc: [String: AnyObject] = t.rawData
+                if doc["_id"] == nil, let id = t.documentId as AnyObject? { doc["_id"] = id }
+                if doc["eventType"] == nil { doc["eventType"] = t.eventType as AnyObject }
+                if doc["created_at"] == nil {
+                    let fmt = ISO8601DateFormatter()
+                    fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    doc["created_at"] = fmt.string(from: t.timestamp) as AnyObject
+                }
+                NightscoutCache.upsertTreatment(from: doc)
+            }
+
+            // Now rebuild the day file with ONLY the treatments for this day (deletions handled).
+            // We read the day file (after upserts) and then filter to the IDs/timestamps we want.
+            if var payload = try? NightscoutCache.readDay(dayStart) {
+                // If the cache already had treatments, replace them. If not, start from empty.
+                payload.treatments.removeAll()
+
+                // Read back the upserted day and keep only treatments in this day’s range.
+                // (NightscoutCache stores per-day already, so just take its treatments list.)
+                // If readDay succeeded, payload.treatments currently corresponds to that day.
+                // However we cleared it above, so we need to re-read fresh.
+                if let freshPayload = try? NightscoutCache.readDay(dayStart) {
+                    // Filter to this exact day window to be safe
+                    let filtered = freshPayload.treatments.filter { ct in
+                        ct.created_at >= dayStart && ct.created_at < nextDay
+                    }
+                    payload.treatments = filtered
+                }
+
+                // Finally write the day back, preserving SGV
+                try? NightscoutCache.writeDay(date: dayStart, sgv: preservedSGV, treatments: payload.treatments)
+            } else {
+                // No existing payload file – just write a new one with preserved SGV (empty)
+                // and treatments derived from dayTreatments by reading the cache day after upserts.
+                if let freshPayload = try? NightscoutCache.readDay(dayStart) {
+                    let filtered = freshPayload.treatments.filter { ct in
+                        ct.created_at >= dayStart && ct.created_at < nextDay
+                    }
+                    try? NightscoutCache.writeDay(date: dayStart, sgv: preservedSGV, treatments: filtered)
+                } else {
+                    try? NightscoutCache.writeDay(date: dayStart, sgv: preservedSGV, treatments: [])
+                }
+            }
+
+            dayCursor = nextDay
+        }
     }
 }
