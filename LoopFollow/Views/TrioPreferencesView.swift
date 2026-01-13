@@ -152,7 +152,7 @@ struct TrioPreferencesView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(destination: AnalyzeDeviationsView()) {
+                    NavigationLink(destination: AnalyzeDeviationsView(viewModel: viewModel)) {
                         Image(systemName: "lightbulb.max")
                     }
                     .accessibilityLabel("Oref utvärdering")
@@ -182,27 +182,11 @@ private struct SettingsLogModal: UIViewControllerRepresentable {
 @available(iOS 16.0, *)
 struct AnalyzeDeviationsView: View {
 
-    private struct DeviationRow: Identifiable {
-        let id = UUID()
-        let value: Double
-        let date: Date
+    @ObservedObject var viewModel: TrioPreferencesViewModel
+
+    private var rows: [TrioPreferencesViewModel.DevPoint] {
+        viewModel.devPoints
     }
-
-    // Placeholder data (will be replaced with real data soon)
-    // Creates a 24h window ending now with a point every 5 minutes (≈288 points)
-    @State private var rows: [DeviationRow] = {
-        let now = Date()
-        let start = now.addingTimeInterval(-24 * 60 * 60)
-        let step: TimeInterval = 5 * 60
-        let count = Int((24 * 60 * 60) / step) + 1
-
-        return (0..<count).map { i in
-            let d = start.addingTimeInterval(Double(i) * step)
-            // deviations can be +/- (placeholder); real values will come later
-            let v = Double.random(in: -6.0...6.0)
-            return DeviationRow(value: v, date: d)
-        }
-    }()
 
     private var timeFormatter: DateFormatter {
         let df = DateFormatter()
@@ -220,10 +204,22 @@ struct AnalyzeDeviationsView: View {
             VStack(spacing: 12) {
                 // Chart container (300p)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Avvikelser")
-                        .font(.headline)
-
-                    AnalyzeDeviationsLineChart(points: rows.map { ($0.date, $0.value) })
+                    
+                    if viewModel.devIsLoading {
+                        Text("Hämtar device status…")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                    } else if let err = viewModel.devLastError {
+                        Text("Fel: \(err)")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                    } else {
+                        Text("Glukosavvikelse (Dev 30m +/- mmol/L)")
+                            .font(.subheadline)
+                    }
+                    AnalyzeDeviationsLineChart(points: rows.map { ($0.date, $0.dev) })
                         .frame(height: 260)
                 }
                 .padding(12)
@@ -236,7 +232,7 @@ struct AnalyzeDeviationsView: View {
                     LazyVStack(spacing: 8) {
                         ForEach(rows) { row in
                             HStack {
-                                Text(String(format: "%.2f", row.value))
+                                Text(String(format: "%.2f", row.dev))
                                     .font(.body)
                                 Spacer()
                                 Text(timeFormatter.string(from: row.date))
@@ -253,8 +249,12 @@ struct AnalyzeDeviationsView: View {
                 }
             }
         }
-        .navigationTitle("Oref utvärdering")
+        .navigationTitle("Utvärdering oref (24h)")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            // Ad hoc fetch: latest 600 device status, then window to last 24h
+            viewModel.fetchDevDeviationsLast24h(count: 600)
+        }
     }
 }
 
@@ -272,11 +272,11 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         v.rightAxis.enabled = false
         v.minOffset = 8
 
-        v.pinchZoomEnabled = false
-        v.doubleTapToZoomEnabled = false
-        v.scaleXEnabled = false
+        v.pinchZoomEnabled = true
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
         v.scaleYEnabled = false
-        v.dragEnabled = false
+        v.dragEnabled = true
 
         v.highlightPerTapEnabled = false
         v.highlightPerDragEnabled = false
@@ -291,7 +291,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         xAxis.labelPosition = .bottom
         xAxis.drawGridLinesEnabled = true
         xAxis.granularityEnabled = true
-        xAxis.granularity = 2 * 60 * 60 // 2h ticks by default
+        xAxis.granularity = 3 * 60 * 60 // 2h ticks by default
 
         // Left axis
         let yAxis = v.leftAxis
