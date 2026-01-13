@@ -192,7 +192,7 @@ struct AnalyzeDeviationsView: View {
         let df = DateFormatter()
         df.locale = .current
         df.timeZone = .current
-        df.dateFormat = "HH.mm.ss"
+        df.dateFormat = "HH:mm"
         return df
     }
 
@@ -232,7 +232,7 @@ struct AnalyzeDeviationsView: View {
                     LazyVStack(spacing: 8) {
                         ForEach(rows) { row in
                             HStack {
-                                Text(String(format: "%.2f", row.dev))
+                                Text(String(format: "%+.1f mmol/L", row.dev))
                                     .font(.body)
                                 Spacer()
                                 Text(timeFormatter.string(from: row.date))
@@ -271,6 +271,8 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         v.chartDescription.enabled = false
         v.rightAxis.enabled = false
         v.minOffset = 8
+        // Add a bit of space on the right so the last x-label ("nu") doesn't clip
+        v.extraRightOffset = 14
 
         v.pinchZoomEnabled = true
         v.doubleTapToZoomEnabled = true
@@ -289,6 +291,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         // X axis
         let xAxis = v.xAxis
         xAxis.labelPosition = .bottom
+        //xAxis.avoidFirstLastClippingEnabled = true
         xAxis.drawGridLinesEnabled = true
         xAxis.granularityEnabled = true
         xAxis.granularity = 3 * 60 * 60 // 2h ticks by default
