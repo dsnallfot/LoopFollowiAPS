@@ -182,11 +182,17 @@ private struct SettingsLogModal: UIViewControllerRepresentable {
 @available(iOS 16.0, *)
 struct AnalyzeDeviationsView: View {
 
-    @ObservedObject var viewModel: TrioPreferencesViewModel
-
-    private var rows: [TrioPreferencesViewModel.DevPoint] {
-        viewModel.devPoints
+    enum ChartMode: String, CaseIterable, Identifiable {
+        case dev30m = "Dev 30m"
+        case iobCob = "COB • IOB"
+        var id: String { rawValue }
     }
+
+    @ObservedObject var viewModel: TrioPreferencesViewModel
+    @State private var mode: ChartMode = .dev30m
+
+    private var devRows: [TrioPreferencesViewModel.DevPoint] { viewModel.devPoints }
+    private var iobCobRows: [TrioPreferencesViewModel.IobCobPoint] { viewModel.iobCobPoints }
 
     private var timeFormatter: DateFormatter {
         let df = DateFormatter()
@@ -205,7 +211,14 @@ struct AnalyzeDeviationsView: View {
             VStack(spacing: 12) {
                 // Chart container (300p)
                 VStack(alignment: .leading, spacing: 8) {
-                    
+                    Picker("", selection: $mode) {
+                        ForEach(ChartMode.allCases) { m in
+                            Text(m.rawValue).tag(m)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.bottom, 4)
+
                     if viewModel.devIsLoading {
                         HStack(spacing: 6) {
                             ProgressView()
@@ -221,32 +234,67 @@ struct AnalyzeDeviationsView: View {
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
                     } else {
-                        Text("Glukosavvikelse (Dev 30m +/- mmol/L)")
-                            .font(.subheadline)
+                        if mode == .dev30m {
+                            Text("Dev (30m +/- mmol/L)")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        } else {
+                            HStack {
+                                Text("COB (g)")
+                                    .foregroundColor(.orange)
+                                Spacer()
+                                Text("IOB (E)")
+                                    .foregroundColor(.teal)
+                            }
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
                     }
-                    AnalyzeDeviationsLineChart(points: rows.map { ($0.date, $0.dev) })
-                        .frame(height: 260)
+
+                    if mode == .dev30m {
+                        AnalyzeDeviationsLineChart(points: devRows.map { ($0.date, $0.dev) })
+                            .frame(height: 260)
+                    } else {
+                        AnalyzeIobCobLineChart(points: iobCobRows.map { ($0.date, $0.iob, $0.cob) })
+                            .frame(height: 260)
+                    }
                 }
                 .padding(12)
-                .frame(height: 300)
+                .frame(height: 340)
                 .themedCardBackground(opacity: 0.12)
                 .padding(.horizontal, 12)
 
                 // Table below the chart
                 ScrollView {
                     LazyVStack(spacing: 8) {
-                        ForEach(rows) { row in
-                            HStack {
-                                Text(String(format: "%+.1f mmol/L", row.dev))
-                                    .font(.body)
-                                Spacer()
-                                Text(timeFormatter.string(from: row.date))
-                                    .font(.callout)
-                                    .foregroundColor(.secondary)
+                        if mode == .dev30m {
+                            ForEach(devRows) { row in
+                                HStack {
+                                    Text(String(format: "%+.1f mmol/L", row.dev))
+                                        .font(.body)
+                                    Spacer()
+                                    Text(timeFormatter.string(from: row.date))
+                                        .font(.callout)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .themedCardBackground(opacity: 0.10)
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
-                            .themedCardBackground(opacity: 0.10)
+                        } else {
+                            ForEach(iobCobRows) { row in
+                                HStack {
+                                    Text(String(format: "COB: %.0f g • IOB: %.2f E", row.cob, row.iob))
+                                        .font(.body)
+                                    Spacer()
+                                    Text(timeFormatter.string(from: row.date))
+                                        .font(.callout)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .themedCardBackground(opacity: 0.10)
+                            }
                         }
                     }
                     .padding(.horizontal, 12)
@@ -258,7 +306,7 @@ struct AnalyzeDeviationsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             // Ad hoc fetch: latest 600 device status, then window to last 24h
-            viewModel.fetchDevDeviationsLast24h(count: 600)
+            viewModel.fetchDevIobCobLast24h(count: 600)
         }
     }
 }
@@ -308,7 +356,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
 
         // Make the 0-line stand out more than other grid lines
         yAxis.zeroLineWidth = 1.5
-        yAxis.zeroLineColor = UIColor.white.withAlphaComponent(0.75)
+        yAxis.zeroLineColor = UIColor.label.withAlphaComponent(0.75)
 
         yAxis.axisMinimum = -12
         yAxis.axisMaximum = 12
@@ -351,7 +399,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         }
 
         let set = LineChartDataSet(entries: entries, label: "")
-        set.setColor(.white)
+        set.setColor(.label)
         set.lineWidth = 1.5
         set.drawValuesEnabled = false
         set.drawCirclesEnabled = false
@@ -403,9 +451,147 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         // Ensure the 0-line stays emphasized even after updates
         uiView.leftAxis.drawZeroLineEnabled = true
         uiView.leftAxis.zeroLineWidth = 1.5
-        uiView.leftAxis.zeroLineColor = UIColor.white.withAlphaComponent(0.75)
+        uiView.leftAxis.zeroLineColor = UIColor.label.withAlphaComponent(0.75)
 
         uiView.rightAxis.enabled = false
+
+        uiView.notifyDataSetChanged()
+        uiView.setNeedsDisplay()
+    }
+}
+
+@available(iOS 16.0, *)
+private struct AnalyzeIobCobLineChart: UIViewRepresentable {
+
+    /// (date, iob, cob)
+    let points: [(Date, Double, Double)]
+
+    func makeUIView(context: Context) -> LineChartView {
+        let v = LineChartView()
+
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+
+        v.minOffset = 8
+        //v.extraRightOffset = 14
+
+        v.pinchZoomEnabled = true
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+
+        v.backgroundColor = .clear
+        v.isOpaque = false
+
+        // X axis
+        let xAxis = v.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.drawGridLinesEnabled = true
+        xAxis.granularityEnabled = true
+        xAxis.granularity = 3 * 60 * 60
+
+        // Left axis (COB)
+        let left = v.leftAxis
+        left.drawGridLinesEnabled = true
+        left.drawZeroLineEnabled = true
+        left.zeroLineWidth = 1.5
+        left.zeroLineColor = UIColor.label.withAlphaComponent(0.75)
+        left.axisMinimum = -30
+        left.axisMaximum = 150
+        left.granularityEnabled = true
+        left.granularity = 30
+
+        // Right axis (IOB)
+        let right = v.rightAxis
+        right.enabled = true
+        right.drawGridLinesEnabled = false
+        right.drawZeroLineEnabled = false
+        right.axisMinimum = -1
+        right.axisMaximum = 5
+        right.granularityEnabled = true
+        right.granularity = 1
+
+        return v
+    }
+
+    func updateUIView(_ uiView: LineChartView, context: Context) {
+        guard !points.isEmpty else {
+            uiView.data = nil
+            uiView.setNeedsDisplay()
+            return
+        }
+
+        let sorted = points.sorted(by: { $0.0 < $1.0 })
+
+        let endDate = sorted.last!.0
+        let startDate = endDate.addingTimeInterval(-24 * 60 * 60)
+
+        var cobEntries: [ChartDataEntry] = []
+        var iobEntries: [ChartDataEntry] = []
+        cobEntries.reserveCapacity(sorted.count)
+        iobEntries.reserveCapacity(sorted.count)
+
+        for (d, iob, cob) in sorted {
+            guard d >= startDate && d <= endDate else { continue }
+            let x = d.timeIntervalSince(startDate)
+            cobEntries.append(ChartDataEntry(x: x, y: cob))
+            iobEntries.append(ChartDataEntry(x: x, y: iob))
+        }
+
+        let cobSet = LineChartDataSet(entries: cobEntries, label: "COB")
+        cobSet.setColor(UIColor.orange.withAlphaComponent(0.85))
+        cobSet.lineWidth = 2
+        cobSet.drawValuesEnabled = false
+        cobSet.drawCirclesEnabled = false
+        cobSet.mode = .linear
+        cobSet.drawFilledEnabled = false
+        cobSet.highlightEnabled = false
+        cobSet.axisDependency = .left
+
+        let iobSet = LineChartDataSet(entries: iobEntries, label: "IOB")
+        iobSet.setColor(UIColor.systemTeal.withAlphaComponent(0.85))
+        iobSet.lineWidth = 2
+        iobSet.drawValuesEnabled = false
+        iobSet.drawCirclesEnabled = false
+        iobSet.mode = .linear
+        iobSet.drawFilledEnabled = false
+        iobSet.highlightEnabled = false
+        iobSet.axisDependency = .right
+
+        uiView.data = LineChartData(dataSets: [cobSet, iobSet])
+
+        // X labels
+        let df = DateFormatter()
+        df.locale = .current
+        df.timeZone = .current
+        df.dateFormat = "HH:mm"
+        uiView.xAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let date = startDate.addingTimeInterval(value)
+            return df.string(from: date)
+        }
+
+        uiView.xAxis.axisMinimum = 0
+        uiView.xAxis.axisMaximum = 24 * 60 * 60
+
+        // Subtle grid styling
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.35)
+        uiView.xAxis.gridColor = gridLineColor
+        uiView.xAxis.gridLineWidth = 0.5
+        uiView.xAxis.gridLineDashLengths = [2, 2]
+
+        uiView.leftAxis.gridColor = gridLineColor
+        uiView.leftAxis.gridLineWidth = 0.5
+        uiView.leftAxis.gridLineDashLengths = [2, 2]
+
+        uiView.rightAxis.axisLineColor = UIColor.label.withAlphaComponent(0.5)
+        uiView.rightAxis.labelTextColor = UIColor.label.withAlphaComponent(0.85)
+        uiView.leftAxis.labelTextColor = UIColor.label.withAlphaComponent(0.85)
+        uiView.xAxis.labelTextColor = UIColor.label.withAlphaComponent(0.85)
 
         uiView.notifyDataSetChanged()
         uiView.setNeedsDisplay()

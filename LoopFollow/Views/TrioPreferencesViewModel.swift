@@ -25,9 +25,17 @@ class TrioPreferencesViewModel: ObservableObject {
         let dev: Double
     }
 
+    struct IobCobPoint: Identifiable {
+        let id = UUID()
+        let date: Date
+        let iob: Double
+        let cob: Double
+    }
+
     @Published var devPoints: [DevPoint] = []
     @Published var devIsLoading: Bool = false
     @Published var devLastError: String? = nil
+    @Published var iobCobPoints: [IobCobPoint] = []
     
     init() {
         fetchPreferences()
@@ -117,6 +125,10 @@ class TrioPreferencesViewModel: ObservableObject {
         return try? NSRegularExpression(pattern: #"Dev:\s*([-+]?\d+(?:\.\d+)?)"#)
     }()
 
+    private static let cobRegex: NSRegularExpression? = {
+        return try? NSRegularExpression(pattern: #"COB:\s*([-+]?\d+(?:\.\d+)?)"#)
+    }()
+
     private func parseDevValue(from reasonString: String) -> Double? {
         guard let regex = Self.devRegex else { return nil }
         let range = NSRange(location: 0, length: reasonString.utf16.count)
@@ -125,6 +137,16 @@ class TrioPreferencesViewModel: ObservableObject {
         }
         let devValueString = (reasonString as NSString).substring(with: match.range(at: 1))
         return Double(devValueString)
+    }
+
+    private func parseCobValue(from reasonString: String) -> Double? {
+        guard let regex = Self.cobRegex else { return nil }
+        let range = NSRange(location: 0, length: reasonString.utf16.count)
+        guard let match = regex.firstMatch(in: reasonString, range: range), match.numberOfRanges > 1 else {
+            return nil
+        }
+        let cobValueString = (reasonString as NSString).substring(with: match.range(at: 1))
+        return Double(cobValueString)
     }
 
     private func parseCreatedAt(_ createdAtString: String) -> Date? {
@@ -149,8 +171,17 @@ class TrioPreferencesViewModel: ObservableObject {
         return nil
     }
 
-    /// Fetch the latest 300 device-status documents from Nightscout and build a 24h window of Dev points.
-    func fetchDevDeviationsLast24h(count: Int = 300) {
+    private func extractIobValue(from deviceStatusDict: [String: Any]) -> Double? {
+        if let openaps = deviceStatusDict["openaps"] as? [String: Any],
+           let suggested = openaps["suggested"] as? [String: Any],
+           let iob = suggested["IOB"] as? Double {
+            return iob
+        }
+        return nil
+    }
+
+    /// Fetch the latest 600 device-status documents from Nightscout and build a 24h window of Dev points.
+    func fetchDevIobCobLast24h(count: Int = 600) {
         devIsLoading = true
         devLastError = nil
 
@@ -166,12 +197,16 @@ class TrioPreferencesViewModel: ObservableObject {
                         self.devIsLoading = false
                         self.devLastError = "Unexpected deviceStatus payload"
                         self.devPoints = []
+                        self.iobCobPoints = []
                     }
                     return
                 }
 
-                var points: [DevPoint] = []
-                points.reserveCapacity(array.count)
+                var devPoints: [DevPoint] = []
+                devPoints.reserveCapacity(array.count)
+
+                var iobCobPoints: [IobCobPoint] = []
+                iobCobPoints.reserveCapacity(array.count)
 
                 for ds in array {
                     guard let createdAt = ds["created_at"] as? String,
@@ -179,25 +214,37 @@ class TrioPreferencesViewModel: ObservableObject {
                         continue
                     }
 
-                    guard let reason = self.extractReasonString(from: ds),
-                          let dev = self.parseDevValue(from: reason) else {
+                    guard let reason = self.extractReasonString(from: ds) else {
                         continue
                     }
 
-                    points.append(DevPoint(date: date, dev: dev))
+                    // Dev point
+                    if let dev = self.parseDevValue(from: reason) {
+                        devPoints.append(DevPoint(date: date, dev: dev))
+                    }
+
+                    // IOB + COB point (requires both)
+                    if let iob = self.extractIobValue(from: ds),
+                       let cob = self.parseCobValue(from: reason) {
+                        iobCobPoints.append(IobCobPoint(date: date, iob: iob, cob: cob))
+                    }
                 }
 
                 // Sort oldest -> newest
-                points.sort(by: { $0.date < $1.date })
+                devPoints.sort(by: { $0.date < $1.date })
+                iobCobPoints.sort(by: { $0.date < $1.date })
 
-                // Keep only last 24h, anchored to newest point (so it is truly "rolling")
-                let end = points.last?.date ?? Date()
+                // Keep only last 24h, anchored to newest dev point (rolling window)
+                let end = devPoints.last?.date ?? Date()
                 let start = end.addingTimeInterval(-24 * 60 * 60)
-                let windowed = points.filter { $0.date >= start && $0.date <= end }
+
+                let windowedDev = devPoints.filter { $0.date >= start && $0.date <= end }
+                let windowedIobCob = iobCobPoints.filter { $0.date >= start && $0.date <= end }
 
                 DispatchQueue.main.async {
                     self.devIsLoading = false
-                    self.devPoints = windowed
+                    self.devPoints = windowedDev
+                    self.iobCobPoints = windowedIobCob
                 }
 
             case .failure(let error):
@@ -205,6 +252,7 @@ class TrioPreferencesViewModel: ObservableObject {
                     self.devIsLoading = false
                     self.devLastError = error.localizedDescription
                     self.devPoints = []
+                    self.iobCobPoints = []
                 }
             }
         }
