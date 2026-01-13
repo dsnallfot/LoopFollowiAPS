@@ -38,13 +38,15 @@ class BLEManager: NSObject, ObservableObject {
         // Use a dedicated queue so CoreBluetooth callbacks are not dependent on the main runloop.
         let bleQueue = DispatchQueue(label: "com.loopfollow.blemanager.queue")
         
-        // Enable state restoration so iOS can relaunch/restore the BLE state after BT stack resets,
-        // OTA/update activity, or when the app is suspended/terminated.
-        // NOTE: iOS will NOT relaunch the app for BLE events if the user has force-quit the app from the app switcher.
+        // NOTE: We intentionally do NOT enable state restoration here.
+        // State restoration is handled by the per-device BluetoothDevice central (e.g. DexcomHeartbeatBluetoothDevice)
+        // which owns the active connection. Having multiple restoring centrals can create ambiguous relaunch/restore behavior.
+        LogManager.shared.log(category: .bluetooth, message: "BLEManager: creating non-restoring central", isDebug: true, isTempDebug: true)
+
         centralManager = CBCentralManager(
             delegate: self,
             queue: bleQueue,
-            options: [CBCentralManagerOptionRestoreIdentifierKey: "com.loopfollow.blemanager.restore"]
+            options: nil
         )
 
         if let device = Storage.shared.selectedBLEDevice.value {
@@ -174,15 +176,18 @@ class BLEManager: NSObject, ObservableObject {
 // MARK: - CBCentralManagerDelegate
 extension BLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, willRestoreState dict: [String: Any]) {
-        LogManager.shared.log(category: .bluetooth, message: "CoreBluetooth willRestoreState invoked", isDebug: true, isTempDebug: true)
-
-        // Ensure our selected device connection is re-established after restoration.
-        if let selected = Storage.shared.selectedBLEDevice.value {
-            LogManager.shared.log(category: .bluetooth, message: "Restoring BLE state: ensuring connection to selected device", isDebug: true, isTempDebug: true)
-            DispatchQueue.main.async {
-                self.connect(device: selected)
-            }
-        }
+        LogManager.shared.log(category: .bluetooth, message: "BLEManager willRestoreState invoked (unexpected; BLEManager central is non-restoring)", isDebug: true, isTempDebug: true)
+        return
+        // The code below is preserved for easy revert if state restoration is re-enabled.
+        // LogManager.shared.log(category: .bluetooth, message: "CoreBluetooth willRestoreState invoked", isDebug: true, isTempDebug: true)
+        //
+        // // Ensure our selected device connection is re-established after restoration.
+        // if let selected = Storage.shared.selectedBLEDevice.value {
+        //     LogManager.shared.log(category: .bluetooth, message: "Restoring BLE state: ensuring connection to selected device", isDebug: true, isTempDebug: true)
+        //     DispatchQueue.main.async {
+        //         self.connect(device: selected)
+        //     }
+        // }
     }
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {

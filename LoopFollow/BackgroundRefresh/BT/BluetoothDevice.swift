@@ -3,7 +3,7 @@
 //  LoopFollow
 //
 //  Created by Jonas Björkert on 2025-01-04.
-//  Copyright © 2025 Jon Fawcett. All rights reserved.
+
 //
 
 import Foundation
@@ -221,6 +221,10 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
         forceDisconnectWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self, weak peripheral] in
             guard let self = self, let peripheral = peripheral else { return }
+            // Only act if this is still our active peripheral (avoid stale work items after reconnects)
+            if let current = self.peripheral, current.identifier != peripheral.identifier {
+                return
+            }
             if peripheral.state == .connected {
                 let connectedFor = self.lastConnectTime.map { Date().timeIntervalSince($0) } ?? 0
                 LogManager.shared.log(
@@ -229,11 +233,16 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
                     isDebug: true,
                     isTempDebug: true
                 )
-                self.centralManager?.cancelPeripheralConnection(peripheral)
+                // Ensure we call CoreBluetooth APIs on main (CBCentralManager queue is main for this class).
+                DispatchQueue.main.async { [weak self] in
+                    self?.centralManager?.cancelPeripheralConnection(peripheral)
+                }
             }
         }
         forceDisconnectWorkItem = workItem
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 15.0, execute: workItem)
+        // CoreBluetooth operations must run on the same queue as the CBCentralManager was created on.
+        // This BluetoothDevice creates CBCentralManager with `queue: nil` (main), so schedule on main.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15.0, execute: workItem)
         // --- End Dexcom force-disconnect watchdog ---
 
         bluetoothDeviceDelegate?.didConnectTo(bluetoothDevice: self)
