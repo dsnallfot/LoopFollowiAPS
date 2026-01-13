@@ -8,6 +8,8 @@
 
 import SwiftUI
 import UIKit
+import Charts
+
 @available(iOS 16.0, *)
 private struct PreferenceKeyItem: Identifiable {
     let key: String
@@ -148,6 +150,14 @@ struct TrioPreferencesView: View {
                 // Om du vill att handtaget högst upp på sheetet ska synas tydligt:
                 //.presentationDragIndicator(.visible)
             }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    NavigationLink(destination: AnalyzeDeviationsView()) {
+                        Image(systemName: "lightbulb.max")
+                    }
+                    .accessibilityLabel("Oref utvärdering")
+                }
+            }
         }
     }
 }
@@ -165,5 +175,231 @@ private struct SettingsLogModal: UIViewControllerRepresentable {
         if let vc = uiViewController.viewControllers.first as? TrioSettingsLogView {
             vc.setSearchTextAndFilter(initialSearchText)
         }
+    }
+}
+
+
+@available(iOS 16.0, *)
+struct AnalyzeDeviationsView: View {
+
+    private struct DeviationRow: Identifiable {
+        let id = UUID()
+        let value: Double
+        let date: Date
+    }
+
+    // Placeholder data (will be replaced with real data soon)
+    // Creates a 24h window ending now with a point every 5 minutes (≈288 points)
+    @State private var rows: [DeviationRow] = {
+        let now = Date()
+        let start = now.addingTimeInterval(-24 * 60 * 60)
+        let step: TimeInterval = 5 * 60
+        let count = Int((24 * 60 * 60) / step) + 1
+
+        return (0..<count).map { i in
+            let d = start.addingTimeInterval(Double(i) * step)
+            // deviations can be +/- (placeholder); real values will come later
+            let v = Double.random(in: -6.0...6.0)
+            return DeviationRow(value: v, date: d)
+        }
+    }()
+
+    private var timeFormatter: DateFormatter {
+        let df = DateFormatter()
+        df.locale = .current
+        df.timeZone = .current
+        df.dateFormat = "HH.mm.ss"
+        return df
+    }
+
+    var body: some View {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                // Chart container (300p)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Avvikelser")
+                        .font(.headline)
+
+                    AnalyzeDeviationsLineChart(points: rows.map { ($0.date, $0.value) })
+                        .frame(height: 260)
+                }
+                .padding(12)
+                .frame(height: 300)
+                .themedCardBackground(opacity: 0.12)
+                .padding(.horizontal, 12)
+
+                // Table below the chart
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(rows) { row in
+                            HStack {
+                                Text(String(format: "%.2f", row.value))
+                                    .font(.body)
+                                Spacer()
+                                Text(timeFormatter.string(from: row.date))
+                                    .font(.callout)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .themedCardBackground(opacity: 0.10)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 16)
+                }
+            }
+        }
+        .navigationTitle("Oref utvärdering")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+@available(iOS 16.0, *)
+private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
+
+    /// (date, value)
+    let points: [(Date, Double)]
+
+    func makeUIView(context: Context) -> LineChartView {
+        let v = LineChartView()
+
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = false
+        v.scaleXEnabled = false
+        v.scaleYEnabled = false
+        v.dragEnabled = false
+
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+
+        // Transparent so ThemeBackground shows through
+        v.backgroundColor = .clear
+        v.isOpaque = false
+
+        // X axis
+        let xAxis = v.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.drawGridLinesEnabled = true
+        xAxis.granularityEnabled = true
+        xAxis.granularity = 2 * 60 * 60 // 2h ticks by default
+
+        // Left axis
+        let yAxis = v.leftAxis
+        yAxis.drawGridLinesEnabled = true
+        yAxis.drawZeroLineEnabled = true
+
+        // Make the 0-line stand out more than other grid lines
+        yAxis.zeroLineWidth = 1.5
+        yAxis.zeroLineColor = UIColor.white.withAlphaComponent(0.75)
+
+        yAxis.axisMinimum = -12
+        yAxis.axisMaximum = 12
+        yAxis.granularityEnabled = true
+        yAxis.granularity = 2
+
+        return v
+    }
+
+    func updateUIView(_ uiView: LineChartView, context: Context) {
+        guard !points.isEmpty else {
+            uiView.data = nil
+            uiView.setNeedsDisplay()
+            return
+        }
+
+        // Ensure points are sorted by time (oldest -> newest)
+        let sorted = points.sorted(by: { $0.0 < $1.0 })
+
+        // Define a 24h rolling window ending at the newest point
+        let endDate = sorted.last!.0
+        let startDate = endDate.addingTimeInterval(-24 * 60 * 60)
+
+        // Build entries where x is seconds since startDate
+        var entries: [ChartDataEntry] = []
+        entries.reserveCapacity(sorted.count)
+
+        var minY = Double.greatestFiniteMagnitude
+        var maxY = -Double.greatestFiniteMagnitude
+
+        for (d, v) in sorted {
+            // Keep points within the 24h window
+            guard d >= startDate && d <= endDate else { continue }
+
+            let x = d.timeIntervalSince(startDate)
+            entries.append(ChartDataEntry(x: x, y: v))
+
+            if v < minY { minY = v }
+            if v > maxY { maxY = v }
+        }
+
+        let set = LineChartDataSet(entries: entries, label: "")
+        set.setColor(.white)
+        set.lineWidth = 1.5
+        set.drawValuesEnabled = false
+        set.drawCirclesEnabled = false
+        set.mode = .linear
+        set.drawFilledEnabled = false
+        set.highlightEnabled = false
+
+        uiView.data = LineChartData(dataSet: set)
+
+        // X axis formatting: show time-of-day labels across the 24h window
+        let df = DateFormatter()
+        df.locale = .current
+        df.timeZone = .current
+        df.dateFormat = "HH:mm"
+
+        uiView.xAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let date = startDate.addingTimeInterval(value)
+            return df.string(from: date)
+        }
+
+        // Force x range to exactly 24h
+        uiView.xAxis.axisMinimum = 0
+        uiView.xAxis.axisMaximum = 24 * 60 * 60
+
+        // Y axis scaling: pad a bit but keep reasonable bounds (deviations ~ +/-10)
+        if minY.isFinite && maxY.isFinite {
+            let pad: Double = 1.5
+            let minBound = floor(minY - pad)
+            let maxBound = ceil(maxY + pad)
+            let span = max(4, maxBound - minBound)
+
+            uiView.leftAxis.axisMinimum = min(-12, minBound)
+            uiView.leftAxis.axisMaximum = max(12, minBound + span)
+        } else {
+            uiView.leftAxis.axisMinimum = -12
+            uiView.leftAxis.axisMaximum = 12
+        }
+
+        // Grid styling (subtle) + emphasized zero line
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.35)
+        uiView.xAxis.gridColor = gridLineColor
+        uiView.xAxis.gridLineWidth = 0.5
+        uiView.xAxis.gridLineDashLengths = [2, 2]
+
+        uiView.leftAxis.gridColor = gridLineColor
+        uiView.leftAxis.gridLineWidth = 0.5
+        uiView.leftAxis.gridLineDashLengths = [2, 2]
+
+        // Ensure the 0-line stays emphasized even after updates
+        uiView.leftAxis.drawZeroLineEnabled = true
+        uiView.leftAxis.zeroLineWidth = 1.5
+        uiView.leftAxis.zeroLineColor = UIColor.white.withAlphaComponent(0.75)
+
+        uiView.rightAxis.enabled = false
+
+        uiView.notifyDataSetChanged()
+        uiView.setNeedsDisplay()
     }
 }
