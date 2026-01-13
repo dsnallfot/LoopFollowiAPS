@@ -69,19 +69,37 @@ extension MainViewController {
             return minutesToHHMM(neededMinutes)
         }
         if bgData.count > 0 {
-            var lastDayOfData = bgData
-            let graphHours = 24 * UserDefaultsRepository.downloadDays.value
-            // If we loaded more than 1 day of data, only use the last day for the stats
-            if graphHours > 24 {
-                let oneDayAgo = dateTimeUtils.getTimeIntervalNHoursAgo(N: 24)
-                var startIndex = 0
-                while startIndex < bgData.count && bgData[startIndex].date < oneDayAgo {
-                    startIndex += 1
+            // Choose data scope for stats
+            let statsSourceData: [ShareGlucoseData]
+
+            if showOnlyTodayStats {
+                // Today 00:00 (local) -> now
+                let now = Date()
+                let startOfToday = Calendar.current.startOfDay(for: now).timeIntervalSince1970
+                let nowTI = now.timeIntervalSince1970
+                statsSourceData = bgData.filter { $0.date >= startOfToday && $0.date <= nowTI }
+            } else {
+                // Existing behavior: use the requested download window (last 24h if >1 day loaded)
+                var lastDayOfData = bgData
+                let graphHours = 24 * UserDefaultsRepository.downloadDays.value
+                // If we loaded more than 1 day of data, only use the last day for the stats
+                if graphHours > 24 {
+                    let oneDayAgo = dateTimeUtils.getTimeIntervalNHoursAgo(N: 24)
+                    var startIndex = 0
+                    while startIndex < bgData.count && bgData[startIndex].date < oneDayAgo {
+                        startIndex += 1
+                    }
+                    lastDayOfData = Array(bgData.dropFirst(startIndex))
                 }
-                lastDayOfData = Array(bgData.dropFirst(startIndex))
+                statsSourceData = lastDayOfData
             }
-            
-            let stats = StatsData(bgData: lastDayOfData)
+
+            // If no data in the chosen scope, don't update the stats UI
+            guard statsSourceData.count > 0 else {
+                return
+            }
+
+            let stats = StatsData(bgData: statsSourceData)
             // TIR needed (today 00:00 -> now) to reach 50% TIR (12h) by midnight
             let tirNeededString = computeTirNeededString()
             self.infoManager.updateInfoData(type: .tirNeeded, value: tirNeededString)

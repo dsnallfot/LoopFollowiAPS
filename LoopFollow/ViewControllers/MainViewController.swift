@@ -45,6 +45,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     @IBOutlet weak var highStack: UIStackView!
     @IBOutlet weak var historyStack: UIStackView!
     @IBOutlet weak var statsStack: UIStackView!
+    @IBOutlet weak var statsHeadline: UILabel!
     var refreshScrollView: UIScrollView!
     var refreshControl: UIRefreshControl!
 
@@ -125,6 +126,38 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     var lastOverrideStartTime: TimeInterval = 0
     var lastOverrideEndTime: TimeInterval = 0
     
+    private static let showOnlyTodayStatsKey = "showOnlyTodayStats"
+
+    var showOnlyTodayStats: Bool = false {
+        didSet {
+            UserDefaults.standard.set(showOnlyTodayStats, forKey: Self.showOnlyTodayStatsKey)
+        }
+    }
+    
+    private func hoursInScopeString() -> String {
+        let hours = max(24, UserDefaultsRepository.downloadDays.value * 24)
+        return "\(hours) h"
+    }
+
+    private func updateStatsHeadlineText() {
+        if showOnlyTodayStats {
+            statsHeadline.text = "Statistik idag  ❮ ❯"
+        } else {
+            statsHeadline.text = "Statistik för \(hoursInScopeString())  ❮ ❯"
+        }
+    }
+
+    @objc private func handleStatsStackSwipe(_ gesture: UISwipeGestureRecognizer) {
+        // Toggle scope
+        showOnlyTodayStats.toggle()
+        updateStatsHeadlineText()
+        updateStats()
+
+        // Light haptic for feedback
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+    
     var topBG: Float = UserDefaultsRepository.minBGScale.value
     var topPredictionBG: Float = UserDefaultsRepository.minBGScale.value
 
@@ -164,6 +197,8 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Restore last selected stats scope
+        showOnlyTodayStats = UserDefaults.standard.bool(forKey: Self.showOnlyTodayStatsKey)
 
         //Migration of UserDefaultsRepository -> Storage handling
         if !UserDefaultsRepository.backgroundRefresh.value {
@@ -274,8 +309,22 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             }
         
         statsStack.isUserInteractionEnabled = true
+
         let tapGestureStats = UITapGestureRecognizer(target: self, action: #selector(showStatsFromStack))
         statsStack.addGestureRecognizer(tapGestureStats)
+
+        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleStatsStackSwipe(_:)))
+        swipeLeft.direction = .left
+        swipeLeft.cancelsTouchesInView = false
+        statsStack.addGestureRecognizer(swipeLeft)
+
+        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(handleStatsStackSwipe(_:)))
+        swipeRight.direction = .right
+        swipeRight.cancelsTouchesInView = false
+        statsStack.addGestureRecognizer(swipeRight)
+
+        // Ensure headline is correct on first load
+        updateStatsHeadlineText()
         
         // 1. Enable interaction on the stack
         historyStack.isUserInteractionEnabled = true
@@ -683,6 +732,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
 
     
     override func viewWillAppear(_ animated: Bool) {
+        updateStatsHeadlineText()
         // set screen lock
         UIApplication.shared.isIdleTimerDisabled = UserDefaultsRepository.screenlockSwitchState.value;
         
