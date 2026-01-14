@@ -212,113 +212,120 @@ struct AnalyzeDeviationsView: View {
             ThemeBackground()
                 .ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 12) {
+            VStack(spacing: 0) {
+                // Pinned DatePicker (stays visible while scrolling)
+                HStack {
+                    DatePicker(
+                        "",
+                        selection: $selectedDate,
+                        in: dateRangeLast90Days,
+                        displayedComponents: [.date]
+                    )
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
 
-                    // Top row: DatePicker (keep)
-                    HStack {
-                        DatePicker(
-                            "",
-                            selection: $selectedDate,
-                            in: dateRangeLast90Days,
-                            displayedComponents: [.date]
-                        )
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 6)
+                .padding(.bottom, 8)
 
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.top, 6)
-
-                    // --- Dev chart card ---
-                    VStack(alignment: .leading, spacing: 8) {
-                        if viewModel.devIsLoading {
-                            HStack(spacing: 6) {
-                                ProgressView().scaleEffect(0.8)
-                                Text("Hämtar device status…")
-                            }
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                        } else if let err = viewModel.devLastError {
-                            Text("Fel: \(err)")
+                ScrollView {
+                    VStack(spacing: 12) {
+                        // --- Dev chart card ---
+                        VStack(alignment: .leading, spacing: 8) {
+                            if viewModel.devIsLoading {
+                                HStack(spacing: 6) {
+                                    ProgressView().scaleEffect(0.8)
+                                    Text("Hämtar device status…")
+                                }
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
                                 .padding(.top, 4)
-                        } else {
-                            Text("Dev (30m +/- mmol/L)")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        }
-
-                        AnalyzeDeviationsLineChart(points: devPointsForChart, windowStart: selectedDayStart)
-                            .frame(height: 240)
-                    }
-                    .padding(12)
-                    .themedCardBackground(opacity: 0.12)
-                    .padding(.horizontal, 12)
-
-                    // --- COB/IOB chart card ---
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("COB (g)")
-                                .foregroundColor(Color(.carbs))
-                            Spacer()
-                            Text("IOB (E)")
-                                .foregroundColor(Color(.insulin))
-                        }
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-
-                        AnalyzeIobCobLineChart(points: iobCobPointsForChart, windowStart: selectedDayStart)
-                            .frame(height: 240)
-                    }
-                    .padding(12)
-                    .themedCardBackground(opacity: 0.12)
-                    .padding(.horizontal, 12)
-
-                    // --- Glucose chart card ---
-                    VStack(alignment: .leading, spacing: 8) {
-                        if viewModel.glucoseIsLoading {
-                            HStack(spacing: 6) {
-                                ProgressView().scaleEffect(0.8)
-                                Text("Hämtar glukos…")
+                            } else if let err = viewModel.devLastError {
+                                Text("Fel: \(err)")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
+                            } else {
+                                Text("Dev (30m +/- mmol/L)")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
                             }
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                        } else if let err = viewModel.glucoseLastError {
-                            Text("Fel: \(err)")
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                        } else {
-                            Text("Glukos (mmol/L)")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        }
 
-                        AnalyzeGlucoseLineChart(points: glucosePointsForChart, windowStart: selectedDayStart)
-                            .frame(height: 240)
-                    }
-                    .padding(12)
-                    .themedCardBackground(opacity: 0.12)
-                    .padding(.horizontal, 12)
-
-                    // --- Old tables (kept, but not shown) ---
-                    /*
-                    // Table below the chart
-                    ScrollView {
-                        LazyVStack(spacing: 8) {
-                            // ... previous table code ...
+                            AnalyzeDeviationsLineChart(points: devPointsForChart, windowStart: selectedDayStart)
+                                .frame(height: 240)
                         }
+                        .padding(12)
+                        .themedCardBackground(opacity: 0.12)
                         .padding(.horizontal, 12)
-                        .padding(.bottom, 16)
-                    }
-                    */
 
-                    Spacer(minLength: 16)
+                        // --- COB/IOB chart card ---
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("COB (g)")
+                                    .foregroundColor(Color(.carbs))
+                                Spacer()
+                                Text("IOB (E)")
+                                    .foregroundColor(Color(.insulin))
+                            }
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+
+                            AnalyzeIobCobLineChart(points: iobCobPointsForChart, windowStart: selectedDayStart)
+                                .frame(height: 240)
+                        }
+                        .padding(12)
+                        .themedCardBackground(opacity: 0.12)
+                        .padding(.horizontal, 12)
+
+                        // --- Glucose chart card ---
+                        VStack(alignment: .leading, spacing: 8) {
+                            if viewModel.glucoseIsLoading {
+                                HStack(spacing: 6) {
+                                    ProgressView().scaleEffect(0.8)
+                                    Text("Hämtar glukos…")
+                                }
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                            } else if let err = viewModel.glucoseLastError {
+                                Text("Fel: \(err)")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
+                            } else {
+                                Text("Glukos (mmol/L)")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+
+                            AnalyzeGlucoseLineChart(
+                                points: glucosePointsForChart,
+                                windowStart: selectedDayStart,
+                                highLine: Double(UserDefaultsRepository.highLine.value) / 18.0182,
+                                lowLine: Double(UserDefaultsRepository.lowLine.value) / 18.0182
+                            )
+                            .frame(height: 240)
+                        }
+                        .padding(12)
+                        .themedCardBackground(opacity: 0.12)
+                        .padding(.horizontal, 12)
+
+                        // --- Old tables (kept, but not shown) ---
+                        /*
+                        // Table below the chart
+                        ScrollView {
+                            LazyVStack(spacing: 8) {
+                                // ... previous table code ...
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 16)
+                        }
+                        */
+
+                        Spacer(minLength: 16)
+                    }
                 }
             }
         }
@@ -340,6 +347,8 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
     /// (date, mmol/L)
     let points: [(Date, Double)]
     let windowStart: Date
+    let highLine: Double
+    let lowLine: Double
 
     func makeUIView(context: Context) -> LineChartView {
         let v = LineChartView()
@@ -378,6 +387,7 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
         yAxis.axisMaximum = 22
         yAxis.granularityEnabled = true
         yAxis.granularity = 2
+        yAxis.drawLimitLinesBehindDataEnabled = true
 
         return v
     }
@@ -412,6 +422,24 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
         set.highlightEnabled = false
 
         uiView.data = LineChartData(dataSet: set)
+
+        // High/Low limit lines
+        uiView.leftAxis.removeAllLimitLines()
+
+        let high = ChartLimitLine(limit: highLine)
+        high.lineWidth = 0.5
+        high.lineColor = UIColor.systemPurple
+        high.labelPosition = .rightTop
+        high.valueTextColor = UIColor.clear
+
+        let low = ChartLimitLine(limit: lowLine)
+        low.lineWidth = 0.5
+        low.lineColor = UIColor.systemRed
+        low.labelPosition = .rightBottom
+        low.valueTextColor = UIColor.clear
+
+        uiView.leftAxis.addLimitLine(high)
+        uiView.leftAxis.addLimitLine(low)
 
         let df = DateFormatter()
         df.locale = .current
