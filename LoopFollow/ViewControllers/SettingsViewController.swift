@@ -139,7 +139,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         +++ Section("\nTrio inställningar och status")
         <<< ButtonRow() {
-            $0.title = "Trio användarinställningar"
+            $0.title = "Trio användarinställningar & analys"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark

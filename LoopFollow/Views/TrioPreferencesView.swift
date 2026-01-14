@@ -90,6 +90,7 @@ struct TrioPreferencesView: View {
     @ObservedObject var viewModel = TrioPreferencesViewModel()
     @State private var searchText: String = ""
     @State private var selectedPreferenceKeyForLog: PreferenceKeyItem?
+    @State private var isShowingAnalyzeDeviations: Bool = false
 
     var filteredPreferences: [PreferenceEntry] {
         if searchText.isEmpty {
@@ -150,9 +151,23 @@ struct TrioPreferencesView: View {
                 // Om du vill att handtaget högst upp på sheetet ska synas tydligt:
                 //.presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: $isShowingAnalyzeDeviations) {
+                NavigationStack {
+                    AnalyzeDeviationsView(viewModel: viewModel)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Klar") {
+                                    isShowingAnalyzeDeviations = false
+                                }
+                            }
+                        }
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(destination: AnalyzeDeviationsView(viewModel: viewModel)) {
+                    Button {
+                        isShowingAnalyzeDeviations = true
+                    } label: {
                         Image(systemName: "lightbulb.max")
                     }
                     .accessibilityLabel("Oref utvärdering")
@@ -185,6 +200,14 @@ struct AnalyzeDeviationsView: View {
     @ObservedObject var viewModel: TrioPreferencesViewModel
     @State private var selectedDate: Date = Date()
 
+    private enum DisplayMode: String, CaseIterable, Identifiable {
+        case normal = "Normal"
+        case stacked = "Stackad"
+        var id: String { rawValue }
+    }
+
+    @State private var displayMode: DisplayMode = .normal
+
     private var devPointsForChart: [(Date, Double)] {
         viewModel.devPoints.sorted(by: { $0.date < $1.date }).map { ($0.date, $0.dev) }
     }
@@ -207,6 +230,32 @@ struct AnalyzeDeviationsView: View {
         return start...now
     }
 
+    // --- Day navigation chevrons ---
+    private var canGoToPreviousDay: Bool {
+        selectedDayStart > Calendar.current.startOfDay(for: dateRangeLast90Days.lowerBound)
+    }
+
+    private var canGoToNextDay: Bool {
+        let todayStart = Calendar.current.startOfDay(for: Date())
+        return selectedDayStart < todayStart
+    }
+
+    private func goToPreviousDay() {
+        guard let prev = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) else { return }
+        // Clamp to 90-day window
+        let minDay = Calendar.current.startOfDay(for: dateRangeLast90Days.lowerBound)
+        let clamped = max(prev, minDay)
+        selectedDate = clamped
+    }
+
+    private func goToNextDay() {
+        guard let next = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) else { return }
+        // Clamp to today
+        let todayStart = Calendar.current.startOfDay(for: Date())
+        let clamped = min(next, todayStart)
+        selectedDate = clamped
+    }
+
     var body: some View {
         ZStack {
             ThemeBackground()
@@ -214,7 +263,7 @@ struct AnalyzeDeviationsView: View {
 
             VStack(spacing: 0) {
                 // Pinned DatePicker (stays visible while scrolling)
-                HStack {
+                HStack(spacing: 10) {
                     DatePicker(
                         "",
                         selection: $selectedDate,
@@ -223,8 +272,18 @@ struct AnalyzeDeviationsView: View {
                     )
                     .datePickerStyle(.compact)
                     .labelsHidden()
+                    .environment(\.locale, Locale(identifier: "sv_SE"))
+                    
+                    Spacer()
 
-                    Spacer(minLength: 0)
+                    Picker("", selection: $displayMode) {
+                        ForEach(DisplayMode.allCases) { m in
+                            Text(m.rawValue).tag(m)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .environment(\.locale, Locale(identifier: "sv_SE"))
+                    .frame(maxWidth: 220)
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 6)
@@ -232,104 +291,171 @@ struct AnalyzeDeviationsView: View {
 
                 ScrollView {
                     VStack(spacing: 12) {
-                        // --- Dev chart card ---
-                        VStack(alignment: .leading, spacing: 8) {
-                            if viewModel.devIsLoading {
-                                HStack(spacing: 6) {
-                                    ProgressView().scaleEffect(0.8)
-                                    Text("Hämtar device status…")
-                                }
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                            } else if let err = viewModel.devLastError {
-                                Text("Fel: \(err)")
+                        if displayMode == .normal {
+                            // --- Glucose chart card ---
+                            VStack(alignment: .leading, spacing: 8) {
+                                if viewModel.glucoseIsLoading {
+                                    HStack(spacing: 6) {
+                                        ProgressView().scaleEffect(0.8)
+                                        Text("Hämtar glukos…")
+                                    }
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
                                     .padding(.top, 4)
-                            } else {
-                                Text("Dev (30m +/- mmol/L)")
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                            }
-
-                            AnalyzeDeviationsLineChart(points: devPointsForChart, windowStart: selectedDayStart)
-                                .frame(height: 240)
-                        }
-                        .padding(12)
-                        .themedCardBackground(opacity: 0.12)
-                        .padding(.horizontal, 12)
-
-                        // --- COB/IOB chart card ---
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("COB (g)")
-                                    .foregroundColor(Color(.carbs))
-                                Spacer()
-                                Text("IOB (E)")
-                                    .foregroundColor(Color(.insulin))
-                            }
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-
-                            AnalyzeIobCobLineChart(points: iobCobPointsForChart, windowStart: selectedDayStart)
-                                .frame(height: 240)
-                        }
-                        .padding(12)
-                        .themedCardBackground(opacity: 0.12)
-                        .padding(.horizontal, 12)
-
-                        // --- Glucose chart card ---
-                        VStack(alignment: .leading, spacing: 8) {
-                            if viewModel.glucoseIsLoading {
-                                HStack(spacing: 6) {
-                                    ProgressView().scaleEffect(0.8)
-                                    Text("Hämtar glukos…")
+                                } else if let err = viewModel.glucoseLastError {
+                                    Text("Fel: \(err)")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                        .padding(.top, 4)
+                                } else {
+                                    Text("Glukos (mmol/L)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.green)
+                                        .fontWeight(.semibold)
                                 }
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                            } else if let err = viewModel.glucoseLastError {
-                                Text("Fel: \(err)")
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
-                                    .padding(.top, 4)
-                            } else {
-                                Text("Glukos (mmol/L)")
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                            }
 
-                            AnalyzeGlucoseLineChart(
-                                points: glucosePointsForChart,
-                                windowStart: selectedDayStart,
-                                highLine: Double(UserDefaultsRepository.highLine.value) / 18.0182,
-                                lowLine: Double(UserDefaultsRepository.lowLine.value) / 18.0182
-                            )
-                            .frame(height: 240)
-                        }
-                        .padding(12)
-                        .themedCardBackground(opacity: 0.12)
-                        .padding(.horizontal, 12)
-
-                        // --- Old tables (kept, but not shown) ---
-                        /*
-                        // Table below the chart
-                        ScrollView {
-                            LazyVStack(spacing: 8) {
-                                // ... previous table code ...
+                                AnalyzeGlucoseLineChart(
+                                    points: glucosePointsForChart,
+                                    windowStart: selectedDayStart,
+                                    highLine: Double(UserDefaultsRepository.highLine.value) / 18.0182,
+                                    lowLine: Double(UserDefaultsRepository.lowLine.value) / 18.0182,
+                                    showNormalChartElements: true
+                                )
+                                .frame(height: 240)
                             }
+                            .padding(12)
+                            .themedCardBackground(opacity: 0.12)
                             .padding(.horizontal, 12)
-                            .padding(.bottom, 16)
+                            
+                            // --- Dev chart card ---
+                            VStack(alignment: .leading, spacing: 8) {
+                                if viewModel.devIsLoading {
+                                    HStack(spacing: 6) {
+                                        ProgressView().scaleEffect(0.8)
+                                        Text("Hämtar device status…")
+                                    }
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
+                                } else if let err = viewModel.devLastError {
+                                    Text("Fel: \(err)")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                        .padding(.top, 4)
+                                } else {
+                                    Text("Dev (30m +/- mmol/L)")
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                }
+
+                                AnalyzeDeviationsLineChart(points: devPointsForChart, windowStart: selectedDayStart, showNormalChartElements: true)
+                                    .frame(height: 240)
+                            }
+                            .padding(12)
+                            .themedCardBackground(opacity: 0.12)
+                            .padding(.horizontal, 12)
+
+                            // --- COB/IOB chart card ---
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("COB (g)")
+                                        .foregroundColor(Color(.carbs))
+                                    Spacer()
+                                    Text("IOB (E)")
+                                        .foregroundColor(Color(.insulin))
+                                }
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+
+                                AnalyzeIobCobLineChart(points: iobCobPointsForChart, windowStart: selectedDayStart, showNormalChartElements: true)
+                                    .frame(height: 240)
+                            }
+                            .padding(12)
+                            .themedCardBackground(opacity: 0.12)
+                            .padding(.horizontal, 12)
+
+                        } else {
+                            // --- Stacked overlay card ---
+                            VStack(alignment: .leading, spacing: 8) {
+                                if viewModel.devIsLoading || viewModel.glucoseIsLoading {
+                                    HStack(spacing: 6) {
+                                        ProgressView().scaleEffect(0.8)
+                                        Text("Hämtar data…")
+                                    }
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
+                                } else if let err = (viewModel.devLastError ?? viewModel.glucoseLastError) {
+                                    Text("Fel: \(err)")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                        .padding(.top, 4)
+                                } else {
+                                    HStack {
+                                        Spacer()
+                                        Text("━ Glukos")
+                                            .foregroundColor(.green)
+                                        Spacer()
+                                        Text("━ Dev")
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Text("━ COB")
+                                            .foregroundColor(Color(.carbs))
+                                        Spacer()
+                                        Text("━ IOB")
+                                            .foregroundColor(Color(.insulin))
+                                        Spacer()
+                                    }
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                }
+
+                                ZStack {
+                                    AnalyzeDeviationsLineChart(points: devPointsForChart, windowStart: selectedDayStart, showNormalChartElements: false)
+                                    AnalyzeIobCobLineChart(points: iobCobPointsForChart, windowStart: selectedDayStart, showNormalChartElements: false)
+                                    AnalyzeGlucoseLineChart(
+                                        points: glucosePointsForChart,
+                                        windowStart: selectedDayStart,
+                                        highLine: Double(UserDefaultsRepository.highLine.value) / 18.0182,
+                                        lowLine: Double(UserDefaultsRepository.lowLine.value) / 18.0182,
+                                        showNormalChartElements: false
+                                    )
+                                }
+                                .frame(height: 420)
+                            }
+                            .padding(12)
+                            .themedCardBackground(opacity: 0.12)
+                            .padding(.horizontal, 12)
                         }
-                        */
 
                         Spacer(minLength: 16)
                     }
                 }
             }
         }
-        .navigationTitle("Utvärdering oref (vald dag)")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    goToPreviousDay()
+                } label: {
+                    Image(systemName: "chevron.left")
+                }
+                .disabled(!canGoToPreviousDay)
+                .accessibilityLabel("Föregående dag")
+            }
+
+                ToolbarItem(placement: .navigationBarLeading) {
+
+                    Button {
+                        goToNextDay()
+                    } label: {
+                        Image(systemName: "chevron.right")
+                    }
+                    .disabled(!canGoToNextDay)
+                    .accessibilityLabel("Nästa dag")
+                }
+        }
+        .navigationTitle("Utvärdering oref")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             viewModel.fetchDevIobCobForDay(selectedDate, count: 600)
@@ -349,6 +475,7 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
     let windowStart: Date
     let highLine: Double
     let lowLine: Double
+    let showNormalChartElements: Bool
 
     func makeUIView(context: Context) -> LineChartView {
         let v = LineChartView()
@@ -357,13 +484,14 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
         v.chartDescription.enabled = false
         v.rightAxis.enabled = false
         v.minOffset = 8
-        v.extraRightOffset = 20
+        v.extraRightOffset = showNormalChartElements ? 20 : 12
+        v.extraLeftOffset = showNormalChartElements ? 0 : 12
 
-        v.pinchZoomEnabled = true
-        v.doubleTapToZoomEnabled = true
-        v.scaleXEnabled = true
+        v.pinchZoomEnabled = showNormalChartElements
+        v.doubleTapToZoomEnabled = showNormalChartElements
+        v.scaleXEnabled = showNormalChartElements
         v.scaleYEnabled = false
-        v.dragEnabled = true
+        v.dragEnabled = showNormalChartElements
 
         v.highlightPerTapEnabled = false
         v.highlightPerDragEnabled = false
@@ -378,16 +506,18 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
         xAxis.drawGridLinesEnabled = true
         xAxis.granularityEnabled = true
         xAxis.granularity = 3 * 60 * 60
+        xAxis.drawLabelsEnabled = true//showNormalChartElements
 
         // Y axis (0–24 mmol/L)
         let yAxis = v.leftAxis
-        yAxis.drawGridLinesEnabled = true
+        yAxis.drawGridLinesEnabled = showNormalChartElements
         yAxis.drawZeroLineEnabled = false
-        yAxis.axisMinimum = 0
-        yAxis.axisMaximum = 24
+        yAxis.axisMinimum = showNormalChartElements ? 0 : -2
+        yAxis.axisMaximum = showNormalChartElements ? 24 : 22
         yAxis.granularityEnabled = true
         yAxis.granularity = 2
         yAxis.drawLimitLinesBehindDataEnabled = true
+        yAxis.drawLabelsEnabled = showNormalChartElements
 
         return v
     }
@@ -414,7 +544,7 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
 
         let set = LineChartDataSet(entries: entries, label: "")
         set.setColor(.green)
-        set.lineWidth = 1.5
+        set.lineWidth = showNormalChartElements ? 2 : 1
         set.drawValuesEnabled = false
         set.drawCirclesEnabled = false
         set.mode = .linear
@@ -474,6 +604,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
     /// (date, value)
     let points: [(Date, Double)]
     let windowStart: Date
+    let showNormalChartElements: Bool
 
     func makeUIView(context: Context) -> LineChartView {
         let v = LineChartView()
@@ -483,13 +614,14 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         v.rightAxis.enabled = false
         v.minOffset = 8
         // Add a bit of space on the right so the last x-label ("nu") doesn't clip
-        v.extraRightOffset = 20
+        v.extraRightOffset = showNormalChartElements ? 20 : 12
+        v.extraLeftOffset = showNormalChartElements ? 0 : 12
 
-        v.pinchZoomEnabled = true
-        v.doubleTapToZoomEnabled = true
-        v.scaleXEnabled = true
+        v.pinchZoomEnabled = showNormalChartElements
+        v.doubleTapToZoomEnabled = showNormalChartElements
+        v.scaleXEnabled = showNormalChartElements
         v.scaleYEnabled = false
-        v.dragEnabled = true
+        v.dragEnabled = showNormalChartElements
 
         v.highlightPerTapEnabled = false
         v.highlightPerDragEnabled = false
@@ -506,20 +638,22 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         xAxis.drawGridLinesEnabled = true
         xAxis.granularityEnabled = true
         xAxis.granularity = 3 * 60 * 60 // 2h ticks by default
+        xAxis.drawLabelsEnabled = true//showNormalChartElements
 
         // Left axis
         let yAxis = v.leftAxis
-        yAxis.drawGridLinesEnabled = true
+        yAxis.drawGridLinesEnabled = true//showNormalChartElements
         yAxis.drawZeroLineEnabled = true
 
         // Make the 0-line stand out more than other grid lines
         yAxis.zeroLineWidth = 1.5
         yAxis.zeroLineColor = UIColor.label.withAlphaComponent(0.75)
 
-        yAxis.axisMinimum = -12
-        yAxis.axisMaximum = 12
+        yAxis.axisMinimum = showNormalChartElements ? -8 : -8
+        yAxis.axisMaximum = showNormalChartElements ? 16 : 16
         yAxis.granularityEnabled = true
         yAxis.granularity = 2
+        yAxis.drawLabelsEnabled = showNormalChartElements
 
         return v
     }
@@ -558,7 +692,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
 
         let set = LineChartDataSet(entries: entries, label: "")
         set.setColor(.label)
-        set.lineWidth = 1.5
+        set.lineWidth = showNormalChartElements ? 2 : 1
         set.drawValuesEnabled = false
         set.drawCirclesEnabled = false
         set.mode = .linear
@@ -589,11 +723,10 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
             let maxBound = ceil(maxY + pad)
             let span = max(4, maxBound - minBound)
 
-            uiView.leftAxis.axisMinimum = min(-12, minBound)
-            uiView.leftAxis.axisMaximum = max(12, minBound + span)
-        } else {
-            uiView.leftAxis.axisMinimum = -12
-            uiView.leftAxis.axisMaximum = 12
+            uiView.leftAxis.axisMinimum = showNormalChartElements ? min(-8, minBound) : -8
+            uiView.leftAxis.axisMaximum = showNormalChartElements ? max(16, minBound + span) : 16
+            uiView.leftAxis.axisMinimum = showNormalChartElements ? -8 : -8
+            uiView.leftAxis.axisMaximum = showNormalChartElements ? 16 : 16
         }
 
         // Grid styling (subtle) + emphasized zero line
@@ -608,7 +741,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
 
         // Ensure the 0-line stays emphasized even after updates
         uiView.leftAxis.drawZeroLineEnabled = true
-        uiView.leftAxis.zeroLineWidth = 1.5
+        uiView.leftAxis.zeroLineWidth = showNormalChartElements ? 2 : 1
         uiView.leftAxis.zeroLineColor = UIColor.label.withAlphaComponent(0.75)
 
         uiView.rightAxis.enabled = false
@@ -624,6 +757,7 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
     /// (date, iob, cob)
     let points: [(Date, Double, Double)]
     let windowStart: Date
+    let showNormalChartElements: Bool
 
     func makeUIView(context: Context) -> LineChartView {
         let v = LineChartView()
@@ -632,13 +766,14 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
         v.chartDescription.enabled = false
 
         v.minOffset = 8
-        //v.extraRightOffset = 14
+        v.extraRightOffset = showNormalChartElements ? 0 : 12
+        v.extraLeftOffset = showNormalChartElements ? 0 : 12
 
-        v.pinchZoomEnabled = true
-        v.doubleTapToZoomEnabled = true
-        v.scaleXEnabled = true
+        v.pinchZoomEnabled = showNormalChartElements
+        v.doubleTapToZoomEnabled = showNormalChartElements
+        v.scaleXEnabled = showNormalChartElements
         v.scaleYEnabled = false
-        v.dragEnabled = true
+        v.dragEnabled = showNormalChartElements
 
         v.highlightPerTapEnabled = false
         v.highlightPerDragEnabled = false
@@ -653,27 +788,30 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
         xAxis.drawGridLinesEnabled = true
         xAxis.granularityEnabled = true
         xAxis.granularity = 3 * 60 * 60
+        xAxis.drawLabelsEnabled = true//showNormalChartElements
 
         // Left axis (COB)
         let left = v.leftAxis
-        left.drawGridLinesEnabled = true
+        left.drawGridLinesEnabled = showNormalChartElements
         left.drawZeroLineEnabled = true
         left.zeroLineWidth = 1.5
         left.zeroLineColor = UIColor.label.withAlphaComponent(0.75)
-        left.axisMinimum = -30
-        left.axisMaximum = 150
+        left.axisMinimum = showNormalChartElements ? -30 : -60
+        left.axisMaximum = showNormalChartElements ? 150 : 120
         left.granularityEnabled = true
         left.granularity = 30
+        left.drawLabelsEnabled = showNormalChartElements
 
         // Right axis (IOB)
         let right = v.rightAxis
         right.enabled = true
         right.drawGridLinesEnabled = false
         right.drawZeroLineEnabled = false
-        right.axisMinimum = -1
-        right.axisMaximum = 5
+        right.axisMinimum = showNormalChartElements ? -1 : -2
+        right.axisMaximum = showNormalChartElements ? 5 : 4
         right.granularityEnabled = true
         right.granularity = 1
+        right.drawLabelsEnabled = showNormalChartElements
 
         return v
     }
@@ -704,7 +842,7 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
 
         let cobSet = LineChartDataSet(entries: cobEntries, label: "COB")
         cobSet.setColor(UIColor.carbs)
-        cobSet.lineWidth = 2
+        cobSet.lineWidth = showNormalChartElements ? 2 : 1
         cobSet.drawValuesEnabled = false
         cobSet.drawCirclesEnabled = false
         cobSet.mode = .linear
@@ -714,7 +852,7 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
 
         let iobSet = LineChartDataSet(entries: iobEntries, label: "IOB")
         iobSet.setColor(.insulin)
-        iobSet.lineWidth = 2
+        iobSet.lineWidth = showNormalChartElements ? 2 : 1
         iobSet.drawValuesEnabled = false
         iobSet.drawCirclesEnabled = false
         iobSet.mode = .linear
