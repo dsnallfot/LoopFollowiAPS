@@ -190,6 +190,7 @@ struct AnalyzeDeviationsView: View {
 
     @ObservedObject var viewModel: TrioPreferencesViewModel
     @State private var mode: ChartMode = .dev30m
+    @State private var selectedDate: Date = Date()
 
     private var devRows: [TrioPreferencesViewModel.DevPoint] {
         viewModel.devPoints.sorted(by: { $0.date > $1.date })
@@ -207,6 +208,16 @@ struct AnalyzeDeviationsView: View {
         return df
     }
 
+    private var selectedDayStart: Date {
+        Calendar.current.startOfDay(for: selectedDate)
+    }
+
+    private var dateRangeLast90Days: ClosedRange<Date> {
+        let now = Date()
+        let start = Calendar.current.date(byAdding: .day, value: -90, to: now) ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
+        return start...now
+    }
+
 
     var body: some View {
         ZStack {
@@ -214,14 +225,25 @@ struct AnalyzeDeviationsView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 12) {
-                // Chart container (300p)
+                // Chart container (360p)
                 VStack(alignment: .leading, spacing: 8) {
-                    Picker("", selection: $mode) {
-                        ForEach(ChartMode.allCases) { m in
-                            Text(m.rawValue).tag(m)
+                    HStack(spacing: 10) {
+                        DatePicker(
+                            "",
+                            selection: $selectedDate,
+                            in: dateRangeLast90Days,
+                            displayedComponents: [.date]
+                        )
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+
+                        Picker("", selection: $mode) {
+                            ForEach(ChartMode.allCases) { m in
+                                Text(m.rawValue).tag(m)
+                            }
                         }
+                        .pickerStyle(.segmented)
                     }
-                    .pickerStyle(.segmented)
                     .padding(.bottom, 4)
 
                     if viewModel.devIsLoading {
@@ -257,15 +279,15 @@ struct AnalyzeDeviationsView: View {
                     }
 
                     if mode == .dev30m {
-                        AnalyzeDeviationsLineChart(points: devRows.map { ($0.date, $0.dev) })
+                        AnalyzeDeviationsLineChart(points: devRows.map { ($0.date, $0.dev) }, windowStart: selectedDayStart)
                             .frame(height: 260)
                     } else {
-                        AnalyzeIobCobLineChart(points: iobCobRows.map { ($0.date, $0.iob, $0.cob) })
+                        AnalyzeIobCobLineChart(points: iobCobRows.map { ($0.date, $0.iob, $0.cob) }, windowStart: selectedDayStart)
                             .frame(height: 260)
                     }
                 }
                 .padding(12)
-                .frame(height: 340)
+                .frame(height: 360)
                 .themedCardBackground(opacity: 0.12)
                 .padding(.horizontal, 12)
 
@@ -307,11 +329,14 @@ struct AnalyzeDeviationsView: View {
                 }
             }
         }
-        .navigationTitle("Utvärdering oref (24h)")
+        .navigationTitle("Utvärdering oref (vald dag)")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Ad hoc fetch: latest 600 device status, then window to last 24h
-            viewModel.fetchDevIobCobLast24h(count: 600)
+            // Fetch for the currently selected day (defaults to today)
+            viewModel.fetchDevIobCobForDay(selectedDate, count: 600)
+        }
+        .onChange(of: selectedDate) { newDate in
+            viewModel.fetchDevIobCobForDay(newDate, count: 600)
         }
     }
 }
@@ -321,6 +346,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
 
     /// (date, value)
     let points: [(Date, Double)]
+    let windowStart: Date
 
     func makeUIView(context: Context) -> LineChartView {
         let v = LineChartView()
@@ -381,9 +407,9 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         // Ensure points are sorted by time (oldest -> newest)
         let sorted = points.sorted(by: { $0.0 < $1.0 })
 
-        // Define a 24h rolling window ending at the newest point
-        let endDate = sorted.last!.0
-        let startDate = endDate.addingTimeInterval(-24 * 60 * 60)
+        // Fixed 24h window for the selected day
+        let startDate = windowStart
+        let endDate = startDate.addingTimeInterval(24 * 60 * 60)
 
         // Build entries where x is seconds since startDate
         var entries: [ChartDataEntry] = []
@@ -470,6 +496,7 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
 
     /// (date, iob, cob)
     let points: [(Date, Double, Double)]
+    let windowStart: Date
 
     func makeUIView(context: Context) -> LineChartView {
         let v = LineChartView()
@@ -533,8 +560,8 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
 
         let sorted = points.sorted(by: { $0.0 < $1.0 })
 
-        let endDate = sorted.last!.0
-        let startDate = endDate.addingTimeInterval(-24 * 60 * 60)
+        let startDate = windowStart
+        let endDate = startDate.addingTimeInterval(24 * 60 * 60)
 
         var cobEntries: [ChartDataEntry] = []
         var iobEntries: [ChartDataEntry] = []

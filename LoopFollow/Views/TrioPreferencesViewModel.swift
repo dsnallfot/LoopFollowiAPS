@@ -180,12 +180,25 @@ class TrioPreferencesViewModel: ObservableObject {
         return nil
     }
 
-    /// Fetch the latest 600 device-status documents from Nightscout and build a 24h window of Dev points.
-    func fetchDevIobCobLast24h(count: Int = 600) {
+    /// Fetch device-status documents from Nightscout for the selected day using created_at $gte/$lte + count.
+    func fetchDevIobCobForDay(_ day: Date, count: Int = 600) {
         devIsLoading = true
         devLastError = nil
 
-        let params: [String: String] = ["count": "\(count)"]
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: day)
+        let endExclusive = cal.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(24 * 60 * 60)
+        // Use an inclusive end bound (23:59:59) to avoid bleeding into next day at 00:00:00
+        let endInclusive = endExclusive.addingTimeInterval(-1)
+
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+
+        let params: [String: String] = [
+            "count": "\(count)",
+            "find[created_at][$gte]": iso.string(from: start),
+            "find[created_at][$lte]": iso.string(from: endInclusive)
+        ]
 
         NightscoutUtils.executeDynamicRequest(eventType: .deviceStatus, parameters: params) { [weak self] result in
             guard let self = self else { return }
@@ -234,17 +247,10 @@ class TrioPreferencesViewModel: ObservableObject {
                 devPoints.sort(by: { $0.date < $1.date })
                 iobCobPoints.sort(by: { $0.date < $1.date })
 
-                // Keep only last 24h, anchored to newest dev point (rolling window)
-                let end = devPoints.last?.date ?? Date()
-                let start = end.addingTimeInterval(-24 * 60 * 60)
-
-                let windowedDev = devPoints.filter { $0.date >= start && $0.date <= end }
-                let windowedIobCob = iobCobPoints.filter { $0.date >= start && $0.date <= end }
-
                 DispatchQueue.main.async {
                     self.devIsLoading = false
-                    self.devPoints = windowedDev
-                    self.iobCobPoints = windowedIobCob
+                    self.devPoints = devPoints
+                    self.iobCobPoints = iobCobPoints
                 }
 
             case .failure(let error):
