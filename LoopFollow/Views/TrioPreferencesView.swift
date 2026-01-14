@@ -379,12 +379,12 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
         xAxis.granularityEnabled = true
         xAxis.granularity = 3 * 60 * 60
 
-        // Y axis (0–22 mmol/L)
+        // Y axis (0–24 mmol/L)
         let yAxis = v.leftAxis
         yAxis.drawGridLinesEnabled = true
         yAxis.drawZeroLineEnabled = false
         yAxis.axisMinimum = 0
-        yAxis.axisMaximum = 22
+        yAxis.axisMaximum = 24
         yAxis.granularityEnabled = true
         yAxis.granularity = 2
         yAxis.drawLimitLinesBehindDataEnabled = true
@@ -413,7 +413,7 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
         }
 
         let set = LineChartDataSet(entries: entries, label: "")
-        set.setColor(.label)
+        set.setColor(.green)
         set.lineWidth = 1.5
         set.drawValuesEnabled = false
         set.drawCirclesEnabled = false
