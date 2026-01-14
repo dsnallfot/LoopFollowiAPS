@@ -575,7 +575,16 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             DispatchQueue.main.async {
                 if !newTreatments.isEmpty {
                     // Cache-data fanns – visa den och avsluta.
-                    self.treatments = newTreatments.sorted { $0.timestamp > $1.timestamp }
+                    // NOTE: If "today" is selected, only SHOW entries from local midnight → now.
+                    if cal.isDate(date, inSameDayAs: Date()) {
+                        let todayStart = cal.startOfDay(for: Date())
+                        let now = Date()
+                        self.treatments = newTreatments
+                            .filter { $0.timestamp >= todayStart && $0.timestamp <= now }
+                            .sorted { $0.timestamp > $1.timestamp }
+                    } else {
+                        self.treatments = newTreatments.sorted { $0.timestamp > $1.timestamp }
+                    }
                     self.tableView.reloadData()
                     self.hideRefreshIndicator()
                 } else {
@@ -618,7 +627,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 if case .success(let raw) = result,
                    let entries = raw as? [[String: AnyObject]] {
                     let fetched = entries.compactMap { Treatment(dictionary: $0) }
-                    self.treatments = fetched.sorted { $0.timestamp > $1.timestamp }
+
+                    let cal = Calendar.current
+                    let todayStart = cal.startOfDay(for: Date())
+                    let now = Date()
+
+                    // Only SHOW today's entries, even though we fetched a rolling window
+                    self.treatments = fetched
+                        .filter { $0.timestamp >= todayStart && $0.timestamp <= now }
+                        .sorted { $0.timestamp > $1.timestamp }
                 }
                 self.tableView.reloadData()
                 self.hideRefreshIndicator()
