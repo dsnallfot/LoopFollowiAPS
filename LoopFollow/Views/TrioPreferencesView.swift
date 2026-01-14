@@ -182,30 +182,19 @@ private struct SettingsLogModal: UIViewControllerRepresentable {
 @available(iOS 16.0, *)
 struct AnalyzeDeviationsView: View {
 
-    enum ChartMode: String, CaseIterable, Identifiable {
-        case dev30m = "Dev 30m"
-        case iobCob = "COB • IOB"
-        var id: String { rawValue }
-    }
-
     @ObservedObject var viewModel: TrioPreferencesViewModel
-    @State private var mode: ChartMode = .dev30m
     @State private var selectedDate: Date = Date()
 
-    private var devRows: [TrioPreferencesViewModel.DevPoint] {
-        viewModel.devPoints.sorted(by: { $0.date > $1.date })
+    private var devPointsForChart: [(Date, Double)] {
+        viewModel.devPoints.sorted(by: { $0.date < $1.date }).map { ($0.date, $0.dev) }
     }
 
-    private var iobCobRows: [TrioPreferencesViewModel.IobCobPoint] {
-        viewModel.iobCobPoints.sorted(by: { $0.date > $1.date })
+    private var iobCobPointsForChart: [(Date, Double, Double)] {
+        viewModel.iobCobPoints.sorted(by: { $0.date < $1.date }).map { ($0.date, $0.iob, $0.cob) }
     }
 
-    private var timeFormatter: DateFormatter {
-        let df = DateFormatter()
-        df.locale = .current
-        df.timeZone = .current
-        df.dateFormat = "HH:mm"
-        return df
+    private var glucosePointsForChart: [(Date, Double)] {
+        viewModel.glucosePoints.sorted(by: { $0.date < $1.date }).map { ($0.date, $0.mmol) }
     }
 
     private var selectedDayStart: Date {
@@ -218,16 +207,16 @@ struct AnalyzeDeviationsView: View {
         return start...now
     }
 
-
     var body: some View {
         ZStack {
             ThemeBackground()
                 .ignoresSafeArea()
 
-            VStack(spacing: 12) {
-                // Chart container (360p)
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 10) {
+            ScrollView {
+                VStack(spacing: 12) {
+
+                    // Top row: DatePicker (keep)
+                    HStack {
                         DatePicker(
                             "",
                             selection: $selectedDate,
@@ -237,107 +226,217 @@ struct AnalyzeDeviationsView: View {
                         .datePickerStyle(.compact)
                         .labelsHidden()
 
-                        Picker("", selection: $mode) {
-                            ForEach(ChartMode.allCases) { m in
-                                Text(m.rawValue).tag(m)
-                            }
-                        }
-                        .pickerStyle(.segmented)
+                        Spacer(minLength: 0)
                     }
-                    .padding(.bottom, 4)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 6)
 
-                    if viewModel.devIsLoading {
-                        HStack(spacing: 6) {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Hämtar device status…")
-                        }
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                    } else if let err = viewModel.devLastError {
-                        Text("Fel: \(err)")
+                    // --- Dev chart card ---
+                    VStack(alignment: .leading, spacing: 8) {
+                        if viewModel.devIsLoading {
+                            HStack(spacing: 6) {
+                                ProgressView().scaleEffect(0.8)
+                                Text("Hämtar device status…")
+                            }
                             .font(.footnote)
                             .foregroundColor(.secondary)
                             .padding(.top, 4)
-                    } else {
-                        if mode == .dev30m {
+                        } else if let err = viewModel.devLastError {
+                            Text("Fel: \(err)")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                        } else {
                             Text("Dev (30m +/- mmol/L)")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
-                        } else {
-                            HStack {
-                                Text("COB (g)")
-                                    .foregroundColor(Color(.carbs))
-                                Spacer()
-                                Text("IOB (E)")
-                                    .foregroundColor(Color(.insulin))
+                        }
+
+                        AnalyzeDeviationsLineChart(points: devPointsForChart, windowStart: selectedDayStart)
+                            .frame(height: 240)
+                    }
+                    .padding(12)
+                    .themedCardBackground(opacity: 0.12)
+                    .padding(.horizontal, 12)
+
+                    // --- COB/IOB chart card ---
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("COB (g)")
+                                .foregroundColor(Color(.carbs))
+                            Spacer()
+                            Text("IOB (E)")
+                                .foregroundColor(Color(.insulin))
+                        }
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+
+                        AnalyzeIobCobLineChart(points: iobCobPointsForChart, windowStart: selectedDayStart)
+                            .frame(height: 240)
+                    }
+                    .padding(12)
+                    .themedCardBackground(opacity: 0.12)
+                    .padding(.horizontal, 12)
+
+                    // --- Glucose chart card ---
+                    VStack(alignment: .leading, spacing: 8) {
+                        if viewModel.glucoseIsLoading {
+                            HStack(spacing: 6) {
+                                ProgressView().scaleEffect(0.8)
+                                Text("Hämtar glukos…")
                             }
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                        } else if let err = viewModel.glucoseLastError {
+                            Text("Fel: \(err)")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                        } else {
+                            Text("Glukos (mmol/L)")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                         }
-                    }
 
-                    if mode == .dev30m {
-                        AnalyzeDeviationsLineChart(points: devRows.map { ($0.date, $0.dev) }, windowStart: selectedDayStart)
-                            .frame(height: 260)
-                    } else {
-                        AnalyzeIobCobLineChart(points: iobCobRows.map { ($0.date, $0.iob, $0.cob) }, windowStart: selectedDayStart)
-                            .frame(height: 260)
+                        AnalyzeGlucoseLineChart(points: glucosePointsForChart, windowStart: selectedDayStart)
+                            .frame(height: 240)
                     }
-                }
-                .padding(12)
-                .frame(height: 360)
-                .themedCardBackground(opacity: 0.12)
-                .padding(.horizontal, 12)
-
-                // Table below the chart
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        if mode == .dev30m {
-                            ForEach(devRows) { row in
-                                HStack {
-                                    Text(String(format: "%+.1f mmol/L", row.dev))
-                                        .font(.body)
-                                    Spacer()
-                                    Text(timeFormatter.string(from: row.date))
-                                        .font(.callout)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .themedCardBackground(opacity: 0.10)
-                            }
-                        } else {
-                            ForEach(iobCobRows) { row in
-                                HStack {
-                                    Text(String(format: "COB: %.0f g • IOB: %.2f E", row.cob, row.iob))
-                                        .font(.body)
-                                    Spacer()
-                                    Text(timeFormatter.string(from: row.date))
-                                        .font(.callout)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .themedCardBackground(opacity: 0.10)
-                            }
-                        }
-                    }
+                    .padding(12)
+                    .themedCardBackground(opacity: 0.12)
                     .padding(.horizontal, 12)
-                    .padding(.bottom, 16)
+
+                    // --- Old tables (kept, but not shown) ---
+                    /*
+                    // Table below the chart
+                    ScrollView {
+                        LazyVStack(spacing: 8) {
+                            // ... previous table code ...
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 16)
+                    }
+                    */
+
+                    Spacer(minLength: 16)
                 }
             }
         }
         .navigationTitle("Utvärdering oref (vald dag)")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Fetch for the currently selected day (defaults to today)
             viewModel.fetchDevIobCobForDay(selectedDate, count: 600)
+            viewModel.fetchGlucoseForDay(selectedDate)
         }
         .onChange(of: selectedDate) { newDate in
             viewModel.fetchDevIobCobForDay(newDate, count: 600)
+            viewModel.fetchGlucoseForDay(newDate)
         }
+    }
+}
+@available(iOS 16.0, *)
+private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
+
+    /// (date, mmol/L)
+    let points: [(Date, Double)]
+    let windowStart: Date
+
+    func makeUIView(context: Context) -> LineChartView {
+        let v = LineChartView()
+
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        v.extraRightOffset = 20
+
+        v.pinchZoomEnabled = true
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+
+        v.backgroundColor = .clear
+        v.isOpaque = false
+
+        // X axis
+        let xAxis = v.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.drawGridLinesEnabled = true
+        xAxis.granularityEnabled = true
+        xAxis.granularity = 3 * 60 * 60
+
+        // Y axis (0–22 mmol/L)
+        let yAxis = v.leftAxis
+        yAxis.drawGridLinesEnabled = true
+        yAxis.drawZeroLineEnabled = false
+        yAxis.axisMinimum = 0
+        yAxis.axisMaximum = 22
+        yAxis.granularityEnabled = true
+        yAxis.granularity = 2
+
+        return v
+    }
+
+    func updateUIView(_ uiView: LineChartView, context: Context) {
+        guard !points.isEmpty else {
+            uiView.data = nil
+            uiView.setNeedsDisplay()
+            return
+        }
+
+        let sorted = points.sorted(by: { $0.0 < $1.0 })
+        let startDate = windowStart
+        let endDate = startDate.addingTimeInterval(24 * 60 * 60)
+
+        var entries: [ChartDataEntry] = []
+        entries.reserveCapacity(sorted.count)
+
+        for (d, mmol) in sorted {
+            guard d >= startDate && d <= endDate else { continue }
+            let x = d.timeIntervalSince(startDate)
+            entries.append(ChartDataEntry(x: x, y: mmol))
+        }
+
+        let set = LineChartDataSet(entries: entries, label: "")
+        set.setColor(.label)
+        set.lineWidth = 1.5
+        set.drawValuesEnabled = false
+        set.drawCirclesEnabled = false
+        set.mode = .linear
+        set.drawFilledEnabled = false
+        set.highlightEnabled = false
+
+        uiView.data = LineChartData(dataSet: set)
+
+        let df = DateFormatter()
+        df.locale = .current
+        df.timeZone = .current
+        df.dateFormat = "HH:mm"
+
+        uiView.xAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let date = startDate.addingTimeInterval(value)
+            return df.string(from: date)
+        }
+
+        uiView.xAxis.axisMinimum = 0
+        uiView.xAxis.axisMaximum = 24 * 60 * 60
+
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.35)
+        uiView.xAxis.gridColor = gridLineColor
+        uiView.xAxis.gridLineWidth = 0.5
+        uiView.xAxis.gridLineDashLengths = [2, 2]
+
+        uiView.leftAxis.gridColor = gridLineColor
+        uiView.leftAxis.gridLineWidth = 0.5
+        uiView.leftAxis.gridLineDashLengths = [2, 2]
+
+        uiView.notifyDataSetChanged()
+        uiView.setNeedsDisplay()
     }
 }
 
@@ -356,7 +455,7 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         v.rightAxis.enabled = false
         v.minOffset = 8
         // Add a bit of space on the right so the last x-label ("nu") doesn't clip
-        v.extraRightOffset = 14
+        v.extraRightOffset = 20
 
         v.pinchZoomEnabled = true
         v.doubleTapToZoomEnabled = true

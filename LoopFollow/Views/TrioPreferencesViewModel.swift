@@ -32,10 +32,19 @@ class TrioPreferencesViewModel: ObservableObject {
         let cob: Double
     }
 
+    struct GlucosePoint: Identifiable {
+        let id = UUID()
+        let date: Date
+        let mmol: Double
+    }
+
     @Published var devPoints: [DevPoint] = []
     @Published var devIsLoading: Bool = false
     @Published var devLastError: String? = nil
     @Published var iobCobPoints: [IobCobPoint] = []
+    @Published var glucosePoints: [GlucosePoint] = []
+    @Published var glucoseIsLoading: Bool = false
+    @Published var glucoseLastError: String? = nil
     
     init() {
         fetchPreferences()
@@ -260,6 +269,45 @@ class TrioPreferencesViewModel: ObservableObject {
                     self.devPoints = []
                     self.iobCobPoints = []
                 }
+            }
+        }
+    }
+    /// Load glucose points for a calendar day from our local caches (NightscoutCache).
+    func fetchGlucoseForDay(_ day: Date) {
+        glucoseIsLoading = true
+        glucoseLastError = nil
+
+        Task {
+            let cal = Calendar.current
+            let start = cal.startOfDay(for: day)
+            guard let end = cal.date(byAdding: .day, value: 1, to: start) else {
+                await MainActor.run {
+                    self.glucoseIsLoading = false
+                    self.glucoseLastError = "Invalid date range"
+                    self.glucosePoints = []
+                }
+                return
+            }
+
+            // Use a buffered window similar to GlucoseView to be safe around boundaries
+            let bufferedStart = cal.date(byAdding: .hour, value: -12, to: start) ?? start
+            let bufferedEnd   = cal.date(byAdding: .hour, value: 12, to: end) ?? end
+
+            let (allSGV, _) = await NightscoutCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+
+            // Map to mmol/L and keep only within the selected day
+            let points: [GlucosePoint] = allSGV
+                .map { sgv in
+                    let date = Date(timeIntervalSince1970: sgv.date)
+                    let mmol = Double(sgv.sgv) / 18.0182
+                    return GlucosePoint(date: date, mmol: mmol)
+                }
+                .filter { $0.date >= start && $0.date < end }
+                .sorted(by: { $0.date < $1.date })
+
+            await MainActor.run {
+                self.glucoseIsLoading = false
+                self.glucosePoints = points
             }
         }
     }
