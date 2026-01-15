@@ -309,6 +309,8 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         selected.layer.cornerRadius = 10
         selected.layer.masksToBounds = true
         cell.selectedBackgroundView = selected
+        // Ensure reused cells always start with a fully visible selection overlay
+        cell.selectedBackgroundView?.alpha = 1
 
         return cell
     }
@@ -560,17 +562,18 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
             guard let self = self else { return }
 
-            // Fade out the selection overlay, then deselect.
+            // Fade out the selection overlay smoothly, then deselect WITHOUT animation
+            // (animated deselect can re-apply the selection state briefly -> "blink")
             if let cell = self.tableView.cellForRow(at: indexPath) {
                 let overlay = cell.selectedBackgroundView
-                UIView.animate(withDuration: 0.18, animations: {
+                UIView.animate(withDuration: 0.18, delay: 0, options: [.beginFromCurrentState, .curveEaseOut], animations: {
                     overlay?.alpha = 0
                 }, completion: { _ in
-                    self.tableView.deselectRow(at: indexPath, animated: true)
-                    overlay?.alpha = 1
+                    // Deselect after fade, without triggering an additional UIKit selection animation.
+                    self.tableView.deselectRow(at: indexPath, animated: false)
                 })
             } else {
-                self.tableView.deselectRow(at: indexPath, animated: true)
+                self.tableView.deselectRow(at: indexPath, animated: false)
             }
         }))
 
