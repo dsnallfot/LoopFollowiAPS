@@ -1471,6 +1471,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
     private var allDays: [Date] = []
     private var allCountsAllValues: [Int] = []
     private var allCountsNSOnly: [Int] = []
+    private var unicornsByDay: [Date: Int] = [:]
 
 
     // Current selection
@@ -1657,15 +1658,47 @@ final class GlucoseStatsViewController: ThemedTableViewController {
                 countsNS.append(countsNSOnlyByDay[day] ?? 0)
             }
 
+            // Unicorn counts per day
+            let unicornsByDay = self.unicornCountsByDayFromSGVJSON(allSGV)
+
             await MainActor.run {
                 self.allDays = days
                 self.allCountsAllValues = countsAll
                 self.allCountsNSOnly = countsNS
                 self.allSensorErrorOutages = outages
+                self.unicornsByDay = unicornsByDay
 
                 // Apply initial period
                 self.applyPeriod(self.selectedPeriod)
             }
+        }
+    }
+    /// Counts "unicorn" readings (100 mg/dL ≈ 5.5 mmol/L) per day.
+    private func unicornCountsByDayFromSGVJSON(_ sgvs: [SGVJSON]) -> [Date: Int] {
+        let cal = Calendar.current
+        var counts: [Date: Int] = [:]
+
+        for e in sgvs {
+            // In SGVJSON, sgv is mg/dL. Unicorn = exactly 100 mg/dL.
+            guard e.sgv == 100 else { continue }
+            let date = Date(timeIntervalSince1970: e.date)
+            let dayStart = cal.startOfDay(for: date)
+            counts[dayStart, default: 0] += 1
+        }
+
+        return counts
+    }
+    // MARK: - Unicorn badge
+
+    /// Updates the 🦄 badge in the top-left corner based on the current period's total unicorn count.
+    private func updateUnicornBadge(for count: Int) {
+        if count > 0 {
+            let title = "🦄 \(count)"
+            let item = UIBarButtonItem(title: title, style: .plain, target: nil, action: nil)
+            item.isEnabled = false
+            navigationItem.leftBarButtonItem = item
+        } else {
+            navigationItem.leftBarButtonItem = nil
         }
     }
 
@@ -1924,6 +1957,10 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         let periodStart = cal.startOfDay(for: selectedDays.first ?? Date())
         let periodEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: selectedDays.last ?? Date())) ?? Date()
         self.selectedSensorErrorOutages = allSensorErrorOutages.filter { $0.noteDate >= periodStart && $0.noteDate < periodEnd }
+
+        // Unicorn count for the selected period (sum of per-day unicorns over selectedDays)
+        let unicornCount = selectedDays.reduce(0) { $0 + (unicornsByDay[$1] ?? 0) }
+        updateUnicornBadge(for: unicornCount)
 
         if selectedChartMode == .sensorErrors {
             updateSensorErrorChart()
