@@ -41,6 +41,10 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
     }()
 
     private let openedAt = Date() // snapshot when modal opened
+    
+    // Dexcom sensorfel outages (persisted cache, refreshed incrementally)
+    private var dexcomOutagesCache: [DexcomSensorErrorOutageCacheItem] = []
+    private var isRefreshingDexcomOutagesCache: Bool = false
 
     private let topSearchContainer: UIView = {
         let v = UIView()
@@ -61,6 +65,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        loadDexcomOutagesCacheAndRefreshIfNeeded()
         self.title = "Sensorlogg"
         updateBackgroundForCurrentMode()
         setupNavigationBar()
@@ -336,6 +341,224 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         var snippet = "\(prefix)\(days)d \(hours)h)"
         if !isOngoing && totalHours < 24 { snippet += " ⛔️" }
         return (snippet, color)
+    }
+    
+    // MARK: - Dexcom sensorfel cache + reklamations-alert
+
+    private func loadDexcomOutagesCacheAndRefreshIfNeeded() {
+        // Load persisted cache immediately so taps work without waiting
+        self.dexcomOutagesCache = Storage.shared.dexcomSensorErrorOutagesCache
+
+        // Kick an incremental refresh in the background
+        refreshDexcomOutagesCacheIfNeeded()
+    }
+
+    private func refreshDexcomOutagesCacheIfNeeded() {
+        guard !isRefreshingDexcomOutagesCache else { return }
+        isRefreshingDexcomOutagesCache = true
+
+        Task {
+            defer { self.isRefreshingDexcomOutagesCache = false }
+
+            let cal = Calendar.current
+            let now = Date()
+
+            // Keep up to 90 days (same as GlucoseView sensorfel retention)
+            let hardFloor = cal.date(byAdding: .day, value: -(90 - 1), to: cal.startOfDay(for: now)) ?? cal.startOfDay(for: now)
+
+            // Incremental refresh from last refreshed, with overlap so prev/next BG span resolves.
+            let overlap: TimeInterval = 12 * 3600
+            let last = Storage.shared.dexcomSensorErrorOutagesRefreshedAt
+            let start = max(hardFloor, (last ?? hardFloor).addingTimeInterval(-overlap))
+
+            // Load SGV + treatments window (same as GlucoseStatsViewController)
+            let (allSGV, allTreatments) = await NightscoutCache.loadWindow(from: start, to: now)
+
+            // Build outages from this window
+            let newItems = self.buildDexcomOutageItems(allSGV: allSGV, allTreatments: allTreatments, now: now)
+
+            await MainActor.run {
+                // Merge by noteTimestamp (latest computed wins)
+                var mergedByNote: [TimeInterval: DexcomSensorErrorOutageCacheItem] = [:]
+
+                // Existing persisted cache, but drop anything older than hardFloor
+                for item in Storage.shared.dexcomSensorErrorOutagesCache {
+                    if item.noteTimestamp >= hardFloor.timeIntervalSince1970 {
+                        mergedByNote[item.noteTimestamp] = item
+                    }
+                }
+
+                // Overwrite/insert from new window
+                for item in newItems {
+                    mergedByNote[item.noteTimestamp] = item
+                }
+
+                let merged = mergedByNote.values.sorted { $0.noteTimestamp > $1.noteTimestamp }
+
+                self.dexcomOutagesCache = merged
+                Storage.shared.dexcomSensorErrorOutagesCache = merged
+                Storage.shared.dexcomSensorErrorOutagesRefreshedAt = now
+            }
+        }
+    }
+
+    private func buildDexcomOutageItems(allSGV: [SGVJSON], allTreatments: [TreatmentJSON], now: Date) -> [DexcomSensorErrorOutageCacheItem] {
+        // BG timestamps sorted asc
+        let bgTimes: [Date] = allSGV
+            .map { Date(timeIntervalSince1970: $0.date) }
+            .sorted()
+
+        // Filter Dexcom Notes
+        let dexcomTreatJSON = allTreatments.filter { tjson in
+            tjson.eventType == "Note" && (tjson.notes?.localizedCaseInsensitiveContains("Dexcom") ?? false)
+        }
+
+        // Convert to Treatment (same mapping style as GlucoseView)
+        let dexcomNotes: [Treatment] = dexcomTreatJSON.compactMap { tjson in
+            Treatment(dictionary: [
+                "_id":       tjson._id as AnyObject,
+                "eventType": tjson.eventType as AnyObject,
+                "enteredBy": tjson.enteredBy as AnyObject,
+                "created_at": ISO8601DateFormatter().string(from: tjson.created_at) as AnyObject,
+                "rate":      tjson.rate as AnyObject,
+                "absolute":  tjson.absolute as AnyObject,
+                "insulin":   tjson.insulin as AnyObject,
+                "carbs":     tjson.carbs as AnyObject,
+                "amount":    tjson.amount as AnyObject,
+                "foodType":  tjson.foodType as AnyObject,
+                "notes":     tjson.notes as AnyObject,
+                "glucose":   tjson.glucose as AnyObject,
+                "units":     tjson.units as AnyObject,
+                "duration":  tjson.tempBasalDuration as AnyObject
+            ])
+        }
+        .sorted { $0.timestamp < $1.timestamp }
+
+        var items: [DexcomSensorErrorOutageCacheItem] = []
+        items.reserveCapacity(dexcomNotes.count)
+
+        var lastSpanKey: String?
+
+        for note in dexcomNotes {
+            let prev = nearestBG(before: note.timestamp, in: bgTimes)
+            let next = nearestBG(after: note.timestamp, in: bgTimes)
+
+            let prevKey = prev?.timeIntervalSince1970 ?? -1
+            let nextKey = next?.timeIntervalSince1970 ?? -1
+            let spanKey = "\(prevKey)-\(nextKey)"
+
+            // Same prev/next span => same outage => keep only first
+            if spanKey == lastSpanKey { continue }
+            lastSpanKey = spanKey
+
+            let startTime = (prev ?? note.timestamp)
+            let endTime = (next ?? now)
+
+            items.append(
+                DexcomSensorErrorOutageCacheItem(
+                    noteTimestamp: note.timestamp.timeIntervalSince1970,
+                    startTimestamp: startTime.timeIntervalSince1970,
+                    endTimestamp: endTime.timeIntervalSince1970
+                )
+            )
+        }
+
+        // Newest first
+        return items.sorted { $0.noteTimestamp > $1.noteTimestamp }
+    }
+
+    private func nearestBG(before date: Date, in bgTimes: [Date]) -> Date? {
+        guard !bgTimes.isEmpty else { return nil }
+        var lo = 0
+        var hi = bgTimes.count - 1
+        var result: Date?
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = bgTimes[mid]
+            if d < date {
+                result = d
+                lo = mid + 1
+            } else {
+                hi = mid - 1
+            }
+        }
+        return result
+    }
+
+    private func nearestBG(after date: Date, in bgTimes: [Date]) -> Date? {
+        guard !bgTimes.isEmpty else { return nil }
+        var lo = 0
+        var hi = bgTimes.count - 1
+        var result: Date?
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = bgTimes[mid]
+            if d > date {
+                result = d
+                hi = mid - 1
+            } else {
+                lo = mid + 1
+            }
+        }
+        return result
+    }
+
+    private func formatTotalDuration(minutes totalMin: Int?) -> String {
+        guard let totalMin = totalMin else { return "--" }
+        let h = totalMin / 60
+        let m = totalMin % 60
+        if h > 0 { return "\(h) h \(m) min" }
+        return "\(m) min"
+    }
+
+    private func showSensorErrorAlert(countText: String, durationText: String) {
+        let message = "\nAntal: \(countText)\nTotal tid: \(durationText)"
+        let alert = UIAlertController(title: "Sensorfel", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+
+        // Ensure refresh is in flight so next tap is even more up-to-date
+        refreshDexcomOutagesCacheIfNeeded()
+
+        let entry = currentHistory()[indexPath.row]
+
+        // Use master list (sorted desc) to define the session window
+        guard let masterIndex = sensorHistory.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) else {
+            showSensorErrorAlert(countText: "-- st", durationText: "--")
+            return
+        }
+
+        let sessionStart = Date(timeIntervalSince1970: sensorHistory[masterIndex].date)
+        let sessionEnd: Date
+        if masterIndex == 0 {
+            // Ongoing session
+            sessionEnd = Date()
+        } else {
+            // Next newer sensor activation is the row above
+            sessionEnd = Date(timeIntervalSince1970: sensorHistory[masterIndex - 1].date)
+        }
+
+        let startTs = sessionStart.timeIntervalSince1970
+        let endTs = sessionEnd.timeIntervalSince1970
+
+        // Outages whose NOTE happened within this session window
+        let relevant = dexcomOutagesCache.filter { $0.noteTimestamp >= startTs && $0.noteTimestamp < endTs }
+
+        guard !relevant.isEmpty else {
+            showSensorErrorAlert(countText: "-- st", durationText: "--")
+            return
+        }
+
+        let count = relevant.count
+        let totalMinutes = relevant.reduce(0) { acc, item in
+            acc + max(0, Int(round((item.endTimestamp - item.startTimestamp) / 60.0)))
+        }
+
+        showSensorErrorAlert(countText: "\(count) st", durationText: formatTotalDuration(minutes: totalMinutes))
     }
 
     // MARK: - Swipe to Edit/Delete

@@ -95,6 +95,16 @@ struct SensorStartHistoryEntry: Codable, Equatable {
     }
 }
 
+// Dexcom sensor error outage cache item (derived from Note + SGV span)
+struct DexcomSensorErrorOutageCacheItem: Codable, Equatable {
+    /// The Dexcom Note timestamp (seconds since 1970)
+    var noteTimestamp: TimeInterval
+    /// Outage start time (seconds since 1970)
+    var startTimestamp: TimeInterval
+    /// Outage end time (seconds since 1970)
+    var endTimestamp: TimeInterval
+}
+
 struct PumpChangeHistoryEntry: Codable, Equatable {
     /// Unix timestamp (seconds since 1970) for when the pump was changed.
     var date: TimeInterval
@@ -157,6 +167,36 @@ extension Storage {
                 )
             }
         }
+    }
+    
+    // MARK: - Dexcom sensorfel outage cache (for reklamationer)
+
+    var dexcomSensorErrorOutagesCache: [DexcomSensorErrorOutageCacheItem] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "dexcomSensorErrorOutagesCache") else {
+                return []
+            }
+            do {
+                return try JSONDecoder().decode([DexcomSensorErrorOutageCacheItem].self, from: storedData)
+            } catch {
+                LogManager.shared.log(category: .dexcom, message: "Failed to decode dexcomSensorErrorOutagesCache, resetting: \(error)")
+                UserDefaults.standard.removeObject(forKey: "dexcomSensorErrorOutagesCache")
+                return []
+            }
+        }
+        set {
+            do {
+                let encodedData = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encodedData, forKey: "dexcomSensorErrorOutagesCache")
+            } catch {
+                LogManager.shared.log(category: .dexcom, message: "Failed to encode dexcomSensorErrorOutagesCache: \(error)")
+            }
+        }
+    }
+
+    var dexcomSensorErrorOutagesRefreshedAt: Date? {
+        get { UserDefaults.standard.object(forKey: "dexcomSensorErrorOutagesRefreshedAt") as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: "dexcomSensorErrorOutagesRefreshedAt") }
     }
 }
 
