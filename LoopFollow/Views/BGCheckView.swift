@@ -1,18 +1,18 @@
 import UIKit
 import Charts
 
+struct BGCheckEntry {
+    let date: Date
+    let mmol: Double
+    let hasDextroNearby: Bool
+    let cgm10mMmol: Double?
+    let delta10m: Double?
+}
+
 /// Enkel loggvy för fingerstick / BG Check, inspirerad av GlucoseView.
 final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
 
     // MARK: - Model
-
-    struct BGCheckEntry {
-        let date: Date
-        let mmol: Double
-        let hasDextroNearby: Bool
-        let cgm10mMmol: Double?
-        let delta10m: Double?
-    }
 
     private struct BGPoint {
         let date: Date
@@ -157,6 +157,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             days: days,
             counts: counts,
             dextroCounts: dextroCounts,
+            bgCheckEntries: entries,
             bgCheckDates: bgCheckDates,
             bgCheckDextroDates: bgCheckDextroDates
         )
@@ -479,6 +480,7 @@ final class BGCheckStatsViewController: ThemedTableViewController {
     private let allDextroCounts: [Int]
     private let allBGCheckDates: [Date]
     private let allBGCheckDextroDates: [Date]
+    private let allBGCheckEntries: [BGCheckEntry]
 
     // Aktuell vy (styrd av segmented control)
     private var selectedDays: [Date] = []
@@ -486,6 +488,7 @@ final class BGCheckStatsViewController: ThemedTableViewController {
     private var selectedDextroCounts: [Int] = []
     private var selectedBGCheckDates: [Date] = []
     private var selectedBGCheckDextroDates: [Date] = []
+    private var selectedBGCheckEntries: [BGCheckEntry] = []
 
     private enum PeriodOption: CaseIterable {
         case d7, d14, d30, d90
@@ -576,12 +579,13 @@ final class BGCheckStatsViewController: ThemedTableViewController {
         return v
     }()
 
-    init(days: [Date], counts: [Int], dextroCounts: [Int], bgCheckDates: [Date], bgCheckDextroDates: [Date]) {
+    init(days: [Date], counts: [Int], dextroCounts: [Int], bgCheckEntries: [BGCheckEntry], bgCheckDates: [Date], bgCheckDextroDates: [Date]) {
         self.allDays = days
         self.allCounts = counts
         self.allDextroCounts = dextroCounts
         self.allBGCheckDates = bgCheckDates
         self.allBGCheckDextroDates = bgCheckDextroDates
+        self.allBGCheckEntries = bgCheckEntries
         super.init(style: .insetGrouped)
     }
 
@@ -629,9 +633,13 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             selectedBGCheckDextroDates = allBGCheckDextroDates
                 .filter { $0 >= start && $0 < end }
                 .sorted()
+            selectedBGCheckEntries = allBGCheckEntries
+                .filter { $0.date >= start && $0.date < end }
+                .sorted { $0.date < $1.date }
         } else {
             selectedBGCheckDates = []
             selectedBGCheckDextroDates = []
+            selectedBGCheckEntries = []
         }
 
         loadChartData()
@@ -982,6 +990,20 @@ final class BGCheckStatsViewController: ThemedTableViewController {
     private var totalSticks: Int { selectedCounts.reduce(0, +) }
     private var totalDextroSticks: Int { selectedDextroCounts.reduce(0, +) }
     private var maxSticksPerDay: Int { selectedCounts.max() ?? 0 }
+    private var meanCgm10mDelta: Double? {
+        let deltas = selectedBGCheckEntries.compactMap { $0.delta10m }
+        guard !deltas.isEmpty else { return nil }
+        return deltas.reduce(0, +) / Double(deltas.count)
+    }
+    private let deltaFormatter: NumberFormatter = {
+        let nf = NumberFormatter()
+        nf.locale = Locale(identifier: "sv_SE")
+        nf.minimumFractionDigits = 1
+        nf.maximumFractionDigits = 1
+        nf.positivePrefix = "+"
+        nf.negativePrefix = "-"
+        return nf
+    }()
 
     private func longestStreakWithoutSticks() -> Int {
         var best = 0
@@ -1013,6 +1035,7 @@ final class BGCheckStatsViewController: ThemedTableViewController {
         case maxPerStickDay
         case longestNoStickStreak
         case dextroShare
+        case meanCgm10mDelta
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -1077,6 +1100,14 @@ final class BGCheckStatsViewController: ThemedTableViewController {
             cell.textLabel?.text = "Andel stick ⇢ 🍬"
             if totalSticks > 0 {
                 cell.detailTextLabel?.text = percentageString(totalDextroSticks, totalSticks)
+            } else {
+                cell.detailTextLabel?.text = "–"
+            }
+        case .meanCgm10mDelta:
+            cell.textLabel?.text = "CGM (+10m) medel Δ"
+            if let mean = meanCgm10mDelta {
+                let s = deltaFormatter.string(from: NSNumber(value: mean)) ?? String(format: "%+.1f", mean)
+                cell.detailTextLabel?.text = "\(s) mmol/L"
             } else {
                 cell.detailTextLabel?.text = "–"
             }
