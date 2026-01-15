@@ -65,7 +65,6 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        loadDexcomOutagesCacheAndRefreshIfNeeded()
         self.title = "Sensorlogg"
         updateBackgroundForCurrentMode()
         setupNavigationBar()
@@ -88,6 +87,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         tableView.backgroundView = nil
         tableView.isOpaque = false
         loadSensorHistory()
+        loadDexcomOutagesCacheAndRefreshIfNeeded()
     }
 
     private func installPinnedSearchBar() {
@@ -287,19 +287,29 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
         cell.textLabel?.attributedText = composed
         cell.textLabel?.numberOfLines = 0
-        
+
         // Transparent cell so the themed gradient shows through
         cell.backgroundColor = .clear
         cell.contentView.backgroundColor = .clear
         cell.backgroundView = nil
+
+        // IMPORTANT: Disable iOS 14+ backgroundConfiguration completely,
+        // otherwise UITableView injects a default gray background and kills the gradient.
         if #available(iOS 14.0, *) {
-            var bg = UIBackgroundConfiguration.clear()
-            bg.backgroundColor = .clear
-            cell.backgroundConfiguration = bg
+            cell.backgroundConfiguration = nil
         }
+
         cell.textLabel?.backgroundColor = .clear
         cell.detailTextLabel?.backgroundColor = .clear
-        
+
+        // Match Treatments-style selection highlight (subtle overlay over the gradient)
+        cell.selectionStyle = .default
+        let selected = UIView()
+        selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
+        selected.layer.cornerRadius = 10
+        selected.layer.masksToBounds = true
+        cell.selectedBackgroundView = selected
+
         return cell
     }
 
@@ -339,7 +349,17 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
         let prefix = isOngoing ? " (Pågående: " : " (Session: "
         var snippet = "\(prefix)\(days)d \(hours)h)"
+
+        // Mark very short past sessions
         if !isOngoing && totalHours < 24 { snippet += " ⛔️" }
+
+        // Append warning if this sensor session has identified Dexcom sensorfel
+        let startTs = currentStart.timeIntervalSince1970
+        let endTs = endDate.timeIntervalSince1970
+        if dexcomOutagesCache.contains(where: { $0.noteTimestamp >= startTs && $0.noteTimestamp < endTs }) {
+            snippet += " ⚠️"
+        }
+
         return (snippet, color)
     }
     
@@ -511,16 +531,53 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         return "\(m) min"
     }
 
-    private func showSensorErrorAlert(countText: String, durationText: String) {
-        let message = "\nAntal: \(countText)\nTotal tid: \(durationText)"
-        let alert = UIAlertController(title: "Sensorfel", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+    private func parsedSensorName(fromNote note: String) -> String? {
+        let cleaned = note
+            .replacingOccurrences(of: "+0000", with: "")
+            .replacingOccurrences(of: "  ", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let trimmed = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(6))
+    }
+
+    private func showSensorErrorAlert(indexPath: IndexPath, sensorName: String?, countText: String, durationText: String, averageText: String?) {
+        var message = "\nAntal sensorfel:     \(countText)\nTotal tid med fel:   \(durationText)"
+        if let averageText = averageText {
+            message += "\nMedel tid per fel:   \(averageText)"
+        }
+
+        let suffix: String
+        if let sensorName = sensorName, !sensorName.isEmpty {
+            suffix = " (\(sensorName))"
+        } else {
+            suffix = ""
+        }
+
+        let alert = UIAlertController(title: "⚠️ Sensorfel\(suffix)", message: message, preferredStyle: .alert)
+
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
+            guard let self = self else { return }
+
+            // Fade out the selection overlay, then deselect.
+            if let cell = self.tableView.cellForRow(at: indexPath) {
+                let overlay = cell.selectedBackgroundView
+                UIView.animate(withDuration: 0.18, animations: {
+                    overlay?.alpha = 0
+                }, completion: { _ in
+                    self.tableView.deselectRow(at: indexPath, animated: true)
+                    overlay?.alpha = 1
+                })
+            } else {
+                self.tableView.deselectRow(at: indexPath, animated: true)
+            }
+        }))
+
         present(alert, animated: true)
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-
         // Ensure refresh is in flight so next tap is even more up-to-date
         refreshDexcomOutagesCacheIfNeeded()
 
@@ -528,7 +585,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
         // Use master list (sorted desc) to define the session window
         guard let masterIndex = sensorHistory.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) else {
-            showSensorErrorAlert(countText: "-- st", durationText: "--")
+            showSensorErrorAlert(indexPath: indexPath, sensorName: parsedSensorName(fromNote: entry.note), countText: "-- st", durationText: "--", averageText: nil)
             return
         }
 
@@ -549,7 +606,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         let relevant = dexcomOutagesCache.filter { $0.noteTimestamp >= startTs && $0.noteTimestamp < endTs }
 
         guard !relevant.isEmpty else {
-            showSensorErrorAlert(countText: "-- st", durationText: "--")
+            showSensorErrorAlert(indexPath: indexPath, sensorName: parsedSensorName(fromNote: entry.note), countText: "-- st", durationText: "--", averageText: nil)
             return
         }
 
@@ -557,8 +614,15 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         let totalMinutes = relevant.reduce(0) { acc, item in
             acc + max(0, Int(round((item.endTimestamp - item.startTimestamp) / 60.0)))
         }
-
-        showSensorErrorAlert(countText: "\(count) st", durationText: formatTotalDuration(minutes: totalMinutes))
+        let averageMinutes = count > 0 ? totalMinutes / count : 0
+        let averageText = count > 0 ? "\(averageMinutes) min" : "--"
+        showSensorErrorAlert(
+            indexPath: indexPath,
+            sensorName: parsedSensorName(fromNote: entry.note),
+            countText: "\(count) st",
+            durationText: formatTotalDuration(minutes: totalMinutes),
+            averageText: averageText
+        )
     }
 
     // MARK: - Swipe to Edit/Delete

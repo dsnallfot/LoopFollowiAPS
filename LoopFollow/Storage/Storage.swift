@@ -103,6 +103,8 @@ struct DexcomSensorErrorOutageCacheItem: Codable, Equatable {
     var startTimestamp: TimeInterval
     /// Outage end time (seconds since 1970)
     var endTimestamp: TimeInterval
+    var notesText: String?
+    var enteredBy: String?
 }
 
 struct PumpChangeHistoryEntry: Codable, Equatable {

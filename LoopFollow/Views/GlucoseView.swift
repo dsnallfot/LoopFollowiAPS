@@ -1255,51 +1255,44 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     }
     
     private func loadSensorErrorRowsFromCache() -> [GlucoseRow] {
-        guard let data = UserDefaults.standard.data(forKey: sensorErrorCacheRowsKey) else { return [] }
-        guard let items = try? JSONDecoder().decode([SensorErrorCacheItem].self, from: data) else { return [] }
-
-        return items.compactMap { item in
-            let dict: [String: AnyObject] = [
-                "_id": (item.id ?? "") as AnyObject,
-                "eventType": "Note" as AnyObject,
-                "enteredBy": (item.enteredBy ?? "") as AnyObject,
-                "created_at": ISO8601DateFormatter().string(from: Date(timeIntervalSince1970: item.noteTimestamp)) as AnyObject,
-                "notes": (item.notes ?? "") as AnyObject
-            ]
-
-            guard let t = Treatment(dictionary: dict) else { return nil }
-
-            return .sensorError(
-                date: Date(timeIntervalSince1970: item.noteTimestamp),
-                durationMinutes: item.durationMinutes,
-                note: t
-            )
-        }
+        // Read shared cache from Storage
+        let items = Storage.shared.dexcomSensorErrorOutagesCache
+        return glucoseRowsFromOutageItems(items)
     }
 
-    private func saveSensorErrorRowsToCache(_ rows: [GlucoseRow], refreshedAt: Date) {
-        let items: [SensorErrorCacheItem] = rows.compactMap { row in
-            guard case .sensorError(let date, let duration, let note) = row else { return nil }
-            return SensorErrorCacheItem(
-                id: note.rawData["_id"] as? String,
-                noteTimestamp: date.timeIntervalSince1970,
-                durationMinutes: duration,
-                notes: note.rawData["notes"] as? String,
-                enteredBy: note.rawData["enteredBy"] as? String
-            )
-        }
+    private func glucoseRowsFromOutageItems(_ items: [DexcomSensorErrorOutageCacheItem]) -> [GlucoseRow] {
+        // Convert shared cache items to GlucoseRow.sensorError for the table.
+        return items
+            .sorted { $0.noteTimestamp > $1.noteTimestamp }
+            .compactMap { item in
+                let noteDate = Date(timeIntervalSince1970: item.noteTimestamp)
+                let start = Date(timeIntervalSince1970: item.startTimestamp)
+                let end = Date(timeIntervalSince1970: item.endTimestamp)
+                let minutes = max(0, Int(round(end.timeIntervalSince(start) / 60.0)))
 
-        if let data = try? JSONEncoder().encode(items) {
-            UserDefaults.standard.set(data, forKey: sensorErrorCacheRowsKey)
-        }
-        UserDefaults.standard.set(refreshedAt.timeIntervalSince1970, forKey: sensorErrorCacheLastRefreshKey)
+                // Create minimal Treatment so existing alert logic can reuse note.rawData["notes"/"enteredBy"].
+                var raw: [String: AnyObject] = [
+                    "eventType": "Note" as AnyObject,
+                    "created_at": ISO8601DateFormatter().string(from: noteDate) as AnyObject
+                ]
+                if let notes = item.notesText {
+                    raw["notes"] = notes as AnyObject
+                }
+                if let enteredBy = item.enteredBy {
+                    raw["enteredBy"] = enteredBy as AnyObject
+                }
+
+                guard let t = Treatment(dictionary: raw) else { return nil }
+
+                return .sensorError(
+                    date: noteDate,
+                    durationMinutes: minutes,
+                    note: t
+                )
+            }
     }
 
-    private func sensorErrorLastRefreshDate() -> Date? {
-        let ts = UserDefaults.standard.double(forKey: sensorErrorCacheLastRefreshKey)
-        guard ts > 0 else { return nil }
-        return Date(timeIntervalSince1970: ts)
-    }
+    // (saveSensorErrorRowsToCache and sensorErrorLastRefreshDate removed; no longer used)
 
     /// Loads a 90-day list of Dexcom sensor error Notes and computes duration based on nearest BGs.
     private func loadSensorErrors90Days() async {
@@ -1309,12 +1302,11 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         let hardFloor = cal.date(byAdding: .day, value: -sensorErrorLookbackDays, to: now) ?? now.addingTimeInterval(-90 * 86400)
         let overlap: TimeInterval = 6 * 3600
 
-        // If the cache is empty or suspiciously small, rebuild from the full 90-day window.
-        // This recovers automatically if a previous incremental refresh accidentally overwrote the cache.
-        let cachedRows = self.loadSensorErrorRowsFromCache()
+        // Use shared Storage cache for incremental refresh.
+        let cachedItems = Storage.shared.dexcomSensorErrorOutagesCache
         let start: Date
 
-        if cachedRows.count >= 3, let last = sensorErrorLastRefreshDate() {
+        if cachedItems.count >= 3, let last = Storage.shared.dexcomSensorErrorOutagesRefreshedAt {
             start = max(hardFloor, last.addingTimeInterval(-overlap))
         } else {
             start = hardFloor
@@ -1352,9 +1344,9 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         }
         .sorted { $0.timestamp < $1.timestamp }
 
-        // Build outage intervals and dedupe multiple notes inside the same [prevBG,nextBG] span
-        var rows: [GlucoseRow] = []
-        rows.reserveCapacity(dexcomNotes.count)
+        // Build outage intervals (cache items) and dedupe multiple notes inside the same [prevBG,nextBG] span
+        var outageItems: [DexcomSensorErrorOutageCacheItem] = []
+        outageItems.reserveCapacity(dexcomNotes.count)
 
         var lastSpanKey: String?
 
@@ -1374,44 +1366,51 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
 
             let startTime = prev ?? note.timestamp
             let endTime = next ?? now
-            let minutes = max(0, Int(round(endTime.timeIntervalSince(startTime) / 60.0)))
 
-            rows.append(.sensorError(date: note.timestamp, durationMinutes: minutes, note: note))
+            let notesText = note.rawData["notes"] as? String
+            let enteredBy = note.rawData["enteredBy"] as? String
+
+            outageItems.append(
+                DexcomSensorErrorOutageCacheItem(
+                    noteTimestamp: note.timestamp.timeIntervalSince1970,
+                    startTimestamp: startTime.timeIntervalSince1970,
+                    endTimestamp: endTime.timeIntervalSince1970,
+                    notesText: notesText,
+                    enteredBy: enteredBy
+                )
+            )
         }
 
         // Newest first (from the fetched window)
-        let newestFirst = rows.sorted { $0.date > $1.date }
+        let newestItems = outageItems.sorted { $0.noteTimestamp > $1.noteTimestamp }
 
         await MainActor.run {
-            // If this was an incremental refresh (start > hardFloor), preserve older cached rows.
-            var combined: [GlucoseRow] = newestFirst
+            // Merge by noteTimestamp (latest computed wins), keep only within retention.
+            var mergedByNote: [TimeInterval: DexcomSensorErrorOutageCacheItem] = [:]
 
-            if start > hardFloor {
-                let cached = cachedRows
-
-                // Keep only cached rows that are older than the fetch window (or not duplicated)
-                var seen = Set<Double>()
-                for r in newestFirst {
-                    if case .sensorError(let d, _, _) = r {
-                        seen.insert(d.timeIntervalSince1970)
-                    }
-                }
-
-                let preservedOlder: [GlucoseRow] = cached.filter { r in
-                    guard case .sensorError(let d, _, _) = r else { return false }
-                    return d < start && !seen.contains(d.timeIntervalSince1970)
-                }
-
-                combined.append(contentsOf: preservedOlder)
-                combined.sort { $0.date > $1.date }
+            // Start with existing cache, drop anything older than hardFloor
+            let floorTS = hardFloor.timeIntervalSince1970
+            for item in cachedItems where item.noteTimestamp >= floorTS {
+                mergedByNote[item.noteTimestamp] = item
             }
 
-            self.sensorErrorRows = combined
-            self.saveSensorErrorRowsToCache(combined, refreshedAt: now)
+            // Overwrite/insert latest computed items
+            for item in newestItems {
+                mergedByNote[item.noteTimestamp] = item
+            }
+
+            let merged = mergedByNote.values.sorted { $0.noteTimestamp > $1.noteTimestamp }
+
+            // Persist shared cache
+            Storage.shared.dexcomSensorErrorOutagesCache = merged
+            Storage.shared.dexcomSensorErrorOutagesRefreshedAt = now
+
+            // Drive UI rows from shared cache
+            self.sensorErrorRows = self.glucoseRowsFromOutageItems(merged)
             self.tableView.reloadData()
 
             // Stats label: count
-            self.statsLabel.text = "Antal sensorfel: \(combined.count) st (90d)   "
+            self.statsLabel.text = "Antal sensorfel: \(merged.count) st (90d)   "
             self.hideRefreshIndicator()
         }
     }
