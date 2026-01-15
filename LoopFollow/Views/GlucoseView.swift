@@ -24,6 +24,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     private enum GlucoseDataMode {
         case allValues      // Dexcom + Nightscout merged (ordinary BG cache)
         case nsOnly         // Only Trio → Nightscout uploads (NS-only cache)
+        case sensorErrors   // Dexcom sensor error Notes (90d list)
     }
 
     /// Why a 5‑min slot is missing.
@@ -60,7 +61,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     }()
 
     private let modeSegmentedControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["Alla Dexcomvärden", "Uppladdningar Trio ⇢ NS"])
+        let sc = UISegmentedControl(items: ["Dexcomvärden", "Trio ⇢ NS", "Sensorfel"])
         sc.selectedSegmentIndex = 1
         sc.translatesAutoresizingMaskIntoConstraints = false
         return sc
@@ -71,15 +72,31 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     // Toggle to show only missing rows
     private var showOnlyMissingGlucose: Bool = false
 
+    // Sensor error rows (90 days)
+    private var sensorErrorRows: [GlucoseRow] = []
+    private let sensorErrorLookbackDays: Int = 90
+    private let sensorErrorCacheRowsKey = "GlucoseViewSensorErrorCacheRows"
+    private let sensorErrorCacheLastRefreshKey = "GlucoseViewSensorErrorCacheLastRefresh"
+
+    private struct SensorErrorCacheItem: Codable {
+        var id: String?
+        var noteTimestamp: TimeInterval
+        var durationMinutes: Int
+        var notes: String?
+        var enteredBy: String?
+    }
+
     /// Row model for the table
     private enum GlucoseRow {
         case glucose(BGEntry)
         case missing(Date, MissingReason)
+        case sensorError(date: Date, durationMinutes: Int, note: Treatment)
 
         var date: Date {
             switch self {
             case .glucose(let e): return e.date
             case .missing(let d, _): return d
+            case .sensorError(let d, _, _): return d
             }
         }
 
@@ -110,6 +127,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
 
     // Build per-day rows, inserting missing 5‑min slots when gaps exceed ~6 minutes.
     private var dayRowsIncludingMissing: [GlucoseRow] {
+        if dataMode == .sensorErrors { return [] }
         let cal = Calendar.current
         let start = cal.startOfDay(for: selectedDate)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return [] }
@@ -120,6 +138,8 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             baseEntries = allValuesDayEntries
         case .nsOnly:
             baseEntries = nsOnlyDayEntries
+        case .sensorErrors:
+            return []
         }
 
         let dayEntriesAsc = baseEntries
@@ -195,6 +215,10 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     }
 
     private var filteredRows: [GlucoseRow] {
+        if dataMode == .sensorErrors {
+            return sensorErrorRows
+        }
+
         let rows = dayRowsIncludingMissing
         if showOnlyMissingGlucose {
             let missing = rows.filter { $0.isMissing }
@@ -641,6 +665,9 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
                     self.bgEntries = nsOnlyDay
                 case .allValues:
                     self.bgEntries = allDay
+                case .sensorErrors:
+                    // Sensorfel-läget använder egen datakälla (sensorErrorRows)
+                    self.bgEntries = []
                 }
 
                 self.tableView.reloadData()
@@ -651,9 +678,46 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     }
 
     @objc private func modeChanged(_ sender: UISegmentedControl) {
-        dataMode = sender.selectedSegmentIndex == 0 ? .allValues : .nsOnly
-        loadBG(for: selectedDate)
-        updateStatsLabel()
+        switch sender.selectedSegmentIndex {
+        case 0:
+            dataMode = .allValues
+        case 1:
+            dataMode = .nsOnly
+        default:
+            dataMode = .sensorErrors
+        }
+
+        // UI tweaks for Sensorfel mode
+        let isSensorErrors = (dataMode == .sensorErrors)
+        datePicker.isHidden = isSensorErrors
+        showOnlyMissingGlucose = false
+
+        // Disable the missing-only filter button when showing Sensorfel list
+        if let filterButton = navigationItem.leftBarButtonItems?.last {
+            filterButton.isEnabled = !isSensorErrors
+            filterButton.tintColor = isSensorErrors ? .secondaryLabel : .label
+            filterButton.image = UIImage(systemName: "line.3.horizontal.decrease.circle")
+        }
+
+        if isSensorErrors {
+
+            // Visa cached lista direkt (instant)
+            let cached = loadSensorErrorRowsFromCache()
+            if !cached.isEmpty {
+                sensorErrorRows = cached.sorted { $0.date > $1.date }
+                tableView.reloadData()
+                updateStatsLabel()
+            }
+
+            showRefreshIndicator()
+            Task {
+                await self.loadSensorErrors90Days()
+            }
+
+        } else {
+            loadBG(for: selectedDate)
+            updateStatsLabel()
+        }
     }
 
     private func showRefreshIndicator() {
@@ -706,6 +770,10 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     }
     
     private func updateStatsLabel() {
+        if dataMode == .sensorErrors {
+            statsLabel.text = "Sensorfel: \(sensorErrorRows.count) st"
+            return
+        }
         let cal = Calendar.current
         let start = cal.startOfDay(for: selectedDate)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else {
@@ -942,7 +1010,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
 
         // Latest note wins (persists across multiple missing 5-min slots)
         return candidates.max(by: { $0.timestamp < $1.timestamp })
-        }
+    }
 
     /// Hämtar en "Note"-treatment inom ett tidsfönster runt en timestamp och filtrerar på Dexcom.
     /// - Returns: Den närmast matchande noteringen (i tid) om någon hittas.
@@ -1100,8 +1168,20 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
                 }
                 cell.textLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
                 cell.detailTextLabel?.text = timeFormatter.string(from: date)
-
             }
+
+        case .sensorError(let date, let durationMinutes, _):
+            cell.textLabel?.text = "Sensorfel • \(durationMinutes) min"
+            cell.textLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "sv_SE")
+            df.dateFormat = "yyyy-MM-dd, HH:mm"
+            cell.detailTextLabel?.text = df.string(from: date)
+
+            let tint = UIColor.systemOrange.withAlphaComponent(0.15)
+            cell.backgroundColor = tint
+            cell.contentView.backgroundColor = tint
         }
 
         cell.accessoryType = .none
@@ -1111,6 +1191,33 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     // MARK: - UITableViewDelegate
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 44
+    }
+    
+    private func showExactDexcomNoteAlert(note: Treatment, durationMinutes: Int?, onDismiss: @escaping () -> Void) {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "dd MMM HH:mm:ss"
+
+        let titleTime = df.string(from: note.timestamp)
+        let fullNote = (note.rawData["notes"] as? String) ?? "(Ingen text)"
+
+        var msg = fullNote
+        if let durationMinutes = durationMinutes {
+            msg += "\n\nVaraktighet: \(durationMinutes) min"
+        }
+        if let enteredBy = note.rawData["enteredBy"] as? String, !enteredBy.isEmpty {
+            msg += "\nInlagt av: \(enteredBy)"
+        }
+
+        let alert = UIAlertController(
+            title: "\(titleTime)\n\nSensorfel",
+            message: msg,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+            onDismiss()
+        })
+        present(alert, animated: true)
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -1136,7 +1243,214 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
                     tableView.deselectRow(at: indexPath, animated: true)
                 }
             }
+
+        case .sensorError(_, let durationMinutes, let note):
+            showExactDexcomNoteAlert(note: note, durationMinutes: durationMinutes) {
+                DispatchQueue.main.async {
+                    tableView.deselectRow(at: indexPath, animated: true)
+                }
+            }
         }
+    }
+    
+    private func loadSensorErrorRowsFromCache() -> [GlucoseRow] {
+        guard let data = UserDefaults.standard.data(forKey: sensorErrorCacheRowsKey) else { return [] }
+        guard let items = try? JSONDecoder().decode([SensorErrorCacheItem].self, from: data) else { return [] }
+
+        return items.compactMap { item in
+            let dict: [String: AnyObject] = [
+                "_id": (item.id ?? "") as AnyObject,
+                "eventType": "Note" as AnyObject,
+                "enteredBy": (item.enteredBy ?? "") as AnyObject,
+                "created_at": ISO8601DateFormatter().string(from: Date(timeIntervalSince1970: item.noteTimestamp)) as AnyObject,
+                "notes": (item.notes ?? "") as AnyObject
+            ]
+
+            guard let t = Treatment(dictionary: dict) else { return nil }
+
+            return .sensorError(
+                date: Date(timeIntervalSince1970: item.noteTimestamp),
+                durationMinutes: item.durationMinutes,
+                note: t
+            )
+        }
+    }
+
+    private func saveSensorErrorRowsToCache(_ rows: [GlucoseRow], refreshedAt: Date) {
+        let items: [SensorErrorCacheItem] = rows.compactMap { row in
+            guard case .sensorError(let date, let duration, let note) = row else { return nil }
+            return SensorErrorCacheItem(
+                id: note.rawData["_id"] as? String,
+                noteTimestamp: date.timeIntervalSince1970,
+                durationMinutes: duration,
+                notes: note.rawData["notes"] as? String,
+                enteredBy: note.rawData["enteredBy"] as? String
+            )
+        }
+
+        if let data = try? JSONEncoder().encode(items) {
+            UserDefaults.standard.set(data, forKey: sensorErrorCacheRowsKey)
+        }
+        UserDefaults.standard.set(refreshedAt.timeIntervalSince1970, forKey: sensorErrorCacheLastRefreshKey)
+    }
+
+    private func sensorErrorLastRefreshDate() -> Date? {
+        let ts = UserDefaults.standard.double(forKey: sensorErrorCacheLastRefreshKey)
+        guard ts > 0 else { return nil }
+        return Date(timeIntervalSince1970: ts)
+    }
+
+    /// Loads a 90-day list of Dexcom sensor error Notes and computes duration based on nearest BGs.
+    private func loadSensorErrors90Days() async {
+        let cal = Calendar.current
+        let now = Date()
+
+        let hardFloor = cal.date(byAdding: .day, value: -sensorErrorLookbackDays, to: now) ?? now.addingTimeInterval(-90 * 86400)
+        let overlap: TimeInterval = 6 * 3600
+
+        // If the cache is empty or suspiciously small, rebuild from the full 90-day window.
+        // This recovers automatically if a previous incremental refresh accidentally overwrote the cache.
+        let cachedRows = self.loadSensorErrorRowsFromCache()
+        let start: Date
+
+        if cachedRows.count >= 3, let last = sensorErrorLastRefreshDate() {
+            start = max(hardFloor, last.addingTimeInterval(-overlap))
+        } else {
+            start = hardFloor
+        }
+        // Load a single wide window from the merged cache (includes Dexcom + NS values) + treatments.
+        let (sgvJSON, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: now)
+
+        // Convert BG points (we only need timestamps)
+        let bgTimes: [Date] = sgvJSON
+            .map { Date(timeIntervalSince1970: $0.date) }
+            .sorted()
+
+        // Filter Dexcom Notes first to reduce mapping work
+        let dexcomTreatJSON = treatsJSON.filter { tjson in
+            tjson.eventType == "Note" && (tjson.notes?.localizedCaseInsensitiveContains("Dexcom") ?? false)
+        }
+
+        let dexcomNotes: [Treatment] = dexcomTreatJSON.compactMap { tjson in
+            Treatment(dictionary: [
+                "_id":       tjson._id as AnyObject,
+                "eventType": tjson.eventType as AnyObject,
+                "enteredBy": tjson.enteredBy as AnyObject,
+                "created_at": ISO8601DateFormatter().string(from: tjson.created_at) as AnyObject,
+                "rate":      tjson.rate as AnyObject,
+                "absolute":  tjson.absolute as AnyObject,
+                "insulin":   tjson.insulin as AnyObject,
+                "carbs":     tjson.carbs as AnyObject,
+                "amount":    tjson.amount as AnyObject,
+                "foodType":  tjson.foodType as AnyObject,
+                "notes":     tjson.notes as AnyObject,
+                "glucose":   tjson.glucose as AnyObject,
+                "units":     tjson.units as AnyObject,
+                "duration":  tjson.tempBasalDuration as AnyObject
+            ])
+        }
+        .sorted { $0.timestamp < $1.timestamp }
+
+        // Build outage intervals and dedupe multiple notes inside the same [prevBG,nextBG] span
+        var rows: [GlucoseRow] = []
+        rows.reserveCapacity(dexcomNotes.count)
+
+        var lastSpanKey: String?
+
+        for note in dexcomNotes {
+            let prev = nearestBG(before: note.timestamp, in: bgTimes)
+            let next = nearestBG(after: note.timestamp, in: bgTimes)
+
+            // Span key: same prev/next => same outage, only keep first
+            let prevKey = prev?.timeIntervalSince1970 ?? -1
+            let nextKey = next?.timeIntervalSince1970 ?? -1
+            let spanKey = "\(prevKey)-\(nextKey)"
+
+            if spanKey == lastSpanKey {
+                continue
+            }
+            lastSpanKey = spanKey
+
+            let startTime = prev ?? note.timestamp
+            let endTime = next ?? now
+            let minutes = max(0, Int(round(endTime.timeIntervalSince(startTime) / 60.0)))
+
+            rows.append(.sensorError(date: note.timestamp, durationMinutes: minutes, note: note))
+        }
+
+        // Newest first (from the fetched window)
+        let newestFirst = rows.sorted { $0.date > $1.date }
+
+        await MainActor.run {
+            // If this was an incremental refresh (start > hardFloor), preserve older cached rows.
+            var combined: [GlucoseRow] = newestFirst
+
+            if start > hardFloor {
+                let cached = cachedRows
+
+                // Keep only cached rows that are older than the fetch window (or not duplicated)
+                var seen = Set<Double>()
+                for r in newestFirst {
+                    if case .sensorError(let d, _, _) = r {
+                        seen.insert(d.timeIntervalSince1970)
+                    }
+                }
+
+                let preservedOlder: [GlucoseRow] = cached.filter { r in
+                    guard case .sensorError(let d, _, _) = r else { return false }
+                    return d < start && !seen.contains(d.timeIntervalSince1970)
+                }
+
+                combined.append(contentsOf: preservedOlder)
+                combined.sort { $0.date > $1.date }
+            }
+
+            self.sensorErrorRows = combined
+            self.saveSensorErrorRowsToCache(combined, refreshedAt: now)
+            self.tableView.reloadData()
+
+            // Stats label: count
+            self.statsLabel.text = "Sensorfel: \(combined.count) st"
+            self.hideRefreshIndicator()
+        }
+    }
+
+    private func nearestBG(before date: Date, in bgTimes: [Date]) -> Date? {
+        guard !bgTimes.isEmpty else { return nil }
+        // bgTimes is sorted asc
+        var lo = 0
+        var hi = bgTimes.count - 1
+        var result: Date?
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = bgTimes[mid]
+            if d < date {
+                result = d
+                lo = mid + 1
+            } else {
+                hi = mid - 1
+            }
+        }
+        return result
+    }
+
+    private func nearestBG(after date: Date, in bgTimes: [Date]) -> Date? {
+        guard !bgTimes.isEmpty else { return nil }
+        // bgTimes is sorted asc
+        var lo = 0
+        var hi = bgTimes.count - 1
+        var result: Date?
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = bgTimes[mid]
+            if d > date {
+                result = d
+                hi = mid - 1
+            } else {
+                lo = mid + 1
+            }
+        }
+        return result
     }
 }
 
