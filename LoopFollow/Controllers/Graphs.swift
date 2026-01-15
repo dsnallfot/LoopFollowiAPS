@@ -986,6 +986,7 @@ extension MainViewController {
         BGChart.xAxis.labelTextColor = NSUIColor.label
         BGChart.xAxis.labelPosition = XAxis.LabelPosition.bottom
         BGChart.xAxis.drawGridLinesEnabled = false
+        BGChart.xAxis.drawLimitLinesBehindDataEnabled = true
 
         BGChart.leftAxis.enabled = true
         BGChart.leftAxis.labelPosition = YAxis.LabelPosition.insideChart
@@ -994,10 +995,12 @@ extension MainViewController {
         BGChart.leftAxis.drawGridLinesEnabled = false
         BGChart.leftAxis.granularityEnabled = true
         BGChart.leftAxis.granularity = 0.5
+        BGChart.leftAxis.drawLimitLinesBehindDataEnabled = true
 
         BGChart.rightAxis.labelTextColor = NSUIColor.label
         BGChart.rightAxis.labelPosition = YAxis.LabelPosition.insideChart
         BGChart.rightAxis.axisMinimum = 0.0
+        BGChart.rightAxis.drawLimitLinesBehindDataEnabled = true
 
         if UserDefaultsRepository.units.value == "mmol/L" {
             let forcedMax = ceil(Double(maxBG) / 72.0) * 72.0
@@ -1078,7 +1081,7 @@ extension MainViewController {
         ul.limit = Double(dateTimeUtils.getNowTimeIntervalUTC())
         ul.lineColor = NSUIColor.label
         ul.lineDashLengths = [CGFloat(4), CGFloat(2)]
-        ul.lineWidth = 1
+        ul.lineWidth = 2
         BGChart.xAxis.addLimitLine(ul)
         
         // Small chart
@@ -1086,14 +1089,14 @@ extension MainViewController {
         sl.limit = Double(dateTimeUtils.getNowTimeIntervalUTC())
         sl.lineColor = NSUIColor.label
         sl.lineDashLengths = [CGFloat(2), CGFloat(2)]
-        sl.lineWidth = 1
+        sl.lineWidth = 2
         BGChartFull.xAxis.addLimitLine(sl)
         
         if UserDefaultsRepository.show30MinLine.value {
             let ul2 = ChartLimitLine()
             ul2.limit = Double(dateTimeUtils.getNowTimeIntervalUTC().advanced(by: -30 * 60))
             ul2.lineColor = NSUIColor.systemBlue.withAlphaComponent(0.5)
-            ul2.lineWidth = 1
+            ul2.lineWidth = 1.5
             BGChart.xAxis.addLimitLine(ul2)
         }
         
@@ -1111,13 +1114,13 @@ extension MainViewController {
         }
         
         // Daniel: Changed below show -90 min to instead show -24 h (to quickly campare now with yesterday same time)
-        if UserDefaultsRepository.show90MinLine.value {
+        if UserDefaultsRepository.showMinus24hLine.value {
             // Large chart
             let ul3 = ChartLimitLine()
             ul3.limit = Double(dateTimeUtils.getNowTimeIntervalUTC().advanced(by: -1440 * 60))
             ul3.lineColor = NSUIColor.systemOrange.withAlphaComponent(0.8)
             ul3.lineDashLengths = [CGFloat(4), CGFloat(2)]
-            ul3.lineWidth = 1
+            ul3.lineWidth = 2
             BGChart.xAxis.addLimitLine(ul3)
             
             // Small chart
@@ -1125,7 +1128,7 @@ extension MainViewController {
             sl3.limit = Double(dateTimeUtils.getNowTimeIntervalUTC().advanced(by: -1440 * 60))
             sl3.lineColor = NSUIColor.systemOrange.withAlphaComponent(0.8)
             sl3.lineDashLengths = [CGFloat(2), CGFloat(2)]
-            sl3.lineWidth = 1
+            sl3.lineWidth = 2
             BGChartFull.xAxis.addLimitLine(sl3)
         }
     }
@@ -1142,7 +1145,7 @@ extension MainViewController {
                 ul.limit = Double(midnightTimeInterval)
                 ul.lineColor = NSUIColor.systemIndigo //.withAlphaComponent(0.7)
                 ul.lineDashLengths = [CGFloat(4), CGFloat(2)]
-                ul.lineWidth = 1
+                ul.lineWidth = 2
                 BGChart.xAxis.addLimitLine(ul)
 
                 // Small chart
@@ -1150,7 +1153,7 @@ extension MainViewController {
                 sl.limit = Double(midnightTimeInterval)
                 sl.lineColor = NSUIColor.systemIndigo //.withAlphaComponent(0.7)
                 sl.lineDashLengths = [CGFloat(2), CGFloat(2)]
-                sl.lineWidth = 1
+                sl.lineWidth = 2
                 BGChartFull.xAxis.addLimitLine(sl)
                 
                 midnightTimeInterval = midnightTimeInterval.advanced(by: -24*60*60)
@@ -1505,6 +1508,7 @@ extension MainViewController {
             BGChartFull.rightAxis.setLabelCount(labelCount, force: true)
             BGChartFull.rightAxis.granularityEnabled = true
             BGChartFull.rightAxis.granularity = 72
+            
         } else {
             // For mg/dL mode, use the dynamic max and a granularity of 50.
             BGChart.rightAxis.axisMaximum = Double(currentMaxBG)

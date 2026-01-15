@@ -31,7 +31,7 @@ enum ChartSettingsChangeEnum: Int {
   case showDIALinesChanged = 4096
   case showMidnightLinesChanged = 8192
   case show30MinLineChanged = 16384
-  case show90MinLineChanged = 32768
+  case showMinus24hLineChanged = 32768
 }
 
 // General Settings Flags

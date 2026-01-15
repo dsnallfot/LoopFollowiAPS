@@ -147,19 +147,32 @@ class GraphSettingsViewController: ThemedFormViewController {
                     appState.chartSettingsChanges |= ChartSettingsChangeEnum.show30MinLineChanged.rawValue
                 }
             }
-            <<< SwitchRow("show90MinLine") { row in
+            <<< SwitchRow("showMinus24hLine") { row in
                 row.title = "Visa -24 h linje"
-                row.value = UserDefaultsRepository.show90MinLine.value
+                row.value = UserDefaultsRepository.showMinus24hLine.value
             }.onChange { [weak self] row in
                 guard let value = row.value else { return }
-                UserDefaultsRepository.show90MinLine.value = value
+                UserDefaultsRepository.showMinus24hLine.value = value
                 
                 // Tell the main screen that graph needs updating
                 if let appState = self!.appStateController {
                     appState.chartSettingsChanged = true
-                    appState.chartSettingsChanges |= ChartSettingsChangeEnum.show90MinLineChanged.rawValue
+                    appState.chartSettingsChanges |= ChartSettingsChangeEnum.showMinus24hLineChanged.rawValue
                 }
             }
+        <<< SwitchRow("showMidnightMarkers"){ row in
+            row.title = "Visa midnattslinjer"
+            row.value = UserDefaultsRepository.showMidnightLines.value
+        }.onChange { [weak self] row in
+                    guard let value = row.value else { return }
+                    UserDefaultsRepository.showMidnightLines.value = value
+                    
+            // tell main screen that graph needs updating
+            if let appState = self!.appStateController {
+               appState.chartSettingsChanged = true
+               appState.chartSettingsChanges |= ChartSettingsChangeEnum.showMidnightLinesChanged.rawValue
+            }
+        }
             <<< SwitchRow("smallGraphTreatments"){ row in
                 row.title = "Behandlingar på liten graf"
                 row.value = UserDefaultsRepository.smallGraphTreatments.value
@@ -295,20 +308,6 @@ class GraphSettingsViewController: ThemedFormViewController {
                 guard let value = row.value else { return }
                 UserDefaultsRepository.downloadDays.value = Int(value)
         }
-        <<< SwitchRow("showMidnightMarkers"){ row in
-            row.title = "Visa midnattslinjer"
-            row.value = UserDefaultsRepository.showMidnightLines.value
-        }.onChange { [weak self] row in
-                    guard let value = row.value else { return }
-                    UserDefaultsRepository.showMidnightLines.value = value
-                    
-            // tell main screen that graph needs updating
-            if let appState = self!.appStateController {
-               appState.chartSettingsChanged = true
-               appState.chartSettingsChanges |= ChartSettingsChangeEnum.showMidnightLinesChanged.rawValue
-            }
-        }
-
             
        +++ ButtonRow() {
           $0.title = "Klar"

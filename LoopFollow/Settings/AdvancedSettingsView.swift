@@ -37,19 +37,19 @@ struct AdvancedSettingsView: View {
                         }
                         Divider().opacity(0.35)
                         themedRow {
-                            Toggle("Rita basal", isOn: $viewModel.graphBasal)
+                            Toggle("Rendera basal", isOn: $viewModel.graphBasal)
                         }
                         Divider().opacity(0.35)
                         themedRow {
-                            Toggle("Rita bolusar", isOn: $viewModel.graphBolus)
+                            Toggle("Rendera bolusar", isOn: $viewModel.graphBolus)
                         }
                         Divider().opacity(0.35)
                         themedRow {
-                            Toggle("Rita måltider", isOn: $viewModel.graphCarbs)
+                            Toggle("Rendera måltider", isOn: $viewModel.graphCarbs)
                         }
                         Divider().opacity(0.35)
                         themedRow {
-                            Toggle("Rita andra behandlingar", isOn: $viewModel.graphOtherTreatments)
+                            Toggle("Rendera andra behandlingar", isOn: $viewModel.graphOtherTreatments)
                         }
                         Divider().opacity(0.35)
                         themedRow {
