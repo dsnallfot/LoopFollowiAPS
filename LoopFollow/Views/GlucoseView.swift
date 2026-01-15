@@ -506,6 +506,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         datePicker.widthAnchor.constraint(lessThanOrEqualToConstant: 105).isActive = true
 
         statsLabel.text = "CGM –" // placeholder until data loads
+        statsLabel.heightAnchor.constraint(equalToConstant: 30).isActive = true
 
         modeSegmentedControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
     }
@@ -1179,7 +1180,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             df.dateFormat = "yyyy-MM-dd, HH:mm"
             cell.detailTextLabel?.text = df.string(from: date)
 
-            let tint = UIColor.systemOrange.withAlphaComponent(0.15)
+            let tint = UIColor.systemRed.withAlphaComponent(0.15)
             cell.backgroundColor = tint
             cell.contentView.backgroundColor = tint
         }
@@ -1410,7 +1411,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             self.tableView.reloadData()
 
             // Stats label: count
-            self.statsLabel.text = "Sensorfel: \(combined.count) st"
+            self.statsLabel.text = "Antal sensorfel: \(combined.count) st (90d)   "
             self.hideRefreshIndicator()
         }
     }
@@ -1759,19 +1760,44 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         }
 
         let cal = Calendar.current
-        let referenceStart = cal.startOfDay(for: selectedDays.first ?? Date())
 
-        // y = time of day in hours (0..24)
+        // Index per dag för x-position (matchar BGCheck time-scatter)
+        let periodDays = selectedDays
+        var indexByDay: [Date: Int] = [:]
+        indexByDay.reserveCapacity(periodDays.count)
+        for (idx, d) in periodDays.enumerated() {
+            indexByDay[cal.startOfDay(for: d)] = idx
+        }
+
+        // X-axis labels = datum (kompakt format) för varje index
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "dd/MM"
+        let labels = periodDays.map { df.string(from: $0) }
+
+        // Hjälpfunktion: timestamp -> timmar på dygnet (0–24)
+        func hourOfDay(for date: Date) -> Double {
+            let comps = cal.dateComponents([.hour, .minute, .second], from: date)
+            let h = Double(comps.hour ?? 0)
+            let m = Double(comps.minute ?? 0)
+            let s = Double(comps.second ?? 0)
+            return h + (m / 60.0) + (s / 3600.0)
+        }
+
+        // Points: flera sensorfel kan landa på samma dagIndex (samma x)
         var entries: [ChartDataEntry] = []
         entries.reserveCapacity(selectedSensorErrorOutages.count)
 
         for o in selectedSensorErrorOutages {
-            let hoursSinceStart = o.noteDate.timeIntervalSince(referenceStart) / 3600.0
-            let comps = cal.dateComponents([.hour, .minute], from: o.noteDate)
-            let h = Double(comps.hour ?? 0)
-            let m = Double(comps.minute ?? 0)
-            let y = h + (m / 60.0)
-            entries.append(ChartDataEntry(x: hoursSinceStart, y: y))
+            let dayStart = cal.startOfDay(for: o.noteDate)
+            guard let dayIndex = indexByDay[dayStart] else { continue }
+            entries.append(ChartDataEntry(x: Double(dayIndex), y: hourOfDay(for: o.noteDate)))
+        }
+
+        // Viktigt: sortera entries för att undvika Charts-bug där punkter kan försvinna vid zoom/scroll
+        entries.sort {
+            if $0.x == $1.x { return $0.y < $1.y }
+            return $0.x < $1.x
         }
 
         let ds = ScatterChartDataSet(entries: entries, label: "Sensorfel")
@@ -1785,19 +1811,17 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         let data = ScatterChartData(dataSet: ds)
         sensorErrorChartView.data = data
 
-        // X axis labels: show date (dd/MM) based on referenceStart
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "sv_SE")
-        df.dateFormat = "dd/MM"
-
+        // X-axis (match BGCheck time-scatter)
         let xAxis = sensorErrorChartView.xAxis
         xAxis.labelPosition = .bottom
+        xAxis.granularity = 1
         xAxis.granularityEnabled = true
-        xAxis.granularity = 24 // 24h steps
-        xAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
-            let d = referenceStart.addingTimeInterval(value * 3600.0)
-            return df.string(from: d)
-        }
+        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
+        xAxis.setLabelCount(min(6, labels.count), force: false)
+
+        // Ensure stable visible range during zoom
+        xAxis.axisMinimum = -0.5
+        xAxis.axisMaximum = Double(max(0, labels.count - 1)) + 0.5
         
         // Y-axel = timmar 0–24 (dashad grid) + solida huvudlinjer 00/06/12/18/24
         let yAxis = sensorErrorChartView.leftAxis
