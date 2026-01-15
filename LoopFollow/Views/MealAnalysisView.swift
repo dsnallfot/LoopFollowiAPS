@@ -1417,6 +1417,26 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 self.events.sort { $0.date < $1.date }
                 LogManager.shared.log(category: .analysis, message: "Cache ▸ extraEvents.count = \(extraEvents.count), merged events.count = \(self.events.count)", isDebug: true)
 
+                // Normalize BG Check events to mmol/L (guard against mg/dL sneaking in)
+                // Heuristic: reasonable mmol range is ~2–25. If value > 40, assume mg/dL.
+                for idx in 0..<self.events.count {
+                    var e = self.events[idx]
+                    if e.eventType == "BG Check", e.amount > 40 {
+                        let converted = e.amount / 18.0182
+                        self.events[idx] = Event(
+                            date: e.date,
+                            eventType: e.eventType,
+                            amount: converted,
+                            foodType: e.foodType
+                        )
+                        LogManager.shared.log(
+                            category: .temporaryDebug,
+                            message: "[MealAnalysis][Graphs] Normalized BG Check from \(e.amount) mg/dL to \(converted) mmol/L at \(e.date)",
+                            isDebug: true
+                        )
+                    }
+                }
+
                 // Broaden the picker’s lower bound to the earliest entry we now have
                 if let earliest = (self.events.map { $0.date } + self.bgEntries.map { $0.date }).min() {
                     self.startPicker.minimumDate = earliest
