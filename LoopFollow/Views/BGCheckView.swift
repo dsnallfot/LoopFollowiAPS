@@ -10,6 +10,13 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         let date: Date
         let mmol: Double
         let hasDextroNearby: Bool
+        let cgm10mMmol: Double?
+        let delta10m: Double?
+    }
+
+    private struct BGPoint {
+        let date: Date
+        let mmol: Double
     }
 
     private var entries: [BGCheckEntry] = []
@@ -30,6 +37,16 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         nf.locale = Locale(identifier: "sv_SE")
         nf.minimumFractionDigits = 1
         nf.maximumFractionDigits = 1
+        return nf
+    }()
+
+    private let deltaFormatter: NumberFormatter = {
+        let nf = NumberFormatter()
+        nf.locale = Locale(identifier: "sv_SE")
+        nf.minimumFractionDigits = 1
+        nf.maximumFractionDigits = 1
+        nf.positivePrefix = "+"
+        nf.negativePrefix = "-"
         return nf
     }()
 
@@ -166,7 +183,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
 
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "BGCheckCell")
+        // Don't register: we want to create with .subtitle style below
         tableView.rowHeight = 50
         tableView.dataSource = self
         tableView.delegate = self
@@ -207,7 +224,6 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
     }
 
     /// Hämtar alla BG Check-treatments från cachen och mappar till BGCheckEntry.
-    /// Hämtar alla BG Check-treatments från cachen och mappar till BGCheckEntry.
     private func loadBGChecks() {
         showActivity()
 
@@ -223,7 +239,17 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             ) ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
 
             // Antag att NightscoutCache.loadWindow(from:to:) returnerar (sgv, treatments)
-            let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
+            let (sgvs, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
+
+            // Bygg CGM‑punkter (i mmol/L) från SGV‑datan
+            let bgPoints: [BGPoint] = sgvs
+                .map { sgv in
+                    BGPoint(
+                        date: Date(timeIntervalSince1970: sgv.date),
+                        mmol: Double(sgv.sgv) / 18.0182
+                    )
+                }
+                .sorted { $0.date < $1.date }
 
             // 1) Plocka ut alla "dextro-treatments":
             //    • eventType == "Carb Correction"
@@ -262,10 +288,18 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
                     abs(dextro.created_at.timeIntervalSince(date)) <= windowSeconds
                 }
 
+                // Hitta CGM‑värdet som ligger närmast 10 minuter efter fingersticket
+                let target = date.addingTimeInterval(10 * 60)
+                let cgmPoint = nearestBGPoint(around: target, in: bgPoints)
+                let cgm10 = cgmPoint?.mmol
+                let delta10 = cgm10.map { $0 - mmol }
+
                 return BGCheckEntry(
                     date: date,
                     mmol: mmol,
-                    hasDextroNearby: hasDextroNearby
+                    hasDextroNearby: hasDextroNearby,
+                    cgm10mMmol: cgm10,
+                    delta10m: delta10
                 )
             }
             .sorted { $0.date > $1.date } // nyast överst
@@ -276,6 +310,34 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
                 self.hideActivity()
             }
         }
+    }
+
+    // Hittar närmaste CGM‑punkt tidsmässigt runt ett givet mål.
+    private func nearestBGPoint(around target: Date, in points: [BGPoint]) -> BGPoint? {
+        guard !points.isEmpty else { return nil }
+        // Binärsökning på tid (points är sorterade på date)
+        var lo = 0
+        var hi = points.count - 1
+        var bestIndex = 0
+        var bestDiff = abs(points[0].date.timeIntervalSince(target))
+
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = points[mid].date
+            let diff = abs(d.timeIntervalSince(target))
+            if diff < bestDiff {
+                bestDiff = diff
+                bestIndex = mid
+            }
+            if d < target {
+                lo = mid + 1
+            } else if d > target {
+                hi = mid - 1
+            } else {
+                break
+            }
+        }
+        return points[bestIndex]
     }
 
     // MARK: - UITableViewDataSource
@@ -296,13 +358,25 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         // Leading SF Symbol + värde i mmol/L
         let mmolString = valueFormatter.string(from: NSNumber(value: entry.mmol)) ?? String(format: "%.1f", entry.mmol)
 
-        var text = " \(mmolString) mmol/L"
+        var text = "\(mmolString) mmol/L"
         if entry.hasDextroNearby {
             text += " • 🍬"   // 👈 markera fingerstick med dextro inom ±10 min
         }
 
         cell.textLabel?.text = text
         cell.textLabel?.font = .systemFont(ofSize: 17)
+
+        // Sekundär rad: "CGM +10 min: X.X Δ +Y.Y"
+        if let cgm10 = entry.cgm10mMmol, let delta = entry.delta10m {
+            let cgmString = valueFormatter.string(from: NSNumber(value: cgm10)) ?? String(format: "%.1f", cgm10)
+            let deltaString = deltaFormatter.string(from: NSNumber(value: delta)) ?? String(format: "%+.1f", delta)
+
+            cell.detailTextLabel?.text = "CGM +10 min: \(cgmString) Δ \(deltaString)"
+            cell.detailTextLabel?.font = .systemFont(ofSize: 13)
+            cell.detailTextLabel?.textColor = .secondaryLabel
+        } else {
+            cell.detailTextLabel?.text = nil
+        }
 
         // SF-symbol i imageView (leading)
         cell.imageView?.image = UIImage(systemName: "drop.fill")
