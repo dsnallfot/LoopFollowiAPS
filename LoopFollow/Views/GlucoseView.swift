@@ -1472,10 +1472,32 @@ final class GlucoseStatsViewController: ThemedTableViewController {
     private var allCountsAllValues: [Int] = []
     private var allCountsNSOnly: [Int] = []
 
+
     // Current selection
     private var selectedDays: [Date] = []
     private var selectedCountsAllValues: [Int] = []
     private var selectedCountsNSOnly: [Int] = []
+
+    // Sensor error outages (computed for the full window, then filtered by selected period)
+    private struct SensorErrorOutage {
+        let noteDate: Date
+        let durationMinutes: Int
+    }
+    private var allSensorErrorOutages: [SensorErrorOutage] = []
+    private var selectedSensorErrorOutages: [SensorErrorOutage] = []
+
+    private enum ChartMode: Int {
+        case glucoseValues = 0
+        case sensorErrors = 1
+    }
+    private var selectedChartMode: ChartMode = .glucoseValues
+
+    private lazy var chartModeControl: UISegmentedControl = {
+        let sc = UISegmentedControl(items: ["Glukosvärden", "Sensorfel"])
+        sc.selectedSegmentIndex = selectedChartMode.rawValue
+        sc.addTarget(self, action: #selector(chartModeChanged(_:)), for: .valueChanged)
+        return sc
+    }()
 
     private enum PeriodOption: CaseIterable {
         case d1, d7, d14, d30, d90
@@ -1526,6 +1548,25 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         v.highlightPerDragEnabled = false
         v.drawMarkers = false
         v.maxVisibleCount = 1_000_000
+        return v
+    }()
+
+    // Scatterplot: Sensorfel per datum (x) och tid på dygnet (y)
+    private let sensorErrorChartView: ScatterChartView = {
+        let v = ScatterChartView()
+        v.chartDescription.enabled = false
+        v.legend.enabled = false
+        v.minOffset = 8
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1_000_000
+        v.rightAxis.enabled = false
         return v
     }()
 
@@ -1595,9 +1636,12 @@ final class GlucoseStatsViewController: ThemedTableViewController {
                 }
             }
 
-            // Load datasets
-            let (allSGV, _) = await NightscoutCache.loadWindow(from: startDay, to: now)
+            // Load datasets (and treatments for Sensorfel)
+            let (allSGV, allTreatments) = await NightscoutCache.loadWindow(from: startDay, to: now)
             let nsOnlySGV = await GlucoseNSOnlyCache.loadWindow(from: startDay, to: now)
+
+            // Build Sensorfel outages for the full window
+            let outages = self.buildSensorErrorOutages(allSGV: allSGV, allTreatments: allTreatments, now: now)
 
             // Count unique readings per day using bucket dedupe
             let countsAllValuesByDay = self.countsByDayFromSGVJSON(allSGV, bucketSeconds: 240.0)
@@ -1617,6 +1661,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
                 self.allDays = days
                 self.allCountsAllValues = countsAll
                 self.allCountsNSOnly = countsNS
+                self.allSensorErrorOutages = outages
 
                 // Apply initial period
                 self.applyPeriod(self.selectedPeriod)
@@ -1644,6 +1689,192 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         return counts
     }
 
+    // MARK: - Sensorfel helpers
+
+    /// Build sensor error outages (deduped by the [prevBG,nextBG] span) from the full window.
+    private func buildSensorErrorOutages(allSGV: [SGVJSON], allTreatments: [TreatmentJSON], now: Date) -> [SensorErrorOutage] {
+        // BG timestamps (sorted)
+        let bgTimes: [Date] = allSGV
+            .map { Date(timeIntervalSince1970: $0.date) }
+            .sorted()
+
+        // Filter Dexcom Notes first
+        let dexcomTreatJSON = allTreatments.filter { tjson in
+            tjson.eventType == "Note" && (tjson.notes?.localizedCaseInsensitiveContains("Dexcom") ?? false)
+        }
+
+        let dexcomNotes: [Treatment] = dexcomTreatJSON.compactMap { tjson in
+            Treatment(dictionary: [
+                "_id":       tjson._id as AnyObject,
+                "eventType": tjson.eventType as AnyObject,
+                "enteredBy": tjson.enteredBy as AnyObject,
+                "created_at": ISO8601DateFormatter().string(from: tjson.created_at) as AnyObject,
+                "rate":      tjson.rate as AnyObject,
+                "absolute":  tjson.absolute as AnyObject,
+                "insulin":   tjson.insulin as AnyObject,
+                "carbs":     tjson.carbs as AnyObject,
+                "amount":    tjson.amount as AnyObject,
+                "foodType":  tjson.foodType as AnyObject,
+                "notes":     tjson.notes as AnyObject,
+                "glucose":   tjson.glucose as AnyObject,
+                "units":     tjson.units as AnyObject,
+                "duration":  tjson.tempBasalDuration as AnyObject
+            ])
+        }
+        .sorted { $0.timestamp < $1.timestamp }
+
+        var outages: [SensorErrorOutage] = []
+        outages.reserveCapacity(dexcomNotes.count)
+
+        var lastSpanKey: String?
+
+        for note in dexcomNotes {
+            let prev = nearestBG(before: note.timestamp, in: bgTimes)
+            let next = nearestBG(after: note.timestamp, in: bgTimes)
+
+            let prevKey = prev?.timeIntervalSince1970 ?? -1
+            let nextKey = next?.timeIntervalSince1970 ?? -1
+            let spanKey = "\(prevKey)-\(nextKey)"
+
+            if spanKey == lastSpanKey {
+                continue
+            }
+            lastSpanKey = spanKey
+
+            let startTime = prev ?? note.timestamp
+            let endTime = next ?? now
+            let minutes = max(0, Int(round(endTime.timeIntervalSince(startTime) / 60.0)))
+
+            outages.append(SensorErrorOutage(noteDate: note.timestamp, durationMinutes: minutes))
+        }
+
+        return outages.sorted { $0.noteDate > $1.noteDate }
+    }
+
+    private func updateSensorErrorChart() {
+        guard !selectedSensorErrorOutages.isEmpty else {
+            sensorErrorChartView.data = nil
+            sensorErrorChartView.setNeedsDisplay()
+            return
+        }
+
+        let cal = Calendar.current
+        let referenceStart = cal.startOfDay(for: selectedDays.first ?? Date())
+
+        // y = time of day in hours (0..24)
+        var entries: [ChartDataEntry] = []
+        entries.reserveCapacity(selectedSensorErrorOutages.count)
+
+        for o in selectedSensorErrorOutages {
+            let hoursSinceStart = o.noteDate.timeIntervalSince(referenceStart) / 3600.0
+            let comps = cal.dateComponents([.hour, .minute], from: o.noteDate)
+            let h = Double(comps.hour ?? 0)
+            let m = Double(comps.minute ?? 0)
+            let y = h + (m / 60.0)
+            entries.append(ChartDataEntry(x: hoursSinceStart, y: y))
+        }
+
+        let ds = ScatterChartDataSet(entries: entries, label: "Sensorfel")
+        ds.drawValuesEnabled = false
+        ds.setScatterShape(.circle)
+        ds.scatterShapeSize = 7
+        ds.setColor(.black)
+        ds.scatterShapeHoleRadius = 3
+        ds.scatterShapeHoleColor = .systemRed
+
+        let data = ScatterChartData(dataSet: ds)
+        sensorErrorChartView.data = data
+
+        // X axis labels: show date (dd/MM) based on referenceStart
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "dd/MM"
+
+        let xAxis = sensorErrorChartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.granularityEnabled = true
+        xAxis.granularity = 24 // 24h steps
+        xAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let d = referenceStart.addingTimeInterval(value * 3600.0)
+            return df.string(from: d)
+        }
+        
+        // Y-axel = timmar 0–24 (dashad grid) + solida huvudlinjer 00/06/12/18/24
+        let yAxis = sensorErrorChartView.leftAxis
+        yAxis.axisMinimum = 0
+        yAxis.axisMaximum = 24
+        yAxis.granularity = 1
+        yAxis.granularityEnabled = true
+        yAxis.setLabelCount(25, force: false)
+        yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let v = Int(value.rounded())
+            guard [0, 6, 12, 18, 24].contains(v) else { return "" }
+            return String(format: "%02d:00", v)
+        }
+        
+        yAxis.removeAllLimitLines()
+        let majorLineColor = UIColor.lightGray.withAlphaComponent(0.65)
+        for hour in [0.0, 6.0, 12.0, 18.0, 24.0] {
+            let ll = ChartLimitLine(limit: hour)
+            ll.lineWidth = 0.8
+            ll.lineColor = majorLineColor
+            ll.lineDashLengths = []
+            ll.label = ""
+            yAxis.addLimitLine(ll)
+        }
+
+        sensorErrorChartView.rightAxis.enabled = false
+
+        // Light grid
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        sensorErrorChartView.notifyDataSetChanged()
+        sensorErrorChartView.setNeedsDisplay()
+    }
+
+    private func nearestBG(before date: Date, in bgTimes: [Date]) -> Date? {
+        guard !bgTimes.isEmpty else { return nil }
+        var lo = 0
+        var hi = bgTimes.count - 1
+        var result: Date?
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = bgTimes[mid]
+            if d < date {
+                result = d
+                lo = mid + 1
+            } else {
+                hi = mid - 1
+            }
+        }
+        return result
+    }
+
+    private func nearestBG(after date: Date, in bgTimes: [Date]) -> Date? {
+        guard !bgTimes.isEmpty else { return nil }
+        var lo = 0
+        var hi = bgTimes.count - 1
+        var result: Date?
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = bgTimes[mid]
+            if d > date {
+                result = d
+                hi = mid - 1
+            } else {
+                lo = mid + 1
+            }
+        }
+        return result
+    }
+
     // MARK: - Period selection
 
     private func applyPeriod(_ period: PeriodOption) {
@@ -1665,7 +1896,19 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         selectedCountsAllValues = Array(allCountsAllValues[startIndex..<total])
         selectedCountsNSOnly = Array(allCountsNSOnly[startIndex..<total])
 
+        // Filter sensor errors to the selected period
+        let cal = Calendar.current
+        let periodStart = cal.startOfDay(for: selectedDays.first ?? Date())
+        let periodEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: selectedDays.last ?? Date())) ?? Date()
+        self.selectedSensorErrorOutages = allSensorErrorOutages.filter { $0.noteDate >= periodStart && $0.noteDate < periodEnd }
+
+        if selectedChartMode == .sensorErrors {
+            updateSensorErrorChart()
+        }
+
         loadChartData()
+        chartView.isHidden = (selectedChartMode == .sensorErrors)
+        sensorErrorChartView.isHidden = (selectedChartMode != .sensorErrors)
         tableView.reloadData()
     }
 
@@ -1679,25 +1922,42 @@ final class GlucoseStatsViewController: ThemedTableViewController {
 
     private func setupChartHeader() {
         let container = UIView()
-        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 330)
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 350)
         container.backgroundColor = .clear
 
         container.addSubview(periodControl)
+        container.addSubview(chartModeControl)
         container.addSubview(chartView)
+        container.addSubview(sensorErrorChartView)
 
         periodControl.translatesAutoresizingMaskIntoConstraints = false
+        chartModeControl.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
+        sensorErrorChartView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             periodControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
             periodControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             periodControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
 
-            chartView.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 12),
+            chartModeControl.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 8),
+            chartModeControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            chartModeControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            chartView.topAnchor.constraint(equalTo: chartModeControl.bottomAnchor, constant: 12),
             chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor)//, constant: -4)
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
+
+            sensorErrorChartView.topAnchor.constraint(equalTo: chartModeControl.bottomAnchor, constant: 12),
+            sensorErrorChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            sensorErrorChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            sensorErrorChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
+
+        // Initial visibility
+        chartView.isHidden = (selectedChartMode == .sensorErrors)
+        sensorErrorChartView.isHidden = (selectedChartMode != .sensorErrors)
 
         tableView.tableHeaderView = container
     }
@@ -1705,11 +1965,22 @@ final class GlucoseStatsViewController: ThemedTableViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if let header = tableView.tableHeaderView {
-            let targetSize = CGSize(width: tableView.bounds.width, height: 330)
+            let targetSize = CGSize(width: tableView.bounds.width, height: 370)
             if header.frame.size != targetSize {
                 header.frame.size = targetSize
                 tableView.tableHeaderView = header
             }
+        }
+    }
+    @objc private func chartModeChanged(_ sender: UISegmentedControl) {
+        let idx = sender.selectedSegmentIndex
+        selectedChartMode = ChartMode(rawValue: idx) ?? .glucoseValues
+
+        chartView.isHidden = (selectedChartMode == .sensorErrors)
+        sensorErrorChartView.isHidden = (selectedChartMode != .sensorErrors)
+
+        if selectedChartMode == .sensorErrors {
+            updateSensorErrorChart()
         }
     }
 
@@ -1812,7 +2083,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         legend.verticalAlignment = .bottom
         legend.orientation = .horizontal
         legend.drawInside = false
-        legend.form = .square
+        legend.form = .circle
         legend.formSize = 10
         legend.xEntrySpace = 12
         legend.yOffset = 8
@@ -1864,7 +2135,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         switch section {
         case 0:
             // Dexcom inkl backfill
-            return 2
+            return 4
         case 1:
             // Trio uppladdningar realtid
             return 5
@@ -1958,6 +2229,21 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             case 1:
                 cell.textLabel?.text = "Medel saknade värden/dag"
                 cell.detailTextLabel?.text = "\(countString(avgMissAll)) st"
+
+            case 2:
+                cell.textLabel?.text = "Antal sensorfel"
+                cell.detailTextLabel?.text = "\(selectedSensorErrorOutages.count) st"
+
+            case 3:
+                cell.textLabel?.text = "Tid med sensorfel"
+                let totalMin = selectedSensorErrorOutages.reduce(0) { $0 + $1.durationMinutes }
+                let h = totalMin / 60
+                let m = totalMin % 60
+                if h > 0 {
+                    cell.detailTextLabel?.text = "\(h) h \(m) min"
+                } else {
+                    cell.detailTextLabel?.text = "\(m) min"
+                }
 
             default:
                 break
