@@ -506,59 +506,125 @@ extension BLEManager {
         guard Storage.shared.backgroundRefreshType.value == .dexcom else {
             return nil
         }
-        
-        // Gather current effective delays for all discovered Dexcom-like devices.
+
+        // Age thresholds (same intent as BLEDeviceSelectionView coloring)
+        let daysOld = 60
+        let manyDaysOld = 75
+
+        // Helper to parse the stored activation date string ("yyyy-MM-dd HH:mm:ss")
+        let activationFormatter: DateFormatter = {
+            let df = DateFormatter()
+            df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            return df
+        }()
+
+        // Gather effective delays for discovered Dexcom devices, with age-based filtering/prioritization:
+        // - Exclude sensors older than `manyDaysOld`
+        // - Prefer sensors <= `daysOld` (fresh) over 60–75 day sensors (stale) during offset selection
         let dexcomDevices = devices.filter { BackgroundRefreshType.dexcom.matches($0) }
-        let delays: [Int] = dexcomDevices.compactMap { expectedSensorFetchOffsetSeconds(for: $0) }
-        
-        guard !delays.isEmpty else {
+
+        var freshDelays: [Int] = []
+        var staleDelays: [Int] = []
+
+        for device in dexcomDevices {
+            guard let delay = expectedSensorFetchOffsetSeconds(for: device) else { continue }
+
+            // If we can resolve activation date, use it for age-based filtering/priority.
+            // If we cannot, treat it as "stale" (lower priority) but still include it (unless you prefer strict exclusion).
+            if let sensorID = device.name,
+               let activationStr = Storage.shared.latestActivationDate(for: sensorID),
+               let activationDate = activationFormatter.date(from: activationStr) {
+
+                let ageDays = Calendar.current.dateComponents([.day], from: activationDate, to: Date()).day ?? 0
+
+                // Exclude very old sensors
+                if ageDays > manyDaysOld {
+                    continue
+                }
+
+                if ageDays <= daysOld {
+                    freshDelays.append(delay)
+                } else {
+                    staleDelays.append(delay)
+                }
+            } else {
+                // Unknown activation date: keep it, but deprioritize
+                staleDelays.append(delay)
+            }
+        }
+
+        let total = freshDelays.count + staleDelays.count
+        guard total > 0 else {
             return nil
         }
-        
-        // Brute-force all offsets and pick the one that maximizes the number of devices
-        // whose shifted delay ends up inside the optimal window.
+
+        // Brute-force all offsets:
+        // Primary objective: maximize fresh hits in optimal window
+        // Secondary objective: maximize stale hits in optimal window
+        // Tie-breaker: minimize distance to window center (overall)
         var bestOffset = 0
-        var bestMatches = -1
+        var bestFreshHits = -1
+        var bestStaleHits = -1
         var bestDistanceSum = Int.max
-        
+
         let targetCenter = (optimalWindow.lowerBound + optimalWindow.upperBound) / 2
-        
+
         for candidate in 0...299 {
-            var matches = 0
+            var freshHits = 0
+            var staleHits = 0
             var distanceSum = 0
-            
-            for d in delays {
+
+            for d in freshDelays {
                 let shifted = (d + candidate) % 300
                 if optimalWindow.contains(shifted) {
-                    matches += 1
+                    freshHits += 1
                     distanceSum += abs(shifted - targetCenter)
                 } else {
-                    // Penalize near-misses lightly so ties break toward "closest".
-                    // Distance to nearest bound.
                     let distToWindow: Int
                     if shifted < optimalWindow.lowerBound {
                         distToWindow = optimalWindow.lowerBound - shifted
                     } else {
                         distToWindow = shifted - optimalWindow.upperBound
                     }
-                    distanceSum += (distToWindow + 20) // small bias so true hits win
+                    distanceSum += (distToWindow + 20)
                 }
             }
-            
-            if matches > bestMatches {
-                bestMatches = matches
+
+            for d in staleDelays {
+                let shifted = (d + candidate) % 300
+                if optimalWindow.contains(shifted) {
+                    staleHits += 1
+                    distanceSum += abs(shifted - targetCenter)
+                } else {
+                    let distToWindow: Int
+                    if shifted < optimalWindow.lowerBound {
+                        distToWindow = optimalWindow.lowerBound - shifted
+                    } else {
+                        distToWindow = shifted - optimalWindow.upperBound
+                    }
+                    distanceSum += (distToWindow + 20)
+                }
+            }
+
+            if freshHits > bestFreshHits {
+                bestFreshHits = freshHits
+                bestStaleHits = staleHits
                 bestOffset = candidate
                 bestDistanceSum = distanceSum
-            } else if matches == bestMatches {
-                // Tie-breaker: minimize overall distance to the target window/center.
-                if distanceSum < bestDistanceSum {
+            } else if freshHits == bestFreshHits {
+                if staleHits > bestStaleHits {
+                    bestStaleHits = staleHits
                     bestOffset = candidate
                     bestDistanceSum = distanceSum
+                } else if staleHits == bestStaleHits {
+                    if distanceSum < bestDistanceSum {
+                        bestOffset = candidate
+                        bestDistanceSum = distanceSum
+                    }
                 }
             }
         }
-        
-        return (offset: bestOffset, matches: bestMatches, total: delays.count)
+
+        return (offset: bestOffset, matches: bestFreshHits + bestStaleHits, total: total)
     }
-    
 }

@@ -14,6 +14,8 @@ struct BackgroundRefreshSettingsView: View {
     @State private var showSyncNewSensorView: Bool = false
     @State private var minAgoNavText: String = ""
     @State private var minAgoNavShortText: String = ""
+    @State private var showOffsetConfirmAlert: Bool = false
+    @State private var pendingOffset: Int?
 
     @ObservedObject var bleManager = BLEManager.shared
 
@@ -22,6 +24,9 @@ struct BackgroundRefreshSettingsView: View {
     // MARK: - Constants for BG delay thresholds
     let goodDelay = 90
     let okDelay = 180
+
+    // MARK: - Constants for sensor age thresholds
+    let manyDaysOld = 75
 
     var body: some View {
         ZStack {
@@ -45,6 +50,7 @@ struct BackgroundRefreshSettingsView: View {
                                 }
                             }
                             .pickerStyle(.menu)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                         }
 
                         Divider().opacity(0.35)
@@ -180,6 +186,7 @@ struct BackgroundRefreshSettingsView: View {
                                         }
                                         .foregroundColor(Color(uiColor: .systemBlue))
                                         .buttonStyle(.plain)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                         Spacer()
                                     }
                                     .padding(.top, 4)
@@ -224,63 +231,94 @@ struct BackgroundRefreshSettingsView: View {
                             .padding(.top, 6)
 
                         VStack(spacing: 0) {
-                            Button {
-                                if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60) {
-                                    UserDefaultsRepository.pairingOffset.value = suggestion.offset
-                                    UserDefaultsRepository.offsetString.value = "\(suggestion.offset)"
-                                }
-                                showSyncNewSensorView = true
-                            } label: {
-                                VStack(spacing: 6) {
+                            if #available(iOS 26.0, *) {
+                                Button {
                                     if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60) {
-                                        Text("\(suggestion.offset) sekunder")
-                                            .font(.headline)
-                                            .frame(maxWidth: .infinity, alignment: .center)
-
-                                        Text("Optimerar för 40–60 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total) *")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .frame(maxWidth: .infinity, alignment: .center)
-
-                                        let hitIDs = hitDeviceIDs(for: suggestion.offset, optimalWindow: 40...60)
-                                        let hitNames: [String] = bleManager.devices
-                                            .filter { hitIDs.contains($0.id) }
-                                            .compactMap { $0.name }
-                                            .sorted()
-
-                                        if !hitNames.isEmpty {
-                                            Divider().opacity(0.35)
-                                                .padding(.top, 6)
-
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                ForEach(hitNames, id: \.self) { name in
-                                                    Text("* \(name)")
-                                                        .font(.caption)
-                                                        .foregroundStyle(.secondary)
-                                                }
-                                            }
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(.top, 2)
-                                        }
+                                        // Store the suggested offset and show confirmation alert
+                                        pendingOffset = suggestion.offset
+                                        showOffsetConfirmAlert = true
                                     } else {
-                                        Text("Väntar på fler heartbeats…")
-                                            .font(.headline)
-                                            .frame(maxWidth: .infinity, alignment: .center)
-
-                                        Text("Öppna vyn i ~5 minuter så hinner flera sensorer synas.")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .frame(maxWidth: .infinity, alignment: .center)
+                                        // If we for some reason don't have a suggestion yet, keep the old behavior:
+                                        // go straight to SyncNewSensorView so the user can adjust things manuellt.
+                                        showSyncNewSensorView = true
+                                    }
+                                } label: {
+                                    VStack(spacing: 6) {
+                                        if let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60) {
+                                            Text("\(suggestion.offset) sekunder")
+                                                .font(.headline)
+                                                .frame(maxWidth: .infinity, alignment: .center)
+                                            
+                                            Text("Optimerar för 40–60 s fördröjning • träffar \(suggestion.matches)/\(suggestion.total) *")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .frame(maxWidth: .infinity, alignment: .center)
+                                            
+                                            let hitIDs = hitDeviceIDs(for: suggestion.offset, optimalWindow: 40...60)
+                                            let hitNames: [String] = bleManager.devices
+                                                .filter { hitIDs.contains($0.id) }
+                                                .compactMap { $0.name }
+                                                .sorted()
+                                            
+                                            if !hitNames.isEmpty {
+                                                Divider().opacity(0.35)
+                                                    //.padding(.top, 6)
+                                                
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    ForEach(hitNames, id: \.self) { name in
+                                                        Text("* \(name)")
+                                                            .font(.caption)
+                                                            .foregroundStyle(.secondary)
+                                                    }
+                                                }
+                                                .frame(maxWidth: .infinity, alignment: .center)
+                                                .padding(.top, 2)
+                                            }
+                                        } else {
+                                            Text("Väntar på fler heartbeats…")
+                                                .font(.headline)
+                                                .frame(maxWidth: .infinity, alignment: .center)
+                                            
+                                            Text("Öppna vyn i ~5 minuter så hinner flera sensorer synas.")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .frame(maxWidth: .infinity, alignment: .center)
+                                        }
+                                    }
+                                    .padding(.vertical, 6)
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .alert("Använd offset", isPresented: $showOffsetConfirmAlert) {
+                                    Button("Fortsätt") {
+                                        if let offset = pendingOffset {
+                                            UserDefaultsRepository.pairingOffset.value = offset
+                                            UserDefaultsRepository.offsetString.value = "\(offset)"
+                                            showSyncNewSensorView = true
+                                        }
+                                        pendingOffset = nil
+                                    }
+                                    Button("Avbryt", role: .cancel) {
+                                        pendingOffset = nil
+                                    }
+                                } message: {
+                                    if let offset = pendingOffset {
+                                        Text("Vill du använda \(offset) sekunder för nästa sensor-synk?")
+                                    } else {
+                                        Text("Vill du använda den föreslagna offseten för nästa sensor-synk?")
                                     }
                                 }
-                                .padding(.vertical, 6)
-                                .frame(maxWidth: .infinity)
+                                .buttonStyle(.glass)
+                                //.padding(.top, 14)
+                                //.padding(.bottom, 30)
+                                //.padding(.vertical, 12)
+                            } else {
+                                // Fallback on earlier versions
                             }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
                         }
-                        .themedCardBackground()
+                        //.themedCardBackground()
+                        .background(
+                            Color(uiColor: .clear)
+                        )
                     }
 
                     Spacer(minLength: 24)
@@ -412,7 +450,26 @@ struct BackgroundRefreshSettingsView: View {
         let dexcomDevices = bleManager.devices.filter { BackgroundRefreshType.dexcom.matches($0) }
 
         var hits = Set<UUID>()
+
+        // Date formatter for activation dates ("yyyy-MM-dd HH:mm:ss")
+        let formatter: DateFormatter = {
+            let df = DateFormatter()
+            df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            return df
+        }()
+
         for device in dexcomDevices {
+            // Exclude very old sensors (> manyDaysOld days) from being considered hits
+            if let sensorID = device.name,
+               let activationStr = Storage.shared.latestActivationDate(for: sensorID),
+               let activationDate = formatter.date(from: activationStr) {
+
+                let ageDays = Calendar.current.dateComponents([.day], from: activationDate, to: Date()).day ?? 0
+                if ageDays > manyDaysOld {
+                    continue
+                }
+            }
+
             guard let d = bleManager.expectedSensorFetchOffsetSeconds(for: device) else { continue }
             let shifted = (d + suggestionOffset) % 300
             if optimalWindow.contains(shifted) {

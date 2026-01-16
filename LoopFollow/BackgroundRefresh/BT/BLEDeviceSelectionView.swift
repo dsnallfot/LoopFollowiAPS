@@ -44,15 +44,31 @@ struct BLEDeviceSelectionView: View {
                             let isHit: Bool = {
                                 // Only show hit-markers for Dexcom mode (5-min cycle alignment)
                                 guard Storage.shared.backgroundRefreshType.value == .dexcom,
-                                      let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60),
                                       BackgroundRefreshType.dexcom.matches(device),
+                                      let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60),
                                       let d = bleManager.expectedSensorFetchOffsetSeconds(for: device)
                                 else { return false }
+
+                                // Exclude very old sensors (> manyDaysOld days) from being marked as hits
+                                if let sensorID = device.name,
+                                   let activationStr = Storage.shared.latestActivationDate(for: sensorID) {
+                                    let formatter: DateFormatter = {
+                                        let df = DateFormatter()
+                                        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                                        return df
+                                    }()
+
+                                    if let activationDate = formatter.date(from: activationStr) {
+                                        let ageDays = Calendar.current.dateComponents([.day], from: activationDate, to: Date()).day ?? 0
+                                        if ageDays > manyDaysOld {
+                                            return false
+                                        }
+                                    }
+                                }
 
                                 let shifted = (d + suggestion.offset) % 300
                                 return (40...60).contains(shifted)
                             }()
-
                             Text(isHit ? "* \(deviceName)" : deviceName)
 
                             // RSSI
