@@ -335,7 +335,7 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
         // Right-aligned full date
         let rightLabel = UILabel()
         rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .none)
-        rightLabel.font = .systemFont(ofSize: 15)
+        rightLabel.font = .systemFont(ofSize: 14)
         rightLabel.textColor = .secondaryLabel
         rightLabel.textAlignment = .right
         rightLabel.sizeToFit()

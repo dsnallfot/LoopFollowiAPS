@@ -12,6 +12,13 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
         let date: Date
         let grams: Double
         let hasBGCheckNearby: Bool
+        let cgmMmol: Double?
+        let bgCheckMmol: Double?
+    }
+
+    private struct CGMPoint {
+        let date: Date
+        let mmol: Double
     }
 
     private var entries: [LowTreatmentEntry] = []
@@ -36,6 +43,14 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
         nf.locale = Locale(identifier: "sv_SE")
         nf.minimumFractionDigits = 0
         nf.maximumFractionDigits = 0
+        return nf
+    }()
+    
+    private let mmolFormatter: NumberFormatter = {
+        let nf = NumberFormatter()
+        nf.locale = Locale(identifier: "sv_SE")
+        nf.minimumFractionDigits = 1
+        nf.maximumFractionDigits = 1
         return nf
     }()
 
@@ -182,7 +197,6 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
 
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "LowTreatmentCell")
         tableView.rowHeight = 50
         tableView.dataSource = self
         tableView.delegate = self
@@ -238,7 +252,17 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
             ) ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
 
             // Antag att NightscoutCache.loadWindow(from:to:) returnerar (sgv, treatments)
-            let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
+            let (sgvs, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
+
+            // Bygg CGM-punkter i mmol/L från SGV-datan
+            let cgmPoints: [CGMPoint] = sgvs
+                .map { sgv in
+                    CGMPoint(
+                        date: Date(timeIntervalSince1970: sgv.date),
+                        mmol: Double(sgv.sgv) / 18.0182
+                    )
+                }
+                .sorted { $0.date < $1.date }
             
             // Plocka ut alla BG Check-datum (för korsning mot dextro) samt mmol-värde
             var bgCheckDates: [Date] = []
@@ -270,15 +294,37 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
 
                 let date = t.created_at
 
-                // Finns det ett fingerstick (BG Check) inom ±15 minuter?
-                let hasBGCheckNearby = bgCheckDates.contains { bgDate in
-                    abs(bgDate.timeIntervalSince(date)) <= windowSeconds
+                // Hitta närmaste BG Check i tid och se om den ligger inom ±15 minuter
+                var nearestBGIndex: Int?
+                var bestDelta = windowSeconds + 1
+                for (idx, bgDate) in bgCheckDates.enumerated() {
+                    let delta = abs(bgDate.timeIntervalSince(date))
+                    if delta < bestDelta {
+                        bestDelta = delta
+                        nearestBGIndex = idx
+                    }
                 }
+
+                let hasBGCheckNearby: Bool
+                let bgCheckMmolNearby: Double?
+                if let idx = nearestBGIndex, bestDelta <= windowSeconds {
+                    hasBGCheckNearby = true
+                    bgCheckMmolNearby = bgCheckMmol[idx]
+                } else {
+                    hasBGCheckNearby = false
+                    bgCheckMmolNearby = nil
+                }
+
+                // Hitta närmaste CGM-värde vid tidpunkten för dextrobehandlingen
+                let cgmPoint = nearestCGMPoint(around: date, in: cgmPoints)
+                let cgmMmol = cgmPoint?.mmol
 
                 return LowTreatmentEntry(
                     date: date,
                     grams: carbs,
-                    hasBGCheckNearby: hasBGCheckNearby
+                    hasBGCheckNearby: hasBGCheckNearby,
+                    cgmMmol: cgmMmol,
+                    bgCheckMmol: bgCheckMmolNearby
                 )
             }
             .sorted { $0.date > $1.date } // nyast överst
@@ -291,6 +337,34 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
                 self.hideActivity()
             }
         }
+    }
+    
+    // Hittar närmaste CGM-punkt tidsmässigt runt ett givet mål.
+    private func nearestCGMPoint(around target: Date, in points: [CGMPoint]) -> CGMPoint? {
+        guard !points.isEmpty else { return nil }
+
+        var lo = 0
+        var hi = points.count - 1
+        var bestIndex = 0
+        var bestDiff = abs(points[0].date.timeIntervalSince(target))
+
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = points[mid].date
+            let diff = abs(d.timeIntervalSince(target))
+            if diff < bestDiff {
+                bestDiff = diff
+                bestIndex = mid
+            }
+            if d < target {
+                lo = mid + 1
+            } else if d > target {
+                hi = mid - 1
+            } else {
+                break
+            }
+        }
+        return points[bestIndex]
     }
 
     // MARK: - UITableViewDataSource
@@ -318,9 +392,24 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
 
         let entry = entries[indexPath.row]
         let gramsString = gramsFormatter.string(from: NSNumber(value: entry.grams)) ?? String(format: "%.0f", entry.grams)
+        
+        // Andra rad: CGM och ev. fingerstick-nivå
+        if let cgm = entry.cgmMmol {
+            let cgmString = mmolFormatter.string(from: NSNumber(value: cgm)) ?? String(format: "%.1f", cgm)
+            if entry.hasBGCheckNearby, let bg = entry.bgCheckMmol {
+                let bgString = mmolFormatter.string(from: NSNumber(value: bg)) ?? String(format: "%.1f", bg)
+                cell.detailTextLabel?.text = "CGM: \(cgmString) • Finger: \(bgString) mmol/L"
+            } else {
+                cell.detailTextLabel?.text = "CGM: \(cgmString) mmol/L"
+            }
+            cell.detailTextLabel?.font = .systemFont(ofSize: 12)
+            cell.detailTextLabel?.textColor = .secondaryLabel
+        } else {
+            cell.detailTextLabel?.text = nil
+        }
 
         // Leading SF Symbol + text "Dextro • xx g" + ev. markering om fingerstick inom ±15 min
-        var text = " Dextro • \(gramsString) g"
+        var text = "Dextro • \(gramsString) g"
         if entry.hasBGCheckNearby {
             text += " 🩸"
         }
@@ -333,7 +422,7 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
         // Right-aligned full date + time
         let rightLabel = UILabel()
         rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
-        rightLabel.font = .systemFont(ofSize: 15)
+        rightLabel.font = .systemFont(ofSize: 14)
         rightLabel.textColor = .secondaryLabel
         rightLabel.textAlignment = .right
         rightLabel.sizeToFit()

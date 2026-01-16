@@ -373,7 +373,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             let deltaString = deltaFormatter.string(from: NSNumber(value: delta)) ?? String(format: "%+.1f", delta)
 
             cell.detailTextLabel?.text = "CGM +10 min: \(cgmString) Δ \(deltaString)"
-            cell.detailTextLabel?.font = .systemFont(ofSize: 13)
+            cell.detailTextLabel?.font = .systemFont(ofSize: 12)
             cell.detailTextLabel?.textColor = .secondaryLabel
         } else {
             cell.detailTextLabel?.text = nil
@@ -386,7 +386,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         // Right-aligned full date + time
         let rightLabel = UILabel()
         rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
-        rightLabel.font = .systemFont(ofSize: 15)
+        rightLabel.font = .systemFont(ofSize: 14)
         rightLabel.textColor = .secondaryLabel
         rightLabel.textAlignment = .right
         rightLabel.sizeToFit()
