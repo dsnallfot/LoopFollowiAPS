@@ -39,20 +39,20 @@ extension MainViewController {
         let nextRun: Date
 
         if todayAtTwo <= now {
-            // If we've already passed 03:00 today, schedule for tomorrow.
+            // If we've already passed 02:00 today, schedule for tomorrow.
             nextRun = calendar.date(byAdding: .day, value: 1, to: todayAtTwo) ?? now
         } else {
-            // Otherwise, schedule for 03:00 today.
+            // Otherwise, schedule for 02:00 today.
             nextRun = todayAtTwo
         }
 
         TaskScheduler.shared.scheduleTask(id: .statsPrefetch, nextRun: nextRun) { [weak self] in
             guard let self = self else { return }
+            let startTime = Date()
             
             LogManager.shared.log(
                 category: .taskScheduler,
-                message: "StatsPrefetch task running (nightly stats prefetch)",
-                isDebug: true
+                message: "StatsPrefetch task running (nightly stats prefetch) start=\(startTime)"
             )
             
             // Create a temporary StatsDataService bound to this MainViewController.
@@ -63,10 +63,11 @@ extension MainViewController {
             statsService.ensureDataAvailable(onProgress: {
                 // We keep this empty for now; could log progress if needed.
             }, completion: {
+                let endTime = Date()
+                let duration = endTime.timeIntervalSince(startTime)
                 LogManager.shared.log(
                     category: .taskScheduler,
-                    message: "StatsPrefetch task completed, scheduling next run",
-                    isDebug: true
+                    message: "StatsPrefetch task completed in \(String(format: "%.1f", duration)) s, scheduling next run"
                 )
                 
                 // När vi är klara schemalägger vi nästa natt.
@@ -109,13 +110,13 @@ extension MainViewController {
             let cal = Calendar.current
             let now = Date()
             let today = cal.startOfDay(for: now)
+            let startTime = Date()
 
             let daysToFetch = 7   // ⬅️ lagom: fyller sena hål utan att vara tungt
 
             LogManager.shared.log(
                 category: .taskScheduler,
-                message: "NS-only glucose prefetch task running (last \(daysToFetch) days)",
-                isDebug: true
+                message: "NS-only glucose prefetch task running (last \(daysToFetch) days) start=\(startTime)"
             )
 
             Task {
@@ -127,10 +128,12 @@ extension MainViewController {
                     GlucoseNSOnlyCache.purgeOldFiles()
                 }
 
+                let endTime = Date()
+                let duration = endTime.timeIntervalSince(startTime)
+
                 LogManager.shared.log(
                     category: .taskScheduler,
-                    message: "NS-only glucose prefetch completed, scheduling next run",
-                    isDebug: true
+                    message: "NS-only glucose prefetch completed in \(String(format: "%.1f", duration)) s (rows=\(sgvBatch.count)), scheduling next run"
                 )
 
                 // Reschedule next night

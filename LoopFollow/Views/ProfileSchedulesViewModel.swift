@@ -15,6 +15,68 @@ struct ScheduleEntry: Identifiable {
     let value: String
 }
 
+final class ProfileSchedulesLastChangedStore {
+    static let shared = ProfileSchedulesLastChangedStore()
+
+    private let defaultsKey = "ProfileSchedulesLastChangedDates"
+    private var cache: [String: Date] = [:]
+
+    private init() {
+        load()
+    }
+
+    private func load() {
+        let defaults = UserDefaults.standard
+        guard let dict = defaults.dictionary(forKey: defaultsKey) as? [String: TimeInterval] else {
+            return
+        }
+
+        var result: [String: Date] = [:]
+        for (key, ts) in dict {
+            result[key] = Date(timeIntervalSince1970: ts)
+        }
+        cache = result
+    }
+
+    private func save() {
+        var dict: [String: TimeInterval] = [:]
+        for (key, date) in cache {
+            dict[key] = date.timeIntervalSince1970
+        }
+        UserDefaults.standard.set(dict, forKey: defaultsKey)
+    }
+
+    func registerChange(forKey normalizedKey: String, at date: Date) {
+        if let existing = cache[normalizedKey], existing >= date {
+            return
+        }
+        cache[normalizedKey] = date
+        save()
+    }
+
+    func mergedLatest(forKey normalizedKey: String, candidate: Date?) -> Date? {
+        let persisted = cache[normalizedKey]
+
+        switch (persisted, candidate) {
+        case (nil, nil):
+            return nil
+        case (let p?, nil):
+            return p
+        case (nil, let c?):
+            cache[normalizedKey] = c
+            save()
+            return c
+        case (let p?, let c?):
+            let latest = max(p, c)
+            if latest != p {
+                cache[normalizedKey] = latest
+                save()
+            }
+            return latest
+        }
+    }
+}
+
 class ProfileSchedulesViewModel: ObservableObject {
     @Published var basalEntries: [ScheduleEntry] = []
     @Published var carbRatioEntries: [ScheduleEntry] = []
@@ -30,6 +92,7 @@ class ProfileSchedulesViewModel: ObservableObject {
     @Published var lastChangedTargetProfile: Date?
     
     private var minCarbImpact: Double = 8 // Default value, will be fetched
+    private let lastChangedStore = ProfileSchedulesLastChangedStore.shared
 
     init() {
         fetchProfileData()
@@ -314,17 +377,28 @@ class ProfileSchedulesViewModel: ObservableObject {
                 }
             }
 
-            // Swift 6-snapshot
-            let basal = latest[normalize("Basalprofil")]
-            let cr    = latest[normalize("CR-profil")]
-            let isf   = latest[normalize("ISF-profil")]
-            let target   = latest[normalize("Mål-profil")]
+            // Swift 6-snapshot (candidates från cache-fönstret)
+            let basalKey  = normalize("Basalprofil")
+            let crKey     = normalize("CR-profil")
+            let isfKey    = normalize("ISF-profil")
+            let targetKey = normalize("Mål-profil")
+
+            let basalCandidate  = latest[basalKey]
+            let crCandidate     = latest[crKey]
+            let isfCandidate    = latest[isfKey]
+            let targetCandidate = latest[targetKey]
 
             await MainActor.run {
-                self.lastChangedBasalProfile = basal
-                self.lastChangedCRProfile = cr
-                self.lastChangedISFProfile = isf
-                self.lastChangedTargetProfile = target
+                // Persist: se till att vi inte tappar bort dessa datum när cachen åldras ut.
+                for (normalizedKey, date) in latest {
+                    self.lastChangedStore.registerChange(forKey: normalizedKey, at: date)
+                }
+
+                // Merge: om candidate är nil (pga 90-dagars fönstret), visa ändå persisterat värde.
+                self.lastChangedBasalProfile  = self.lastChangedStore.mergedLatest(forKey: basalKey, candidate: basalCandidate)
+                self.lastChangedCRProfile     = self.lastChangedStore.mergedLatest(forKey: crKey, candidate: crCandidate)
+                self.lastChangedISFProfile    = self.lastChangedStore.mergedLatest(forKey: isfKey, candidate: isfCandidate)
+                self.lastChangedTargetProfile = self.lastChangedStore.mergedLatest(forKey: targetKey, candidate: targetCandidate)
             }
         }
     }

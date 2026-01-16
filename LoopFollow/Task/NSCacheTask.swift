@@ -34,6 +34,12 @@ extension MainViewController {
             firstRun = cal.date(from: comps) ?? now.addingTimeInterval(3600)
         }
 
+        LogManager.shared.log(
+            category: .taskScheduler,
+            message: "CacheFill task scheduled, firstRun=\(firstRun)",
+            isDebug: true
+        )
+
         TaskScheduler.shared.scheduleTask(id: .cacheFill, nextRun: firstRun) { [weak self] in
             self?.cacheTaskAction()
         }
@@ -43,9 +49,16 @@ extension MainViewController {
     private func cacheTaskAction() {
         let cal   = Calendar.current
         let today = cal.startOfDay(for: Date())
+        let startTime = Date()
 
         // On first run (empty cache) fetch retentionDays; thereafter only yesterday.
         let daysToFetch = NightscoutCache.hasAnyFiles ? 1 : NightscoutCache.retentionDays
+
+        LogManager.shared.log(
+                category: .taskScheduler,
+                message: "CacheFill task running (daysToFetch=\(daysToFetch)) start=\(startTime)"
+            )
+
         let group = DispatchGroup()
 
         for i in 1...daysToFetch {
@@ -57,10 +70,19 @@ extension MainViewController {
         }
 
         group.notify(queue: .main) {
+            let endTime = Date()
+            let duration = endTime.timeIntervalSince(startTime)
             // Reschedule for next midnight+2
             var comps = cal.dateComponents([.year, .month, .day], from: today)
             comps.day! += 1; comps.hour = 0; comps.minute = 2; comps.second = 0
             let next = cal.date(from: comps)!
+
+            LogManager.shared.log(
+                        category: .taskScheduler,
+                        message: "CacheFill task completed in \(String(format: "%.1f", duration)) s, scheduling next run at \(next)",
+                        isDebug: true
+                    )
+
             TaskScheduler.shared.rescheduleTask(id: .cacheFill, to: next)
         }
     }
@@ -78,6 +100,12 @@ extension MainViewController {
         let cal = Calendar.current
         let start = cal.startOfDay(for: day)
         let end   = cal.date(byAdding: .day, value: 1, to: start)!
+
+        LogManager.shared.log(
+            category: .taskScheduler,
+            message: "CacheBG fetch started for day \(start)",
+            isDebug: true
+        )
 
         var params: [String: String] = [:]
         // Count for one day: 12 readings/hour + buffer
@@ -127,7 +155,7 @@ extension MainViewController {
                                               treatments: existingTreatments)
             case .failure(let error):
                 LogManager.shared.log(
-                    category: .temporaryDebug,
+                    category: .taskScheduler,
                     message: "[CacheBG] webLoadNSBGDataCache FAILED for day \(start): \(error.localizedDescription)",
                     isDebug: true
                 )
@@ -150,6 +178,12 @@ extension MainViewController {
         let cal = Calendar.current
         let start = cal.startOfDay(for: day)
         let end   = cal.date(byAdding: .day, value: 1, to: start)!
+
+        LogManager.shared.log(
+            category: .taskScheduler,
+            message: "CacheTreatments fetch started for day \(start)",
+            isDebug: true
+        )
 
         let iso = ISO8601DateFormatter()
         let params: [String: String] = [
@@ -178,6 +212,12 @@ extension MainViewController {
                         }
                         // Rensa gamla filer efter att vi lagt till nya entries (best-effort).
                         NightscoutCache.purgeOldFiles()
+
+                        LogManager.shared.log(
+                            category: .taskScheduler,
+                            message: "CacheTreatments updated and persisted for day \(start)",
+                            isDebug: true
+                        )
 
                         // Notify listeners that the treatments cache for this day has been updated
                         DispatchQueue.main.async {
