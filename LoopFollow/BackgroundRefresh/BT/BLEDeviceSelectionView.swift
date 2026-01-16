@@ -23,6 +23,9 @@ struct BLEDeviceSelectionView: View {
         bleManager.devices.filter { selectedFilter.matches($0) && !isSelected($0) }
     }
 
+    @State private var showConfirmAlert: Bool = false
+    @State private var pendingDevice: BLEDevice?
+
     // MARK: - Body
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -128,7 +131,25 @@ struct BLEDeviceSelectionView: View {
                         }
                         .padding(.vertical, 10)
                         .contentShape(Rectangle())
-                        .onTapGesture { onSelectDevice(device) }
+                        .onTapGesture {
+                            pendingDevice = device
+                            showConfirmAlert = true
+                        }
+                        .alert("Ställ in enhet för heartbeat", isPresented: $showConfirmAlert) {
+                            Button("Ja") {
+                                if let device = pendingDevice {
+                                    onSelectDevice(device)
+                                }
+                                pendingDevice = nil
+                            }
+                            Button("Avbryt", role: .cancel) {
+                                pendingDevice = nil
+                            }
+                        } message: {
+                            if let name = pendingDevice?.name {
+                                Text("\nVill du använda \(name) för att väcka appen i bakgrunden?")
+                            }
+                        }
 
                         // Divider between rows
                         Divider().opacity(0.35)
