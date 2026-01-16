@@ -544,10 +544,85 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         return String(trimmed.prefix(6))
     }
 
-    private func showSensorErrorAlert(indexPath: IndexPath, sensorName: String?, countText: String, durationText: String, averageText: String?) {
+    private func perCalendarDayErrorMinutes(
+        outages: [DexcomSensorErrorOutageCacheItem],
+        sessionStart: Date,
+        sessionEnd: Date,
+        maxDays: Int = 10
+    ) -> [Int] {
+        guard sessionEnd >= sessionStart else { return [] }
+
+        let cal = Calendar.current
+        let startOfFirstDay = cal.startOfDay(for: sessionStart)
+        let startOfLastDay = cal.startOfDay(for: sessionEnd)
+
+        // Total number of calendar days the session spans (including partial first/last days)
+        let daySpan = (cal.dateComponents([.day], from: startOfFirstDay, to: startOfLastDay).day ?? 0) + 1
+
+        // We will always compute all days in the span, but collapse anything beyond `maxDays`
+        // into the last visible bucket so we never drop minutes.
+        let daysToShow = max(0, min(maxDays, daySpan))
+        guard daysToShow > 0 else { return [] }
+
+        var result = Array(repeating: 0, count: daysToShow)
+
+        // Pre-clamp each outage to the session window to avoid edge cases.
+        let clampedOutages: [(start: Date, end: Date)] = outages.compactMap { item in
+            let s = Date(timeIntervalSince1970: item.startTimestamp)
+            let e = Date(timeIntervalSince1970: item.endTimestamp)
+            let start = max(s, sessionStart)
+            let end = min(e, sessionEnd)
+            return end > start ? (start: start, end: end) : nil
+        }
+
+        guard !clampedOutages.isEmpty else { return result }
+
+        // Iterate over all calendar days in the span. If the session extends beyond `maxDays`
+        // of visible rows, aggregate later days into the last bucket (e.g. "Dag 10" holds day 10+).
+        for dayIndex in 0..<daySpan {
+            guard let dayStart = cal.date(byAdding: .day, value: dayIndex, to: startOfFirstDay) else { continue }
+            guard let nextDayStart = cal.date(byAdding: .day, value: 1, to: dayStart) else { continue }
+
+            let windowStart = max(dayStart, sessionStart)
+            let windowEnd = min(nextDayStart, sessionEnd)
+            if windowEnd <= windowStart { continue }
+
+            var seconds: TimeInterval = 0
+            for o in clampedOutages {
+                let overlapStart = max(o.start, windowStart)
+                let overlapEnd = min(o.end, windowEnd)
+                if overlapEnd > overlapStart {
+                    seconds += overlapEnd.timeIntervalSince(overlapStart)
+                }
+            }
+
+            // Decide which visible bucket this day contributes to.
+            let bucketIndex = min(dayIndex, daysToShow - 1)
+            result[bucketIndex] += max(0, Int(round(seconds / 60.0)))
+        }
+
+        return result
+    }
+
+    private func showSensorErrorAlert(
+        indexPath: IndexPath,
+        sensorName: String?,
+        countText: String,
+        durationText: String,
+        averageText: String?,
+        perDayErrorMinutes: [Int]?
+    ) {
         var message = "\nAntal sensorfel:     \(countText)\nTotal tid med fel:   \(durationText)"
         if let averageText = averageText {
             message += "\nMedel tid per fel:   \(averageText)"
+        }
+
+        if let perDay = perDayErrorMinutes, !perDay.isEmpty {
+            message += "\n\nSensorfel (tid per kalenderdag)"
+            for (idx, minutes) in perDay.enumerated() {
+                let dayNumber = idx + 1
+                message += "\nDag \(dayNumber):   \(minutes) min"
+            }
         }
 
         let suffix: String
@@ -588,7 +663,14 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
         // Use master list (sorted desc) to define the session window
         guard let masterIndex = sensorHistory.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) else {
-            showSensorErrorAlert(indexPath: indexPath, sensorName: parsedSensorName(fromNote: entry.note), countText: "-- st", durationText: "--", averageText: nil)
+            showSensorErrorAlert(
+                indexPath: indexPath,
+                sensorName: parsedSensorName(fromNote: entry.note),
+                countText: "--",
+                durationText: "--",
+                averageText: nil,
+                perDayErrorMinutes: nil
+            )
             return
         }
 
@@ -609,7 +691,14 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         let relevant = dexcomOutagesCache.filter { $0.noteTimestamp >= startTs && $0.noteTimestamp < endTs }
 
         guard !relevant.isEmpty else {
-            showSensorErrorAlert(indexPath: indexPath, sensorName: parsedSensorName(fromNote: entry.note), countText: "-- st", durationText: "--", averageText: nil)
+            showSensorErrorAlert(
+                indexPath: indexPath,
+                sensorName: parsedSensorName(fromNote: entry.note),
+                countText: "--",
+                durationText: "--",
+                averageText: nil,
+                perDayErrorMinutes: nil
+            )
             return
         }
 
@@ -619,12 +708,14 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         }
         let averageMinutes = count > 0 ? totalMinutes / count : 0
         let averageText = count > 0 ? "\(averageMinutes) min" : "--"
+        let perDayMinutes = perCalendarDayErrorMinutes(outages: relevant, sessionStart: sessionStart, sessionEnd: sessionEnd, maxDays: 10)
         showSensorErrorAlert(
             indexPath: indexPath,
             sensorName: parsedSensorName(fromNote: entry.note),
             countText: "\(count) st",
             durationText: formatTotalDuration(minutes: totalMinutes),
-            averageText: averageText
+            averageText: averageText,
+            perDayErrorMinutes: perDayMinutes
         )
     }
 

@@ -105,7 +105,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             }
         
         <<< ButtonRow() {
-                $0.title = "Glukoslogg"
+                $0.title = "Glukoslogg & sensorfel"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
                         let glucoseVC = GlucoseView()
@@ -116,7 +116,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             }
         
         <<< ButtonRow() {
-                $0.title = "Pumpbyten logg"
+                $0.title = "Poddhistorik"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
                         let pumpHistoryVC = PumpHistoryViewController()
@@ -127,7 +127,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             }
         
         <<< ButtonRow() {
-                $0.title = "Sensorbyten logg"
+                $0.title = "Sensorhistorik"
                 $0.presentationMode = .show(
                     controllerProvider: .callback(builder: {
                         let sensorHistoryVC = SensorHistoryViewController()
