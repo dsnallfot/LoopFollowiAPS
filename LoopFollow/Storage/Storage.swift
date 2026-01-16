@@ -62,6 +62,8 @@ class Storage {
 struct SensorStartHistoryEntry: Codable, Equatable {
     var date: TimeInterval
     var note: String
+    /// Optional, persisted summary of sensor error analysis (text shown in alert)
+    var sensorErrors: String?
 
     static func == (lhs: SensorStartHistoryEntry, rhs: SensorStartHistoryEntry) -> Bool {
         return lhs.date == rhs.date && lhs.note == rhs.note

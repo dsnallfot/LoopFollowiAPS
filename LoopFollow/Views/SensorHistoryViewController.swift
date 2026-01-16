@@ -604,14 +604,12 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         return result
     }
 
-    private func showSensorErrorAlert(
-        indexPath: IndexPath,
-        sensorName: String?,
+    private func buildSensorErrorMessage(
         countText: String,
         durationText: String,
         averageText: String?,
         perDayErrorMinutes: [Int]?
-    ) {
+    ) -> String {
         var message = "\nAntal sensorfel:     \(countText)\nTotal tid med fel:   \(durationText)"
         if let averageText = averageText {
             message += "\nMedel tid per fel:   \(averageText)"
@@ -624,7 +622,14 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
                 message += "\nDag \(dayNumber):   \(minutes) min"
             }
         }
+        return message
+    }
 
+    private func showSensorErrorAlert(
+        indexPath: IndexPath,
+        sensorName: String?,
+        message: String
+    ) {
         let suffix: String
         if let sensorName = sensorName, !sensorName.isEmpty {
             suffix = " (\(sensorName))"
@@ -663,13 +668,16 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
         // Use master list (sorted desc) to define the session window
         guard let masterIndex = sensorHistory.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) else {
-            showSensorErrorAlert(
-                indexPath: indexPath,
-                sensorName: parsedSensorName(fromNote: entry.note),
+            let message = buildSensorErrorMessage(
                 countText: "--",
                 durationText: "--",
                 averageText: nil,
                 perDayErrorMinutes: nil
+            )
+            showSensorErrorAlert(
+                indexPath: indexPath,
+                sensorName: parsedSensorName(fromNote: entry.note),
+                message: message
             )
             return
         }
@@ -691,14 +699,26 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         let relevant = dexcomOutagesCache.filter { $0.noteTimestamp >= startTs && $0.noteTimestamp < endTs }
 
         guard !relevant.isEmpty else {
-            showSensorErrorAlert(
-                indexPath: indexPath,
-                sensorName: parsedSensorName(fromNote: entry.note),
-                countText: "--",
-                durationText: "--",
-                averageText: nil,
-                perDayErrorMinutes: nil
-            )
+            // Om vi har en persisterad analys för denna sensor, använd den även om cache-fönstret inte längre räcker.
+            if let persistedMessage = sensorHistory[masterIndex].sensorErrors {
+                showSensorErrorAlert(
+                    indexPath: indexPath,
+                    sensorName: parsedSensorName(fromNote: entry.note),
+                    message: persistedMessage
+                )
+            } else {
+                let message = buildSensorErrorMessage(
+                    countText: "--",
+                    durationText: "--",
+                    averageText: nil,
+                    perDayErrorMinutes: nil
+                )
+                showSensorErrorAlert(
+                    indexPath: indexPath,
+                    sensorName: parsedSensorName(fromNote: entry.note),
+                    message: message
+                )
+            }
             return
         }
 
@@ -709,13 +729,33 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         let averageMinutes = count > 0 ? totalMinutes / count : 0
         let averageText = count > 0 ? "\(averageMinutes) min" : "--"
         let perDayMinutes = perCalendarDayErrorMinutes(outages: relevant, sessionStart: sessionStart, sessionEnd: sessionEnd, maxDays: 10)
-        showSensorErrorAlert(
-            indexPath: indexPath,
-            sensorName: parsedSensorName(fromNote: entry.note),
+
+        let message = buildSensorErrorMessage(
             countText: "\(count) st",
             durationText: formatTotalDuration(minutes: totalMinutes),
             averageText: averageText,
             perDayErrorMinutes: perDayMinutes
+        )
+
+        // Persistent analystext för avslutade sensorer (inte den pågående)
+        if masterIndex > 0 {
+            // Uppdatera in-memory-listan
+            sensorHistory[masterIndex].sensorErrors = message
+
+            // Uppdatera även persistent storage (Storage.shared.sensorStartNotes)
+            var stored = Storage.shared.sensorStartNotes
+            if let storedIndex = stored.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) {
+                var updated = stored[storedIndex]
+                updated.sensorErrors = message
+                stored[storedIndex] = updated
+                Storage.shared.sensorStartNotes = stored
+            }
+        }
+
+        showSensorErrorAlert(
+            indexPath: indexPath,
+            sensorName: parsedSensorName(fromNote: entry.note),
+            message: message
         )
     }
 
@@ -868,16 +908,27 @@ extension SensorHistoryViewController: UIDocumentPickerDelegate {
 
                 DispatchQueue.main.async {
                     var storedHistory = Storage.shared.sensorStartNotes
+
                     for entry in importedHistory {
-                        if !storedHistory.contains(where: { $0.date == entry.date && $0.note == entry.note }) {
+                        if let idx = storedHistory.firstIndex(where: { $0.date == entry.date && $0.note == entry.note }) {
+                            // Uppdatera befintlig entry – inklusive sensorErrors om den finns
+                            var updated = storedHistory[idx]
+                            updated.sensorErrors = entry.sensorErrors ?? updated.sensorErrors
+                            storedHistory[idx] = updated
+                        } else {
+                            // Ny entry – ta med allt (inkl sensorErrors)
                             storedHistory.append(entry)
                         }
                     }
-                    
+
                     Storage.shared.sensorStartNotes = storedHistory
                     self.loadSensorHistory() // Reload UI
-                    
-                    LogManager.shared.log(category: .dexcom, message: "✅ Successfully imported sensor history from local copy", isDebug: true)
+
+                    LogManager.shared.log(
+                        category: .dexcom,
+                        message: "✅ Imported sensor history (including persisted sensorErrors)",
+                        isDebug: true
+                    )
                 }
             } catch {
                 LogManager.shared.log(category: .dexcom, message: "❌ Failed to copy or import sensor history: \(error)", isDebug: true)
