@@ -451,13 +451,13 @@ extension MainViewController {
         case .meal:
             title = "Utv. efter Måltid"
         case .bgCheck:
-            title = "Utv. efter Stick"
+            title = "Utv. kring Stick"
         case .pumpChange:
             title = "Utv. efter Pumpbyte"
         case .sensorChange:
             title = "Utv. efter Sensorbyte"
         case .lowTreatment:
-            title = "Utv. efter Dextro"
+            title = "Utv. kring Dextro"
         }
 
         let analysisVC = MealAnalysisView(
@@ -494,10 +494,11 @@ extension MainViewController {
         guard let dataString = entry.data as? String else { return }
 
         let analysisStart = Date(timeIntervalSince1970: entry.x)
+        let analysisStartOffset = Date(timeIntervalSince1970: entry.x) - 60 * 20 //visa vad som hände 20 min före sticket och tiden framåt
 
         // Fingerstick / BG Check (updateBGCheckGraph använder "Fingerstick\n...")
         if dataString.contains("Fingerstick") {
-            presentMealAnalysis(for: analysisStart, source: .bgCheck)
+            presentMealAnalysis(for: analysisStartOffset, source: .bgCheck)
             return
         }
 

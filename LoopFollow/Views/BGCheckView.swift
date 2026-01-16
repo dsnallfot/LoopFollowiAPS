@@ -415,7 +415,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let entry = entries[indexPath.row]
-        let startDate = entry.date
+        let startDate = entry.date - 60 * 20 //visa vad som hände 20 min före sticket och tiden framåt
 
 
         // Hitta MainViewController via root UITabBarController för att få events,
@@ -456,7 +456,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             events: events,
             initialStart: startDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utv. efter Stick"
+            modalTitleString: "Utv. kring Stick"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

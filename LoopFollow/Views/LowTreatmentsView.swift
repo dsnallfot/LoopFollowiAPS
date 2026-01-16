@@ -442,7 +442,7 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let entry = entries[indexPath.row]
-        let startDate = entry.date
+        let startDate = entry.date - 60 * 20 //visa vad som hände 15 min före dextron och tiden framåt
 
 
         // Hitta MainViewController via root UITabBarController för att få events,
@@ -482,7 +482,7 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
             events: events,
             initialStart: startDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utv. efter Dextro"
+            modalTitleString: "Utv. kring Dextro"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet
