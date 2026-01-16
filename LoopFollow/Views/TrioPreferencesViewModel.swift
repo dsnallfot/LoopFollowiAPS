@@ -13,9 +13,83 @@ struct PreferenceEntry: Identifiable {
     let value: String
 }
 
+class TrioPreferencesLastChangedStore {
+    static let shared = TrioPreferencesLastChangedStore()
+
+    private let defaultsKey = "TrioPreferencesLastChangedDates"
+    private var cache: [String: Date] = [:]
+
+    private init() {
+        load()
+    }
+
+    private func load() {
+        let defaults = UserDefaults.standard
+        guard let dict = defaults.dictionary(forKey: defaultsKey) as? [String: TimeInterval] else {
+            return
+        }
+
+        var result: [String: Date] = [:]
+        for (key, ts) in dict {
+            result[key] = Date(timeIntervalSince1970: ts)
+        }
+        cache = result
+    }
+
+    private func save() {
+        var dict: [String: TimeInterval] = [:]
+        for (key, date) in cache {
+            dict[key] = date.timeIntervalSince1970
+        }
+        UserDefaults.standard.set(dict, forKey: defaultsKey)
+    }
+
+    /// Registrera en ny observerad ändringstid för en given (normaliserad) nyckel.
+    /// Om ett datum redan finns sparat, uppdaterar vi bara om det nya är senare.
+    func registerChange(forKey normalizedKey: String, at date: Date) {
+        if let existing = cache[normalizedKey], existing >= date {
+            return
+        }
+        cache[normalizedKey] = date
+        save()
+    }
+
+    /// Hämta senast persisterade datumet för en given (normaliserad) nyckel.
+    func persistedDate(forKey normalizedKey: String) -> Date? {
+        cache[normalizedKey]
+    }
+
+    /// Merge:a ett kandidatdatum (t.ex. från 90-dagarsfönstret) med det persisterade värdet.
+    /// - Om candidate är nil → returnera bara persisterat värde.
+    /// - Om båda finns → returnera det senaste och spara det vid behov.
+    func mergedLatest(forKey normalizedKey: String, candidate: Date?) -> Date? {
+        let persisted = cache[normalizedKey]
+
+        switch (persisted, candidate) {
+        case (nil, nil):
+            return nil
+        case (let p?, nil):
+            return p
+        case (nil, let c?):
+            cache[normalizedKey] = c
+            save()
+            return c
+        case (let p?, let c?):
+            let latest = max(p, c)
+            if latest != p {
+                cache[normalizedKey] = latest
+                save()
+            }
+            return latest
+        }
+    }
+}
+
 class TrioPreferencesViewModel: ObservableObject {
     @Published var preferences: [PreferenceEntry] = []
     @Published var latestChangeDateByNormalizedKey: [String: Date] = [:]
+    
+    private let lastChangedStore = TrioPreferencesLastChangedStore.shared
 
     // MARK: - Dev deviation analysis (ad hoc)
 
@@ -86,7 +160,9 @@ class TrioPreferencesViewModel: ObservableObject {
     }
 
     func latestChangeDate(forKey key: String) -> Date? {
-        latestChangeDateByNormalizedKey[normalizeKey(key)]
+        let normalized = normalizeKey(key)
+        let candidate = latestChangeDateByNormalizedKey[normalized]
+        return lastChangedStore.mergedLatest(forKey: normalized, candidate: candidate)
     }
 
     private func scanCachedNoteTreatmentsForPreferenceChanges(keys: [String]) {
@@ -122,7 +198,13 @@ class TrioPreferencesViewModel: ObservableObject {
             }
 
             await MainActor.run {
+                // Uppdatera in-memory kartan (nyaste inom cache-fönstret)
                 self.latestChangeDateByNormalizedKey = latest
+
+                // Persist: se till att vi inte tappar bort dessa datum när cachen åldras ut.
+                for (normalizedKey, date) in latest {
+                    self.lastChangedStore.registerChange(forKey: normalizedKey, at: date)
+                }
             }
         }
     }
