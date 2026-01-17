@@ -79,8 +79,7 @@ extension MainViewController {
 
             LogManager.shared.log(
                         category: .taskScheduler,
-                        message: "CacheFill task completed in \(String(format: "%.1f", duration)) s, scheduling next run at \(next)",
-                        isDebug: true
+                        message: "CacheFill task completed in \(String(format: "%.1f", duration)) s, scheduling next run at \(next)"
                     )
 
             TaskScheduler.shared.rescheduleTask(id: .cacheFill, to: next)
@@ -104,7 +103,7 @@ extension MainViewController {
         LogManager.shared.log(
             category: .taskScheduler,
             message: "CacheBG fetch started for day \(start)",
-            isDebug: true
+            isDebug: true, isTempDebug: true
         )
 
         var params: [String: String] = [:]
@@ -156,8 +155,7 @@ extension MainViewController {
             case .failure(let error):
                 LogManager.shared.log(
                     category: .taskScheduler,
-                    message: "[CacheBG] webLoadNSBGDataCache FAILED for day \(start): \(error.localizedDescription)",
-                    isDebug: true
+                    message: "[CacheBG] webLoadNSBGDataCache FAILED for day \(start): \(error.localizedDescription)"
                 )
                 return
             }
