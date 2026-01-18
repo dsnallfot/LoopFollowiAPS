@@ -674,6 +674,12 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             self.hands67ImageView.alpha = shouldShow ? 0.4 : 0.0
         }
     }
+    
+    /// Public-facing helper to update all BG-related easter eggs from outside SnoozeViewController.
+    func updateEasterEggs(bgDisplay: String) {
+        updateUnicornVisibility(forBGDisplayString: bgDisplay)
+        update67HandsVisibility(forBGDisplayString: bgDisplay)
+    }
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: .volumeButtonAlarmStopped, object: nil)

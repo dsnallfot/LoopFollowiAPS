@@ -565,6 +565,7 @@ extension MainViewController {
             snoozer.BGLabel.text = snoozerBG
             snoozer.DirectionLabel.text = snoozerDirection
             snoozer.DeltaLabel.text = snoozerDelta
+            snoozer.updateEasterEggs(bgDisplay: snoozerBG)
             
             //FifteenMinutesTrend
             
