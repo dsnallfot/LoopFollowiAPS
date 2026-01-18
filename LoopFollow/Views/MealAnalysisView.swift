@@ -355,7 +355,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
         mainStack.setCustomSpacing(8, after: timeRow)          // extra gap before duration
-        mainStack.setCustomSpacing(8, after: durationControl)  // small gap before in-range bar
+        mainStack.setCustomSpacing(10, after: durationControl)  // small gap before in-range bar
         mainStack.setCustomSpacing(16, after: inRangeRow)      // clear separation before totals
         mainStack.setCustomSpacing(10, after: rowsStack)       // clear separation
         mainStack.setCustomSpacing(15, after: bgChartView)     // extra gap before stats
@@ -456,7 +456,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let calendar = Calendar.current
 
         if title == "Ⓢ" {
-            // Schoolday: always 08:00 → (now if before 16:30 today, else 16:30)
+            // Schoolday: always 08:00 → (now if before 16:00 today, else 16:00)
             let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
             let newStart = calendar.date(from: DateComponents(
                 year: comps.year, month: comps.month, day: comps.day,
@@ -464,7 +464,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             ))!
             let schoolEnd = calendar.date(from: DateComponents(
                 year: comps.year, month: comps.month, day: comps.day,
-                hour: 16, minute: 30
+                hour: 16, minute: 00
             ))!
             let newEnd: Date
             if calendar.isDateInToday(sender.date), Date() < schoolEnd {
@@ -526,7 +526,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let calendar = Calendar.current
 
         if title == "Ⓢ" {
-            // Schoolday: always 08:00 → (now if before 16:30 today, else 16:30)
+            // Schoolday: always 08:00 → (now if before 16:00 today, else 16:00)
             let comps = calendar.dateComponents([.year, .month, .day], from: sender.date)
             let newStart = calendar.date(from: DateComponents(
                 year: comps.year, month: comps.month, day: comps.day,
@@ -534,7 +534,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             ))!
             let schoolEnd = calendar.date(from: DateComponents(
                 year: comps.year, month: comps.month, day: comps.day,
-                hour: 16, minute: 30
+                hour: 16, minute: 00
             ))!
             let newEnd: Date
             if calendar.isDateInToday(sender.date), Date() < schoolEnd {
@@ -607,7 +607,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             endPicker.date = endTime
 
         } else if title == "Ⓢ" {
-            // Schoolday: always 08:00 → (now if before 16:30; else 16:30)
+            // Schoolday: always 08:00 → (now if before 16:00; else 16:00)
             // Use the same calendar-day as startTime (preserves date if you entered via modal)
             let comps = calendar.dateComponents([.year, .month, .day], from: startTime)
             let newStart = calendar.date(from: DateComponents(
@@ -616,14 +616,14 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             ))!
             let schoolEnd = calendar.date(from: DateComponents(
                 year: comps.year, month: comps.month, day: comps.day,
-                hour: 16, minute: 30
+                hour: 16, minute: 00
             ))!
             let newEnd: Date
             if calendar.isDateInToday(newStart), Date() < schoolEnd {
-                // if it’s today *and* before 16:30, end = now
+                // if it’s today *and* before 16:00, end = now
                 newEnd = Date()
             } else {
-                // otherwise end = 16:30 of that day
+                // otherwise end = 16:00 of that day
                 newEnd = schoolEnd
             }
             startTime = newStart
@@ -1096,12 +1096,12 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         }.map { event in
             ChartDataEntry(
                 x: event.date.timeIntervalSince(startTime) / 3600.0,
-                y: 22.0,
+                y: 20.0,
                 data: String(format: "%.2f E", event.amount)
             )
         }
         let bolusDots = ScatterChartDataSet(entries: bolusEntries, label: "")
-        bolusDots.setColor(NSUIColor.systemBlue)
+        bolusDots.setColor(NSUIColor.systemBlue.withAlphaComponent(0.9))
         bolusDots.setScatterShape(.circle)
         bolusDots.scatterShapeSize = 8
         bolusDots.drawValuesEnabled = false
@@ -1120,9 +1120,9 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             )
         }
         let smbDots = ScatterChartDataSet(entries: smbEntries, label: "")
-        smbDots.setColor(NSUIColor.systemBlue)
+        smbDots.setColor(NSUIColor.systemBlue.withAlphaComponent(0.9))
         smbDots.setScatterShape(.triangleFlipped)
-        smbDots.scatterShapeSize = 9
+        smbDots.scatterShapeSize = 8
         smbDots.drawValuesEnabled = false
         smbDots.highlightEnabled = true
         smbDots.highlightColor = .clear
@@ -1145,9 +1145,9 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 )
             }
         let orangeDots = ScatterChartDataSet(entries: orangeEntries, label: "")
-        orangeDots.setColor(.systemOrange.withAlphaComponent(1.0))
+        orangeDots.setColor(.systemOrange.withAlphaComponent(0.9))
         orangeDots.setScatterShape(.triangle)
-        orangeDots.scatterShapeSize = 9
+        orangeDots.scatterShapeSize = 8
         orangeDots.drawValuesEnabled = false
         orangeDots.highlightEnabled = true
         orangeDots.highlightColor = .clear
