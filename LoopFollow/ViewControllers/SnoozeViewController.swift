@@ -33,6 +33,18 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     @IBOutlet weak var debugTextView: UITextView!
     
     @IBOutlet weak var InfoButton: UIButton!
+    @IBOutlet weak var BGView: UIStackView!
+
+    // 🦄 Unicorn overlay behind BGView contents (Snoozer)
+    private let unicornLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "🦄"
+        label.textAlignment = .center
+        label.font = UIFont.systemFont(ofSize: 360, weight: .regular)
+        label.alpha = 0.0 // hidden by default
+        return label
+    }()
     
     @IBOutlet weak var AlarmsButton: UIButton!
     
@@ -104,6 +116,8 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         let deltaValWithPeriod = deltaVal.replacingOccurrences(of: ",", with: ".")
         
         BGLabel.text = bgValWithPeriod
+        // 🦄 Show/hide unicorn for exactly 5.5 mmol/L
+        updateUnicornVisibility(forBGDisplayString: bgValWithPeriod)
         DirectionLabel.text = directionVal
         DeltaLabel.text = deltaValWithPeriod
         MinAgoLabel.text = minAgoVal
@@ -534,6 +548,13 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         setupSwipeUpToStatus()
         // Wire up Alarms button to open AlarmViewController
         AlarmsButton.addTarget(self, action: #selector(alarmsButtonTapped), for: .touchUpInside)
+        
+        // 🦄 Setup unicorn overlay behind BGView content
+        BGView.insertSubview(unicornLabel, at: 0)
+        NSLayoutConstraint.activate([
+            unicornLabel.centerXAnchor.constraint(equalTo: BGView.centerXAnchor),
+            unicornLabel.centerYAnchor.constraint(equalTo: BGView.centerYAnchor)
+        ])
     }
 
     @IBAction func alarmsButtonTapped(_ sender: Any) {
@@ -616,6 +637,14 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             sheet.detents = [.medium(), .large()]
         }
         self.present(vc, animated: true)
+    }
+    
+    /// Shows a big unicorn behind BGView when BG is exactly 5.5 mmol/L, hides otherwise.
+    fileprivate func updateUnicornVisibility(forBGDisplayString bg: String) {
+        let shouldShow = (bg == "5.5")
+        UIView.animate(withDuration: 0.25) {
+            self.unicornLabel.alpha = shouldShow ? 0.5 : 0.0
+        }
     }
 
     deinit {

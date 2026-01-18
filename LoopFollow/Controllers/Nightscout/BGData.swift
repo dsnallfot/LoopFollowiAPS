@@ -463,11 +463,14 @@ extension MainViewController {
             var snoozerDelta = ""
             
             // Set BGText with the latest BG value
-            self.BGText.text = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: "5.5", with: "5.5🦄").replacingOccurrences(of: ",", with: ".")
+            let bgDisplay = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
+            self.BGText.text = bgDisplay
             //Daniel: Added for visualization in remote meal info popup
-            sharedLatestBG = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
-            snoozerBG = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: "5.5", with: "5.5🦄").replacingOccurrences(of: ",", with: ".")
+            sharedLatestBG = bgDisplay
+            snoozerBG = bgDisplay
             self.setBGTextColor()
+            // 🦄 Show/hide unicorn for exactly 5.5 mmol/L
+            self.updateUnicornVisibility(forBGDisplayString: bgDisplay)
             
             // Direction handling
             if let directionBG = entries[latestEntryIndex].direction {
@@ -675,6 +678,14 @@ extension MainViewController {
         }
 
         return nil
+    }
+    
+    /// Shows a big unicorn behind BGView when BG is exactly 5.5 mmol/L, hides otherwise.
+    fileprivate func updateUnicornVisibility(forBGDisplayString bg: String) {
+        let shouldShow = (bg == "5.5")
+        UIView.animate(withDuration: 0.25) {
+            self.unicornLabel.alpha = shouldShow ? 0.5 : 0.0
+        }
     }
 }
 

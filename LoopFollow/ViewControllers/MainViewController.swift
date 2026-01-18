@@ -46,7 +46,19 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     @IBOutlet weak var historyStack: UIStackView!
     @IBOutlet weak var statsStack: UIStackView!
     @IBOutlet weak var statsHeadline: UILabel!
+    @IBOutlet weak var BGView: UIStackView!
     var refreshScrollView: UIScrollView!
+    
+    // 🦄 Unicorn overlay behind BGView contents
+    let unicornLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "🦄"
+        label.textAlignment = .center
+        label.font = UIFont.systemFont(ofSize: 150, weight: .regular)
+        label.alpha = 0.0 // hidden by default
+        return label
+    }()
     var refreshControl: UIRefreshControl!
 
     let speechSynthesizer = AVSpeechSynthesizer()
@@ -393,8 +405,13 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             circleView.centerXAnchor.constraint(equalTo: historyStack.centerXAnchor),
             circleView.centerYAnchor.constraint(equalTo: historyStack.centerYAnchor)
         ])
-        
-        //setupSwipeUpToStatus()
+
+        // 🦄 Setup unicorn overlay behind BGView content
+        BGView.insertSubview(unicornLabel, at: 0)
+        NSLayoutConstraint.activate([
+            unicornLabel.centerXAnchor.constraint(equalTo: BGView.centerXAnchor),
+            unicornLabel.centerYAnchor.constraint(equalTo: BGView.centerYAnchor)
+        ])
     }
     
     deinit {
