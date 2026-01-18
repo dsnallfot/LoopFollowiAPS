@@ -210,6 +210,50 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // Configure duration control action
         durationControl.addTarget(self, action: #selector(durationChanged(_:)), for: .valueChanged)
 
+        // BG rows
+        // Configure inRangeRow and BG bars (now properties)
+        inRangeRow.axis = .horizontal
+        inRangeRow.spacing = 0
+        inRangeRow.distribution = .fillProportionally
+        inRangeRow.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        inRangeRow.layer.cornerRadius = 6
+        inRangeRow.clipsToBounds = true
+
+        // Configure belowBar
+        belowBar.backgroundColor = UIColor(named: "LoopRed")
+        belowBar.textColor = .white
+        belowBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
+        belowBar.textAlignment = .center
+        belowBar.adjustsFontSizeToFitWidth = false
+        belowBar.minimumScaleFactor = 0.5
+        // Configure inBar
+        inBar.backgroundColor = UIColor(named: "LoopGreen")
+        inBar.textColor = .white
+        inBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
+        inBar.textAlignment = .center
+        inBar.adjustsFontSizeToFitWidth = false
+        inBar.minimumScaleFactor = 0.5
+        // Configure aboveBar
+        aboveBar.backgroundColor = .systemPurple
+        aboveBar.textColor = .white
+        aboveBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
+        aboveBar.textAlignment = .center
+        aboveBar.adjustsFontSizeToFitWidth = false
+        aboveBar.minimumScaleFactor = 0.5
+        // Add bars directly to inRangeRow
+        inRangeRow.addArrangedSubview(belowBar)
+        inRangeRow.addArrangedSubview(inBar)
+        inRangeRow.addArrangedSubview(aboveBar)
+        // Initial width constraints for bars (equal split, sum to 1.0)
+        belowWidthConstraint = belowBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.33)
+        inWidthConstraint    = inBar.widthAnchor   .constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.34)
+        aboveWidthConstraint = aboveBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.33)
+        [belowWidthConstraint, inWidthConstraint, aboveWidthConstraint].forEach { $0?.isActive = true }
+        // Minimum width constraints (once)
+        belowBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+        inBar   .widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+        aboveBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+
         let startGroup = UIStackView(arrangedSubviews: [startTimeLabel, startPicker])
         startGroup.axis = .horizontal
         startGroup.alignment = .center
@@ -279,70 +323,21 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
 
         // Additional stats rows
         let statsStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "✧  Verklig Insulinkvot (CR)", valueLabel: realCRValueLabel, unit: " g/E"),
+            makeStatRow(text: "✧  Glukosförändring",           valueLabel: changeBGValueLabel,  unit: " mmol/L"),
+            makeStatRow(text: "✧  Verklig Insulinkvot (CR)",   valueLabel: realCRValueLabel,    unit: " g/E"),
             makeStatRow(text: "✧  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: " %"),
-            makeStatRow(text: "✧  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,    unit: " %")
+            makeStatRow(text: "✧  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,   unit: " %")
         ])
         statsStack.axis = .vertical
         statsStack.spacing = 5
 
-        // BG rows
-        // Configure inRangeRow and BG bars (now properties)
-        inRangeRow.axis = .horizontal
-        inRangeRow.spacing = 0
-        inRangeRow.distribution = .fillProportionally
-        inRangeRow.heightAnchor.constraint(equalToConstant: 30).isActive = true
-        inRangeRow.layer.cornerRadius = 6
-        inRangeRow.clipsToBounds = true
-
-        // Configure belowBar
-        belowBar.backgroundColor = UIColor(named: "LoopRed")
-        belowBar.textColor = .white
-        belowBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
-        belowBar.textAlignment = .center
-        belowBar.adjustsFontSizeToFitWidth = false
-        belowBar.minimumScaleFactor = 0.5
-        // Configure inBar
-        inBar.backgroundColor = UIColor(named: "LoopGreen")
-        inBar.textColor = .white
-        inBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
-        inBar.textAlignment = .center
-        inBar.adjustsFontSizeToFitWidth = false
-        inBar.minimumScaleFactor = 0.5
-        // Configure aboveBar
-        aboveBar.backgroundColor = .systemPurple
-        aboveBar.textColor = .white
-        aboveBar.font = .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
-        aboveBar.textAlignment = .center
-        aboveBar.adjustsFontSizeToFitWidth = false
-        aboveBar.minimumScaleFactor = 0.5
-        // Add bars directly to inRangeRow
-        inRangeRow.addArrangedSubview(belowBar)
-        inRangeRow.addArrangedSubview(inBar)
-        inRangeRow.addArrangedSubview(aboveBar)
-        // Initial width constraints for bars (equal split, sum to 1.0)
-        belowWidthConstraint = belowBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.33)
-        inWidthConstraint    = inBar.widthAnchor   .constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.34)
-        aboveWidthConstraint = aboveBar.widthAnchor.constraint(equalTo: inRangeRow.widthAnchor, multiplier: 0.33)
-        [belowWidthConstraint, inWidthConstraint, aboveWidthConstraint].forEach { $0?.isActive = true }
-        // Minimum width constraints (once)
-        belowBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
-        inBar   .widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
-        aboveBar.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
-        let bgStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "✧  Glukosförändring", valueLabel: changeBGValueLabel, unit: " mmol/L"),
-            inRangeRow
-        ])
-        bgStack.axis = .vertical
-        bgStack.spacing = 15
-
         let mainStack = UIStackView(arrangedSubviews: [
             timeRow,
             durationControl,
+            inRangeRow,
             rowsStack,
             bgChartView,
-            statsStack,
-            bgStack
+            statsStack
         ])
         mainStack.axis = .vertical
         mainStack.spacing = 5
@@ -359,11 +354,12 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             mainStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
-        mainStack.setCustomSpacing(8, after: timeRow)   // extra gap before duration
-        mainStack.setCustomSpacing(20, after: durationControl)   // extra gap before totals
-        mainStack.setCustomSpacing(10, after: rowsStack)   // clear separation
-        mainStack.setCustomSpacing(15, after: bgChartView)   // extra gap before stats
-        mainStack.setCustomSpacing(5, after: statsStack)   // smaller gap after stats
+        mainStack.setCustomSpacing(8, after: timeRow)          // extra gap before duration
+        mainStack.setCustomSpacing(8, after: durationControl)  // small gap before in-range bar
+        mainStack.setCustomSpacing(16, after: inRangeRow)      // clear separation before totals
+        mainStack.setCustomSpacing(10, after: rowsStack)       // clear separation
+        mainStack.setCustomSpacing(15, after: bgChartView)     // extra gap before stats
+        mainStack.setCustomSpacing(5, after: statsStack)       // smaller gap after stats
 
         recalcEndTimeBasedOnDuration()
         updateTotals()
