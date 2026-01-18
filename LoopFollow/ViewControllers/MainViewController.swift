@@ -59,6 +59,17 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         label.alpha = 0.0 // hidden by default
         return label
     }()
+    
+    // 🤲 6–7 hands overlay behind BGView contents
+    let hands67ImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        iv.image = UIImage(named: "67hands")
+        iv.contentMode = .scaleAspectFit
+        iv.alpha = 0.0
+        return iv
+    }()
+    
     var refreshControl: UIRefreshControl!
 
     let speechSynthesizer = AVSpeechSynthesizer()
@@ -411,6 +422,14 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         NSLayoutConstraint.activate([
             unicornLabel.centerXAnchor.constraint(equalTo: BGView.centerXAnchor),
             unicornLabel.centerYAnchor.constraint(equalTo: BGView.centerYAnchor)
+        ])
+        // 🤲 Setup 6–7 hands overlay behind BGView content (deepest layer)
+        BGView.insertSubview(hands67ImageView, at: 0)
+        NSLayoutConstraint.activate([
+            hands67ImageView.centerXAnchor.constraint(equalTo: BGView.centerXAnchor),
+            hands67ImageView.centerYAnchor.constraint(equalTo: BGView.centerYAnchor),
+            hands67ImageView.widthAnchor.constraint(equalTo: BGView.widthAnchor, multiplier: 0.95),
+            hands67ImageView.heightAnchor.constraint(equalTo: BGView.heightAnchor, multiplier: 0.95)
         ])
     }
     
