@@ -321,7 +321,7 @@ struct AnalyzeDeviationsView: View {
                                     lowLine: Double(UserDefaultsRepository.lowLine.value) / 18.0182,
                                     showNormalChartElements: true
                                 )
-                                .frame(height: 240)
+                                .frame(height: 150)
                             }
                             .padding(12)
                             .themedCardBackground(opacity: 0.12)
@@ -349,7 +349,7 @@ struct AnalyzeDeviationsView: View {
                                 }
 
                                 AnalyzeDeviationsLineChart(points: devPointsForChart, windowStart: selectedDayStart, showNormalChartElements: true)
-                                    .frame(height: 240)
+                                    .frame(height: 150)
                             }
                             .padding(12)
                             .themedCardBackground(opacity: 0.12)
@@ -368,7 +368,7 @@ struct AnalyzeDeviationsView: View {
                                 .fontWeight(.semibold)
 
                                 AnalyzeIobCobLineChart(points: iobCobPointsForChart, windowStart: selectedDayStart, showNormalChartElements: true)
-                                    .frame(height: 240)
+                                    .frame(height: 150)
                             }
                             .padding(12)
                             .themedCardBackground(opacity: 0.12)
@@ -421,7 +421,7 @@ struct AnalyzeDeviationsView: View {
                                         showNormalChartElements: false
                                     )
                                 }
-                                .frame(height: 420)
+                                .frame(height: 340)
                             }
                             .padding(12)
                             .themedCardBackground(opacity: 0.12)

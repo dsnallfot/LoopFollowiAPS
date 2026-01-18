@@ -989,14 +989,14 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let highMmol = Double(UserDefaultsRepository.highLine.value) / 18.0182
 
         let thresholds: [(limit: Double, color: UIColor)] = [
-            (lowMmol, UIColor.red.withAlphaComponent(0.7)),
+            (lowMmol, UIColor.red.withAlphaComponent(0.6)),
             (highMmol, UIColor.purple.withAlphaComponent(1.0))
         ]
 
         for (limit, color) in thresholds {
             let ll = ChartLimitLine(limit: limit)
             ll.lineColor   = color
-            ll.lineWidth   = 1.5
+            ll.lineWidth   = 1
             //ll.lineDashLengths = [4, 2]    // optional: dashed look
             //ll.label       = String(format: "%.1f", limit)
             ll.valueTextColor = color     // so the label matches
@@ -1085,7 +1085,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let lineDataSets = segments.map { segEntries -> LineChartDataSet in
             let ds = LineChartDataSet(entries: segEntries, label: "")
             ds.colors = segEntries.map { setBGColorForMmol($0.y) }
-            ds.lineWidth = 3
+            ds.lineWidth = 1.5
             ds.drawCirclesEnabled = false
             ds.drawValuesEnabled = false
             ds.mode = .linear
@@ -1286,19 +1286,32 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let x = bgChartView.xAxis
         x.axisMinimum = 0
         x.axisMaximum = hrs
+
         if hrs <= 6 {
+            // 0–6 h: one label per hour
             x.granularity = 1
             x.labelCount = Int(hrs.rounded(.up)) + 1
         } else if hrs <= 24 {
+            // 6–24 h: one label every 3 hours
             x.granularity = 3
-            x.labelCount = Int((hrs/3).rounded(.up)) + 1
-        } else if hrs <= 72 {
+            x.labelCount = Int((hrs / 3).rounded(.up)) + 1
+        } else if hrs <= 3 * 24 {
+            // 1–3 dygn: en label var 12:e timme, fortfarande HH:mm
             x.granularity = 12
-            x.labelCount = Int((hrs/12).rounded(.up)) + 1
-        } else {
+            x.labelCount = Int((hrs / 12).rounded(.up)) + 1
+        } else if hrs <= 7 * 24 {
+            // 3–7 dygn: en label per kalenderdag (dd/MM)
             x.granularity = 24
-            x.labelCount = Int((hrs/24).rounded(.up)) + 1
+            x.labelCount = Int((hrs / 24).rounded(.up)) + 1
+        } else {
+            // >7 dygn (upp till ~90 dagar): jämnt fördelade datumetiketter (dd/MM)
+            let days = hrs / 24.0
+            let targetLabels = 8.0
+            let stepDays = max(1.0, ceil(days / targetLabels))
+            x.granularity = stepDays * 24.0
+            x.labelCount = Int(ceil(days / stepDays)) + 1
         }
+
         bgChartView.notifyDataSetChanged()
     }
 
@@ -1544,10 +1557,20 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
 extension MealAnalysisView: AxisValueFormatter {
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
         let date = startTime.addingTimeInterval(value * 3600)
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "sv_SE")
-        f.dateFormat = "HH:mm"
-        return f.string(from: date)
+        let totalHours = endTime.timeIntervalSince(startTime) / 3600.0
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "sv_SE")
+
+        if totalHours <= 3 * 24 {
+            // Upp till 3 dygn: visa klockslag
+            formatter.dateFormat = "HH:mm"
+        } else {
+            // >3 dygn: visa datum (enligt X-axis granularity/labelCount)
+            formatter.dateFormat = "dd/MM"
+        }
+
+        return formatter.string(from: date)
     }
 }
 
