@@ -463,10 +463,10 @@ extension MainViewController {
             var snoozerDelta = ""
             
             // Set BGText with the latest BG value
-            self.BGText.text = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
+            self.BGText.text = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: "5.5", with: "5.5🦄").replacingOccurrences(of: ",", with: ".")
             //Daniel: Added for visualization in remote meal info popup
             sharedLatestBG = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
-            snoozerBG = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
+            snoozerBG = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: "5.5", with: "5.5🦄").replacingOccurrences(of: ",", with: ".")
             self.setBGTextColor()
             
             // Direction handling

@@ -1419,6 +1419,8 @@ extension MainViewController {
         formatted = formatted.replacingOccurrences(of: ",", with: "\n•")
 
         // 3. Mer specifika ersättningar (speglar TreatmentsTableView.formatReason).
+        formatted = formatted.replacingOccurrences(of: "BG: 5.5", with: "Glukos: 5.5 🦄")
+        formatted = formatted.replacingOccurrences(of: "BG:", with: "Glukos:")
         formatted = formatted.replacingOccurrences(of: "SMB INAKTIVERADE!", with: "SMB Inaktiverade 🚫")
         formatted = formatted.replacingOccurrences(of: "Mikrobolus:", with: "🔹 Mikrobolus:")
         formatted = formatted.replacingOccurrences(of: ". ;", with: "\n• ")
