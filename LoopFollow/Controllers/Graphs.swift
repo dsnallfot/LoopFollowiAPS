@@ -472,7 +472,7 @@ extension MainViewController {
     }
     
     func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
-        // 1. Om man klickar i fullskärmsgrafen → skrolla den lilla grafen till samma X
+        // 1. Om man klickar i den lilla grafen → skrolla den stora grafen till samma X
         if chartView == BGChartFull {
             BGChart.moveViewToX(entry.x)
         }
@@ -483,8 +483,12 @@ extension MainViewController {
             return
         }
 
-        // 3. BG-linjen i huvudgrafen → Trio-besluts-popup (som du redan hade)
-        if chartView == BGChart, highlight.dataSetIndex == 0 {
+        // 3. BG-linjen i huvudgrafen → Trio-besluts-popup (utan ordinarie marker-popup)
+        if chartView == BGChart, highlight.dataSetIndex == GraphDataIndex.bg.rawValue {
+            // Ta bort highlight/marker direkt så att standard-pill-popup inte visas.
+            BGChart.highlightValue(nil, callDelegate: false)
+            BGChartFull.highlightValue(nil, callDelegate: false)
+
             showTrioDecisionAlert(for: entry.x)
             return
         }
@@ -504,12 +508,18 @@ extension MainViewController {
 
         // Pumpbyte (updatePumpChange använder line1: "Pumpbyte")
         if dataString.contains("Pumpbyte") {
+            // Ta bort highlight/marker direkt så att standard-pill-popup inte visas.
+            BGChart.highlightValue(nil, callDelegate: false)
+            BGChartFull.highlightValue(nil, callDelegate: false)
             presentMealAnalysis(for: analysisStart, source: .pumpChange)
             return
         }
         
         // Sensorbyte (updatePumpChange använder line1: "Pumpbyte")
         if dataString.contains("Sensorbyte") {
+            // Ta bort highlight/marker direkt så att standard-pill-popup inte visas.
+            BGChart.highlightValue(nil, callDelegate: false)
+            BGChartFull.highlightValue(nil, callDelegate: false)
             presentMealAnalysis(for: analysisStart, source: .sensorChange)
             return
         }
@@ -517,6 +527,9 @@ extension MainViewController {
         // Måltid / kolhydrater – uppfångas via texten vi satte i updateCarbGraph
         // ("Kolhydrater ...", eller "Fett/Protein ...").
         if dataString.contains("Kolhydrater") || dataString.contains("Fett/Protein") {
+            // Ta bort highlight/marker direkt så att standard-pill-popup inte visas.
+            BGChart.highlightValue(nil, callDelegate: false)
+            BGChartFull.highlightValue(nil, callDelegate: false)
             presentMealAnalysis(for: analysisStart, source: .meal)
             return
         }
