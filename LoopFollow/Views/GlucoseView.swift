@@ -691,13 +691,24 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         // UI tweaks for Sensorfel mode
         let isSensorErrors = (dataMode == .sensorErrors)
         datePicker.isHidden = isSensorErrors
-        showOnlyMissingGlucose = false
 
-        // Disable the missing-only filter button when showing Sensorfel list
         if let filterButton = navigationItem.leftBarButtonItems?.last {
-            filterButton.isEnabled = !isSensorErrors
-            filterButton.tintColor = isSensorErrors ? .secondaryLabel : .label
-            filterButton.image = UIImage(systemName: "line.3.horizontal.decrease.circle")
+            if isSensorErrors {
+                // När vi går in i Sensorfel-läget: nollställ filtret och inaktivera knappen.
+                showOnlyMissingGlucose = false
+                filterButton.isEnabled = false
+                filterButton.image = UIImage(systemName: "line.3.horizontal.decrease.circle")
+                filterButton.tintColor = .secondaryLabel
+            } else {
+                // I de två andra lägena (Dexcomvärden / Trio ⇢ NS):
+                // behåll showOnlyMissingGlucose-state och återspegla den i ikonen.
+                filterButton.isEnabled = true
+                let name = showOnlyMissingGlucose
+                    ? "line.3.horizontal.decrease.circle.fill"
+                    : "line.3.horizontal.decrease.circle"
+                filterButton.image = UIImage(systemName: name)
+                filterButton.tintColor = showOnlyMissingGlucose ? .systemBlue : .label
+            }
         }
 
         if isSensorErrors {
