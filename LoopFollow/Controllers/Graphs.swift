@@ -477,7 +477,7 @@ extension MainViewController {
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: adjustedStart,
-            initialEnd: end,
+            initialEnd: nil,//end,
             modalWithTimestamp: true,
             modalTitleString: title
         )

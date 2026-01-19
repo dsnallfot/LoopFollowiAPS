@@ -324,7 +324,7 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: startDate,
-            initialEnd: endDate,
+            initialEnd: nil,//endDate,
             modalWithTimestamp: true,
             modalTitleString: "Analys omstart"
         )

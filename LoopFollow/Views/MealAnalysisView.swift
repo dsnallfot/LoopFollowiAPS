@@ -99,11 +99,15 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     }()
 
     private let durationControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["1h", "2h", "3h", "4h", "6h", "12h", "24h", "Dag", "Ⓢ"])
-        control.selectedSegmentIndex = 2   // 3 h default
+        let control = UISegmentedControl(items: ["1h", "2h", "3h", "6h", "12h", "24h", "Dag", "Ⓢ", "☆"])
+        control.selectedSegmentIndex = 2   // 3 h default
         control.translatesAutoresizingMaskIntoConstraints = false
         return control
     }()
+    
+    private var freeSegmentIndex: Int {
+        return durationControl.numberOfSegments - 1   // sista = "☆"
+    }
 
     private var endTime: Date = Date()
     private var startTime: Date = Calendar.current.date(byAdding: .hour, value: -3, to: Date())!
@@ -165,7 +169,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
 
         // When opened without a linked entry, default to "Dag" (today 00:00–now)
         if !modalWithTimestamp {
-            durationControl.selectedSegmentIndex = 7   // "Dag"
+            durationControl.selectedSegmentIndex = 6   // "Dag"
             let now = Date()
             startTime = calendar.startOfDay(for: now)
             endTime = now
@@ -181,13 +185,14 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 endTime = endOverride
             }
              else if isExactMidnight {
-                durationControl.selectedSegmentIndex = 7   // "Dag"
+                durationControl.selectedSegmentIndex = 6   // "Dag"
                 startTime = dayStart
                 if calendar.isDateInToday(dayStart) {
                     // För idag: 00:00 → nu
                     endTime = Date()
                 } else {
                     // För tidigare dagar: fulla 24h
+                    durationControl.selectedSegmentIndex = 5   // "24h"
                     endTime = calendar.date(byAdding: .day, value: 1, to: dayStart)
                         ?? dayStart.addingTimeInterval(24 * 60 * 60)
                 }
@@ -465,6 +470,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     /// - Parameter days: Negative = back in time, Positive = forward.
     private func shiftWindow(byDays days: Int) {
         guard days != 0 else { return }
+        let calendar = Calendar.current
         
         endPicker.maximumDate = max(endPicker.maximumDate ?? Date(), Date())
 
@@ -483,7 +489,30 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // Respektera maxDate genom att clampa, inte avbryta
         if let maxDate = endPicker.maximumDate, newEnd > maxDate {
             newEnd = maxDate
-            newStart = maxDate.addingTimeInterval(-span)
+
+            // Om vi stegar FRAMÅT (days > 0) med ett ~24h-fönster och går in i "idag",
+            // visa alltid start-of-day → nu (00:00 → nu) istället för ett baklänges 24h-fönster.
+            let isApproxOneDay = span >= 23 * 3600 && span <= 25 * 3600
+            if days > 0 && isApproxOneDay {
+                let todayStart = calendar.startOfDay(for: maxDate)
+                if let minDate = startPicker.minimumDate, todayStart < minDate {
+                    // Fallback om 00:00 idag hamnar före minDate
+                    newStart = maxDate.addingTimeInterval(-span)
+                } else {
+                    newStart = todayStart
+                }
+            } else {
+                // Övriga fall (t.ex. 1–12h, Ⓢ): behåll newStart (samma klockslag) och bara clamp:a slutet till nu.
+                // newStart lämnas orörd här.
+
+                // Men om det valda tidsfönstret inte får plats (dvs vi visar mindre än span)
+                // och vi hade en tim-presets vald (1h–12h), flippa över till "☆" så att UI:t
+                // speglar att vi inte längre visar exakt preset-längden.
+                let actualSpan = newEnd.timeIntervalSince(newStart)
+                if actualSpan + 0.5 < span, (0...5).contains(durationControl.selectedSegmentIndex) {
+                    durationControl.selectedSegmentIndex = freeSegmentIndex
+                }
+            }
         }
 
         // Om spannet av någon anledning blivit negativt eller konstigt: bail
@@ -494,52 +523,20 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         startPicker.date = newStart
         endPicker.date   = newEnd
 
-        // Clear “1h–24h” preset så UI speglar custom-intervall
-        if (0...6).contains(durationControl.selectedSegmentIndex) {
-            durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
-        }
-
         updateTotals()
         updateBGLabels()
     }
-    
-    /*
-    private func shiftWindow(byDays days: Int) {
-        guard days != 0 else { return }
-        let oneDay = TimeInterval(86_400 * days)
-
-        let newStart = startTime.addingTimeInterval(oneDay)
-        let newEnd   = endTime  .addingTimeInterval(oneDay)
-
-        // Respect data limits already enforced by the pickers
-        if let minDate = startPicker.minimumDate, newStart < minDate { return }
-        if let maxDate = endPicker.maximumDate,  newEnd   > maxDate { return }
-
-        startTime = newStart
-        endTime   = newEnd
-        startPicker.date = newStart
-        endPicker.date   = newEnd
-
-        // Clear “1h–24h” preset so UI reflects a custom interval
-        if (0...6).contains(durationControl.selectedSegmentIndex) {
-            durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
-        }
-
-        updateTotals()
-        updateBGLabels()
-    }
-    */
 
     // MARK: - Actions
 
     // MARK: - Time calculations
 
     @objc private func startTimeChanged(_ sender: UIDatePicker) {
-        // Drop "1h…24h" selection when manually adjusting dates
-        if (0...6).contains(durationControl.selectedSegmentIndex) {
-            durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+        // Drop "1h…24h" selection when manually adjusting dates => markera "☆"
+        if (0...5).contains(durationControl.selectedSegmentIndex) {
+            durationControl.selectedSegmentIndex = freeSegmentIndex
         }
-        // Grab the (optional) title now that we might have cleared it
+        // Grab the (optional) title now that we might have changed it
         let title = durationControl.selectedSegmentIndex >= 0 ? durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) : nil
         let calendar = Calendar.current
 
@@ -585,10 +582,13 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             startPicker.date = newStart
             endPicker.date   = newEnd
 
+        } else if title == "☆" {
+            // Fri-läge: helt fritt fönster, bara uppdatera startTime
+            startTime = sender.date
         } else {
             // Other modes (timestamp modal or fixed durations)
             startTime = sender.date
-            if modalWithTimestamp && durationControl.selectedSegmentIndex != UISegmentedControl.noSegment {
+            if modalWithTimestamp {
                 recalcEndTimeBasedOnDuration()
             }
         }
@@ -605,11 +605,11 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     }
 
     @objc private func endTimeChanged(_ sender: UIDatePicker) {
-        // Drop "1h…24h" selection when manually adjusting dates
-        if (0...6).contains(durationControl.selectedSegmentIndex) {
-            durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+        // Drop "1h…24h" selection when manually adjusting dates => markera "☆"
+        if (0...5).contains(durationControl.selectedSegmentIndex) {
+            durationControl.selectedSegmentIndex = freeSegmentIndex
         }
-        // Grab the (optional) title now that we might have cleared it
+        // Grab the (optional) title now that we might have changed it
         let title = durationControl.selectedSegmentIndex >= 0 ? durationControl.titleForSegment(at: durationControl.selectedSegmentIndex) : nil
         let calendar = Calendar.current
 
@@ -655,6 +655,15 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             startPicker.date = newStart
             endPicker.date   = newEnd
 
+        } else if title == "☆" {
+            // Fri-läge: fritt slutdatum, men clamp:a fortfarande till nu om man väljer framtid
+            var selected = sender.date
+            let now = Date()
+            if selected > now {
+                selected = now
+                sender.date = now
+            }
+            endTime = selected
         } else {
             // Other modes
             var selected = sender.date
@@ -664,10 +673,13 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 sender.date = now
             }
             endTime = selected
-            if modalWithTimestamp && durationControl.selectedSegmentIndex != UISegmentedControl.noSegment {
+            if modalWithTimestamp {
                 recalcEndTimeBasedOnDuration()
             }
         }
+
+        updateTotals()
+        updateBGLabels()
 
         updateTotals()
         updateBGLabels()
@@ -718,7 +730,10 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             endTime   = newEnd
             startPicker.date = newStart
             endPicker.date   = newEnd
-
+            
+        } else if title == "☆" {
+            // Fri-läge: gör ingenting här, start/end styrs helt av pickers
+            return
         } else {
             // Hacker for “1h”, “2h”, etc., or modal-with-timestamp
             let hoursString = title.replacingOccurrences(of: "h", with: "")

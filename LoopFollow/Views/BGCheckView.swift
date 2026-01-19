@@ -456,7 +456,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: startDate,
-            initialEnd: endDate,
+            initialEnd: nil,//endDate,
             modalWithTimestamp: true,
             modalTitleString: "Utv. kring Stick"
         )

@@ -1797,8 +1797,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 alert.addAction(UIAlertAction(title: "Analysera Fingerstick", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-1200) // minus 20 min
-                    let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start
-                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys stick")
+                    let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start - använder nil tillsvidare
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: nil, modalWithTimestamp: true, modalTitleString: "Analys stick")
                     let nav = UINavigationController(rootViewController: analysisVC)
                     nav.modalPresentationStyle = .formSheet
                     self.present(nav, animated: true)
@@ -1831,8 +1831,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 alert.addAction(UIAlertAction(title: "Analysera Override", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                    let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start
-                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys override")
+                    let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start - använder nil tillsvidare
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: nil, modalWithTimestamp: true, modalTitleString: "Analys override")
                     let nav = UINavigationController(rootViewController: analysisVC)
                     nav.modalPresentationStyle = .formSheet
                     self.present(nav, animated: true)
@@ -1863,8 +1863,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             alert.addAction(UIAlertAction(title: "Analysera Måltid", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys måltid")
+                let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start - använder nil tillsvidare
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: nil, modalWithTimestamp: true, modalTitleString: "Analys måltid")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -1872,10 +1872,10 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             alert.addAction(UIAlertAction(title: "Se dagen innan", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let oneWeekBackStartIntervall = -(24 * 60 * 60 + 60 * 30) //igår + 30min tillbaka
-                let oneWeekBackEndIntervall = oneWeekBackStartIntervall + 12600 //180+30 min efter start igår
+                let oneWeekBackEndIntervall = oneWeekBackStartIntervall + 12600 //180+30 min efter start igår - använder nil tillsvidare
                 let analysisStart = treatment.timestamp.addingTimeInterval(Double(oneWeekBackStartIntervall))
                 let analysisEnd = treatment.timestamp.addingTimeInterval(Double(oneWeekBackEndIntervall))
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys tid")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: nil, modalWithTimestamp: true, modalTitleString: "Analys tid")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -1883,10 +1883,10 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             alert.addAction(UIAlertAction(title: "Se veckan innan", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let oneWeekBackStartIntervall = -(7 * 24 * 60 * 60 + 60 * 30) //1 vecka och en 30min tillbaka
-                let oneWeekBackEndIntervall = oneWeekBackStartIntervall + 12600 //180+30 min efter start en vecka tillbaka
+                let oneWeekBackEndIntervall = oneWeekBackStartIntervall + 12600 //180+30 min efter start en vecka tillbaka - använder nil tillsvidare
                 let analysisStart = treatment.timestamp.addingTimeInterval(Double(oneWeekBackStartIntervall))
                 let analysisEnd = treatment.timestamp.addingTimeInterval(Double(oneWeekBackEndIntervall))
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys tid")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: nil, modalWithTimestamp: true, modalTitleString: "Analys tid")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
