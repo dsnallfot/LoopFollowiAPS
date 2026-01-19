@@ -463,7 +463,7 @@ extension MainViewController {
             var snoozerDelta = ""
             
             // Set BGText with the latest BG value
-            let bgDisplay = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".")
+            let bgDisplay = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".").replacingOccurrences(of: "2.2", with: "LÅG").replacingOccurrences(of: "22.2", with: "HÖG")
             self.BGText.text = bgDisplay
             //Daniel: Added for visualization in remote meal info popup
             sharedLatestBG = bgDisplay
@@ -505,10 +505,10 @@ extension MainViewController {
                 self.DeltaText.text = formattedDelta
                 snoozerDelta = formattedDelta
             } else {
-                self.DeltaText.text = "N/A"
-                sharedLatestDelta = "N/A"
-                snoozerDelta = "N/A"
-                self.latestDeltaString = "N/A"
+                self.DeltaText.text = "--"
+                sharedLatestDelta = "--"
+                snoozerDelta = "--"
+                self.latestDeltaString = "--"
             }
             /*
              // Delta handling
@@ -570,7 +570,7 @@ extension MainViewController {
             //FifteenMinutesTrend
             
             // Clean up bgTextStr and snoozerDelta
-            let cleanedBGTextStr = bgTextStr.replacingOccurrences(of: ",", with: ".")
+            var cleanedBGTextStr = bgTextStr.replacingOccurrences(of: ",", with: ".")
             let cleanedSnoozerDelta = snoozerDelta
                 .replacingOccurrences(of: ",", with: ".")
                 .replacingOccurrences(of: "+", with: "")// Remove leading plus sign if present
@@ -592,7 +592,17 @@ extension MainViewController {
             var fifteenMinColorString: String = ""
             if deltaTime >= 6 {
                 fifteenMinColorString = " ❔ "
-                let sensorTrendString = "N/A"
+                let sensorTrendString = "--"
+                self.infoManager.updateInfoData(type: .sensorTrend, value: sensorTrendString)
+                self.infoManager.setPriority(true, for: .sensorTrend)
+            } else if self.BGText.text == "LÅG" {
+                fifteenMinColorString = " 🆘 "
+                let sensorTrendString = "LÅG 🆘"
+                self.infoManager.updateInfoData(type: .sensorTrend, value: sensorTrendString)
+                self.infoManager.setPriority(true, for: .sensorTrend)
+            } else if self.BGText.text == "HÖG" {
+                fifteenMinColorString = " ⚠️ "
+                let sensorTrendString = "HÖG 🆘"
                 self.infoManager.updateInfoData(type: .sensorTrend, value: sensorTrendString)
                 self.infoManager.setPriority(true, for: .sensorTrend)
             } else if fifteenMinValue < 3.9 {
@@ -612,7 +622,7 @@ extension MainViewController {
                 self.infoManager.setPriority(false, for: .sensorTrend)
             }
             
-            var cob = "N/A g"
+            var cob = "-- g"
             if let latestCOB = self.latestCOB?.description, !latestCOB.isEmpty {
                 if let numericPart = Double(latestCOB.replacingOccurrences(of: "g", with: "").trimmingCharacters(in: .whitespaces)) {
                     // Format to one decimal place and reconstruct the string with "E"
@@ -623,7 +633,7 @@ extension MainViewController {
             }
             LogManager.shared.log(category: .contact, message: "COB: \(cob)", isDebug: true)
             
-            var iob = "N/A E"
+            var iob = "-- E"
             if let latestIOB = self.latestIOB?.description, !latestIOB.isEmpty {
                 if let numericPart = Double(latestIOB.replacingOccurrences(of: "E", with: "").trimmingCharacters(in: .whitespaces)) {
                     // Format to one decimal place and reconstruct the string with "E"
@@ -648,7 +658,13 @@ extension MainViewController {
                 var extra3: String = ""
                 if ObservableUserDefaults.shared.contactFifteenMinutes.value {
                     extra2 = fifteenMinColorString
-                    extra3 = fifteenMinString
+                    if self.BGText.text == "LÅG" {
+                        extra3 = "LÅG"
+                    } else if self.BGText.text == "HÖG" {
+                        extra3 = "HÖG"
+                    } else {
+                        extra3 = fifteenMinString
+                    }
                 }
                 
                 self.contactImageUpdater.updateContactImage(bgValue: bgTextStr, extra: extra, extra2: extra2, extra3: extra3, iob: iob, cob: cob, stale: deltaTime >= 6)//>= 12)

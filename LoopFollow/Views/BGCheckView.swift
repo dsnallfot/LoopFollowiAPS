@@ -361,7 +361,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
 
         var text = "\(mmolString) mmol/L"
         if entry.hasDextroNearby {
-            text += " • 🍬"   // 👈 markera fingerstick med dextro inom ±10 min
+            text += " 🍬"   // 👈 markera fingerstick med dextro inom ±10 min
         }
 
         cell.textLabel?.text = text

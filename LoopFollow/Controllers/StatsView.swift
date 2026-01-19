@@ -139,9 +139,12 @@ extension MainViewController {
             let tirNeededString = computeTirNeededString()
             self.infoManager.updateInfoData(type: .tirNeeded, value: tirNeededString)
             
-            statsLowPercent.text = String(format:"%.1f", stats.percentLow) + "%"
+            let statsVeryLowAndLow = stats.percentVeryLow + stats.percentLow
+            let statsVeryHighAndHigh = stats.percentVeryHigh + stats.percentHigh
+            
+            statsLowPercent.text = String(format:"%.1f", statsVeryLowAndLow) + "%"
             statsInRangePercent.text = String(format:"%.1f", stats.percentRange) + "%"
-            statsHighPercent.text = String(format:"%.1f", stats.percentHigh) + "%"
+            statsHighPercent.text = String(format:"%.1f", statsVeryHighAndHigh) + "%"
 
             statsAvgBG.text = Localizer.toDisplayUnits(String(format:"%.0f", stats.avgBG)).replacingOccurrences(of: ",", with: ".")
 
@@ -174,22 +177,35 @@ extension MainViewController {
             let value = PieChartDataEntry(value: slice)
             chartEntry.append(value)
             
-            if pieData[i].name == "high" {
+            if pieData[i].name == "veryHigh" {
                 if UserDefaultsRepository.colorBGText.value {
-                    let color = UIColor.systemPurple.withAlphaComponent(0.8)
+                    let color = UIColor.systemPurple.withAlphaComponent(1.0)
                         colors.append(color)
                 } else {
                     if let color = UIColor(named: "LoopYellow")?.withAlphaComponent(0.8) {
                         colors.append(color)
                     }
                 }
-                
+            } else if pieData[i].name == "high" {
+                if UserDefaultsRepository.colorBGText.value {
+                let color = UIColor.systemPurple.withAlphaComponent(0.8)
+                    colors.append(color)
+                } else {
+                    if let color = UIColor(named: "LoopYellow")?.withAlphaComponent(1.0) {
+                        colors.append(color)
+                    }
+                }
             } else if pieData[i].name == "low" {
                 if let color = UIColor(named: "LoopRed")?.withAlphaComponent(0.8) {
                     colors.append(color)
                 }
+                
+            } else if pieData[i].name == "veryLow" {
+                if let color = UIColor(named: "LoopRed")?.withAlphaComponent(1.0) {
+                    colors.append(color)
+                }
             } else {
-                if let color = UIColor(named: "LoopGreen")?.withAlphaComponent(0.8) {
+                if let color = UIColor(named: "LoopGreen")?.withAlphaComponent(1.0) {
                     colors.append(color)
                 }
             }
@@ -200,7 +216,7 @@ extension MainViewController {
         
         
         set.drawIconsEnabled = false
-        set.sliceSpace = 2
+        //set.sliceSpace = 2
         set.drawValuesEnabled = false
         set.valueLineWidth = 0
         set.formLineWidth = 0

@@ -11,12 +11,16 @@ import Foundation
 
 class StatsData {
     
+    var countVeryLow: Int
     var countLow: Int
+    var countRange: Int
+    var countHigh: Int
+    var countVeryHigh: Int
+    var percentVeryLow: Float
     var percentLow: Float
     var percentRange: Float
     var percentHigh: Float
-    var countRange: Int
-    var countHigh: Int
+    var percentVeryHigh: Float
     var totalGlucose: Int
     var avgBG: Float
     var a1C: Float
@@ -26,16 +30,22 @@ class StatsData {
     
     init(bgData: [ShareGlucoseData]) {
         
+        self.countVeryLow = 0
         self.countLow = 0
         self.countRange = 0
         self.countHigh = 0
+        self.countVeryHigh = 0
         self.totalGlucose = 0
         self.a1C = 0.0
         
         for i in 0..<bgData.count {
             // Set low/range/high counts for pie chart and %'s
-            if Float(bgData[i].sgv) < UserDefaultsRepository.lowLine.value {
+            if Float(bgData[i].sgv) < 54 {
+                self.countVeryLow += 1
+            } else if Float(bgData[i].sgv) < UserDefaultsRepository.lowLine.value {
                 self.countLow += 1
+            } else if Float(bgData[i].sgv) > 250 {
+                self.countVeryHigh += 1
             } else if Float(bgData[i].sgv) > UserDefaultsRepository.highLine.value {
                 self.countHigh += 1
             } else {
@@ -47,14 +57,18 @@ class StatsData {
         }
         
         // Set Percents
+        percentVeryLow = Float(countVeryLow) / Float(bgData.count) * 100
         percentLow = Float(countLow) / Float(bgData.count) * 100
         percentRange = Float(countRange) / Float(bgData.count) * 100
         percentHigh = Float(countHigh) / Float(bgData.count) * 100
+        percentVeryHigh = Float(countVeryHigh) / Float(bgData.count) * 100
         
         pie = [
+            DataStructs.pieData(name: "veryLow", value: Double(percentVeryLow)),
             DataStructs.pieData(name: "low", value: Double(percentLow)),
             DataStructs.pieData(name: "range", value: Double(percentRange)),
-            DataStructs.pieData(name: "high", value: Double(percentHigh))
+            DataStructs.pieData(name: "high", value: Double(percentHigh)),
+            DataStructs.pieData(name: "veryHigh", value: Double(percentVeryHigh))
         ]
 
         // Set Average

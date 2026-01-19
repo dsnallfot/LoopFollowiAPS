@@ -427,7 +427,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
             // Detect placeholder: no actual missing rows and showOnlyMissingBattery = true
             let isPlaceholder = showOnlyMissingBattery && dayRowsIncludingMissing.filter { $0.isMissing }.isEmpty
             if isPlaceholder {
-                cell.textLabel?.text = "Inga saknade värden denna dag 👍"
+                cell.textLabel?.text = "Inga saknade värden denna dag ✅"
                 cell.detailTextLabel?.text = ""
                 cell.textLabel?.font = .systemFont(ofSize: 17)
                 let tint = UIColor.systemGreen.withAlphaComponent(0.12)

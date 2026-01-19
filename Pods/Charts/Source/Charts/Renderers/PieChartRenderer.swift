@@ -286,7 +286,7 @@ open class PieChartRenderer: NSObject, DataRenderer
             } else {
                 context.setStrokeColor(UIColor.white.cgColor)
             }
-            context.setLineWidth(1.0 / chart.viewPortHandler.scaleX)
+            context.setLineWidth(0.5 / chart.viewPortHandler.scaleX)
             context.strokePath()
             
             let axElement = createAccessibleElement(withIndex: j,

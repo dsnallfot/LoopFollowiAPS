@@ -1153,7 +1153,19 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
 
         switch row {
         case .glucose(let entry):
-            cell.textLabel?.text = String(format: "%.1f mmol/L", entry.mmol)
+            let valueString = String(format: "%.1f mmol/L", entry.mmol)
+
+            // 🦄 Unicorn = exactly 5.5 mmol/L (≈ 100 mg/dL)
+            if abs(entry.mmol - 5.5) < 0.02 {
+                cell.textLabel?.text = valueString + " 🦄"
+            } else if abs(entry.mmol - 2.2) < 0.04 {
+                cell.textLabel?.text = valueString + " 🆘"
+            } else if abs(entry.mmol - 22.2) < 0.04 {
+                cell.textLabel?.text = valueString + " ⚠️"
+            } else {
+                cell.textLabel?.text = valueString
+            }
+
             cell.textLabel?.font = .systemFont(ofSize: 17)
             cell.detailTextLabel?.text = timeFormatter.string(from: entry.date)
             cell.backgroundColor = .clear
@@ -1163,7 +1175,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             // Detect placeholder: no actual missing rows and showOnlyMissingGlucose = true
             let isPlaceholder = showOnlyMissingGlucose && dayRowsIncludingMissing.filter { $0.isMissing }.isEmpty
             if isPlaceholder {
-                cell.textLabel?.text = "Inga saknade värden denna dag 👍"
+                cell.textLabel?.text = "Inga saknade värden denna dag ✅"
                 cell.detailTextLabel?.text = ""
                 cell.textLabel?.font = .systemFont(ofSize: 17)
                 let tint = UIColor.systemGreen.withAlphaComponent(0.12)
@@ -1485,6 +1497,9 @@ final class GlucoseStatsViewController: ThemedTableViewController {
     private var allCountsAllValues: [Int] = []
     private var allCountsNSOnly: [Int] = []
     private var unicornsByDay: [Date: Int] = [:]
+    
+    // Raw SGV data for full window (used for extreme-value stats)
+    private var allSGVJSON: [SGVJSON] = []
 
 
     // Current selection
@@ -1653,6 +1668,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             // Load datasets (and treatments for Sensorfel)
             let (allSGV, allTreatments) = await NightscoutCache.loadWindow(from: startDay, to: now)
             let nsOnlySGV = await GlucoseNSOnlyCache.loadWindow(from: startDay, to: now)
+            self.allSGVJSON = allSGV
 
             // Build Sensorfel outages for the full window
             let outages = self.buildSensorErrorOutages(allSGV: allSGV, allTreatments: allTreatments, now: now)
@@ -2189,6 +2205,37 @@ final class GlucoseStatsViewController: ThemedTableViewController {
     private func expectedCountsForSelectedDays() -> [Int] {
         selectedDays.map { expectedCount(for: $0) }
     }
+    
+    /// Counts extreme glucose values within the selected period.
+    /// Low  <= 2.2 mmol/L (40 mg/dL)
+    /// High >= 22.2 mmol/L (400 mg/dL)
+    private func countExtremeValuesForSelectedPeriod() -> (low: Int, high: Int) {
+        guard !selectedDays.isEmpty else { return (0, 0) }
+
+        let cal = Calendar.current
+        let periodStart = cal.startOfDay(for: selectedDays.first!)
+        let periodEnd = cal.date(
+            byAdding: .day,
+            value: 1,
+            to: cal.startOfDay(for: selectedDays.last!)
+        ) ?? Date()
+
+        var low = 0
+        var high = 0
+
+        for e in allSGVJSON {
+            let d = Date(timeIntervalSince1970: e.date)
+            guard d >= periodStart && d < periodEnd else { continue }
+
+            // SGVJSON.sgv is mg/dL
+            if e.sgv <= 40 {
+                low += 1
+            } else if e.sgv >= 400 {
+                high += 1
+            }
+        }
+        return (low, high)
+    }
 
     // MARK: - Stats table
 
@@ -2208,7 +2255,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         switch section {
         case 0:
             // Dexcom inkl backfill
-            return 4
+            return 6
         case 1:
             // Trio uppladdningar realtid
             return 5
@@ -2317,6 +2364,16 @@ final class GlucoseStatsViewController: ThemedTableViewController {
                 } else {
                     cell.detailTextLabel?.text = "\(m) min"
                 }
+                
+            case 4:
+                cell.textLabel?.text = "Värden under LÅG tröskel (2.2)"
+                let extremes = countExtremeValuesForSelectedPeriod()
+                cell.detailTextLabel?.text = "\(extremes.low) st"
+
+            case 5:
+                cell.textLabel?.text = "Värden över HÖG tröskel (22.2)"
+                let extremes = countExtremeValuesForSelectedPeriod()
+                cell.detailTextLabel?.text = "\(extremes.high) st"
 
             default:
                 break
