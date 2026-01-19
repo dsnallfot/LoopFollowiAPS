@@ -414,12 +414,14 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
 
         // Bygg events via MainViewController, men presentera modalen härifrån.
         let events = mainVC.buildEventsForMealAnalysis()
+        let endDate = startDate + 60 * 60 * 12
 
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: startDate,
+            initialEnd: endDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utv. efter ändring"
+            modalTitleString: "Analys ändring"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

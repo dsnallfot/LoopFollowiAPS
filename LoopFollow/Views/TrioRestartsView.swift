@@ -284,6 +284,7 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let entry = entries[indexPath.row]
         let startDate = entry.date
+        let endDate = entry.date + 60 * 180
 
 
         // Hitta MainViewController via root UITabBarController för att få events,
@@ -323,8 +324,9 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: startDate,
+            initialEnd: endDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utv. efter Omstart"
+            modalTitleString: "Analys omstart"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

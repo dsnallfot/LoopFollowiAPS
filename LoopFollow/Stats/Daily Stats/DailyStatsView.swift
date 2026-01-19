@@ -223,6 +223,7 @@ struct DailyStatsView: View {
         // Säkerställ att vi använder dagens start (00:00)
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: selectedDateForReport)
+        let endOfDay = startOfDay + 24 * 60 * 60
 
         // Hitta MainViewController via root UITabBarController för att bygga events
         guard
@@ -256,6 +257,7 @@ struct DailyStatsView: View {
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: startOfDay,
+            initialEnd: endOfDay,
             modalWithTimestamp: true,
             modalTitleString: "Dagens utfall"
         )

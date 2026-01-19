@@ -267,7 +267,9 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
     @objc private func mealAnalysisButtonTapped() {
         let events = buildEventsArray()
-        let analysisVC = MealAnalysisView(events: events, modalWithTimestamp: false, modalTitleString: "")
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: selectedDate)
+        let analysisVC = MealAnalysisView(events: events, initialStart: start, modalWithTimestamp: true, modalTitleString: "Analys tid")
         let navController = UINavigationController(rootViewController: analysisVC)
         navController.modalPresentationStyle = .formSheet
         present(navController, animated: true, completion: nil)
@@ -1748,7 +1750,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             alert.addAction(UIAlertAction(title: "Analysera Sensorbyte", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Sensorbyte")
+                let analysisEnd = treatment.timestamp.addingTimeInterval(21600) // end 360 min after start
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys sensorbyte")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -1769,7 +1772,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             alert.addAction(UIAlertAction(title: "Analysera Pumpbyte", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Pumpbyte")
+                let analysisEnd = treatment.timestamp.addingTimeInterval(21600) // end 360 min after start
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys poddbyte")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -1792,8 +1796,9 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "Analysera Fingerstick", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
-                    let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Fingerstick")
+                    let analysisStart = treatment.timestamp.addingTimeInterval(-1200) // minus 20 min
+                    let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys stick")
                     let nav = UINavigationController(rootViewController: analysisVC)
                     nav.modalPresentationStyle = .formSheet
                     self.present(nav, animated: true)
@@ -1826,7 +1831,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 alert.addAction(UIAlertAction(title: "Analysera Override", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Override")
+                    let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start
+                    let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys override")
                     let nav = UINavigationController(rootViewController: analysisVC)
                     nav.modalPresentationStyle = .formSheet
                     self.present(nav, animated: true)
@@ -1857,7 +1863,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             alert.addAction(UIAlertAction(title: "Analysera Måltid", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, modalWithTimestamp: true, modalTitleString: "Utv. efter Måltid")
+                let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys måltid")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)

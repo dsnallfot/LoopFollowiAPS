@@ -42,12 +42,14 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     private var events: [Event]          // will be augmented with cached entries
     /// Optional initial start time provided by the caller
     private let initialStartOverride: Date?
+    private let initialEndOverride: Date?
     private let modalWithTimestamp: Bool
     private let modalTitleString: String
 
-    init(events: [Event], initialStart: Date? = nil, modalWithTimestamp: Bool = true, modalTitleString: String = "") {
+    init(events: [Event], initialStart: Date? = nil, initialEnd: Date? = nil, modalWithTimestamp: Bool = true, modalTitleString: String = "") {
         self.events = events
         self.initialStartOverride = initialStart
+        self.initialEndOverride = initialEnd
         self.modalWithTimestamp = modalWithTimestamp
         self.modalTitleString = modalTitleString
         super.init(nibName: nil, bundle: nil)
@@ -153,15 +155,15 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         if modalWithTimestamp {
-            //title = "Utv. efter måltid"
+            //title = "Analys måltid"
             title = modalTitleString
         } else {
-            title = "Utv. vald tid"
+            title = "Analys tid"
         }
 
         let calendar = Calendar.current
 
-        // When opened without a linked meal, default to "Dag" (today 00:00–now)
+        // When opened without a linked entry, default to "Dag" (today 00:00–now)
         if !modalWithTimestamp {
             durationControl.selectedSegmentIndex = 7   // "Dag"
             let now = Date()
@@ -169,11 +171,16 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             endTime = now
         }
         // When opened with an exact-midnight timestamp (00:00), treat it as a full-day report.
-        else if let override = initialStartOverride {
-            let dayStart = calendar.startOfDay(for: override)
+        else if let startOverride = initialStartOverride {
+            let dayStart = calendar.startOfDay(for: startOverride)
             // "modalWithExactMidnight": start time is exactly at this day's 00:00
-            let isExactMidnight = calendar.compare(override, to: dayStart, toGranularity: .minute) == .orderedSame
-            if isExactMidnight {
+            let isExactMidnight = calendar.compare(startOverride, to: dayStart, toGranularity: .minute) == .orderedSame
+            if let endOverride = initialEndOverride {
+                durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+                startTime = dayStart
+                endTime = endOverride
+            }
+             else if isExactMidnight {
                 durationControl.selectedSegmentIndex = 7   // "Dag"
                 startTime = dayStart
                 if calendar.isDateInToday(dayStart) {
@@ -199,10 +206,10 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         startPicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
         startPicker.maximumDate = Date()
         startPicker.date = startTime
-        // Apply caller‑provided start time override only when analysing a meal
-        if modalWithTimestamp, let override = initialStartOverride {
-            startTime = override
-            startPicker.date = override
+        // Apply caller‑provided start time override if provided
+        if modalWithTimestamp, let startOverride = initialStartOverride {
+            startTime = startOverride
+            startPicker.date = startOverride
             recalcEndTimeBasedOnDuration()
         }
         startPicker.addTarget(self, action: #selector(startTimeChanged(_:)), for: .valueChanged)

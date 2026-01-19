@@ -415,7 +415,8 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let entry = entries[indexPath.row]
-        let startDate = entry.date - 60 * 20 //visa vad som hände 20 min före sticket och tiden framåt
+        let startDate = entry.date - 60 * 20 //visa vad som hände 20 min före sticket
+        let endDate = entry.date + 60 * 180 //visa utvecklingen 180 min efter sticket
 
 
         // Hitta MainViewController via root UITabBarController för att få events,
@@ -455,6 +456,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: startDate,
+            initialEnd: endDate,
             modalWithTimestamp: true,
             modalTitleString: "Utv. kring Stick"
         )

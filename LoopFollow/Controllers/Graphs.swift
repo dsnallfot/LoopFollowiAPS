@@ -445,24 +445,39 @@ extension MainViewController {
         let events = buildEventsForMealAnalysis()
 
         let title: String
+        let end: Date
+        let adjustedStart: Date
         switch source {
         case .override:
-            title = "Utv. efter Override"
+            title = "Analys override"
+            adjustedStart = start - 30
+            end = start + 60 * 180
         case .meal:
-            title = "Utv. efter Måltid"
+            title = "Analys måltid"
+            adjustedStart = start - 30
+            end = start + 60 * 180
         case .bgCheck:
-            title = "Utv. kring Stick"
+            title = "Analys stick"
+            adjustedStart = start - 60 * 20
+            end = start + 60 * 180
         case .pumpChange:
-            title = "Utv. efter Pumpbyte"
+            title = "Analys poddbyte"
+            adjustedStart = start - 30
+            end = start + 60 * 360
         case .sensorChange:
-            title = "Utv. efter Sensorbyte"
+            title = "Analys sensorbyte"
+            adjustedStart = start - 30
+            end = start + 60 * 360
         case .lowTreatment:
-            title = "Utv. kring Dextro"
+            title = "Analys dextro"
+            adjustedStart = start - 60 * 20
+            end = start + 60 * 180
         }
 
         let analysisVC = MealAnalysisView(
             events: events,
-            initialStart: start,
+            initialStart: adjustedStart,
+            initialEnd: end,
             modalWithTimestamp: true,
             modalTitleString: title
         )
