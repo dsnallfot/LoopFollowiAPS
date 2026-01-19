@@ -1869,6 +1869,28 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
             }))
+            alert.addAction(UIAlertAction(title: "Se dagen innan", style: .default, handler: { _ in
+                let events = self.buildEventsArray()
+                let oneWeekBackStartIntervall = -(24 * 60 * 60 + 60 * 30) //igår + 30min tillbaka
+                let oneWeekBackEndIntervall = oneWeekBackStartIntervall + 12600 //180+30 min efter start igår
+                let analysisStart = treatment.timestamp.addingTimeInterval(Double(oneWeekBackStartIntervall))
+                let analysisEnd = treatment.timestamp.addingTimeInterval(Double(oneWeekBackEndIntervall))
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys tid")
+                let nav = UINavigationController(rootViewController: analysisVC)
+                nav.modalPresentationStyle = .formSheet
+                self.present(nav, animated: true)
+            }))
+            alert.addAction(UIAlertAction(title: "Se veckan innan", style: .default, handler: { _ in
+                let events = self.buildEventsArray()
+                let oneWeekBackStartIntervall = -(7 * 24 * 60 * 60 + 60 * 30) //1 vecka och en 30min tillbaka
+                let oneWeekBackEndIntervall = oneWeekBackStartIntervall + 12600 //180+30 min efter start en vecka tillbaka
+                let analysisStart = treatment.timestamp.addingTimeInterval(Double(oneWeekBackStartIntervall))
+                let analysisEnd = treatment.timestamp.addingTimeInterval(Double(oneWeekBackEndIntervall))
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys tid")
+                let nav = UINavigationController(rootViewController: analysisVC)
+                nav.modalPresentationStyle = .formSheet
+                self.present(nav, animated: true)
+            }))
             alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
                 tableView.deselectRow(at: indexPath, animated: true)
             }))

@@ -426,6 +426,47 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     /// - Parameter days: Negative = back in time, Positive = forward.
     private func shiftWindow(byDays days: Int) {
         guard days != 0 else { return }
+        
+        endPicker.maximumDate = max(endPicker.maximumDate ?? Date(), Date())
+
+        let span = endTime.timeIntervalSince(startTime)   // nuvarande fönsterbredd
+        let oneDay = TimeInterval(86_400 * days)
+
+        var newStart = startTime.addingTimeInterval(oneDay)
+        var newEnd   = endTime  .addingTimeInterval(oneDay)
+
+        // Respektera minDate genom att clampa, inte avbryta
+        if let minDate = startPicker.minimumDate, newStart < minDate {
+            newStart = minDate
+            newEnd = minDate.addingTimeInterval(span)
+        }
+
+        // Respektera maxDate genom att clampa, inte avbryta
+        if let maxDate = endPicker.maximumDate, newEnd > maxDate {
+            newEnd = maxDate
+            newStart = maxDate.addingTimeInterval(-span)
+        }
+
+        // Om spannet av någon anledning blivit negativt eller konstigt: bail
+        guard newEnd > newStart else { return }
+
+        startTime = newStart
+        endTime   = newEnd
+        startPicker.date = newStart
+        endPicker.date   = newEnd
+
+        // Clear “1h–24h” preset så UI speglar custom-intervall
+        if (0...6).contains(durationControl.selectedSegmentIndex) {
+            durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+        }
+
+        updateTotals()
+        updateBGLabels()
+    }
+    
+    /*
+    private func shiftWindow(byDays days: Int) {
+        guard days != 0 else { return }
         let oneDay = TimeInterval(86_400 * days)
 
         let newStart = startTime.addingTimeInterval(oneDay)
@@ -448,6 +489,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         updateTotals()
         updateBGLabels()
     }
+    */
 
     // MARK: - Actions
 
