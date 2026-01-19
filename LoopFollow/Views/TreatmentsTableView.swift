@@ -1869,7 +1869,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
             }))
-            alert.addAction(UIAlertAction(title: "Se dagen innan", style: .default, handler: { _ in
+            alert.addAction(UIAlertAction(title: "Samma tid dagen innan", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let oneWeekBackStartIntervall = -(24 * 60 * 60 + 60 * 30) //igår + 30min tillbaka
                 let oneWeekBackEndIntervall = oneWeekBackStartIntervall + 12600 //180+30 min efter start igår - använder nil tillsvidare
@@ -1880,7 +1880,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
             }))
-            alert.addAction(UIAlertAction(title: "Se veckan innan", style: .default, handler: { _ in
+            alert.addAction(UIAlertAction(title: "Samma tid veckan innan", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let oneWeekBackStartIntervall = -(7 * 24 * 60 * 60 + 60 * 30) //1 vecka och en 30min tillbaka
                 let oneWeekBackEndIntervall = oneWeekBackStartIntervall + 12600 //180+30 min efter start en vecka tillbaka - använder nil tillsvidare

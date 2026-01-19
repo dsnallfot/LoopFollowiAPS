@@ -144,6 +144,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     private let smbTempValueLabel         = MealAnalysisView.makeValueLabel()
     private let changeBGValueLabel = MealAnalysisView.makeValueLabel()
     private let inRangeValueLabel     = MealAnalysisView.makeValueLabel()
+    private let manualVsAutomatedLabel    = MealAnalysisView.makeValueLabel()
     private var inRange: Double = 0.0
 
     // MARK: - Glucose data
@@ -335,10 +336,11 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
 
         // Additional stats rows
         let statsStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "✧  Glukosförändring",           valueLabel: changeBGValueLabel,  unit: " mmol/L"),
-            makeStatRow(text: "✧  Verklig Insulinkvot (CR)",   valueLabel: realCRValueLabel,    unit: " g/E"),
-            makeStatRow(text: "✧  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: " %"),
-            makeStatRow(text: "✧  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,   unit: " %")
+            makeStatRow(text: " •  Glukosförändring",           valueLabel: changeBGValueLabel,  unit: " mmol/L"),
+            makeStatRow(text: " •  Verklig Insulinkvot (CR)",   valueLabel: realCRValueLabel,    unit: " g/E"),
+            //makeStatRow(text: " •  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: " %"),
+            //makeStatRow(text: " •  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,   unit: " %")
+            makeStatRow(text: " •  Andel Manuellt vs Auto",     valueLabel: manualVsAutomatedLabel,   unit: " %")
         ])
         statsStack.axis = .vertical
         statsStack.spacing = 5
@@ -932,8 +934,10 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // Derived statistics
         let realCR = netInsulin > 0 ? carbsTotal / netInsulin : 0
         let manualBolusPct = netInsulin > 0 ? (bolusTotal / netInsulin) * 100 : 0
+        let manualBolusPctString = String(format: "%.0f %%", manualBolusPct)
         let smbTempDelivered = smbTotal + basalTotal - profileBasalTotal
         let smbTempPct = netInsulin > 0 ? (smbTempDelivered / netInsulin) * 100 : 0
+        let smbTempPctString = String(format: "%.0f %%", smbTempPct)
         // update UI
         insulinTotalValueLabel.text = String(format: "%.2f E", netInsulin)
         bolusValueLabel.text        = String(format: "%.2f E", bolusTotal)
@@ -945,6 +949,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         realCRValueLabel.text       = String(format: "%.0f g/E", realCR)
         manualBolusValueLabel.text  = String(format: "%.0f %%", manualBolusPct)
         smbTempValueLabel.text      = String(format: "%.0f %%", smbTempPct)
+        manualVsAutomatedLabel.text = "\(manualBolusPctString) vs \(smbTempPctString)"
         updateBGLabels()
     }
 
