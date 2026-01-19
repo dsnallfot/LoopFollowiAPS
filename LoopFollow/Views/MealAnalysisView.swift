@@ -985,14 +985,15 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let highMmol = Double(UserDefaultsRepository.highLine.value) / 18.0182
 
         let thresholds: [(limit: Double, color: UIColor)] = [
-            (lowMmol, UIColor.red.withAlphaComponent(0.6)),
+            (lowMmol, UIColor.red.withAlphaComponent(0.8)),
             (highMmol, UIColor.purple.withAlphaComponent(1.0))
         ]
 
         for (limit, color) in thresholds {
             let ll = ChartLimitLine(limit: limit)
             ll.lineColor   = color
-            ll.lineWidth   = 1
+            ll.lineDashLengths = [1, 1]
+            ll.lineWidth   = 2
             //ll.lineDashLengths = [4, 2]    // optional: dashed look
             //ll.label       = String(format: "%.1f", limit)
             ll.valueTextColor = color     // so the label matches

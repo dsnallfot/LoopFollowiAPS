@@ -557,13 +557,15 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
         uiView.leftAxis.removeAllLimitLines()
 
         let high = ChartLimitLine(limit: highLine)
-        high.lineWidth = 0.5
+        high.lineWidth = 1
         high.lineColor = UIColor.systemPurple
+        high.lineDashLengths = [1, 1]
         high.labelPosition = .rightTop
         high.valueTextColor = UIColor.clear
 
         let low = ChartLimitLine(limit: lowLine)
-        low.lineWidth = 0.5
+        low.lineWidth = 1
+        low.lineDashLengths = [1, 1]
         low.lineColor = UIColor.systemRed
         low.labelPosition = .rightBottom
         low.valueTextColor = UIColor.clear

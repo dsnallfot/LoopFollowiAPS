@@ -265,6 +265,30 @@ class GraphSettingsViewController: ThemedFormViewController {
                 appState.chartSettingsChanges |= ChartSettingsChangeEnum.lowLineChanged.rawValue
             }
         }
+    <<< StepperRow("targetLine") { row in
+        row.title = "Mål BG linje"
+        row.cell.stepper.stepValue = 1
+        row.cell.stepper.minimumValue = 80
+        row.cell.stepper.maximumValue = 160
+        row.value = Double(UserDefaultsRepository.targetLine.value)
+        row.displayValueFor = { value in
+            guard let value = value else { return nil }
+            return Localizer.toDisplayUnits(String(value))
+        }
+    }.onChange { [weak self] row in
+        guard let value = row.value else { return }
+
+            row.updateCell()
+        
+        UserDefaultsRepository.targetLine.value = Float(value)
+
+        // let app state know of the change
+        if let appState = self?.appStateController {
+            appState.chartSettingsChanged = true
+            appState.chartSettingsChanges |= ChartSettingsChangeEnum.targetLineChanged.rawValue
+        }
+    }
+    
         <<< StepperRow("highLine") { row in
             row.title = "Högt BG linje"
             row.cell.stepper.stepValue = 10

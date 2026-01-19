@@ -971,23 +971,29 @@ extension MainViewController {
         //Add lower red line based on low alert value
         let ll = ChartLimitLine()
         ll.limit = Double(UserDefaultsRepository.lowLine.value)
-        ll.lineColor = NSUIColor.systemRed.withAlphaComponent(0.5)
+        ll.lineColor = NSUIColor.systemRed.withAlphaComponent(0.7)
+        ll.lineDashLengths = [1, 1]
+        ll.lineWidth = 1.0
         BGChart.rightAxis.addLimitLine(ll)
         
-        //Add upper yellow line based on high alert value
+        //Add upper purple line based on high alert value
         let ul = ChartLimitLine()
         ul.limit = Double(UserDefaultsRepository.highLine.value)
+        ul.lineDashLengths = [1, 1]
+        ul.lineWidth = 1.0
         if UserDefaultsRepository.colorBGText.value {
-            ul.lineColor = NSUIColor.systemPurple.withAlphaComponent(0.5)
+            ul.lineColor = NSUIColor.systemPurple.withAlphaComponent(0.7)
         } else {
-            ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
+            ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.7)
         }
         BGChart.rightAxis.addLimitLine(ul)
         
         //Daniel: Add mid green line based on target value
         let tl = ChartLimitLine()
         tl.limit = Double(UserDefaultsRepository.targetLine.value)
-        tl.lineColor = NSUIColor.systemGreen.withAlphaComponent(0.2)
+        tl.lineColor = NSUIColor.systemGreen.withAlphaComponent(0.7)
+        tl.lineWidth = 1.0
+        tl.lineDashLengths = [1, 1]
         BGChart.rightAxis.addLimitLine(tl)
         
         // Add vertical lines as configured
@@ -1111,6 +1117,7 @@ extension MainViewController {
             ul2.limit = Double(dateTimeUtils.getNowTimeIntervalUTC().advanced(by: -30 * 60))
             ul2.lineColor = NSUIColor.systemBlue.withAlphaComponent(0.5)
             ul2.lineWidth = 1.5
+            ul2.lineDashLengths = [1, 1]
             BGChart.xAxis.addLimitLine(ul2)
         }
         
@@ -1202,19 +1209,31 @@ extension MainViewController {
         
         //Add lower red line based on low alert value
         let ll = ChartLimitLine()
+        ll.lineDashLengths = [1, 1]
+        ll.lineWidth = 1.0
         ll.limit = Double(UserDefaultsRepository.lowLine.value)
-        ll.lineColor = NSUIColor.systemRed.withAlphaComponent(0.5)
+        ll.lineColor = NSUIColor.systemRed.withAlphaComponent(0.7)
         BGChart.rightAxis.addLimitLine(ll)
         
         //Add upper purple line based on low alert value
         let ul = ChartLimitLine()
         ul.limit = Double(UserDefaultsRepository.highLine.value)
+        ul.lineDashLengths = [1, 1]
+        ul.lineWidth = 1.0
         if UserDefaultsRepository.colorBGText.value {
-            ul.lineColor = NSUIColor.systemPurple.withAlphaComponent(0.5)
+            ul.lineColor = NSUIColor.systemPurple.withAlphaComponent(0.7)
         } else {
-            ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.5)
+            ul.lineColor = NSUIColor.systemYellow.withAlphaComponent(0.7)
         }
         BGChart.rightAxis.addLimitLine(ul)
+        
+        //Daniel: Add mid green line based on target value
+        let tl = ChartLimitLine()
+        tl.limit = Double(UserDefaultsRepository.targetLine.value)
+        tl.lineColor = NSUIColor.systemGreen.withAlphaComponent(0.7)
+        tl.lineDashLengths = [1, 1]
+        tl.lineWidth = 1.0
+        BGChart.rightAxis.addLimitLine(tl)
         
         // Re-create vertical markers in case their settings changed
         createVerticalLines()
