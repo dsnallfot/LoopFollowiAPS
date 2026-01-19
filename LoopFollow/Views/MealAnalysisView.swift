@@ -374,7 +374,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // — Pull additional days from NightscoutCache (if any) —
         loadCachedData()
 
-        // ← / → dag‑hopp
+        // ← / → dag‑hopp (tap) + vecka‑hopp (long‑press)
         let prevBtn = UIBarButtonItem(image: UIImage(systemName: "chevron.left"),
                                       style: .plain,
                                       target: self,
@@ -383,6 +383,27 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                                       style: .plain,
                                       target: self,
                                       action: #selector(nextDayTapped))
+
+        // Attach long-press to perform week jumps.
+        // (Requires the bar button items' underlying views, so we add gestures after the nav bar has laid out.)
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+
+            if let prevView = prevBtn.value(forKey: "view") as? UIView {
+                prevView.isUserInteractionEnabled = true
+                let lp = UILongPressGestureRecognizer(target: self, action: #selector(self.previousButtonLongPressed(_:)))
+                lp.minimumPressDuration = 0.45
+                prevView.addGestureRecognizer(lp)
+            }
+
+            if let nextView = nextBtn.value(forKey: "view") as? UIView {
+                nextView.isUserInteractionEnabled = true
+                let lp = UILongPressGestureRecognizer(target: self, action: #selector(self.nextButtonLongPressed(_:)))
+                lp.minimumPressDuration = 0.45
+                nextView.addGestureRecognizer(lp)
+            }
+        }
+
         navigationItem.leftBarButtonItems = [prevBtn, nextBtn]
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
@@ -413,13 +434,31 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         dismiss(animated: true, completion: nil)
     }
 
-    // MARK: - ±1‑day navigation
+    // MARK: - Day/Week navigation
     @objc private func previousDayTapped() {
         shiftWindow(byDays: -1)
     }
 
     @objc private func nextDayTapped() {
         shiftWindow(byDays: 1)
+    }
+
+    @objc private func previousWeekTapped() {
+        shiftWindow(byDays: -7)
+    }
+
+    @objc private func nextWeekTapped() {
+        shiftWindow(byDays: 7)
+    }
+
+    @objc private func previousButtonLongPressed(_ gr: UILongPressGestureRecognizer) {
+        guard gr.state == .began else { return }
+        previousWeekTapped()
+    }
+
+    @objc private func nextButtonLongPressed(_ gr: UILongPressGestureRecognizer) {
+        guard gr.state == .began else { return }
+        nextWeekTapped()
     }
 
     /// Shifts the current time window an integral number of days while keeping its width.
