@@ -29,6 +29,8 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     private var lastConnectTime: Date?
     private var forceDisconnectWorkItem: DispatchWorkItem?
     // --- End Dexcom force-disconnect watchdog additions ---
+    
+    var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
     init(address:String, name:String?, CBUUID_Advertisement:String?, servicesCBUUIDs:[CBUUID]?, CBUUID_ReceiveCharacteristic:String, bluetoothDeviceDelegate: BluetoothDeviceDelegate) {
         self.lastHeartbeatTime = nil
@@ -54,6 +56,13 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
         forceDisconnectWorkItem = nil
         // --- End Dexcom force-disconnect watchdog cleanup ---
         disconnect()
+    }
+    
+    func endBackgroundTask() {
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+        }
     }
 
     func connect() {
@@ -208,6 +217,12 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        // 1. Starta Background Task för att garantera att Watchdog-timern hinner köra
+        self.backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "DexcomWatchdog") { [weak self] in
+            // Denna kod körs om tiden tar slut (t.ex. iOS tvingar vila)
+            self?.endBackgroundTask()
+        }
+
         cancelConnectionTimer()
 
         timeStampLastStatusUpdate = Date()
@@ -219,6 +234,7 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
         // If iOS/CB stack gets stuck in a long-lived connected state, we proactively force a disconnect
         // so the next heartbeat cycle can occur and background tasks can keep running.
         forceDisconnectWorkItem?.cancel()
+        
         let workItem = DispatchWorkItem { [weak self, weak peripheral] in
             guard let self = self, let peripheral = peripheral else { return }
             // Only act if this is still our active peripheral (avoid stale work items after reconnects)
@@ -238,8 +254,13 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
                     self?.centralManager?.cancelPeripheralConnection(peripheral)
                 }
             }
+            
+            // OBS: Vi avslutar inte backgroundTask här inne.
+            // Vi låter didDisconnect göra det, eftersom en force disconnect leder dit.
         }
+        
         forceDisconnectWorkItem = workItem
+        
         // CoreBluetooth operations must run on the same queue as the CBCentralManager was created on.
         // This BluetoothDevice creates CBCentralManager with `queue: nil` (main), so schedule on main.
         DispatchQueue.main.asyncAfter(deadline: .now() + 15.0, execute: workItem)
@@ -279,6 +300,9 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         timeStampLastStatusUpdate = Date()
+        
+        // Avsluta bakgrundsuppgiften nu när vi är klara
+        endBackgroundTask()
 
         // Connection ended; cancel any pending force-disconnect watchdog.
         forceDisconnectWorkItem?.cancel()

@@ -46,7 +46,7 @@ class BLEManager: NSObject, ObservableObject {
         centralManager = CBCentralManager(
             delegate: self,
             queue: bleQueue,
-            options: nil
+            options: [CBCentralManagerOptionRestoreIdentifierKey: "LoopFollow-ScanningCentral"]
         )
 
         if let device = Storage.shared.selectedBLEDevice.value {
@@ -176,18 +176,33 @@ class BLEManager: NSObject, ObservableObject {
 // MARK: - CBCentralManagerDelegate
 extension BLEManager: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, willRestoreState dict: [String: Any]) {
-        LogManager.shared.log(category: .bluetooth, message: "BLEManager willRestoreState invoked (unexpected; BLEManager central is non-restoring)", isDebug: true, isTempDebug: true)
-        return
-        // The code below is preserved for easy revert if state restoration is re-enabled.
-        // LogManager.shared.log(category: .bluetooth, message: "CoreBluetooth willRestoreState invoked", isDebug: true, isTempDebug: true)
-        //
-        // // Ensure our selected device connection is re-established after restoration.
-        // if let selected = Storage.shared.selectedBLEDevice.value {
-        //     LogManager.shared.log(category: .bluetooth, message: "Restoring BLE state: ensuring connection to selected device", isDebug: true, isTempDebug: true)
-        //     DispatchQueue.main.async {
-        //         self.connect(device: selected)
-        //     }
-        // }
+        LogManager.shared.log(category: .bluetooth, message: "🔄 BLEManager: State Restoration triggered!", isDebug: true, isTempDebug: true)
+
+        // 1. Hantera återställda enheter (Peripherals)
+        // Om iOS har hållit en anslutning vid liv åt oss, får vi tillbaka den här.
+        if let peripherals = dict[CBCentralManagerRestoredStatePeripheralsKey] as? [CBPeripheral] {
+            for peripheral in peripherals {
+                LogManager.shared.log(category: .bluetooth, message: "🔄 Restored peripheral: \(peripheral.name ?? "Unknown") - State: \(peripheral.state.rawValue)", isDebug: true, isTempDebug: true)
+                
+                // Om vi hittar en enhet här kan det vara bra att återupprätta kopplingen till vår interna lista
+                // Men eftersom BLEManager främst scannar, räcker det ofta med att bara logga detta.
+                // Om enheten är 'connected' men vi tappat referensen, kan vi behöva hantera det,
+                // men CoreBluetooth sköter oftast det mesta automatiskt om identifieraren är satt.
+            }
+        }
+
+        // 2. Hantera återställd scanning
+        // Detta bekräftar att iOS kommer fortsätta scanna åt oss i bakgrunden.
+        if let services = dict[CBCentralManagerRestoredStateScanServicesKey] as? [CBUUID] {
+            let serviceNames = services.map { $0.uuidString }.joined(separator: ", ")
+            LogManager.shared.log(category: .bluetooth, message: "🔄 Restored scanning for services: \(serviceNames)", isDebug: true, isTempDebug: true)
+        } else {
+            LogManager.shared.log(category: .bluetooth, message: "🔄 No scan services found in restoration state. Might need to restart scan.", isDebug: true, isTempDebug: true)
+            // Om ingen scanning återställdes, kan det vara säkert att trigga en ny scan här:
+            if central.state == .poweredOn {
+                startScanning()
+            }
+        }
     }
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
