@@ -946,10 +946,10 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         profileBasalValueLabel.text = String(format: "-%.2f E", profileBasalTotal)
         carbsValueLabel.text        = String(format: "%.0f g",  carbsTotal)
         fpuValueLabel.text          = String(format: "%.0f g", fpuTotal)
-        realCRValueLabel.text       = String(format: "%.0f g/E", realCR)
+        realCRValueLabel.text       = realCR > 0 ? String(format: "%.0f g/E", realCR) : "-- g/E"
         manualBolusValueLabel.text  = String(format: "%.0f %%", manualBolusPct)
         smbTempValueLabel.text      = String(format: "%.0f %%", smbTempPct)
-        manualVsAutomatedLabel.text = "\(manualBolusPctString) vs \(smbTempPctString)"
+        manualVsAutomatedLabel.text = realCR > 0 ? "\(manualBolusPctString) vs \(smbTempPctString)" : "-- % vs -- %"
         updateBGLabels()
     }
 
