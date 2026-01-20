@@ -88,18 +88,26 @@ class TIRViewModel: ObservableObject {
         // Split into weekdays/weekends using the timestamp on ShareGlucoseData.
         var weekdays: [ShareGlucoseData] = []
         var weekends: [ShareGlucoseData] = []
+        var schooldays: [ShareGlucoseData] = []
         weekdays.reserveCapacity(bgData.count)
         weekends.reserveCapacity(bgData.count)
+        schooldays.reserveCapacity(bgData.count)
 
         for r in bgData {
             // Normalize timestamp (ms vs s) like elsewhere
             let ts: TimeInterval = (r.date > 10_000_000_000) ? (r.date / 1000.0) : r.date
             let date = Date(timeIntervalSince1970: ts)
+            let hour = cal.component(.hour, from: date)
 
             if cal.isDateInWeekend(date) {
                 weekends.append(r)
             } else {
+                // Mon–Fre
                 weekdays.append(r)
+                // Skoldagar = vardagar kl 08–16
+                if hour >= 8 && hour < 16 {
+                    schooldays.append(r)
+                }
             }
         }
 
@@ -110,7 +118,7 @@ class TIRViewModel: ObservableObject {
         func averagePoint(from data: [ShareGlucoseData], period: TIRPeriod) -> TIRDataPoint {
             let points = TIRCalculator.calculate(bgData: data, useTightRange: useTightRange)
             if let avg = points.first(where: { $0.period == .average }) {
-                // Re-label the average point to the requested period (weekdays/weekends)
+                // Re-label the average point to the requested period (weekdays/weekends/schooldays)
                 return TIRDataPoint(period: period,
                                     veryLow: avg.veryLow,
                                     low: avg.low,
@@ -124,8 +132,9 @@ class TIRViewModel: ObservableObject {
         // Overall average (same as the existing graph)
         let overallAvg = averagePoint(from: bgData, period: .average)
         let weekdaysAvg = averagePoint(from: weekdays, period: .weekdays)
+        let schooldaysAvg = averagePoint(from: schooldays, period: .schooldays)
         let weekendsAvg = averagePoint(from: weekends, period: .weekends)
 
-        return [overallAvg, weekdaysAvg, weekendsAvg]
+        return [overallAvg, weekdaysAvg, schooldaysAvg, weekendsAvg]
     }
 }

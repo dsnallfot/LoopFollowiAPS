@@ -17,6 +17,7 @@ enum TIRPeriod: String, CaseIterable {
     case day = "kl 08-16\nDag"
     case evening = "kl 16-24\nKväll"
     case weekdays = "kl 00-24\nVardagar"
+    case schooldays = "kl 08-16\nSkoldagar"
     case weekends = "kl 00-24\nHelg"
     case average = "MEDEL"
 
@@ -26,7 +27,7 @@ enum TIRPeriod: String, CaseIterable {
     }
 
     static var weekdayDisplayOrder: [TIRPeriod] {
-        [.average, .weekdays, .weekends]
+        [.average, .weekdays, .schooldays, .weekends]
     }
 
     var isAverage: Bool {
