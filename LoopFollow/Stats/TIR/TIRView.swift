@@ -38,11 +38,12 @@ struct TIRView: View {
                         
                         VStack(alignment: .leading, spacing: 4) {
                             if let average = viewModel.tirData.first(where: { $0.period == .average }) {
-                                let timeVeryHigh = average.veryHigh * 24 * 60 / 100
-                                let timeHigh = average.high * 24 * 60 / 100
-                                let timeInRange = average.inRange * 24 * 60 / 100
-                                let timeLow = average.low * 24 * 60 / 100
-                                let timeVeryLow = average.veryLow * 24 * 60 / 100
+                                let dayMinutes = viewModel.averageDayMinutes
+                                let timeVeryHigh = average.veryHigh * dayMinutes / 100
+                                let timeHigh = average.high * dayMinutes / 100
+                                let timeInRange = average.inRange * dayMinutes / 100
+                                let timeLow = average.low * dayMinutes / 100
+                                let timeVeryLow = average.veryLow * dayMinutes / 100
                                 
                                 
                                 
@@ -126,11 +127,11 @@ struct TIRView: View {
         let mins = totalMinutes % 60
         
         if hours > 0 {
-            // Visa t.ex. "12h 45min", "3h 2min", "6h 0min"
-            return "\(hours)h \(mins)min"
+            // Visa t.ex. "12h 45m", "3h 2m", "6h 0m"
+            return "\(hours)h \(mins)m"
         } else {
-            // Bara minuter: "43m", "5min"
-            return "\(mins)min"
+            // Bara minuter: "43m", "5m"
+            return "\(mins)m"
         }
     }
 }
