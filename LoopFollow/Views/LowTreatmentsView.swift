@@ -997,6 +997,9 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
         chartView.data = data
         chartView.autoScaleMinMaxEnabled = false
         chartView.notifyDataSetChanged()
+        
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // X-axis labels = datum (kompakt format) för varje dag i selectedDays
         let df = DateFormatter()
@@ -1228,6 +1231,9 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
 
         let data = ScatterChartData(dataSets: [dextroSet, bgSet])
         scatterChartView.data = data
+        
+        scatterChartView.drawGridBackgroundEnabled = true
+        scatterChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // Marker med tre rader text för dextro/fingerstick
         let marker = DextroBgMarker(referenceDate: referenceStart)
@@ -1380,6 +1386,9 @@ final class LowTreatmentsStatsViewController: ThemedTableViewController {
         timeChartView.data = ScatterChartData(dataSets: [dsAll, dsPurple])
         timeChartView.autoScaleMinMaxEnabled = false
         timeChartView.notifyDataSetChanged()
+        
+        timeChartView.drawGridBackgroundEnabled = true
+        timeChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // Custom legend: vit cirkel + lila cirkel
         let legend = timeChartView.legend

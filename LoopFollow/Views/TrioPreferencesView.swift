@@ -497,8 +497,11 @@ private struct AnalyzeGlucoseLineChart: UIViewRepresentable {
         v.highlightPerDragEnabled = false
         v.drawMarkers = false
 
-        v.backgroundColor = .clear
-        v.isOpaque = false
+        //v.backgroundColor = .clear
+        //v.isOpaque = false
+        
+        v.drawGridBackgroundEnabled = showNormalChartElements
+        v.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // X axis
         let xAxis = v.xAxis
@@ -630,8 +633,11 @@ private struct AnalyzeDeviationsLineChart: UIViewRepresentable {
         v.drawMarkers = false
 
         // Transparent so ThemeBackground shows through
-        v.backgroundColor = .clear
-        v.isOpaque = false
+        //v.backgroundColor = .clear
+        //v.isOpaque = false
+        
+        v.drawGridBackgroundEnabled = true
+        v.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // X axis
         let xAxis = v.xAxis
@@ -781,8 +787,11 @@ private struct AnalyzeIobCobLineChart: UIViewRepresentable {
         v.highlightPerDragEnabled = false
         v.drawMarkers = false
 
-        v.backgroundColor = .clear
-        v.isOpaque = false
+        //v.backgroundColor = .clear
+        //v.isOpaque = false
+        
+        v.drawGridBackgroundEnabled = showNormalChartElements
+        v.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // X axis
         let xAxis = v.xAxis

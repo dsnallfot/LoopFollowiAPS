@@ -434,6 +434,9 @@ private struct ScatterLogChartView: UIViewRepresentable {
         chartView.pinchZoomEnabled = true
         chartView.highlightPerTapEnabled = false
         chartView.highlightPerDragEnabled = false
+        
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // Axlar
         chartView.rightAxis.enabled = false

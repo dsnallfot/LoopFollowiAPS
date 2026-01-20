@@ -660,6 +660,9 @@ final class TrioRestartsStatsViewController: ThemedTableViewController {
         chartView.data = data
         chartView.autoScaleMinMaxEnabled = false
         chartView.notifyDataSetChanged()
+        
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // X-axis labels = datum (kompakt format) för varje index
         let df = DateFormatter()
@@ -733,6 +736,9 @@ final class TrioRestartsStatsViewController: ThemedTableViewController {
         timeChartView.data = data
         timeChartView.autoScaleMinMaxEnabled = false
         timeChartView.notifyDataSetChanged()
+        
+        timeChartView.drawGridBackgroundEnabled = true
+        timeChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // X-axis labels = datum (kompakt format) för varje index
         let df = DateFormatter()

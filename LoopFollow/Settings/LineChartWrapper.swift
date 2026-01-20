@@ -39,6 +39,9 @@ struct LineChartWrapper: UIViewRepresentable {
                 chartView.leftAxis.gridColor = gridLineColor
                 chartView.leftAxis.gridLineWidth = 0.5
                 chartView.leftAxis.gridLineDashLengths = [2, 2] // Dotted effect
+        
+                chartView.drawGridBackgroundEnabled = true
+                chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
                 chartView.rightAxis.enabled = false // Hide right Y-axis
 

@@ -289,7 +289,7 @@ struct StatCard: View {
                     .padding(8)
             }
         }
-        .background(Color(.systemGray.withAlphaComponent(0.1)))
+        .background(Color(.systemBackground.withAlphaComponent(0.5)))
         .cornerRadius(15)
         .overlay {
             if isTooltipVisible {

@@ -1086,6 +1086,9 @@ final class SensorSessionStatsViewController: ThemedTableViewController {
         chartView.data = ScatterChartData(dataSets: dataSets)
         chartView.autoScaleMinMaxEnabled = false
         chartView.notifyDataSetChanged()
+        
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // X-axel = datumintervall för avslutade sessioners starttider (utan pågående)
         let oldestStart = Date(timeIntervalSince1970: history.last!.date)

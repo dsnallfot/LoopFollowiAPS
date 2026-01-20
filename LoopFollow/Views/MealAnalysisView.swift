@@ -1076,6 +1076,8 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         bgChartView.highlightPerTapEnabled = true
         bgChartView.scaleXEnabled = false
         bgChartView.scaleYEnabled = false
+        bgChartView.drawGridBackgroundEnabled = true
+        bgChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
         bgChartView.drawOrder = [CombinedChartView.DrawOrder.line.rawValue, CombinedChartView.DrawOrder.scatter.rawValue]
 
         // Y axis 0‑24 mmol

@@ -618,8 +618,13 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         weekChartView.isHidden = true
 
         // Background / grid aesthetics
-        dayChartView.backgroundColor = .clear
-        weekChartView.backgroundColor = .clear
+        //dayChartView.backgroundColor = .clear
+        //weekChartView.backgroundColor = .clear
+        
+        dayChartView.drawGridBackgroundEnabled = true
+        dayChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
+        weekChartView.drawGridBackgroundEnabled = true
+        weekChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // Ensure content isn't clipped at edges, and give extra room for edge labels
         weekChartView.setExtraOffsets(left: 14, top: 0, right: 14, bottom: 0)

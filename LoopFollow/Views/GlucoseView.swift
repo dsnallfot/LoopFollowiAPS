@@ -1919,6 +1919,9 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         yAxis.gridColor = gridLineColor
         yAxis.gridLineWidth = 0.5
         yAxis.gridLineDashLengths = [2, 2]
+        
+        sensorErrorChartView.drawGridBackgroundEnabled = true
+        sensorErrorChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         sensorErrorChartView.notifyDataSetChanged()
         sensorErrorChartView.setNeedsDisplay()
@@ -2154,6 +2157,9 @@ final class GlucoseStatsViewController: ThemedTableViewController {
         chartView.xAxis.axisMinimum = 0
         chartView.xAxis.axisMaximum = Double(n)
         data.groupBars(fromX: 0, groupSpace: groupSpace, barSpace: barSpace)
+        
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // Light grid for readability (same vibe as BGCheck)
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
