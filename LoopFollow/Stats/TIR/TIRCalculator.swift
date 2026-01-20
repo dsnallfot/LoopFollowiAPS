@@ -30,16 +30,14 @@ class TIRCalculator {
             let hour = components.hour ?? 0
 
             let glucose = Double(reading.sgv)
-
             var period: TIRPeriod?
-            if let hourRange = TIRPeriod.night.hourRange, hour >= hourRange.start, hour < hourRange.end {
-                period = .night
-            } else if let hourRange = TIRPeriod.morning.hourRange, hour >= hourRange.start, hour < hourRange.end {
-                period = .morning
-            } else if let hourRange = TIRPeriod.day.hourRange, hour >= hourRange.start, hour < hourRange.end {
-                period = .day
-            } else if let hourRange = TIRPeriod.evening.hourRange, hour >= hourRange.start, hour < hourRange.end {
-                period = .evening
+            // Match this reading to the first TIRPeriod whose hourRange contains `hour`.
+            for candidate in [TIRPeriod.night, .day, .evening] {
+                if let range = candidate.hourRange,
+                   hour >= range.start, hour < range.end {
+                    period = candidate
+                    break
+                }
             }
 
             if let period = period {
@@ -52,7 +50,7 @@ class TIRCalculator {
 
         var tirPoints: [TIRDataPoint] = []
 
-        for period in [TIRPeriod.night, .morning, .day, .evening] {
+        for period in [TIRPeriod.night, .day, .evening] {
             guard let readings = periodData[period], !readings.isEmpty else {
                 tirPoints.append(TIRDataPoint(
                     period: period,

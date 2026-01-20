@@ -7,6 +7,12 @@ import UIKit
 
 struct TIRGraphView: UIViewRepresentable {
     let tirData: [TIRDataPoint]
+    let displayOrder: [TIRPeriod]
+
+    init(tirData: [TIRDataPoint], displayOrder: [TIRPeriod] = TIRPeriod.displayOrder) {
+        self.tirData = tirData
+        self.displayOrder = displayOrder
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -53,7 +59,7 @@ struct TIRGraphView: UIViewRepresentable {
         guard !tirData.isEmpty else { return }
 
         // Put the overall average first using the canonical display order
-        let orderIndex: [TIRPeriod: Int] = Dictionary(uniqueKeysWithValues: TIRPeriod.displayOrder.enumerated().map { ($0.element, $0.offset) })
+        let orderIndex: [TIRPeriod: Int] = Dictionary(uniqueKeysWithValues: displayOrder.enumerated().map { ($0.element, $0.offset) })
         let orderedTirData = tirData.sorted {
             (orderIndex[$0.period] ?? Int.max) < (orderIndex[$1.period] ?? Int.max)
         }

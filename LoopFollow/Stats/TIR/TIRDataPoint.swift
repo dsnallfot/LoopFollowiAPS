@@ -13,15 +13,20 @@ struct TIRDataPoint {
 }
 
 enum TIRPeriod: String, CaseIterable {
-    case night = "kl 00-06\nNatt"
-    case morning = "kl 06-12\nMorgon"
-    case day = "kl 12-18\nDag"
-    case evening = "kl 18-24\nKväll"
+    case night = "kl 00-08\nNatt"
+    case day = "kl 08-16\nDag"
+    case evening = "kl 16-24\nKväll"
+    case weekdays = "kl 00-24\nVardagar"
+    case weekends = "kl 00-24\nHelg"
     case average = "MEDEL"
 
     /// Central display order used by charts and tables
     static var displayOrder: [TIRPeriod] {
-        [.average, .night, .morning, .day, .evening]
+        [.average, .night, .day, .evening]
+    }
+
+    static var weekdayDisplayOrder: [TIRPeriod] {
+        [.average, .weekdays, .weekends]
     }
 
     var isAverage: Bool {
@@ -31,14 +36,12 @@ enum TIRPeriod: String, CaseIterable {
     var hourRange: (start: Int, end: Int)? {
         switch self {
         case .night:
-            return (0, 6)
-        case .morning:
-            return (6, 12)
+            return (0, 8)
         case .day:
-            return (12, 18)
+            return (8, 16)
         case .evening:
-            return (18, 24)
-        case .average:
+            return (16, 24)
+        default:
             return nil
         }
     }

@@ -4,10 +4,17 @@
 import Combine
 import Foundation
 
+enum TIRGraphMode {
+    case hours
+    case weekdays
+}
+
 class TIRViewModel: ObservableObject {
     @Published var tirData: [TIRDataPoint] = []
     @Published var showTITR: Bool
     @Published var averageDayMinutes: Double = 24 * 60
+    @Published var graphMode: TIRGraphMode = .hours
+    @Published var tirWeekdayData: [TIRDataPoint] = []
 
     private let dataService: StatsDataService
 
@@ -21,12 +28,17 @@ class TIRViewModel: ObservableObject {
         let bgData = dataService.getBGData()
         tirData = TIRCalculator.calculate(bgData: bgData, useTightRange: showTITR)
         averageDayMinutes = Self.computeAverageDayMinutes(bgData: bgData)
+        tirWeekdayData = Self.calculateWeekdayWeekendTIR(bgData: bgData, useTightRange: showTITR)
     }
 
     func toggleTIRMode() {
         showTITR.toggle()
         Storage.shared.showTITR.value = showTITR
         calculateTIR()
+    }
+
+    func toggleGraphMode() {
+        graphMode = (graphMode == .hours) ? .weekdays : .hours
     }
 
     /// Computes how many minutes the "average" row should represent.
@@ -67,5 +79,53 @@ class TIRViewModel: ObservableObject {
         
         // Övriga fall: anta ett helt dygn.
         return 24 * 60
+    }
+
+    /// Computes TIR for Weekdays (Mon–Fri) vs Weekends (Sat–Sun) from the current bgData window.
+    private static func calculateWeekdayWeekendTIR(bgData: [ShareGlucoseData], useTightRange: Bool) -> [TIRDataPoint] {
+        let cal = Calendar.current
+
+        // Split into weekdays/weekends using the timestamp on ShareGlucoseData.
+        var weekdays: [ShareGlucoseData] = []
+        var weekends: [ShareGlucoseData] = []
+        weekdays.reserveCapacity(bgData.count)
+        weekends.reserveCapacity(bgData.count)
+
+        for r in bgData {
+            // Normalize timestamp (ms vs s) like elsewhere
+            let ts: TimeInterval = (r.date > 10_000_000_000) ? (r.date / 1000.0) : r.date
+            let date = Date(timeIntervalSince1970: ts)
+
+            if cal.isDateInWeekend(date) {
+                weekends.append(r)
+            } else {
+                weekdays.append(r)
+            }
+        }
+
+        func zeroPoint(_ period: TIRPeriod) -> TIRDataPoint {
+            TIRDataPoint(period: period, veryLow: 0, low: 0, inRange: 0, high: 0, veryHigh: 0)
+        }
+
+        func averagePoint(from data: [ShareGlucoseData], period: TIRPeriod) -> TIRDataPoint {
+            let points = TIRCalculator.calculate(bgData: data, useTightRange: useTightRange)
+            if let avg = points.first(where: { $0.period == .average }) {
+                // Re-label the average point to the requested period (weekdays/weekends)
+                return TIRDataPoint(period: period,
+                                    veryLow: avg.veryLow,
+                                    low: avg.low,
+                                    inRange: avg.inRange,
+                                    high: avg.high,
+                                    veryHigh: avg.veryHigh)
+            }
+            return zeroPoint(period)
+        }
+
+        // Overall average (same as the existing graph)
+        let overallAvg = averagePoint(from: bgData, period: .average)
+        let weekdaysAvg = averagePoint(from: weekdays, period: .weekdays)
+        let weekendsAvg = averagePoint(from: weekends, period: .weekends)
+
+        return [overallAvg, weekdaysAvg, weekendsAvg]
     }
 }
