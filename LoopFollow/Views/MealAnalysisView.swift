@@ -932,11 +932,11 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // Net insulin for meal = delivered insulin - scheduled profile basal
         let netInsulin = (smbTotal + bolusTotal + basalTotal) - profileBasalTotal
         // Derived statistics
-        let realCR = netInsulin > 0 ? carbsTotal / netInsulin : 0
-        let manualBolusPct = netInsulin > 0 ? (bolusTotal / netInsulin) * 100 : 0
+        let realCR = netInsulin > 0.04 ? carbsTotal / netInsulin : 0
+        let manualBolusPct = netInsulin > 0.04 ? (bolusTotal / netInsulin) * 100 : 0
         let manualBolusPctString = String(format: "%.0f %%", manualBolusPct)
         let smbTempDelivered = smbTotal + basalTotal - profileBasalTotal
-        let smbTempPct = netInsulin > 0 ? (smbTempDelivered / netInsulin) * 100 : 0
+        let smbTempPct = netInsulin > 0.04 ? (smbTempDelivered / netInsulin) * 100 : 0
         let smbTempPctString = String(format: "%.0f %%", smbTempPct)
         // update UI
         insulinTotalValueLabel.text = String(format: "%.2f E", netInsulin)

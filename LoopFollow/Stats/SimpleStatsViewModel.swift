@@ -380,7 +380,7 @@ class SimpleStatsViewModel: ObservableObject {
         }
 
         // Verklig insulinkvot (g/E) = Kolhydrater / Netto måltidsbolus
-        if let carbsPerDay = avgCarbs, let net = netMealBolus, net > 0 {
+        if let carbsPerDay = avgCarbs, let net = netMealBolus, net > 0.04 {
             realCarbRatio = carbsPerDay / net
         } else {
             realCarbRatio = nil
