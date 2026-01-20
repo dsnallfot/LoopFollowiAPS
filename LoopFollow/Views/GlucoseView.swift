@@ -214,6 +214,31 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         return rows.sorted { $0.date > $1.date }
     }
 
+    /// Determines which rows are shown when the filter button (line.3.horizontal.decrease.circle) is enabled.
+    /// Includes:
+    /// - all missing rows
+    /// - glucose rows that are "special" (🦄, 🆘, ⚠️)
+    private func shouldIncludeWhenFiltered(_ row: GlucoseRow) -> Bool {
+        switch row {
+        case .missing:
+            // Always keep missing rows
+            return true
+
+        case .glucose(let entry):
+            // 🦄 Unicorn = exactly 5.5 mmol/L (≈ 100 mg/dL)
+            if abs(entry.mmol - 5.5) < 0.02 { return true }
+            // 🆘 Very low marker ~2.2 mmol/L
+            if abs(entry.mmol - 2.2) < 0.04 { return true }
+            // ⚠️ Very high marker ~22.2 mmol/L
+            if abs(entry.mmol - 22.2) < 0.04 { return true }
+            return false
+
+        case .sensorError:
+            // Sensorfel-läget har egen vy och hanteras separat
+            return false
+        }
+    }
+
     private var filteredRows: [GlucoseRow] {
         if dataMode == .sensorErrors {
             return sensorErrorRows
@@ -221,15 +246,17 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
 
         let rows = dayRowsIncludingMissing
         if showOnlyMissingGlucose {
-            let missing = rows.filter { $0.isMissing }
-            if missing.isEmpty {
+            // Visa alla saknade rader + "intressanta" värden (🦄, 🆘, ⚠️)
+            let hits = rows.filter { shouldIncludeWhenFiltered($0) }
+
+            if hits.isEmpty {
                 // Insert a synthetic placeholder missing row at noon
                 let cal = Calendar.current
                 let start = cal.startOfDay(for: selectedDate)
                 let placeholderDate = cal.date(byAdding: .hour, value: 12, to: start) ?? start
                 return [.missing(placeholderDate, .sensor)]
             }
-            return missing
+            return hits
         }
         return rows
     }
