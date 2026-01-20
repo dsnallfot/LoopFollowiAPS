@@ -1729,19 +1729,36 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             }
         }
     }
-    /// Counts "unicorn" readings (100 mg/dL ≈ 5.5 mmol/L) per day.
+    /// Counts "unicorn" readings (≈ 5.5 mmol/L) per day, deduped to match GlucoseView.
     private func unicornCountsByDayFromSGVJSON(_ sgvs: [SGVJSON]) -> [Date: Int] {
         let cal = Calendar.current
-        var counts: [Date: Int] = [:]
+
+        // Per dag: set av tidsbuckets (4-min, samma som allValuesDayEntries)
+        var bucketsByDay: [Date: Set<Int>] = [:]
 
         for e in sgvs {
-            // In SGVJSON, sgv is mg/dL. Unicorn = exactly 100 mg/dL.
-            guard e.sgv == 100 else { continue }
+            // SGVJSON.sgv är mg/dL → konvertera till mmol/L
+            let mmol = Double(e.sgv) / 18.0182
+
+            // Samma tolerans som i GlucoseView (🦄-etiketten)
+            guard abs(mmol - 5.5) < 0.02 else { continue }
+
             let date = Date(timeIntervalSince1970: e.date)
             let dayStart = cal.startOfDay(for: date)
-            counts[dayStart, default: 0] += 1
+
+            // Dedupera på 4-minutersbuckets ungefär som dedupeToBuckets(..., bucketSeconds: 240)
+            let bucket = Int(floor(date.timeIntervalSince1970 / 240.0))
+
+            var set = bucketsByDay[dayStart] ?? []
+            set.insert(bucket)
+            bucketsByDay[dayStart] = set
         }
 
+        var counts: [Date: Int] = [:]
+        counts.reserveCapacity(bucketsByDay.count)
+        for (day, set) in bucketsByDay {
+            counts[day] = set.count
+        }
         return counts
     }
     // MARK: - Unicorn badge
