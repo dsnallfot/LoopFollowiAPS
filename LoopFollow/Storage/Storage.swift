@@ -126,6 +126,10 @@ struct UserProfileEntry: Codable, Equatable {
     var weightKg: Double?
     var tdd: Double?
     var hbA1c: Double?
+    var actualBasal: Double?
+    var actualMorningCR: Double?
+    var actualDayCR: Double?
+    var actualAverageISF: Double?
     var updatedAt: Date
 
     // För framtida CSV-export/import lagrar vi även de kalkylerade fälten
@@ -137,6 +141,7 @@ struct UserProfileEntry: Codable, Equatable {
     var walshTDD: Double?
     var walshBasal: Double?
     var walshBasalPerHour: Double?
+    var actualBasalPerHour: Double?
 }
 
 extension Storage {

@@ -10,6 +10,7 @@ import SwiftUI
 import Charts
 import PhotosUI
 import UIKit
+import HealthKit
 
 @available(iOS 16.0, *)
 private struct LogSearchItem: Identifiable {
@@ -397,6 +398,10 @@ private struct UserDataViewController: View {
     @State private var profileImage: UIImage?
     @State private var selectedItem: PhotosPickerItem?
     @State private var profile: UserProfileEntry?
+    @State private var profiles: [UserProfileEntry] = []
+    @State private var editingEntry: UserProfileEntry?
+    @State private var profileToDelete: UserProfileEntry?
+    @State private var showDeleteAlert: Bool = false
 
     private static let shortDateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -411,80 +416,110 @@ private struct UserDataViewController: View {
                 //.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-                GeometryReader { geometry in
-                    let imageSide = geometry.size.width / 4
+                // Header: profilbild + senaste profilinfo
+                let imageSide = UIScreen.main.bounds.width / 4
 
-                    HStack(alignment: .top, spacing: 12) {
-                        // Frame 1: Profilbild
-                        PhotosPicker(selection: $selectedItem, matching: .images) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color(.systemBackground).opacity(0.5))
+                HStack(alignment: .top, spacing: 12) {
+                    // Frame 1: Profilbild
+                    PhotosPicker(selection: $selectedItem, matching: .images) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(.systemBackground).opacity(0.5))
 
-                                if let img = profileImage {
-                                    Image(uiImage: img)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .clipShape(Circle())
-                                } else {
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 40))
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                            .frame(width: imageSide, height: imageSide)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .onChange(of: selectedItem) { newItem in
-                            guard let item = newItem else { return }
-                            Task {
-                                if let data = try? await item.loadTransferable(type: Data.self),
-                                   let uiImage = UIImage(data: data) {
-                                    await MainActor.run {
-                                        self.profileImage = uiImage
-                                        UserProfileImageManager.shared.save(image: uiImage)
-                                    }
-                                }
+                            if let img = profileImage {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .clipShape(Circle())
+                            } else {
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.gray)
                             }
                         }
-
-                        // Frames 2 & 3: Rubriker + placeholder-värden
-                        HStack(alignment: .top, spacing: 12) {
-                            // Frame 2: Rubriker
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Namn:")
-                                Text("Född:")
-                                Text("T1D sedan:")
-                                Text("Längd:")
-                                Text("Vikt:")
-                                Text("Uppdaterades:")
-                            }
-                            .font(.caption2)
-
-                            // Frame 3: Värden (senaste profil eller placeholders)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(profile?.name ?? "<<Förnamn Efternamn>>")
-                                Text(profile?.birthDate.map { Self.shortDateFormatter.string(from: $0) } ?? "<<ÅÅ-MM-DD>>")
-                                Text(profile?.t1dSince.map { Self.shortDateFormatter.string(from: $0) } ?? "<<ÅÅ-MM-DD>>")
-                                Text(profile?.heightCm.map { String(format: "%.0f cm", $0) } ?? "<<XXX>> cm")
-                                Text(profile?.weightKg.map { String(format: "%.1f kg", $0) } ?? "<<XX>> kg")
-                                Text(profile.map { Self.shortDateFormatter.string(from: $0.updatedAt) } ?? "<<ÅÅ-MM-DD>>")
-                            }
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-
-                            Spacer()
-                        }
-                        .frame(height: imageSide, alignment: .top)
+                        .frame(width: imageSide, height: imageSide)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                        )
                     }
-                    .padding(.top, 16)
-                    .padding(.horizontal)
-                }
+                    .buttonStyle(.plain)
+                    .onChange(of: selectedItem) { newItem in
+                        guard let item = newItem else { return }
+                        Task {
+                            if let data = try? await item.loadTransferable(type: Data.self),
+                               let uiImage = UIImage(data: data) {
+                                await MainActor.run {
+                                    self.profileImage = uiImage
+                                    UserProfileImageManager.shared.save(image: uiImage)
+                                }
+                            }
+                        }
+                    }
 
+                    // Frames 2 & 3: Rubriker + värden
+                    HStack(alignment: .top, spacing: 12) {
+                        // Frame 2: Rubriker
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Namn:")
+                            Text("Född:")
+                            Text("T1D sedan:")
+                            Text("Längd:")
+                            Text("Vikt:")
+                            Text("Uppdaterades:")
+                        }
+                        .font(.caption2)
+
+                        // Frame 3: Värden (senaste profil eller placeholders)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(profile?.name ?? "<<Förnamn Efternamn>>")
+                            Text(profile?.birthDate.map { Self.shortDateFormatter.string(from: $0) } ?? "<<ÅÅ-MM-DD>>")
+                            Text(profile?.t1dSince.map { Self.shortDateFormatter.string(from: $0) } ?? "<<ÅÅ-MM-DD>>")
+                            Text(profile?.heightCm.map { String(format: "%.0f cm", $0) } ?? "<<XXX>> cm")
+                            Text(profile?.weightKg.map { String(format: "%.1f kg", $0) } ?? "<<XX>> kg")
+                            Text(profile.map { Self.shortDateFormatter.string(from: $0.updatedAt) } ?? "<<ÅÅ-MM-DD>>")
+                        }
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                        Spacer()
+                    }
+                    .frame(height: imageSide, alignment: .top)
+                }
+                .padding(.vertical, 16)
+                .padding(.horizontal)
+
+                // Sektion: tabell med historik
+                if profiles.isEmpty {
+                    Text("Ingen data finns registrerad ännu. Klicka på + uppe till vänster för att göra en första registrering.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding()
+                } else {
+                    List {
+                        ForEach(profiles) { entry in
+                            UserProfileRow(entry: entry)
+                                .listRowBackground(Color.clear)
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        profileToDelete = entry
+                                        showDeleteAlert = true
+                                    } label: {
+                                        Label("Radera", systemImage: "trash")
+                                    }
+
+                                    Button {
+                                        editingEntry = entry
+                                    } label: {
+                                        Label("Redigera", systemImage: "pencil")
+                                    }
+                                    .tint(.blue)
+                                }
+                        }
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                }
                 Spacer()
             }
         }
@@ -492,12 +527,107 @@ private struct UserDataViewController: View {
             if profileImage == nil {
                 profileImage = UserProfileImageManager.shared.load()
             }
-            if profile == nil {
-                profile = Storage.shared.userProfiles.last
-            }
+            reloadProfiles()
         }
         .onReceive(NotificationCenter.default.publisher(for: .userProfileUpdated)) { _ in
-            profile = Storage.shared.userProfiles.last
+            reloadProfiles()
+        }
+        .sheet(item: $editingEntry) { entry in
+            NavigationStack {
+                AddUserDataView(existingEntry: entry)
+            }
+        }
+        .alert("Radera data", isPresented: $showDeleteAlert) {
+            Button("Radera", role: .destructive) {
+                if let toDelete = profileToDelete {
+                    var stored = Storage.shared.userProfiles
+                    stored.removeAll { $0.updatedAt == toDelete.updatedAt && $0.name == toDelete.name }
+                    Storage.shared.userProfiles = stored
+                    reloadProfiles()
+                    profileToDelete = nil
+                }
+            }
+            Button("Avbryt", role: .cancel) {
+                profileToDelete = nil
+            }
+        } message: {
+            if let toDelete = profileToDelete {
+                Text("Vill du verkligen radera data registrerat \(Self.shortDateFormatter.string(from: toDelete.updatedAt))?")
+            } else {
+                Text("Vill du verkligen radera denna post?")
+            }
+        }
+    }
+    private func reloadProfiles() {
+        let stored = Storage.shared.userProfiles.sorted { $0.updatedAt > $1.updatedAt }
+        profiles = stored
+        profile = stored.first
+    }
+}
+
+@available(iOS 16.0, *)
+private struct UserProfileRow: View {
+    let entry: UserProfileEntry
+
+    private static let dateFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyMMdd"
+        return df
+    }()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(Self.dateFormatter.string(from: entry.updatedAt))
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+
+                Spacer()
+
+                if let hb = entry.hbA1c {
+                    ZStack {
+                        Circle()
+                            .fill(hbColor(for: hb))
+                            .frame(width: 24, height: 24)
+
+                        Text(String(format: "%.0f", hb))
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                } else {
+                    ZStack {
+                        Circle()
+                            .fill(Color(.systemGray4))
+                            .frame(width: 24, height: 24)
+
+                        Text("--")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+
+            let tddString = entry.tdd.map { String(format: "%.1f", $0) } ?? "--"
+            let weightString = entry.weightKg.map { String(format: "%.1f", $0) } ?? "--"
+            let heightString = entry.heightCm.map { String(format: "%.0f", $0) } ?? "--"
+
+            Text("TDD: \(tddString) E • Vikt: \(weightString) kg • Längd: \(heightString) cm")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func hbColor(for hbA1c: Double) -> Color {
+        if hbA1c <= 48 {
+            return Color(UIColor.systemGreen)
+        } else if hbA1c <= 52 {
+            return Color(UIColor.systemOrange)
+        } else {
+            return Color(UIColor.systemRed)
         }
     }
 }
@@ -507,6 +637,7 @@ private struct UserDataViewController: View {
 @available(iOS 16.0, *)
 private struct AddUserDataView: View {
     @Environment(\.dismiss) private var dismiss
+    var existingEntry: UserProfileEntry? = nil
 
     @State private var name: String = ""
     @State private var birthDate: Date = Date()
@@ -515,6 +646,10 @@ private struct AddUserDataView: View {
     @State private var heightText: String = ""
     @State private var weightText: String = ""
     @State private var tddText: String = ""
+    @State private var actualMorningCRText: String = ""
+    @State private var actualDayCRText: String = ""
+    @State private var actualBasalText: String = ""
+    @State private var actualAverageISFText: String = ""
     @State private var hbA1cText: String = ""
 
     private var heightCm: Double? {
@@ -531,6 +666,22 @@ private struct AddUserDataView: View {
     
     private var hbA1c: Double? {
         Double(hbA1cText.replacingOccurrences(of: ",", with: "."))
+    }
+    
+    private var actualMorningCR: Double? {
+        Double(actualMorningCRText.replacingOccurrences(of: ",", with: "."))
+    }
+    
+    private var actualDayCR: Double? {
+        Double(actualDayCRText.replacingOccurrences(of: ",", with: "."))
+    }
+    
+    private var actualAverageISF: Double? {
+        Double(actualAverageISFText.replacingOccurrences(of: ",", with: "."))
+    }
+    
+    private var actualBasal: Double? {
+        Double(actualBasalText.replacingOccurrences(of: ",", with: "."))
     }
 
     private var insulinPerKg: Double? {
@@ -572,6 +723,12 @@ private struct AddUserDataView: View {
         guard let weightKg, weightKg > 0 else { return nil }
         return (weightKg * 0.55) * 0.48 / 24
     }
+    
+    private var actualBasalPerHour: Double? {
+        guard let actualBasal, actualBasal > 0 else { return nil }
+        return actualBasal / 24
+    }
+
 
     var body: some View {
         ZStack {
@@ -611,6 +768,42 @@ private struct AddUserDataView: View {
                             Text("Total daglig dos (14d):")
                             Spacer()
                             TextField("Ange TDD", text: $tddText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("E")
+                        }
+                        
+                        HStack {
+                            Text("Aktuell CR (morgon):")
+                            Spacer()
+                            TextField("Ange CR (morgon)", text: $actualMorningCRText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("E")
+                        }
+                        
+                        HStack {
+                            Text("Aktuell CR (dag):")
+                            Spacer()
+                            TextField("Ange CR (dag)", text: $actualDayCRText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("E")
+                        }
+                        
+                        HStack {
+                            Text("Aktuell Basal (24h):")
+                            Spacer()
+                            TextField("Ange Basal", text: $actualBasalText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("E")
+                        }
+                        
+                        HStack {
+                            Text("Aktuell ISF (medel):")
+                            Spacer()
+                            TextField("Ange ISF", text: $actualAverageISFText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("E")
@@ -757,8 +950,20 @@ private struct AddUserDataView: View {
             }
         }
         .onAppear {
-            // Autopopulera från senaste profil om sådan finns
-            if let latest = Storage.shared.userProfiles.last {
+            if let existing = existingEntry {
+                name = existing.name
+                if let d = existing.birthDate { birthDate = d }
+                if let d = existing.t1dSince { t1dSinceDate = d }
+                if let h = existing.heightCm { heightText = String(format: "%.0f", h) }
+                if let w = existing.weightKg { weightText = String(format: "%.1f", w) }
+                if let dose = existing.tdd { tddText = String(format: "%.1f", dose) }
+                if let hba1c = existing.hbA1c { hbA1cText = String(format: "%.0f", hba1c) }
+                if let actualMorningCR = existing.actualMorningCR { actualMorningCRText = String(format: "%.1f", actualMorningCR) }
+                if let actualDayCR = existing.actualDayCR { actualDayCRText = String(format: "%.1f", actualDayCR) }
+                if let actualBasal = existing.actualBasal { actualBasalText = String(format: "%.2f", actualBasal) }
+                if let actualAverageISF = existing.actualAverageISF { actualAverageISFText = String(format: "%.1f", actualAverageISF) }
+                updatedDate = existing.updatedAt
+            } else if let latest = Storage.shared.userProfiles.last {
                 name = latest.name
                 if let d = latest.birthDate { birthDate = d }
                 if let d = latest.t1dSince { t1dSinceDate = d }
@@ -766,7 +971,134 @@ private struct AddUserDataView: View {
                 if let w = latest.weightKg { weightText = String(format: "%.1f", w) }
                 if let dose = latest.tdd { tddText = String(format: "%.1f", dose) }
                 if let hba1c = latest.hbA1c { hbA1cText = String(format: "%.0f", hba1c) }
+                if let actualMorningCR = latest.actualMorningCR { actualMorningCRText = String(format: "%.1f", actualMorningCR) }
+                if let actualDayCR = latest.actualDayCR { actualDayCRText = String(format: "%.1f", actualDayCR) }
+                if let actualBasal = latest.actualBasal { actualBasalText = String(format: "%.2f", actualBasal) }
+                if let actualAverageISF = latest.actualAverageISF { actualAverageISFText = String(format: "%.1f", actualAverageISF) }
                 updatedDate = latest.updatedAt
+            }
+
+            // Om vi skapar en NY registrering (existingEntry == nil)
+            // och updatedDate är idag -> auto-populera actual*-fält från aktuell profil
+            if existingEntry == nil {
+                populateActualFieldsFromCurrentProfile()
+            }
+        }
+        .onChange(of: updatedDate) { newDate in
+            let calendar = Calendar.current
+            clearActualFields()
+
+            if calendar.isDateInToday(newDate) {
+                populateActualFieldsFromCurrentProfile()
+            }
+        }
+    }
+
+    // MARK: - Helpers for auto-populating actual fields
+
+    private func clearActualFields() {
+        actualBasalText = ""
+        actualMorningCRText = ""
+        actualDayCRText = ""
+        actualAverageISFText = ""
+    }
+
+    private func hourlyCR(from schedule: [ProfileManager.TimeValue<Double>]) -> [Int: Double] {
+        var dict: [Int: Double] = [:]
+        var last: Double?
+        var scheduleByHour: [Int: Double] = [:]
+
+        for entry in schedule {
+            scheduleByHour[entry.timeAsSeconds / 3600] = entry.value
+        }
+
+        for hour in 0..<24 {
+            if let new = scheduleByHour[hour] {
+                last = new
+            }
+            if let last {
+                dict[hour] = last
+            }
+        }
+        return dict
+    }
+
+    private func hourlyISF(from schedule: [ProfileManager.TimeValue<HKQuantity>], unit: HKUnit) -> [Int: Double] {
+        var dict: [Int: Double] = [:]
+        var last: Double?
+        var scheduleByHour: [Int: Double] = [:]
+
+        for entry in schedule {
+            scheduleByHour[entry.timeAsSeconds / 3600] = entry.value.doubleValue(for: unit)
+        }
+
+        for hour in 0..<24 {
+            if let new = scheduleByHour[hour] {
+                last = new
+            }
+            if let last {
+                dict[hour] = last
+            }
+        }
+        return dict
+    }
+
+    private func value(nearHour targetHour: Int, in dict: [Int: Double]) -> Double? {
+        guard !dict.isEmpty else { return nil }
+        guard let bestHour = dict.keys.min(by: { abs($0 - targetHour) < abs($1 - targetHour) }) else {
+            return nil
+        }
+        return dict[bestHour]
+    }
+
+    private func populateActualFieldsFromCurrentProfile() {
+        let calendar = Calendar.current
+        guard calendar.isDateInToday(updatedDate) else { return }
+
+        let profile = ProfileManager.shared
+
+        // actualBasal: total daglig basal från basalschemat
+        if actualBasalText.isEmpty {
+            var lastBasal: Double?
+            var basalDict: [Int: Double] = [:]
+            for entry in profile.basalSchedule {
+                basalDict[entry.timeAsSeconds / 3600] = entry.value
+            }
+
+            var totalDailyBasal: Double = 0
+            for hour in 0..<24 {
+                if let newBasal = basalDict[hour] {
+                    lastBasal = newBasal
+                }
+                if let basal = lastBasal {
+                    totalDailyBasal += basal
+                }
+            }
+
+            if totalDailyBasal > 0 {
+                actualBasalText = String(format: "%.2f", totalDailyBasal)
+            }
+        }
+
+        // actualMorningCR & actualDayCR från CR-schema (timme 08 och 18, närmaste)
+        let crByHour = hourlyCR(from: profile.carbRatioSchedule)
+
+        if actualMorningCRText.isEmpty, let morningCR = value(nearHour: 8, in: crByHour) {
+            actualMorningCRText = String(format: "%.1f", morningCR)
+        }
+
+        if actualDayCRText.isEmpty, let dayCR = value(nearHour: 18, in: crByHour) {
+            actualDayCRText = String(format: "%.1f", dayCR)
+        }
+
+        // actualAverageISF = medelvärde av ISF över dygnet
+        let isfByHour = hourlyISF(from: profile.isfSchedule, unit: profile.units)
+        if actualAverageISFText.isEmpty {
+            let values = Array(isfByHour.values)
+            if !values.isEmpty {
+                let sum = values.reduce(0, +)
+                let avg = sum / Double(values.count)
+                actualAverageISFText = String(format: "%.1f", avg)
             }
         }
     }
@@ -780,6 +1112,10 @@ private struct AddUserDataView: View {
             weightKg: weightKg,
             tdd: tdd,
             hbA1c: hbA1c,
+            actualBasal: actualBasal,
+            actualMorningCR: actualMorningCR,
+            actualDayCR: actualDayCR,
+            actualAverageISF: actualAverageISF,
             updatedAt: updatedDate,
             insulinPerKg: insulinPerKg,
             walsh500CR: walsh500CR,
@@ -788,11 +1124,17 @@ private struct AddUserDataView: View {
             walsh100ISF: walsh100ISF,
             walshTDD: walshTDD,
             walshBasal: walshBasal,
-            walshBasalPerHour: walshBasalPerHour
+            walshBasalPerHour: walshBasalPerHour,
+            actualBasalPerHour: actualBasalPerHour
         )
 
         var profiles = Storage.shared.userProfiles
-        profiles.append(entry)
+        if let existing = existingEntry,
+           let idx = profiles.firstIndex(where: { $0.updatedAt == existing.updatedAt && $0.name == existing.name }) {
+            profiles[idx] = entry
+        } else {
+            profiles.append(entry)
+        }
         Storage.shared.userProfiles = profiles
 
         NotificationCenter.default.post(name: .userProfileUpdated, object: nil)
@@ -836,4 +1178,8 @@ private struct SettingsLogModal: UIViewControllerRepresentable {
 
 extension Notification.Name {
     static let userProfileUpdated = Notification.Name("UserProfileUpdated")
+}
+
+extension UserProfileEntry: Identifiable {
+    public var id: Date { updatedAt }
 }
