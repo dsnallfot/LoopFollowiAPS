@@ -29,7 +29,7 @@ struct ProfileSchedulesView: View {
     @State private var showAddUserData: Bool = false
 
     enum Mode: String, CaseIterable {
-        case profile = "Profil"
+        case profile = "Profilinställningar"
         case user = "Användare"
     }
 
@@ -456,9 +456,10 @@ private struct UserDataViewController: View {
                             }
                         }
                     }
+                    Spacer()
 
                     // Frames 2 & 3: Rubriker + värden
-                    HStack(alignment: .top, spacing: 12) {
+                    HStack(alignment: .top, spacing: 24) {
                         // Frame 2: Rubriker
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Namn:")
@@ -482,12 +483,12 @@ private struct UserDataViewController: View {
                         .font(.caption2)
                         .foregroundColor(.secondary)
 
-                        Spacer()
+                        //Spacer()
                     }
                     .frame(height: imageSide, alignment: .top)
                 }
                 .padding(.vertical, 16)
-                .padding(.horizontal)
+                .padding(.horizontal, 24)
 
                 // Sektion: tabell med historik
                 if profiles.isEmpty {
@@ -522,6 +523,7 @@ private struct UserDataViewController: View {
                 }
                 Spacer()
             }
+            .padding(.top, 12)
         }
         .onAppear {
             if profileImage == nil {
@@ -572,7 +574,7 @@ private struct UserProfileRow: View {
     private static let dateFormatter: DateFormatter = {
         let df = DateFormatter()
         df.locale = Locale(identifier: "sv_SE")
-        df.dateFormat = "yyMMdd"
+        df.dateFormat = "yyyy-MM-dd"
         return df
     }()
 
@@ -589,10 +591,10 @@ private struct UserProfileRow: View {
                     ZStack {
                         Circle()
                             .fill(hbColor(for: hb))
-                            .frame(width: 24, height: 24)
+                            .frame(width: 26, height: 26)
 
                         Text(String(format: "%.0f", hb))
-                            .font(.caption2)
+                            .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                     }
@@ -600,10 +602,10 @@ private struct UserProfileRow: View {
                     ZStack {
                         Circle()
                             .fill(Color(.systemGray4))
-                            .frame(width: 24, height: 24)
+                            .frame(width: 26, height: 26)
 
                         Text("--")
-                            .font(.caption2)
+                            .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                     }
@@ -613,8 +615,9 @@ private struct UserProfileRow: View {
             let tddString = entry.tdd.map { String(format: "%.1f", $0) } ?? "--"
             let weightString = entry.weightKg.map { String(format: "%.1f", $0) } ?? "--"
             let heightString = entry.heightCm.map { String(format: "%.0f", $0) } ?? "--"
+            let insulinPerKgString = entry.insulinPerKg.map { String(format: "%.2f", $0) } ?? "--"
 
-            Text("TDD: \(tddString) E • Vikt: \(weightString) kg • Längd: \(heightString) cm")
+            Text("TDD: \(tddString) E • Vikt: \(weightString) kg • Längd: \(heightString) cm • Insulin/kg: \(insulinPerKgString) E")
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -729,7 +732,6 @@ private struct AddUserDataView: View {
         return actualBasal / 24
     }
 
-
     var body: some View {
         ZStack {
             ThemeBackground()
@@ -837,6 +839,7 @@ private struct AddUserDataView: View {
                                 displayedComponents: .date
                             )
                             .datePickerStyle(.compact)
+                            .environment(\.locale, Locale(identifier: "sv_SE"))
                             .labelsHidden()
                         }
 
@@ -849,6 +852,7 @@ private struct AddUserDataView: View {
                                 displayedComponents: .date
                             )
                             .datePickerStyle(.compact)
+                            .environment(\.locale, Locale(identifier: "sv_SE"))
                             .labelsHidden()
                         }
                         
@@ -861,6 +865,7 @@ private struct AddUserDataView: View {
                                 displayedComponents: .date
                             )
                             .datePickerStyle(.compact)
+                            .environment(\.locale, Locale(identifier: "sv_SE"))
                             .labelsHidden()
                         }
                     }
@@ -935,7 +940,7 @@ private struct AddUserDataView: View {
                 .padding()
             }
         }
-        .navigationTitle("Registrera data")
+        .navigationTitle(existingEntry == nil ? "Registrera data" : "Ändra registrering")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -1055,6 +1060,14 @@ private struct AddUserDataView: View {
         let calendar = Calendar.current
         guard calendar.isDateInToday(updatedDate) else { return }
 
+        // Försök auto-populera TDD (14-dagars medelvärde) beräknad av SimpleStatsViewModel.
+            if tddText.isEmpty {
+                let storedTDD = UserDefaults.standard.double(forKey: "Stats14DayAverageTDD")
+                if storedTDD > 0 {
+                    tddText = String(format: "%.1f", storedTDD)
+                }
+            }
+        
         let profile = ProfileManager.shared
 
         // actualBasal: total daglig basal från basalschemat

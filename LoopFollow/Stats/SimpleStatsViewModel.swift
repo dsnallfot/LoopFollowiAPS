@@ -359,6 +359,13 @@ class SimpleStatsViewModel: ObservableObject {
         } else {
             totalDailyDose = nil
         }
+        
+        // Spara 14-dagars medel-TDD i UserDefaults så att andra vyer (t.ex. AddUserDataView) kan återanvända den.
+        if let tdd = totalDailyDose,
+           dataService.daysToAnalyze == 14,
+           !dataService.isTodayOnly {
+            UserDefaults.standard.set(tdd, forKey: "Stats14DayAverageTDD")
+        }
 
         // Hämta basalprofil baserat på aktuellt analysintervall (historisk om möjligt)
         let basalProfileForInterval = dataService.getBasalProfile(for: currentInterval)
