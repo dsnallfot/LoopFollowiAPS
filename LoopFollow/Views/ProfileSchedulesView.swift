@@ -8,6 +8,8 @@
 
 import SwiftUI
 import Charts
+import PhotosUI
+import UIKit
 
 @available(iOS 16.0, *)
 private struct LogSearchItem: Identifiable {
@@ -22,6 +24,13 @@ struct ProfileSchedulesView: View {
     @State private var selectedSection: SectionType = .targets // Default section
     @State private var showProfileUpdatedAlert: Bool = false
     @State private var selectedLogSearchItem: LogSearchItem?
+    @State private var selectedMode: Mode = .profile
+    @State private var showAddUserData: Bool = false
+
+    enum Mode: String, CaseIterable {
+        case profile = "Profil"
+        case user = "Användare"
+    }
 
     enum SectionType: String, CaseIterable {
         case targets = "Mål"
@@ -151,109 +160,123 @@ struct ProfileSchedulesView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Picker("Select Section", selection: $selectedSection) {
-                    ForEach(SectionType.allCases, id: \.self) { section in
-                        Text(section.rawValue).tag(section)
+                // Top-level mode picker: Profil / Användare
+                Picker("Mode", selection: $selectedMode) {
+                    ForEach(Mode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .padding()
+                .padding([.top, .horizontal])
 
-                LineChartWrapper(chartData: multiChartData, title: selectedSection.displayName)
-                    .frame(height: 150)
+                if selectedMode == .profile {
+                    Picker("Select Section", selection: $selectedSection) {
+                        ForEach(SectionType.allCases, id: \.self) { section in
+                            Text(section.rawValue).tag(section)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
+                    .padding(.top, 8)
 
-                List {
-                    if selectedSection == .targets {
-                            Section(header: sectionHeader(title: "🟪 Mål (mmol/L)", lastChanged: viewModel.lastChangedTargetProfile)) {
-                            ForEach(viewModel.targetEntries) { entry in
-                                scheduleRow(entry)
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { openSettingsLog(for: "Mål-profil") }
+                    LineChartWrapper(chartData: multiChartData, title: selectedSection.displayName)
+                        .frame(height: 150)
+                        .padding(.horizontal)
+
+                    List {
+                        if selectedSection == .targets {
+                                Section(header: sectionHeader(title: "🟪 Mål (mmol/L)", lastChanged: viewModel.lastChangedTargetProfile)) {
+                                ForEach(viewModel.targetEntries) { entry in
+                                    scheduleRow(entry)
+                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { openSettingsLog(for: "Mål-profil") }
+                                }
                             }
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                         }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                    }
 
-                    if selectedSection == .basal {
-                        Section(header: sectionHeader(title: "🟪 Basal (E/h)", lastChanged: viewModel.lastChangedBasalProfile)) {
-                            ForEach(viewModel.basalEntries) { entry in
-                                scheduleRow(entry, isBold: entry.time == "Total daglig basal")
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                    .contentShape(Rectangle())
+                        if selectedSection == .basal {
+                            Section(header: sectionHeader(title: "🟪 Basal (E/h)", lastChanged: viewModel.lastChangedBasalProfile)) {
+                                ForEach(viewModel.basalEntries) { entry in
+                                    scheduleRow(entry, isBold: entry.time == "Total daglig basal")
+                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                        .contentShape(Rectangle())
+                                }
                             }
-                        }
-                        .onTapGesture { openSettingsLog(for: "Basalprofil") }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .onTapGesture { openSettingsLog(for: "Basalprofil") }
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
 
-                        Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
-                            ForEach(viewModel.basalIOBEntries) { entry in
-                                scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                    .contentShape(Rectangle())
+                            Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
+                                ForEach(viewModel.basalIOBEntries) { entry in
+                                    scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
+                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                        .contentShape(Rectangle())
+                                }
                             }
+                            .onTapGesture { openSettingsLog(for: "Basalprofil") }
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                         }
-                        .onTapGesture { openSettingsLog(for: "Basalprofil") }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                    }
 
-                    if selectedSection == .cr {
-                        Section(header: sectionHeader(title: "🟪 Insulinkvoter (g/E)", lastChanged: viewModel.lastChangedCRProfile)) {
-                            ForEach(viewModel.carbRatioEntries) { entry in
-                                scheduleRow(entry)
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                    .contentShape(Rectangle())
+                        if selectedSection == .cr {
+                            Section(header: sectionHeader(title: "🟪 Insulinkvoter (g/E)", lastChanged: viewModel.lastChangedCRProfile)) {
+                                ForEach(viewModel.carbRatioEntries) { entry in
+                                    scheduleRow(entry)
+                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                        .contentShape(Rectangle())
+                                }
                             }
+                            .onTapGesture { openSettingsLog(for: "CR-profil") }
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                         }
-                        .onTapGesture { openSettingsLog(for: "CR-profil") }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                    }
 
-                    if selectedSection == .isf {
-                        Section(header: sectionHeader(title: "🟪 Känslighet (mmol/L/E)", lastChanged: viewModel.lastChangedISFProfile)) {
-                            ForEach(viewModel.isfEntries) { entry in
-                                scheduleRow(entry)
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { openSettingsLog(for: "ISF-profil") }
+                        if selectedSection == .isf {
+                            Section(header: sectionHeader(title: "🟪 Känslighet (mmol/L/E)", lastChanged: viewModel.lastChangedISFProfile)) {
+                                ForEach(viewModel.isfEntries) { entry in
+                                    scheduleRow(entry)
+                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { openSettingsLog(for: "ISF-profil") }
+                                }
                             }
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                         }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                    }
 
-                        if selectedSection == .csf {
-                            Section(header: Text("🟪 Kh-känslighet (mmol/L/g)")) {
-                                ForEach(viewModel.csfEntries) { entry in
+                            if selectedSection == .csf {
+                                Section(header: Text("🟪 Kh-känslighet (mmol/L/g)")) {
+                                    ForEach(viewModel.csfEntries) { entry in
+                                        scheduleRow(entry)
+                                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                    }
+                                }
+                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                }
+
+                        if selectedSection == .cHr {
+                            Section(header: Text("🟪 Minsta absorption Kh (g/h)")) {
+                                ForEach(viewModel.minCarbsEntries) { entry in
+                                    scheduleRow(entry, isBold: entry.time == "Medelvärde")
+                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                                }
+                            }
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                        }
+
+                        if selectedSection == .smb {
+                            Section(header: Text("🟦 Maxgräns SMB / UAMSMB (E/SMB)")) {
+                                ForEach(viewModel.smbEntries) { entry in
                                     scheduleRow(entry)
                                         .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                                 }
                             }
-                                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                            }
-
-                    if selectedSection == .cHr {
-                        Section(header: Text("🟪 Minsta absorption Kh (g/h)")) {
-                            ForEach(viewModel.minCarbsEntries) { entry in
-                                scheduleRow(entry, isBold: entry.time == "Medelvärde")
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                            }
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                         }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
                     }
-
-                    if selectedSection == .smb {
-                        Section(header: Text("🟦 Maxgräns SMB / UAMSMB (E/SMB)")) {
-                            ForEach(viewModel.smbEntries) { entry in
-                                scheduleRow(entry)
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                            }
-                        }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                    }
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                } else {
+                    UserDataViewController()
                 }
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
             }
         }
         .sheet(item: $selectedLogSearchItem) { item in
@@ -266,14 +289,26 @@ struct ProfileSchedulesView: View {
                 SettingsLogModal(initialSearchText: item.term)
             }
         }
+        .sheet(isPresented: $showAddUserData) {
+            AddUserDataView()
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    showProfileUpdatedAlert = true
-                } label: {
-                    Image(systemName: "info")
+                if selectedMode == .profile {
+                    Button {
+                        showProfileUpdatedAlert = true
+                    } label: {
+                        Image(systemName: "info")
+                    }
+                    .accessibilityLabel("Profil laddades ner:")
+                } else {
+                    Button {
+                        showAddUserData = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("Lägg till användardata")
                 }
-                .accessibilityLabel("Profil laddades ner:")
             }
         }
         .alert(
@@ -329,6 +364,146 @@ struct ProfileSchedulesView: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
             }
+        }
+    }
+}
+
+// MARK: - User profile image persistence
+
+private final class UserProfileImageManager {
+    static let shared = UserProfileImageManager()
+    private let key = "UserProfileImageData"
+
+    private init() {}
+
+    func save(image: UIImage) {
+        if let data = image.jpegData(compressionQuality: 0.9) {
+            UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+
+    func load() -> UIImage? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return UIImage(data: data)
+    }
+}
+
+// MARK: - UserDataViewController
+
+@available(iOS 16.0, *)
+private struct UserDataViewController: View {
+    @State private var profileImage: UIImage?
+    @State private var selectedItem: PhotosPickerItem?
+
+    var body: some View {
+        ZStack {
+            //ThemeBackground()
+                //.ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 0) {
+                GeometryReader { geometry in
+                    let imageSide = geometry.size.width / 4
+
+                    HStack(alignment: .top, spacing: 12) {
+                        // Frame 1: Profilbild
+                        PhotosPicker(selection: $selectedItem, matching: .images) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemBackground).opacity(0.5))
+
+                                if let img = profileImage {
+                                    Image(uiImage: img)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .clipShape(Circle())
+                                } else {
+                                    Image(systemName: "person.fill")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            .frame(width: imageSide, height: imageSide)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .onChange(of: selectedItem) { newItem in
+                            guard let item = newItem else { return }
+                            Task {
+                                if let data = try? await item.loadTransferable(type: Data.self),
+                                   let uiImage = UIImage(data: data) {
+                                    await MainActor.run {
+                                        self.profileImage = uiImage
+                                        UserProfileImageManager.shared.save(image: uiImage)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Frames 2 & 3: Rubriker + placeholder-värden
+                        HStack(alignment: .top, spacing: 12) {
+                            // Frame 2: Rubriker
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Namn:")
+                                Text("Född:")
+                                Text("T1D sedan:")
+                                Text("Längd:")
+                                Text("Vikt:")
+                                Text("Uppdaterades:")
+                            }
+                            .font(.caption2)
+
+                            // Frame 3: Placeholder-värden
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("<<Förnamn Efternamn>>")
+                                Text("<<ÅÅ-MM-DD>>")
+                                Text("<<ÅÅ-MM-DD>>")
+                                Text("<<XXX>> cm")
+                                Text("<<XX>> kg")
+                                Text("<<ÅÅ-MM-DD>>")
+                            }
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+
+                            Spacer()
+                        }
+                        .frame(height: imageSide, alignment: .top)
+                    }
+                    .padding(.top, 16)
+                    .padding(.horizontal)
+                }
+
+                Spacer()
+            }
+        }
+        .onAppear {
+            if profileImage == nil {
+                profileImage = UserProfileImageManager.shared.load()
+            }
+        }
+    }
+}
+
+// MARK: - AddUserDataView placeholder
+
+@available(iOS 16.0, *)
+private struct AddUserDataView: View {
+    var body: some View {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Text("AddUserDataView")
+                    .font(.headline)
+
+                Text("Här bygger vi vidare senare.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
         }
     }
 }
