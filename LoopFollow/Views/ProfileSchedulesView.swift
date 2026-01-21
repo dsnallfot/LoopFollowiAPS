@@ -402,6 +402,7 @@ private struct UserDataViewController: View {
     @State private var editingEntry: UserProfileEntry?
     @State private var profileToDelete: UserProfileEntry?
     @State private var showDeleteAlert: Bool = false
+    @State private var viewingEntry: UserProfileEntry?
 
     private static let shortDateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -488,7 +489,8 @@ private struct UserDataViewController: View {
                     .frame(height: imageSide, alignment: .top)
                 }
                 .padding(.vertical, 16)
-                .padding(.horizontal, 24)
+                .padding(.leading, 36)
+                .padding(.trailing, 36)
 
                 // Sektion: tabell med historik
                 if profiles.isEmpty {
@@ -501,6 +503,10 @@ private struct UserDataViewController: View {
                         ForEach(profiles) { entry in
                             UserProfileRow(entry: entry)
                                 .listRowBackground(Color.clear)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    viewingEntry = entry
+                                }
                                 .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) {
                                         profileToDelete = entry
@@ -518,10 +524,13 @@ private struct UserDataViewController: View {
                                 }
                         }
                     }
-                    .listStyle(.plain)
                     .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .listStyle(.plain)
                 }
-                Spacer()
+                if profiles.isEmpty {
+                    Spacer()
+                }
             }
             .padding(.top, 12)
         }
@@ -537,6 +546,11 @@ private struct UserDataViewController: View {
         .sheet(item: $editingEntry) { entry in
             NavigationStack {
                 AddUserDataView(existingEntry: entry)
+            }
+        }
+        .sheet(item: $viewingEntry) { entry in
+            NavigationStack {
+                AddUserDataView(existingEntry: entry, isReadOnly: true)
             }
         }
         .alert("Radera data", isPresented: $showDeleteAlert) {
@@ -641,6 +655,7 @@ private struct UserProfileRow: View {
 private struct AddUserDataView: View {
     @Environment(\.dismiss) private var dismiss
     var existingEntry: UserProfileEntry? = nil
+    var isReadOnly: Bool = false
 
     @State private var name: String = ""
     @State private var birthDate: Date = Date()
@@ -940,7 +955,11 @@ private struct AddUserDataView: View {
                 .padding()
             }
         }
-        .navigationTitle(existingEntry == nil ? "Registrera data" : "Ändra registrering")
+        .navigationTitle(
+            isReadOnly
+            ? "Registrerad data"
+            : (existingEntry == nil ? "Registrera data" : "Ändra registrering")
+        )
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -949,8 +968,14 @@ private struct AddUserDataView: View {
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Spara") {
-                    saveProfile()
+                if isReadOnly {
+                    Button("Klar") {
+                        dismiss()
+                    }
+                } else {
+                    Button("Spara") {
+                        saveProfile()
+                    }
                 }
             }
         }
@@ -968,7 +993,7 @@ private struct AddUserDataView: View {
                 if let actualBasal = existing.actualBasal { actualBasalText = String(format: "%.2f", actualBasal) }
                 if let actualAverageISF = existing.actualAverageISF { actualAverageISFText = String(format: "%.1f", actualAverageISF) }
                 updatedDate = existing.updatedAt
-            } else if let latest = Storage.shared.userProfiles.last {
+            } else if let latest = Storage.shared.userProfiles.max(by: { $0.updatedAt < $1.updatedAt }) {
                 name = latest.name
                 if let d = latest.birthDate { birthDate = d }
                 if let d = latest.t1dSince { t1dSinceDate = d }
@@ -985,11 +1010,13 @@ private struct AddUserDataView: View {
 
             // Om vi skapar en NY registrering (existingEntry == nil)
             // och updatedDate är idag -> auto-populera actual*-fält från aktuell profil
-            if existingEntry == nil {
+            // (men inte i read-only-läge)
+            if existingEntry == nil && !isReadOnly {
                 populateActualFieldsFromCurrentProfile()
             }
         }
         .onChange(of: updatedDate) { newDate in
+            guard !isReadOnly else { return }
             let calendar = Calendar.current
             clearActualFields()
 
