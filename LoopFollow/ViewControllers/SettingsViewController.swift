@@ -236,7 +236,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             )
         }
         <<< ButtonRow() {
-            $0.title = "Trio profilinställningar"
+            $0.title = "Trio profil"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -245,7 +245,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                         .environment(\.colorScheme, isDark ? .dark : .light)
 
                     let hostingController = UIHostingController(rootView: profileSchedulesView)
-                    hostingController.title = "Trio profilinställningar"
+                    hostingController.title = "Trio profil"
 
                     hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
                         title: "Klar",

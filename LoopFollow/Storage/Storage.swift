@@ -118,6 +118,27 @@ struct PumpChangeHistoryEntry: Codable, Equatable {
     }
 }
 
+struct UserProfileEntry: Codable, Equatable {
+    var name: String
+    var birthDate: Date?
+    var t1dSince: Date?
+    var heightCm: Double?
+    var weightKg: Double?
+    var tdd: Double?
+    var hbA1c: Double?
+    var updatedAt: Date
+
+    // För framtida CSV-export/import lagrar vi även de kalkylerade fälten
+    var insulinPerKg: Double?
+    var walsh500CR: Double?
+    var walsh300CR: Double?
+    var walshWeightCR: Double?
+    var walsh100ISF: Double?
+    var walshTDD: Double?
+    var walshBasal: Double?
+    var walshBasalPerHour: Double?
+}
+
 extension Storage {
     var sensorStartNotes: [SensorStartHistoryEntry] {
         get {
@@ -201,6 +222,37 @@ extension Storage {
     var dexcomSensorErrorOutagesRefreshedAt: Date? {
         get { UserDefaults.standard.object(forKey: "dexcomSensorErrorOutagesRefreshedAt") as? Date }
         set { UserDefaults.standard.set(newValue, forKey: "dexcomSensorErrorOutagesRefreshedAt") }
+    }
+    
+    // MARK: - User profile history
+
+    var userProfiles: [UserProfileEntry] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "userProfiles") else {
+                return []
+            }
+            do {
+                return try JSONDecoder().decode([UserProfileEntry].self, from: storedData)
+            } catch {
+                LogManager.shared.log(
+                    category: .treatments,
+                    message: "Failed to decode userProfiles, resetting to empty array: \(error)"
+                )
+                UserDefaults.standard.removeObject(forKey: "userProfiles")
+                return []
+            }
+        }
+        set {
+            do {
+                let encoded = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encoded, forKey: "userProfiles")
+            } catch {
+                LogManager.shared.log(
+                    category: .treatments,
+                    message: "Failed to encode userProfiles: \(error)"
+                )
+            }
+        }
     }
 }
 

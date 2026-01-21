@@ -290,7 +290,9 @@ struct ProfileSchedulesView: View {
             }
         }
         .sheet(isPresented: $showAddUserData) {
-            AddUserDataView()
+            NavigationStack {
+                AddUserDataView()
+            }
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -394,6 +396,14 @@ private final class UserProfileImageManager {
 private struct UserDataViewController: View {
     @State private var profileImage: UIImage?
     @State private var selectedItem: PhotosPickerItem?
+    @State private var profile: UserProfileEntry?
+
+    private static let shortDateFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyyy-MM-dd"
+        return df
+    }()
 
     var body: some View {
         ZStack {
@@ -455,14 +465,14 @@ private struct UserDataViewController: View {
                             }
                             .font(.caption2)
 
-                            // Frame 3: Placeholder-värden
+                            // Frame 3: Värden (senaste profil eller placeholders)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("<<Förnamn Efternamn>>")
-                                Text("<<ÅÅ-MM-DD>>")
-                                Text("<<ÅÅ-MM-DD>>")
-                                Text("<<XXX>> cm")
-                                Text("<<XX>> kg")
-                                Text("<<ÅÅ-MM-DD>>")
+                                Text(profile?.name ?? "<<Förnamn Efternamn>>")
+                                Text(profile?.birthDate.map { Self.shortDateFormatter.string(from: $0) } ?? "<<ÅÅ-MM-DD>>")
+                                Text(profile?.t1dSince.map { Self.shortDateFormatter.string(from: $0) } ?? "<<ÅÅ-MM-DD>>")
+                                Text(profile?.heightCm.map { String(format: "%.0f cm", $0) } ?? "<<XXX>> cm")
+                                Text(profile?.weightKg.map { String(format: "%.1f kg", $0) } ?? "<<XX>> kg")
+                                Text(profile.map { Self.shortDateFormatter.string(from: $0.updatedAt) } ?? "<<ÅÅ-MM-DD>>")
                             }
                             .font(.caption2)
                             .foregroundColor(.secondary)
@@ -482,6 +492,12 @@ private struct UserDataViewController: View {
             if profileImage == nil {
                 profileImage = UserProfileImageManager.shared.load()
             }
+            if profile == nil {
+                profile = Storage.shared.userProfiles.last
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .userProfileUpdated)) { _ in
+            profile = Storage.shared.userProfiles.last
         }
     }
 }
@@ -490,21 +506,297 @@ private struct UserDataViewController: View {
 
 @available(iOS 16.0, *)
 private struct AddUserDataView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String = ""
+    @State private var birthDate: Date = Date()
+    @State private var t1dSinceDate: Date = Date()
+    @State private var updatedDate: Date = Date()
+    @State private var heightText: String = ""
+    @State private var weightText: String = ""
+    @State private var tddText: String = ""
+    @State private var hbA1cText: String = ""
+
+    private var heightCm: Double? {
+        Double(heightText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var weightKg: Double? {
+        Double(weightText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var tdd: Double? {
+        Double(tddText.replacingOccurrences(of: ",", with: "."))
+    }
+    
+    private var hbA1c: Double? {
+        Double(hbA1cText.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var insulinPerKg: Double? {
+        guard let tdd, let weightKg, weightKg > 0 else { return nil }
+        return tdd / weightKg
+    }
+
+    private var walsh500CR: Double? {
+        guard let weightKg, weightKg > 0 else { return nil }
+        return 500.0 / (weightKg * 0.55)
+    }
+
+    private var walsh300CR: Double? {
+        guard let weightKg, weightKg > 0 else { return nil }
+        return 300.0 / (weightKg * 0.55)
+    }
+
+    private var walshWeightCR: Double? {
+        guard let weightKg, weightKg > 0 else { return nil }
+        return (2.6 * weightKg / 0.45359237) / (weightKg * 0.55)
+    }
+
+    private var walsh100ISF: Double? {
+        guard let weightKg, weightKg > 0 else { return nil }
+        return 100.0 / (weightKg * 0.55)
+    }
+    
+    private var walshTDD: Double? {
+        guard let weightKg, weightKg > 0 else { return nil }
+        return weightKg * 0.55
+    }
+    
+    private var walshBasal: Double? {
+        guard let weightKg, weightKg > 0 else { return nil }
+        return (weightKg * 0.55) * 0.48
+    }
+    
+    private var walshBasalPerHour: Double? {
+        guard let weightKg, weightKg > 0 else { return nil }
+        return (weightKg * 0.55) * 0.48 / 24
+    }
+
     var body: some View {
         ZStack {
             ThemeBackground()
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
-                Text("AddUserDataView")
-                    .font(.headline)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    // Inmatningsfält
+                    Group {
+                        HStack {
+                            Text("Namn:")
+                            Spacer()
+                            TextField("Förnamn Efternamn", text: $name)
+                                .multilineTextAlignment(.trailing)
+                        }
 
-                Text("Här bygger vi vidare senare.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                        HStack {
+                            Text("Längd:")
+                            Spacer()
+                            TextField("Ange längd", text: $heightText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("cm")
+                        }
+
+                        HStack {
+                            Text("Vikt:")
+                            Spacer()
+                            TextField("Ange vikt", text: $weightText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("kg")
+                        }
+
+                        HStack {
+                            Text("Total daglig dos (14d):")
+                            Spacer()
+                            TextField("Ange TDD", text: $tddText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("E")
+                        }
+                        
+                        HStack {
+                            Text("Insulinbehov/kg:")
+                            Spacer()
+                            Text(insulinPerKg.map { String(format: "%.2f", $0) } ?? "--")
+                            Text("E/kg")
+                        }
+                        
+                        HStack {
+                            Text("HbA1C:")
+                            Spacer()
+                            TextField("Ange HbA1C", text: $hbA1cText)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                            Text("mmol/mol")
+                        }
+                        
+                        Divider()
+                            .padding(.top, 4)
+                        
+                        HStack {
+                            Text("Födelsedatum:")
+                            Spacer()
+                            DatePicker(
+                                "",
+                                selection: $birthDate,
+                                displayedComponents: .date
+                            )
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                        }
+
+                        HStack {
+                            Text("T1D debutdatum:")
+                            Spacer()
+                            DatePicker(
+                                "",
+                                selection: $t1dSinceDate,
+                                displayedComponents: .date
+                            )
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                        }
+                        
+                        HStack {
+                            Text("Data uppdaterad:")
+                            Spacer()
+                            DatePicker(
+                                "",
+                                selection: $updatedDate,
+                                displayedComponents: .date
+                            )
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                        }
+                    }
+
+                    Divider()
+                        .padding(.top, 6)
+
+                    Text("Beräknade värden")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.bottom, 8)
+
+                    // Kalkylerade rader (icke-editable)
+                    Group {
+                        HStack {
+                            Text("Walsh 500-regeln CR (Dag):")
+                            Spacer()
+                            Text(walsh500CR.map { String(format: "%.1f", $0) } ?? "--")
+                            Text("g/E")
+                        }
+                        .padding(.bottom, 6)
+
+                        HStack {
+                            Text("Walsh 300-regeln CR (Frukost):")
+                            Spacer()
+                            Text(walsh300CR.map { String(format: "%.1f", $0) } ?? "--")
+                            Text("g/E")
+                        }
+                        .padding(.bottom, 6)
+
+                        HStack {
+                            Text("Walsh Vikt-beräkning CR:")
+                            Spacer()
+                            Text(walshWeightCR.map { String(format: "%.1f", $0) } ?? "--")
+                            Text("g/E")
+                        }
+                        .padding(.bottom, 6)
+
+                        HStack {
+                            Text("Walsh 100-regeln ISF:")
+                            Spacer()
+                            Text(walsh100ISF.map { String(format: "%.1f", $0) } ?? "--")
+                            Text("mmol/L/E")
+                        }
+                        .padding(.bottom, 6)
+
+                        HStack {
+                            Text("Walsh TDD:")
+                            Spacer()
+                            Text(walshTDD.map { String(format: "%.2f", $0) } ?? "--")
+                            Text("E/dag")
+                        }
+                        .padding(.bottom, 6)
+
+                        HStack {
+                            Text("Walsh Basal:")
+                            Spacer()
+                            Text(walshBasal.map { String(format: "%.2f", $0) } ?? "--")
+                            Text("E/dag")
+                        }
+                        .padding(.bottom, 6)
+
+                        HStack {
+                            Text("Walsh Basal/h:")
+                            Spacer()
+                            Text(walshBasalPerHour.map { String(format: "%.2f", $0) } ?? "--")
+                            Text("E/h")
+                        }
+                    }
+                }
+                .font(.subheadline)
+                .padding()
             }
-            .padding()
         }
+        .navigationTitle("Registrera data")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Avbryt") {
+                    dismiss()
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Spara") {
+                    saveProfile()
+                }
+            }
+        }
+        .onAppear {
+            // Autopopulera från senaste profil om sådan finns
+            if let latest = Storage.shared.userProfiles.last {
+                name = latest.name
+                if let d = latest.birthDate { birthDate = d }
+                if let d = latest.t1dSince { t1dSinceDate = d }
+                if let h = latest.heightCm { heightText = String(format: "%.0f", h) }
+                if let w = latest.weightKg { weightText = String(format: "%.1f", w) }
+                if let dose = latest.tdd { tddText = String(format: "%.1f", dose) }
+                if let hba1c = latest.hbA1c { hbA1cText = String(format: "%.0f", hba1c) }
+                updatedDate = latest.updatedAt
+            }
+        }
+    }
+
+    private func saveProfile() {
+        let entry = UserProfileEntry(
+            name: name,
+            birthDate: birthDate,
+            t1dSince: t1dSinceDate,
+            heightCm: heightCm,
+            weightKg: weightKg,
+            tdd: tdd,
+            hbA1c: hbA1c,
+            updatedAt: updatedDate,
+            insulinPerKg: insulinPerKg,
+            walsh500CR: walsh500CR,
+            walsh300CR: walsh300CR,
+            walshWeightCR: walshWeightCR,
+            walsh100ISF: walsh100ISF,
+            walshTDD: walshTDD,
+            walshBasal: walshBasal,
+            walshBasalPerHour: walshBasalPerHour
+        )
+
+        var profiles = Storage.shared.userProfiles
+        profiles.append(entry)
+        Storage.shared.userProfiles = profiles
+
+        NotificationCenter.default.post(name: .userProfileUpdated, object: nil)
+        dismiss()
     }
 }
 
@@ -540,4 +832,8 @@ private struct SettingsLogModal: UIViewControllerRepresentable {
             vc.setSearchTextAndFilter(initialSearchText)
         }
     }
+}
+
+extension Notification.Name {
+    static let userProfileUpdated = Notification.Name("UserProfileUpdated")
 }
