@@ -11,6 +11,7 @@ import Charts
 import PhotosUI
 import UIKit
 import HealthKit
+import UniformTypeIdentifiers
 
 @available(iOS 16.0, *)
 private struct LogSearchItem: Identifiable {
@@ -27,6 +28,10 @@ struct ProfileSchedulesView: View {
     @State private var selectedLogSearchItem: LogSearchItem?
     @State private var selectedMode: Mode = .profile
     @State private var showAddUserData: Bool = false
+    @State private var isExportingUserCSV: Bool = false
+    @State private var isImportingUserCSV: Bool = false
+    @State private var userCSVDocument: UserProfileCSVDocument = UserProfileCSVDocument(text: "")
+    @State private var userCSVImportError: String?
 
     enum Mode: String, CaseIterable {
         case profile = "Profilinställningar"
@@ -155,126 +160,135 @@ struct ProfileSchedulesView: View {
         selectedLogSearchItem = LogSearchItem(term: term)
     }
 
+    @ViewBuilder
+    private var modePickerView: some View {
+        Picker("Mode", selection: $selectedMode) {
+            ForEach(Mode.allCases, id: \.self) { mode in
+                Text(mode.rawValue).tag(mode)
+            }
+        }
+        .pickerStyle(SegmentedPickerStyle())
+        .padding([.top, .horizontal])
+    }
+
+    @ViewBuilder
+    private var profileModeContent: some View {
+        Picker("Select Section", selection: $selectedSection) {
+            ForEach(SectionType.allCases, id: \.self) { section in
+                Text(section.rawValue).tag(section)
+            }
+        }
+        .pickerStyle(SegmentedPickerStyle())
+        .padding(.horizontal)
+        .padding(.top, 8)
+
+        LineChartWrapper(chartData: multiChartData, title: selectedSection.displayName)
+            .frame(height: 150)
+            .padding(.horizontal)
+
+        List {
+            if selectedSection == .targets {
+                Section(header: sectionHeader(title: "🟪 Mål (mmol/L)", lastChanged: viewModel.lastChangedTargetProfile)) {
+                    ForEach(viewModel.targetEntries) { entry in
+                        scheduleRow(entry)
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .contentShape(Rectangle())
+                            .onTapGesture { openSettingsLog(for: "Mål-profil") }
+                    }
+                }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+            }
+
+            if selectedSection == .basal {
+                Section(header: sectionHeader(title: "🟪 Basal (E/h)", lastChanged: viewModel.lastChangedBasalProfile)) {
+                    ForEach(viewModel.basalEntries) { entry in
+                        scheduleRow(entry, isBold: entry.time == "Total daglig basal")
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .contentShape(Rectangle())
+                    }
+                }
+                .onTapGesture { openSettingsLog(for: "Basalprofil") }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+
+                Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
+                    ForEach(viewModel.basalIOBEntries) { entry in
+                        scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .contentShape(Rectangle())
+                    }
+                }
+                .onTapGesture { openSettingsLog(for: "Basalprofil") }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+            }
+
+            if selectedSection == .cr {
+                Section(header: sectionHeader(title: "🟪 Insulinkvoter (g/E)", lastChanged: viewModel.lastChangedCRProfile)) {
+                    ForEach(viewModel.carbRatioEntries) { entry in
+                        scheduleRow(entry)
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .contentShape(Rectangle())
+                    }
+                }
+                .onTapGesture { openSettingsLog(for: "CR-profil") }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+            }
+
+            if selectedSection == .isf {
+                Section(header: sectionHeader(title: "🟪 Känslighet (mmol/L/E)", lastChanged: viewModel.lastChangedISFProfile)) {
+                    ForEach(viewModel.isfEntries) { entry in
+                        scheduleRow(entry)
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .contentShape(Rectangle())
+                            .onTapGesture { openSettingsLog(for: "ISF-profil") }
+                    }
+                }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+            }
+
+            if selectedSection == .csf {
+                Section(header: Text("🟪 Kh-känslighet (mmol/L/g)")) {
+                    ForEach(viewModel.csfEntries) { entry in
+                        scheduleRow(entry)
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                    }
+                }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+            }
+
+            if selectedSection == .cHr {
+                Section(header: Text("🟪 Minsta absorption Kh (g/h)")) {
+                    ForEach(viewModel.minCarbsEntries) { entry in
+                        scheduleRow(entry, isBold: entry.time == "Medelvärde")
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                    }
+                }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+            }
+
+            if selectedSection == .smb {
+                Section(header: Text("🟦 Maxgräns SMB / UAMSMB (E/SMB)")) {
+                    ForEach(viewModel.smbEntries) { entry in
+                        scheduleRow(entry)
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                    }
+                }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
+    }
+
     var body: some View {
         ZStack {
             ThemeBackground()
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top-level mode picker: Profil / Användare
-                Picker("Mode", selection: $selectedMode) {
-                    ForEach(Mode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding([.top, .horizontal])
+                modePickerView
 
                 if selectedMode == .profile {
-                    Picker("Select Section", selection: $selectedSection) {
-                        ForEach(SectionType.allCases, id: \.self) { section in
-                            Text(section.rawValue).tag(section)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-
-                    LineChartWrapper(chartData: multiChartData, title: selectedSection.displayName)
-                        .frame(height: 150)
-                        .padding(.horizontal)
-
-                    List {
-                        if selectedSection == .targets {
-                                Section(header: sectionHeader(title: "🟪 Mål (mmol/L)", lastChanged: viewModel.lastChangedTargetProfile)) {
-                                ForEach(viewModel.targetEntries) { entry in
-                                    scheduleRow(entry)
-                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                        .contentShape(Rectangle())
-                                        .onTapGesture { openSettingsLog(for: "Mål-profil") }
-                                }
-                            }
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                        }
-
-                        if selectedSection == .basal {
-                            Section(header: sectionHeader(title: "🟪 Basal (E/h)", lastChanged: viewModel.lastChangedBasalProfile)) {
-                                ForEach(viewModel.basalEntries) { entry in
-                                    scheduleRow(entry, isBold: entry.time == "Total daglig basal")
-                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                        .contentShape(Rectangle())
-                                }
-                            }
-                            .onTapGesture { openSettingsLog(for: "Basalprofil") }
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-
-                            Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
-                                ForEach(viewModel.basalIOBEntries) { entry in
-                                    scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
-                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                        .contentShape(Rectangle())
-                                }
-                            }
-                            .onTapGesture { openSettingsLog(for: "Basalprofil") }
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                        }
-
-                        if selectedSection == .cr {
-                            Section(header: sectionHeader(title: "🟪 Insulinkvoter (g/E)", lastChanged: viewModel.lastChangedCRProfile)) {
-                                ForEach(viewModel.carbRatioEntries) { entry in
-                                    scheduleRow(entry)
-                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                        .contentShape(Rectangle())
-                                }
-                            }
-                            .onTapGesture { openSettingsLog(for: "CR-profil") }
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                        }
-
-                        if selectedSection == .isf {
-                            Section(header: sectionHeader(title: "🟪 Känslighet (mmol/L/E)", lastChanged: viewModel.lastChangedISFProfile)) {
-                                ForEach(viewModel.isfEntries) { entry in
-                                    scheduleRow(entry)
-                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                        .contentShape(Rectangle())
-                                        .onTapGesture { openSettingsLog(for: "ISF-profil") }
-                                }
-                            }
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                        }
-
-                            if selectedSection == .csf {
-                                Section(header: Text("🟪 Kh-känslighet (mmol/L/g)")) {
-                                    ForEach(viewModel.csfEntries) { entry in
-                                        scheduleRow(entry)
-                                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                    }
-                                }
-                                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                }
-
-                        if selectedSection == .cHr {
-                            Section(header: Text("🟪 Minsta absorption Kh (g/h)")) {
-                                ForEach(viewModel.minCarbsEntries) { entry in
-                                    scheduleRow(entry, isBold: entry.time == "Medelvärde")
-                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                }
-                            }
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                        }
-
-                        if selectedSection == .smb {
-                            Section(header: Text("🟦 Maxgräns SMB / UAMSMB (E/SMB)")) {
-                                ForEach(viewModel.smbEntries) { entry in
-                                    scheduleRow(entry)
-                                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                                }
-                            }
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
-                        }
-                    }
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
+                    profileModeContent
                 } else {
                     UserDataViewController()
                 }
@@ -305,12 +319,33 @@ struct ProfileSchedulesView: View {
                     }
                     .accessibilityLabel("Profil laddades ner:")
                 } else {
+                    HStack(spacing: 8) {
                     Button {
                         showAddUserData = true
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .padding(.leading, 4)
                     .accessibilityLabel("Lägg till användardata")
+
+                        Button {
+                            // Förbered CSV-dokument och trigga export
+                            let csv = Storage.shared.exportUserProfilesCSV()
+                            userCSVDocument = UserProfileCSVDocument(text: csv)
+                            isExportingUserCSV = true
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                        .accessibilityLabel("Exportera användardata (CSV)")
+
+                        Button {
+                            isImportingUserCSV = true
+                        } label: {
+                            Image(systemName: "square.and.arrow.down")
+                        }
+                        .padding(.trailing, 4)
+                        .accessibilityLabel("Importera användardata (CSV)")
+                    }
                 }
             }
         }
@@ -328,6 +363,53 @@ struct ProfileSchedulesView: View {
             • CR-profil: \(fmt(viewModel.lastChangedCRProfile))
             • ISF-profil: \(fmt(viewModel.lastChangedISFProfile))
             """)
+        }
+        .fileExporter(
+            isPresented: $isExportingUserCSV,
+            document: userCSVDocument,
+            contentType: .commaSeparatedText,
+            defaultFilename: "UserProfiles"
+        ) { result in
+            switch result {
+            case .success:
+                break
+            case .failure(let error):
+                userCSVImportError = "Export misslyckades: \(error.localizedDescription)"
+            }
+        }
+        .fileImporter(
+            isPresented: $isImportingUserCSV,
+            allowedContentTypes: [.commaSeparatedText],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                do {
+                    let data = try Data(contentsOf: url)
+                    if let csvString = String(data: data, encoding: .utf8) {
+                        Storage.shared.importUserProfilesCSV(from: csvString)
+                    } else {
+                        userCSVImportError = "Kunde inte läsa CSV-filen (ogiltig textkodning)."
+                    }
+                } catch {
+                    userCSVImportError = "Kunde inte läsa CSV-filen: \(error.localizedDescription)"
+                }
+            case .failure(let error):
+                userCSVImportError = "Import misslyckades: \(error.localizedDescription)"
+            }
+        }
+        .alert("Fel vid CSV-import/export", isPresented: Binding(
+            get: { userCSVImportError != nil },
+            set: { newValue in
+                if !newValue {
+                    userCSVImportError = nil
+                }
+            }
+        )) {
+            Button("OK", role: .cancel) { userCSVImportError = nil }
+        } message: {
+            Text(userCSVImportError ?? "Okänt fel")
         }
     }
     
@@ -1222,4 +1304,29 @@ extension Notification.Name {
 
 extension UserProfileEntry: Identifiable {
     public var id: Date { updatedAt }
+}
+
+struct UserProfileCSVDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.commaSeparatedText] }
+    static var writableContentTypes: [UTType] { [.commaSeparatedText] }
+
+    var text: String
+
+    init(text: String = "") {
+        self.text = text
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        if let data = configuration.file.regularFileContents,
+           let string = String(data: data, encoding: .utf8) {
+            self.text = string
+        } else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        let data = text.data(using: .utf8) ?? Data()
+        return .init(regularFileWithContents: data)
+    }
 }
