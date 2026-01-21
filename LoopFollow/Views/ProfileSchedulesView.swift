@@ -465,7 +465,7 @@ private struct UserDataViewController: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Namn:")
                             Text("Född:")
-                            Text("T1D sedan:")
+                            Text("T1D debut:")
                             Text("Längd:")
                             Text("Vikt:")
                             Text("Uppdaterades:")
@@ -474,12 +474,12 @@ private struct UserDataViewController: View {
 
                         // Frame 3: Värden (senaste profil eller placeholders)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(profile?.name ?? "<<Förnamn Efternamn>>")
-                            Text(profile?.birthDate.map { Self.shortDateFormatter.string(from: $0) } ?? "<<ÅÅ-MM-DD>>")
-                            Text(profile?.t1dSince.map { Self.shortDateFormatter.string(from: $0) } ?? "<<ÅÅ-MM-DD>>")
-                            Text(profile?.heightCm.map { String(format: "%.0f cm", $0) } ?? "<<XXX>> cm")
-                            Text(profile?.weightKg.map { String(format: "%.1f kg", $0) } ?? "<<XX>> kg")
-                            Text(profile.map { Self.shortDateFormatter.string(from: $0.updatedAt) } ?? "<<ÅÅ-MM-DD>>")
+                            Text(profile?.name ?? "Förnamn Efternamn")
+                            Text(profile?.birthDate.map { Self.shortDateFormatter.string(from: $0) } ?? "ÅÅ-MM-DD")
+                            Text(profile?.t1dSince.map { Self.shortDateFormatter.string(from: $0) } ?? "ÅÅ-MM-DD")
+                            Text(profile?.heightCm.map { String(format: "%.1f cm", $0) } ?? "-- cm")
+                            Text(profile?.weightKg.map { String(format: "%.1f kg", $0) } ?? "-- kg")
+                            Text(profile.map { Self.shortDateFormatter.string(from: $0.updatedAt) } ?? "ÅÅ-MM-DD")
                         }
                         .font(.caption2)
                         .foregroundColor(.secondary)
