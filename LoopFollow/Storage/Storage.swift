@@ -144,6 +144,24 @@ struct UserProfileEntry: Codable, Equatable {
     var actualBasalPerHour: Double?
 }
 
+extension UserProfileEntry {
+    fileprivate static let csvDateFormatter: ISO8601DateFormatter = {
+        let df = ISO8601DateFormatter()
+        df.formatOptions = [.withInternetDateTime]
+        return df
+    }()
+
+    fileprivate static func csvString(from date: Date?) -> String {
+        guard let date else { return "" }
+        return csvDateFormatter.string(from: date)
+    }
+
+    fileprivate static func csvString(from value: Double?, decimals: Int = 4) -> String {
+        guard let value else { return "" }
+        return String(format: "%.\(decimals)f", value)
+    }
+}
+
 extension Storage {
     var sensorStartNotes: [SensorStartHistoryEntry] {
         get {
@@ -258,6 +276,190 @@ extension Storage {
                 )
             }
         }
+    }
+
+    /// Exports all userProfiles as CSV text.
+    /// Columns: updatedAt,name,birthDate,t1dSince,heightCm,weightKg,tdd,hbA1c,actualBasal,actualMorningCR,actualDayCR,actualAverageISF,insulinPerKg,walsh500CR,walsh300CR,walshWeightCR,walsh100ISF,walshTDD,walshBasal,walshBasalPerHour,actualBasalPerHour
+    func exportUserProfilesCSV() -> String {
+        let header = [
+            "updatedAt",
+            "name",
+            "birthDate",
+            "t1dSince",
+            "heightCm",
+            "weightKg",
+            "tdd",
+            "hbA1c",
+            "actualBasal",
+            "actualMorningCR",
+            "actualDayCR",
+            "actualAverageISF",
+            "insulinPerKg",
+            "walsh500CR",
+            "walsh300CR",
+            "walshWeightCR",
+            "walsh100ISF",
+            "walshTDD",
+            "walshBasal",
+            "walshBasalPerHour",
+            "actualBasalPerHour"
+        ].joined(separator: ",")
+
+        let sortedProfiles = userProfiles.sorted { $0.updatedAt < $1.updatedAt }
+
+        let rows: [String] = sortedProfiles.map { entry in
+            let cols: [String] = [
+                UserProfileEntry.csvString(from: entry.updatedAt),
+                entry.name,
+                UserProfileEntry.csvString(from: entry.birthDate),
+                UserProfileEntry.csvString(from: entry.t1dSince),
+                UserProfileEntry.csvString(from: entry.heightCm, decimals: 2),
+                UserProfileEntry.csvString(from: entry.weightKg, decimals: 2),
+                UserProfileEntry.csvString(from: entry.tdd, decimals: 2),
+                UserProfileEntry.csvString(from: entry.hbA1c, decimals: 2),
+                UserProfileEntry.csvString(from: entry.actualBasal, decimals: 2),
+                UserProfileEntry.csvString(from: entry.actualMorningCR, decimals: 2),
+                UserProfileEntry.csvString(from: entry.actualDayCR, decimals: 2),
+                UserProfileEntry.csvString(from: entry.actualAverageISF, decimals: 2),
+                UserProfileEntry.csvString(from: entry.insulinPerKg, decimals: 4),
+                UserProfileEntry.csvString(from: entry.walsh500CR, decimals: 2),
+                UserProfileEntry.csvString(from: entry.walsh300CR, decimals: 2),
+                UserProfileEntry.csvString(from: entry.walshWeightCR, decimals: 2),
+                UserProfileEntry.csvString(from: entry.walsh100ISF, decimals: 2),
+                UserProfileEntry.csvString(from: entry.walshTDD, decimals: 2),
+                UserProfileEntry.csvString(from: entry.walshBasal, decimals: 2),
+                UserProfileEntry.csvString(from: entry.walshBasalPerHour, decimals: 4),
+                UserProfileEntry.csvString(from: entry.actualBasalPerHour, decimals: 4)
+            ]
+            return cols.joined(separator: ",")
+        }
+
+        return ([header] + rows).joined(separator: "\n")
+    }
+
+    /// Imports user profile data from CSV text.
+    /// Rows must match the header produced by exportUserProfilesCSV().
+    /// When merging, we de-duplicate by updatedAt calendar day and keep the *latest* entry for each day.
+    func importUserProfilesCSV(from csv: String) {
+        let lines = csv
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        guard !lines.isEmpty else { return }
+
+        // Assume first non-empty line is header and ignore it.
+        let dataLines = Array(lines.dropFirst())
+
+        let dateFormatter = UserProfileEntry.csvDateFormatter
+
+        var imported: [UserProfileEntry] = []
+        imported.reserveCapacity(dataLines.count)
+
+        for line in dataLines {
+            let columns = line.components(separatedBy: ",")
+            // Expect at least the 21 columns we write out
+            guard columns.count >= 21 else { continue }
+
+            func parseDate(_ s: String) -> Date? {
+                let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return nil }
+                return dateFormatter.date(from: trimmed)
+            }
+
+            func parseDouble(_ s: String) -> Double? {
+                let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return nil }
+                // Force dot as decimal separator regardless of locale
+                let normalized = trimmed.replacingOccurrences(of: ",", with: ".")
+                return Double(normalized)
+            }
+
+            let updatedAtString = columns[0]
+            guard let updatedAt = parseDate(updatedAtString) else { continue }
+
+            let name = columns[1]
+
+            let birthDate = parseDate(columns[2])
+            let t1dSince = parseDate(columns[3])
+            let heightCm = parseDouble(columns[4])
+            let weightKg = parseDouble(columns[5])
+            let tdd = parseDouble(columns[6])
+            let hbA1c = parseDouble(columns[7])
+            let actualBasal = parseDouble(columns[8])
+            let actualMorningCR = parseDouble(columns[9])
+            let actualDayCR = parseDouble(columns[10])
+            let actualAverageISF = parseDouble(columns[11])
+            let insulinPerKg = parseDouble(columns[12])
+            let walsh500CR = parseDouble(columns[13])
+            let walsh300CR = parseDouble(columns[14])
+            let walshWeightCR = parseDouble(columns[15])
+            let walsh100ISF = parseDouble(columns[16])
+            let walshTDD = parseDouble(columns[17])
+            let walshBasal = parseDouble(columns[18])
+            let walshBasalPerHour = parseDouble(columns[19])
+            let actualBasalPerHour = parseDouble(columns[20])
+
+            let entry = UserProfileEntry(
+                name: name,
+                birthDate: birthDate,
+                t1dSince: t1dSince,
+                heightCm: heightCm,
+                weightKg: weightKg,
+                tdd: tdd,
+                hbA1c: hbA1c,
+                actualBasal: actualBasal,
+                actualMorningCR: actualMorningCR,
+                actualDayCR: actualDayCR,
+                actualAverageISF: actualAverageISF,
+                updatedAt: updatedAt,
+                insulinPerKg: insulinPerKg,
+                walsh500CR: walsh500CR,
+                walsh300CR: walsh300CR,
+                walshWeightCR: walshWeightCR,
+                walsh100ISF: walsh100ISF,
+                walshTDD: walshTDD,
+                walshBasal: walshBasal,
+                walshBasalPerHour: walshBasalPerHour,
+                actualBasalPerHour: actualBasalPerHour
+            )
+
+            imported.append(entry)
+        }
+
+        guard !imported.isEmpty else { return }
+
+        // Merge with existing, then de-duplicate by calendar day (local time)
+        let calendar = Calendar.current
+        let existing = userProfiles
+
+        var mergedByDay: [String: UserProfileEntry] = [:]
+
+        func dayKey(for date: Date) -> String {
+            let comps = calendar.dateComponents([.year, .month, .day], from: date)
+            let y = comps.year ?? 0
+            let m = comps.month ?? 0
+            let d = comps.day ?? 0
+            return String(format: "%04d-%02d-%02d", y, m, d)
+        }
+
+        for entry in existing + imported {
+            let key = dayKey(for: entry.updatedAt)
+            if let current = mergedByDay[key] {
+                // Keep the latest updatedAt for that day
+                if entry.updatedAt > current.updatedAt {
+                    mergedByDay[key] = entry
+                }
+            } else {
+                mergedByDay[key] = entry
+            }
+        }
+
+        let mergedArray = mergedByDay.values.sorted { $0.updatedAt > $1.updatedAt }
+        userProfiles = mergedArray
+
+        // Notify listeners (UserDataViewController, etc.) that profiles have changed
+        NotificationCenter.default.post(name: .userProfileUpdated, object: nil)
     }
 }
 

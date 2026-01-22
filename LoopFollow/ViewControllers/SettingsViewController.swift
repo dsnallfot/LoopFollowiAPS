@@ -247,12 +247,12 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                     let hostingController = UIHostingController(rootView: profileSchedulesView)
                     hostingController.title = "Trio profil"
 
-                    hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
+                    /*hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
                         title: "Klar",
                         style: .plain,
                         target: self,
                         action: #selector(self.dismissPresentedController)
-                    )
+                    )*/
 
                     // Transparent hosting background
                     hostingController.view.backgroundColor = .clear

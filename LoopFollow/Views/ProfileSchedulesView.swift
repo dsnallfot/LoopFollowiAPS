@@ -28,6 +28,7 @@ struct ProfileSchedulesView: View {
     @State private var selectedLogSearchItem: LogSearchItem?
     @State private var selectedMode: Mode = .profile
     @State private var showAddUserData: Bool = false
+    @State private var showStatsView: Bool = false
     @State private var isExportingUserCSV: Bool = false
     @State private var isImportingUserCSV: Bool = false
     @State private var userCSVDocument: UserProfileCSVDocument = UserProfileCSVDocument(text: "")
@@ -309,6 +310,11 @@ struct ProfileSchedulesView: View {
                 AddUserDataView()
             }
         }
+        .sheet(isPresented: $showStatsView) {
+            NavigationStack {
+                UserDataStatsView()
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 if selectedMode == .profile {
@@ -320,14 +326,14 @@ struct ProfileSchedulesView: View {
                     .accessibilityLabel("Profil laddades ner:")
                 } else {
                     HStack(spacing: 8) {
-                    Button {
-                        showAddUserData = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .padding(.leading, 4)
-                    .accessibilityLabel("Lägg till användardata")
-
+                        Button {
+                            showAddUserData = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .padding(.leading, 4)
+                        .accessibilityLabel("Lägg till användardata")
+                        
                         Button {
                             // Förbered CSV-dokument och trigga export
                             let csv = Storage.shared.exportUserProfilesCSV()
@@ -337,7 +343,7 @@ struct ProfileSchedulesView: View {
                             Image(systemName: "square.and.arrow.up")
                         }
                         .accessibilityLabel("Exportera användardata (CSV)")
-
+                        
                         Button {
                             isImportingUserCSV = true
                         } label: {
@@ -348,6 +354,14 @@ struct ProfileSchedulesView: View {
                     }
                 }
             }
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+            Button {
+                showStatsView = true
+            } label: {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+            }
+        }
         }
         .alert(
             "Profil uppdaterades \n\(ProfileManager.shared.profileCreatedAtFormatted ?? "Okänt")",
@@ -471,6 +485,10 @@ private final class UserProfileImageManager {
         guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
         return UIImage(data: data)
     }
+
+    func clear() {
+        UserDefaults.standard.removeObject(forKey: key)
+    }
 }
 
 // MARK: - UserDataViewController
@@ -485,6 +503,7 @@ private struct UserDataViewController: View {
     @State private var profileToDelete: UserProfileEntry?
     @State private var showDeleteAlert: Bool = false
     @State private var viewingEntry: UserProfileEntry?
+    @State private var showDeleteImageAlert: Bool = false
 
     private static let shortDateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -537,6 +556,11 @@ private struct UserDataViewController: View {
                                     UserProfileImageManager.shared.save(image: uiImage)
                                 }
                             }
+                        }
+                    }
+                    .onLongPressGesture {
+                        if profileImage != nil {
+                            showDeleteImageAlert = true
                         }
                     }
                     Spacer()
@@ -655,6 +679,15 @@ private struct UserDataViewController: View {
                 Text("Vill du verkligen radera denna post?")
             }
         }
+        .alert("Radera bild", isPresented: $showDeleteImageAlert) {
+            Button("Radera", role: .destructive) {
+                profileImage = nil
+                UserProfileImageManager.shared.clear()
+            }
+            Button("Avbryt", role: .cancel) { }
+        } message: {
+            Text("Vill du radera nuvarande profilbild?")
+        }
     }
     private func reloadProfiles() {
         let stored = Storage.shared.userProfiles.sorted { $0.updatedAt > $1.updatedAt }
@@ -727,6 +760,131 @@ private struct UserProfileRow: View {
             return Color(UIColor.systemOrange)
         } else {
             return Color(UIColor.systemRed)
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct UserDataStatsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedMetric: Metric = .hba1c
+
+    enum Metric: String, CaseIterable, Identifiable {
+        case hba1c = "HbA1c"
+        case weight = "Vikt"
+        case height = "Längd"
+        case tdd = "TDD"
+        var id: String { rawValue }
+    }
+
+    private var sortedProfiles: [UserProfileEntry] {
+        Storage.shared.userProfiles
+            .sorted { $0.updatedAt < $1.updatedAt }
+    }
+
+    private struct ChartConfig {
+        let entries: [ChartDataEntry]
+        let dates: [Date]
+        let style: LineChartStyle
+    }
+
+    /// Bygger entries + datum + style för aktuell metric
+    private var chartConfig: ChartConfig? {
+        let valueExtractor: (UserProfileEntry) -> Double?
+        let baseColor: NSUIColor
+        let circleColorProvider: ((Double) -> NSUIColor)?
+
+        switch selectedMetric {
+        case .hba1c:
+            valueExtractor = { $0.hbA1c }
+            baseColor = .systemGray
+            circleColorProvider = { value in
+                if value <= 48 {
+                    return .systemGreen
+                } else if value <= 52 {
+                    return .systemOrange
+                } else {
+                    return .systemRed
+                }
+            }
+
+        case .weight:
+            valueExtractor = { $0.weightKg }
+            baseColor = .systemBrown
+            circleColorProvider = nil
+
+        case .height:
+            valueExtractor = { $0.heightCm }
+            baseColor = .cyan
+            circleColorProvider = nil
+
+        case .tdd:
+            valueExtractor = { $0.tdd }
+            baseColor = .systemBlue
+            circleColorProvider = nil
+        }
+
+        var entries: [ChartDataEntry] = []
+        var dates: [Date] = []
+
+        for entry in sortedProfiles {
+            guard let value = valueExtractor(entry) else { continue }
+            let x = Double(entries.count)       // 0,1,2,... per datapunkt
+            entries.append(ChartDataEntry(x: x, y: value))
+            dates.append(entry.updatedAt)
+        }
+
+        guard !entries.isEmpty else { return nil }
+
+        let style = LineChartStyle(
+            lineColor: baseColor,
+            showCircles: true,
+            circleRadius: 6,   // ≈10pt diameter
+            circleColor: circleColorProvider
+        )
+
+        return ChartConfig(entries: entries, dates: dates, style: style)
+    }
+
+    var body: some View {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Picker("Metric", selection: $selectedMetric) {
+                    ForEach(Metric.allCases) { metric in
+                        Text(metric.rawValue).tag(metric)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+
+                if let chartConfig = chartConfig {
+                    StatsLineChartWrapper(
+                        entries: chartConfig.entries,
+                        dates: chartConfig.dates,
+                        title: selectedMetric.rawValue,
+                        style: chartConfig.style
+                    )
+                    .frame(height: 260)
+                    .padding(.horizontal)
+                } else {
+                    Text("Ingen data att visa ännu.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding()
+                }
+
+                Spacer()
+            }
+        }
+        .navigationTitle("Utveckling över tid")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Klar") { dismiss() }
+            }
         }
     }
 }
