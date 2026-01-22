@@ -21,7 +21,7 @@ private struct LogSearchItem: Identifiable {
 
 @available(iOS 26.0, *)
 struct ProfileSchedulesView: View {
-    @Environment(\.dismiss) private var dismiss
+    var onDone: (() -> Void)? = nil
     @ObservedObject var viewModel = ProfileSchedulesViewModel()
     
     @State private var selectedSection: SectionType = .targets // Default section
@@ -373,8 +373,8 @@ struct ProfileSchedulesView: View {
             
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 Button("Klar") {
-                            dismiss()
-                        }
+                    onDone?()
+                }
             }
         }
         .alert(

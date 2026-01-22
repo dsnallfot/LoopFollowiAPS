@@ -143,13 +143,14 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
-                    let profileSchedulesView = ProfileSchedulesView()
+                    let profileSchedulesView = ProfileSchedulesView(onDone: { [weak self] in
+                        self?.dismissPresentedController()
+                    })
                         .preferredColorScheme(isDark ? .dark : .light)
                         .environment(\.colorScheme, isDark ? .dark : .light)
 
                     let hostingController = UIHostingController(rootView: profileSchedulesView)
                     hostingController.title = "Trio profil"
-
 
                     // Transparent hosting background
                     hostingController.view.backgroundColor = .clear
