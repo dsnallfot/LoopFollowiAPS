@@ -170,7 +170,9 @@ struct ProfileSchedulesView: View {
             }
         }
         .pickerStyle(SegmentedPickerStyle())
-        .padding([.top, .horizontal])
+        .padding(.top)
+        .padding(.bottom, 6)
+        .padding(.horizontal)
     }
 
     @ViewBuilder
@@ -183,9 +185,10 @@ struct ProfileSchedulesView: View {
         .pickerStyle(SegmentedPickerStyle())
         .padding(.horizontal)
         .padding(.top, 8)
+        .padding(.bottom, 6)
 
         LineChartWrapper(chartData: multiChartData, title: selectedSection.displayName)
-            .frame(height: 200)
+            .frame(height: 220)
             .padding(.horizontal)
 
         List {
