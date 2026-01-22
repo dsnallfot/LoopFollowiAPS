@@ -787,7 +787,7 @@ private struct UserProfileRow: View {
             let heightString = entry.heightCm.map { String(format: "%.1f", $0) } ?? "--"
             let insulinPerKgString = entry.insulinPerKg.map { String(format: "%.2f", $0) } ?? "--"
 
-            Text("TDD: \(tddString) E • Vikt: \(weightString) kg • \(insulinPerKgString) E/kg • Längd: \(heightString) cm")
+            Text("TDD: \(tddString) E • Vikt: \(weightString) kg • \(insulinPerKgString) E/kg/d • Längd: \(heightString) cm")
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -1265,7 +1265,7 @@ private struct AddUserDataView: View {
                             TextField("Ange CR (morgon)", text: $actualMorningCRText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                            Text("E")
+                            Text("g/E")
                             if actualMorningCRText == "" {
                                 Image(systemName: "circle.fill")
                                     .font(.system(size: 6))
@@ -1279,7 +1279,7 @@ private struct AddUserDataView: View {
                             TextField("Ange CR (dag)", text: $actualDayCRText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                            Text("E")
+                            Text("g/E")
                             if actualDayCRText == "" {
                                 Image(systemName: "circle.fill")
                                     .font(.system(size: 6))
@@ -1293,7 +1293,7 @@ private struct AddUserDataView: View {
                             TextField("Ange Basal", text: $actualBasalText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                            Text("E")
+                            Text("E/d")
                             if actualBasalText == "" {
                                 Image(systemName: "circle.fill")
                                     .font(.system(size: 6))
@@ -1307,7 +1307,7 @@ private struct AddUserDataView: View {
                             TextField("Ange ISF", text: $actualAverageISFText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                            Text("E")
+                            Text("mmol/L/E")
                             if actualAverageISFText == "" {
                                 Image(systemName: "circle.fill")
                                     .font(.system(size: 6))
@@ -1319,7 +1319,7 @@ private struct AddUserDataView: View {
                             Text("Insulinbehov/kg:")
                             Spacer()
                             Text(insulinPerKg.map { String(format: "%.2f", $0) } ?? "--")
-                            Text("E/kg")
+                            Text("E/kg/d")
                         }
                         
                         HStack {
