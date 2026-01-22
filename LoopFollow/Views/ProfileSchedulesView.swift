@@ -27,7 +27,7 @@ struct ProfileSchedulesView: View {
     @State private var selectedSection: SectionType = .targets // Default section
     @State private var showProfileUpdatedAlert: Bool = false
     @State private var selectedLogSearchItem: LogSearchItem?
-    @State private var selectedMode: Mode = .profile
+    @State private var selectedMode: Mode = .user
     @State private var showAddUserData: Bool = false
     @State private var showStatsView: Bool = false
     @State private var isExportingUserCSV: Bool = false
@@ -36,8 +36,8 @@ struct ProfileSchedulesView: View {
     @State private var userCSVImportError: String?
 
     enum Mode: String, CaseIterable {
-        case profile = "Profilinställningar"
         case user = "Hälsodata"
+        case profile = "Profilinställningar"
     }
 
     enum SectionType: String, CaseIterable {
@@ -600,7 +600,7 @@ private struct UserDataViewController: View {
                             Text("Född:")
                             Text("T1D debut:")
                             Text("Längd:")
-                            Text("Vikt:")
+                            Text("Vikt (BMI):")
                             Text("Uppdaterades:")
                         }
                         .font(.caption2)
@@ -611,7 +611,19 @@ private struct UserDataViewController: View {
                             Text(profile?.birthDate.map { Self.shortDateFormatter.string(from: $0) } ?? "ÅÅ-MM-DD")
                             Text(profile?.t1dSince.map { Self.shortDateFormatter.string(from: $0) } ?? "ÅÅ-MM-DD")
                             Text(profile?.heightCm.map { String(format: "%.1f cm", $0) } ?? "-- cm")
-                            Text(profile?.weightKg.map { String(format: "%.1f kg", $0) } ?? "-- kg")
+                            Text({
+                                if let weight = profile?.weightKg,
+                                   let heightCm = profile?.heightCm,
+                                   heightCm > 0 {
+                                    let heightM = heightCm / 100.0
+                                    let bmi = weight / (heightM * heightM)
+                                    return String(format: "%.1f kg (%.1f)", weight, bmi)
+                                } else if let weight = profile?.weightKg {
+                                    return String(format: "%.1f kg", weight)
+                                } else {
+                                    return "-- kg"
+                                }
+                            }())
                             Text(profile.map { Self.shortDateFormatter.string(from: $0.updatedAt) } ?? "ÅÅ-MM-DD")
                         }
                         .font(.caption2)
@@ -747,37 +759,39 @@ private struct UserProfileRow: View {
                     ZStack {
                         Circle()
                             .fill(hbColor(for: hb))
-                            .frame(width: 26, height: 26)
+                            .frame(width: 30, height: 30)
 
                         Text(String(format: "%.0f", hb))
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                     }
+                    .offset(x: 0, y: 13)
                 } else {
                     ZStack {
                         Circle()
                             .fill(Color(.systemGray4))
-                            .frame(width: 26, height: 26)
+                            .frame(width: 30, height: 30)
 
                         Text("--")
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                     }
+                    .offset(x: 0, y: 13)
                 }
             }
 
             let tddString = entry.tdd.map { String(format: "%.1f", $0) } ?? "--"
             let weightString = entry.weightKg.map { String(format: "%.1f", $0) } ?? "--"
-            let heightString = entry.heightCm.map { String(format: "%.0f", $0) } ?? "--"
+            let heightString = entry.heightCm.map { String(format: "%.1f", $0) } ?? "--"
             let insulinPerKgString = entry.insulinPerKg.map { String(format: "%.2f", $0) } ?? "--"
 
-            Text("TDD: \(tddString) E • Vikt: \(weightString) kg • Längd: \(heightString) cm • Insulin/kg: \(insulinPerKgString) E")
+            Text("TDD: \(tddString) E • Vikt: \(weightString) kg • \(insulinPerKgString) E/kg • Längd: \(heightString) cm")
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
 
     private func hbColor(for hbA1c: Double) -> Color {
@@ -1142,6 +1156,45 @@ private struct AddUserDataView: View {
         guard let actualBasal, actualBasal > 0 else { return nil }
         return actualBasal / 24
     }
+    
+    // MARK: - Walsh vs actual percentage helpers
+    
+    /// Returnerar en sträng som "(+12 %)" eller "(-8 %)" som visar hur mycket större/mindre Walsh är jämfört med aktuellt värde.
+    private func walshPercentageString(walsh: Double?, actual: Double?) -> String? {
+        guard let walsh, let actual, actual != 0 else { return nil }
+        let ratio = walsh / actual
+        let pct = (ratio - 1.0) * 100.0
+        return String(format: "(%+0.0f %%)", pct)
+    }
+    
+    // Walsh-värden relativt aktuella inställningar
+    private var walshPercentageOfActual500CR: String? {
+        walshPercentageString(walsh: walsh500CR, actual: actualDayCR)
+    }
+    
+    private var walshPercentageOfActual300CR: String? {
+        walshPercentageString(walsh: walsh300CR, actual: actualMorningCR)
+    }
+    
+    private var walshPercentageOfActualWeightCR: String? {
+        walshPercentageString(walsh: walshWeightCR, actual: actualDayCR)
+    }
+    
+    private var walshPercentageOfActualISF: String? {
+        walshPercentageString(walsh: walsh100ISF, actual: actualAverageISF)
+    }
+    
+    private var walshPercentageOfActualTDD: String? {
+        walshPercentageString(walsh: walshTDD, actual: tdd)
+    }
+    
+    private var walshPercentageOfActualBasal: String? {
+        walshPercentageString(walsh: walshBasal, actual: actualBasal)
+    }
+    
+    private var walshPercentageOfActualBasalPerHour: String? {
+        walshPercentageString(walsh: walshBasalPerHour, actual: actualBasalPerHour)
+    }
 
     var body: some View {
         ZStack {
@@ -1157,6 +1210,11 @@ private struct AddUserDataView: View {
                             Spacer()
                             TextField("Förnamn Efternamn", text: $name)
                                 .multilineTextAlignment(.trailing)
+                            if name == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
 
                         HStack {
@@ -1166,6 +1224,11 @@ private struct AddUserDataView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("cm")
+                            if heightText == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
 
                         HStack {
@@ -1175,6 +1238,11 @@ private struct AddUserDataView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("kg")
+                            if weightText == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
 
                         HStack {
@@ -1184,6 +1252,11 @@ private struct AddUserDataView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("E")
+                            if tddText == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
                         
                         HStack {
@@ -1193,6 +1266,11 @@ private struct AddUserDataView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("E")
+                            if actualMorningCRText == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
                         
                         HStack {
@@ -1202,6 +1280,11 @@ private struct AddUserDataView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("E")
+                            if actualDayCRText == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
                         
                         HStack {
@@ -1211,6 +1294,11 @@ private struct AddUserDataView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("E")
+                            if actualBasalText == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
                         
                         HStack {
@@ -1220,6 +1308,11 @@ private struct AddUserDataView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                             Text("E")
+                            if actualAverageISFText == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
                         
                         HStack {
@@ -1236,6 +1329,11 @@ private struct AddUserDataView: View {
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                             Text("mmol/mol")
+                            if hbA1cText == "" {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 6))
+                                    .foregroundColor(.red)
+                            }
                         }
                         
                         Divider()
@@ -1283,8 +1381,12 @@ private struct AddUserDataView: View {
 
                     Divider()
                         .padding(.top, 6)
-
-                    Text("Beräknade värden")
+                    HStack {
+                        
+                        Text("Walsh baseline")
+                        Spacer()
+                        Text("Beräknat värde (% vs inställt)")
+                    }
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.bottom, 8)
@@ -1292,18 +1394,26 @@ private struct AddUserDataView: View {
                     // Kalkylerade rader (icke-editable)
                     Group {
                         HStack {
-                            Text("Walsh 500-regeln CR (Dag):")
+                            Text("Walsh 500-regeln CR:")
                             Spacer()
                             Text(walsh500CR.map { String(format: "%.1f", $0) } ?? "--")
                             Text("g/E")
+                            if let pct = walshPercentageOfActual500CR {
+                                Text(pct)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.bottom, 6)
 
                         HStack {
-                            Text("Walsh 300-regeln CR (Frukost):")
+                            Text("Walsh 300-regeln CR:")
                             Spacer()
                             Text(walsh300CR.map { String(format: "%.1f", $0) } ?? "--")
                             Text("g/E")
+                            if let pct = walshPercentageOfActual300CR {
+                                Text(pct)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.bottom, 6)
 
@@ -1312,6 +1422,10 @@ private struct AddUserDataView: View {
                             Spacer()
                             Text(walshWeightCR.map { String(format: "%.1f", $0) } ?? "--")
                             Text("g/E")
+                            if let pct = walshPercentageOfActualWeightCR {
+                                Text(pct)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.bottom, 6)
 
@@ -1320,6 +1434,10 @@ private struct AddUserDataView: View {
                             Spacer()
                             Text(walsh100ISF.map { String(format: "%.1f", $0) } ?? "--")
                             Text("mmol/L/E")
+                            if let pct = walshPercentageOfActualISF {
+                                Text(pct)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.bottom, 6)
 
@@ -1328,6 +1446,10 @@ private struct AddUserDataView: View {
                             Spacer()
                             Text(walshTDD.map { String(format: "%.2f", $0) } ?? "--")
                             Text("E/dag")
+                            if let pct = walshPercentageOfActualTDD {
+                                Text(pct)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.bottom, 6)
 
@@ -1336,6 +1458,10 @@ private struct AddUserDataView: View {
                             Spacer()
                             Text(walshBasal.map { String(format: "%.2f", $0) } ?? "--")
                             Text("E/dag")
+                            if let pct = walshPercentageOfActualBasal {
+                                Text(pct)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.bottom, 6)
 
@@ -1344,6 +1470,10 @@ private struct AddUserDataView: View {
                             Spacer()
                             Text(walshBasalPerHour.map { String(format: "%.2f", $0) } ?? "--")
                             Text("E/h")
+                            if let pct = walshPercentageOfActualBasalPerHour {
+                                Text(pct)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
@@ -1354,7 +1484,7 @@ private struct AddUserDataView: View {
         .navigationTitle(
             isReadOnly
             ? "Registrerad data"
-            : (existingEntry == nil ? "Registrera data" : "Ändra registrering")
+            : (existingEntry == nil ? "Registrera ny data" : "Ändra registrering")
         )
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -1380,7 +1510,7 @@ private struct AddUserDataView: View {
                 name = existing.name
                 if let d = existing.birthDate { birthDate = d }
                 if let d = existing.t1dSince { t1dSinceDate = d }
-                if let h = existing.heightCm { heightText = String(format: "%.0f", h) }
+                if let h = existing.heightCm { heightText = String(format: "%.1f", h) }
                 if let w = existing.weightKg { weightText = String(format: "%.1f", w) }
                 if let dose = existing.tdd { tddText = String(format: "%.1f", dose) }
                 if let hba1c = existing.hbA1c { hbA1cText = String(format: "%.0f", hba1c) }
@@ -1393,15 +1523,15 @@ private struct AddUserDataView: View {
                 name = latest.name
                 if let d = latest.birthDate { birthDate = d }
                 if let d = latest.t1dSince { t1dSinceDate = d }
-                if let h = latest.heightCm { heightText = String(format: "%.0f", h) }
-                if let w = latest.weightKg { weightText = String(format: "%.1f", w) }
-                if let dose = latest.tdd { tddText = String(format: "%.1f", dose) }
-                if let hba1c = latest.hbA1c { hbA1cText = String(format: "%.0f", hba1c) }
+                //if let h = latest.heightCm { heightText = String(format: "%.0f", h) }
+                //if let w = latest.weightKg { weightText = String(format: "%.1f", w) }
+                //if let dose = latest.tdd { tddText = String(format: "%.1f", dose) }
+                //if let hba1c = latest.hbA1c { hbA1cText = String(format: "%.0f", hba1c) }
                 if let actualMorningCR = latest.actualMorningCR { actualMorningCRText = String(format: "%.1f", actualMorningCR) }
                 if let actualDayCR = latest.actualDayCR { actualDayCRText = String(format: "%.1f", actualDayCR) }
                 if let actualBasal = latest.actualBasal { actualBasalText = String(format: "%.2f", actualBasal) }
                 if let actualAverageISF = latest.actualAverageISF { actualAverageISFText = String(format: "%.1f", actualAverageISF) }
-                updatedDate = latest.updatedAt
+                updatedDate = Date()//latest.updatedAt
             }
 
             // Om vi skapar en NY registrering (existingEntry == nil)
@@ -1412,7 +1542,8 @@ private struct AddUserDataView: View {
             }
         }
         .onChange(of: updatedDate) { newDate in
-            guard !isReadOnly else { return }
+            // Auto-populera bara för NYA registreringar (existingEntry == nil) och ej i read-only-läge
+            guard existingEntry == nil, !isReadOnly else { return }
             let calendar = Calendar.current
             clearActualFields()
 
