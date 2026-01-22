@@ -157,7 +157,7 @@ struct LineChartWrapper: UIViewRepresentable {
     }
 }
 
-// MARK: - StatsLineChartWrapper (för användardata över tid)
+// MARK: - StatsLineChartWrapper (för hälsodata över tid)
 
 struct StatsLineChartWrapper: UIViewRepresentable {
     var entries: [ChartDataEntry]
@@ -315,7 +315,7 @@ final class StatsMarker: MarkerView {
     override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
         // Centrera markern horisontellt och lägg den ovanför punkten
         let size = self.bounds.size
-        return CGPoint(x: -size.width / 2, y: -size.height - 100 )
+        return CGPoint(x: -size.width / 2, y: -size.height - 88 )
     }
 }
 
@@ -363,5 +363,124 @@ class NoZeroYAxisFormatter: AxisValueFormatter {
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
         guard value != 0 else { return "" } // Hide 0
         return String(format: "%.\(decimalPlaces)f", value)
+    }
+}
+
+// MARK: - WalshComparisonLineChartWrapper (Walsh baseline vs actual)
+struct WalshComparisonLineChartWrapper: UIViewRepresentable {
+    var walshEntries: [ChartDataEntry]
+    var actualEntries: [ChartDataEntry]
+    var dates: [Date]
+    var title: String
+    var walshLabel: String
+    var actualLabel: String
+
+    func makeUIView(context: Context) -> Charts.LineChartView {
+        let chartView = Charts.LineChartView()
+        chartView.chartDescription.enabled = false
+        chartView.legend.enabled = true
+        chartView.rightAxis.enabled = false
+
+        chartView.xAxis.labelPosition = .bottom
+        chartView.xAxis.granularity = 1
+        chartView.xAxis.labelCount = min(6, dates.count)
+        chartView.xAxis.valueFormatter = StatsDateAxisFormatter(dates: dates)
+
+        chartView.leftAxis.labelCount = 5
+
+        // Grid – samma look som övriga stats-grafer
+        let gridLineColor = NSUIColor.lightGray.withAlphaComponent(0.5)
+        chartView.xAxis.gridColor = gridLineColor
+        chartView.xAxis.gridLineWidth = 0.5
+        chartView.xAxis.gridLineDashLengths = [2, 2]
+        chartView.extraBottomOffset = 6
+
+        chartView.leftAxis.gridColor = gridLineColor
+        chartView.leftAxis.gridLineWidth = 0.5
+        chartView.leftAxis.gridLineDashLengths = [2, 2]
+
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
+
+        chartView.rightAxis.enabled = false
+
+        chartView.pinchZoomEnabled = false
+        chartView.doubleTapToZoomEnabled = false
+        chartView.highlightPerTapEnabled = true
+        chartView.highlightPerDragEnabled = false
+        chartView.dragEnabled = false
+        chartView.scaleXEnabled = false
+        chartView.scaleYEnabled = false
+
+        // Återanvänd markern
+        let marker = StatsMarker()
+        marker.chartView = chartView
+        chartView.marker = marker
+        chartView.drawMarkers = true
+
+        return chartView
+    }
+
+    func updateUIView(_ chartView: Charts.LineChartView, context: Context) {
+        guard (!walshEntries.isEmpty || !actualEntries.isEmpty), !dates.isEmpty else {
+            chartView.data = nil
+            return
+        }
+
+        var dataSets: [LineChartDataSet] = []
+
+        if !walshEntries.isEmpty {
+            let walshSet = LineChartDataSet(entries: walshEntries, label: walshLabel)
+            walshSet.drawValuesEnabled = false
+            walshSet.mode = .linear
+            walshSet.lineWidth = 1.5
+            walshSet.setColor(.systemPurple)
+            walshSet.drawCirclesEnabled = true
+            walshSet.circleRadius = 4
+            walshSet.setCircleColor(.systemPurple)
+            walshSet.drawHorizontalHighlightIndicatorEnabled = false
+            walshSet.drawVerticalHighlightIndicatorEnabled = true
+            dataSets.append(walshSet)
+        }
+
+        if !actualEntries.isEmpty {
+            let actualSet = LineChartDataSet(entries: actualEntries, label: actualLabel)
+            actualSet.drawValuesEnabled = false
+            actualSet.mode = .linear
+            actualSet.lineWidth = 1.5
+            actualSet.setColor(.systemBlue)
+            actualSet.drawCirclesEnabled = true
+            actualSet.circleRadius = 4
+            actualSet.setCircleColor(.systemBlue)
+            actualSet.drawHorizontalHighlightIndicatorEnabled = false
+            actualSet.drawVerticalHighlightIndicatorEnabled = true
+            dataSets.append(actualSet)
+        }
+
+        let data = LineChartData(dataSets: dataSets)
+        chartView.data = data
+
+        // X-axel: från första datum till idag
+        if let firstDate = dates.first {
+            let secondsPerDay: Double = 60 * 60 * 24
+            let totalDays = Date().timeIntervalSince(firstDate) / secondsPerDay
+            let allX = (walshEntries + actualEntries).map { $0.x }
+            let maxEntriesX = allX.max() ?? 0
+            let maxX = max(totalDays, maxEntriesX)
+            chartView.xAxis.axisMinimum = 0
+            chartView.xAxis.axisMaximum = maxX
+            chartView.xAxis.labelCount = 6
+        }
+
+        // Y-axel: min/max från alla serier + lite luft
+        let allY = (walshEntries + actualEntries).map { $0.y }
+        if let minY = allY.min(), let maxY = allY.max() {
+            let range = maxY - minY
+            let padding = range == 0 ? max(1, maxY * 0.1) : range * 0.15
+            chartView.leftAxis.axisMinimum = minY - padding
+            chartView.leftAxis.axisMaximum = maxY + padding
+        }
+
+        chartView.notifyDataSetChanged()
     }
 }

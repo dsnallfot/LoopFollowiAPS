@@ -37,7 +37,7 @@ struct ProfileSchedulesView: View {
 
     enum Mode: String, CaseIterable {
         case profile = "Profilinställningar"
-        case user = "Användare"
+        case user = "Hälsodata"
     }
 
     enum SectionType: String, CaseIterable {
@@ -804,6 +804,18 @@ private struct UserDataStatsView: View {
         var id: String { rawValue }
     }
 
+    enum ComparisonMetric: String, CaseIterable, Identifiable {
+        case tdd = "TDD"
+        case basal = "Basal"
+        case isf = "ISF"
+        case morningCR = "Morgon"
+        case dayCR = "Dag"
+
+        var id: String { rawValue }
+    }
+
+    @State private var selectedComparison: ComparisonMetric = .tdd
+
     private var sortedProfiles: [UserProfileEntry] {
         Storage.shared.userProfiles
             .sorted { $0.updatedAt < $1.updatedAt }
@@ -813,6 +825,14 @@ private struct UserDataStatsView: View {
         let entries: [ChartDataEntry]
         let dates: [Date]
         let style: LineChartStyle
+    }
+
+    private struct WalshChartConfig {
+        let walshEntries: [ChartDataEntry]
+        let actualEntries: [ChartDataEntry]
+        let dates: [Date]
+        let walshLabel: String
+        let actualLabel: String
     }
 
     /// Bygger entries + datum + style för aktuell metric
@@ -879,12 +899,79 @@ private struct UserDataStatsView: View {
         return ChartConfig(entries: entries, dates: dates, style: style)
     }
 
+    /// Bygger entries för jämförelse mellan Walsh-baseline och inställt värde
+    private var walshChartConfig: WalshChartConfig? {
+        let walshExtractor: (UserProfileEntry) -> Double?
+        let actualExtractor: (UserProfileEntry) -> Double?
+        let walshLabel: String
+        let actualLabel: String
+
+        switch selectedComparison {
+        case .tdd:
+            walshExtractor = { $0.walshTDD }
+            actualExtractor = { $0.tdd }
+            walshLabel = "Walsh TDD"
+            actualLabel = "Aktuell TDD (14d)"
+        case .basal:
+            walshExtractor = { $0.walshBasal }
+            actualExtractor = { $0.actualBasal }
+            walshLabel = "Walsh Basal"
+            actualLabel = "Aktuell Basal"
+        case .isf:
+            walshExtractor = { $0.walsh100ISF }
+            actualExtractor = { $0.actualAverageISF }
+            walshLabel = "Walsh 100-regeln ISF"
+            actualLabel = "Aktuell ISF (medel)"
+        case .morningCR:
+            walshExtractor = { $0.walsh300CR }
+            actualExtractor = { $0.actualMorningCR }
+            walshLabel = "Walsh 300-regeln CR"
+            actualLabel = "Aktuell CR morgon"
+        case .dayCR:
+            walshExtractor = { $0.walsh500CR }
+            actualExtractor = { $0.actualDayCR }
+            walshLabel = "Walsh 500-regeln CR"
+            actualLabel = "Aktuell CR dag"
+        }
+
+        guard let firstDate = sortedProfiles.first?.updatedAt else {
+            return nil
+        }
+        let secondsPerDay: Double = 60 * 60 * 24
+
+        var walshEntries: [ChartDataEntry] = []
+        var actualEntries: [ChartDataEntry] = []
+        let dates: [Date] = sortedProfiles.map { $0.updatedAt }
+
+        for entry in sortedProfiles {
+            let daysSinceStart = entry.updatedAt.timeIntervalSince(firstDate) / secondsPerDay
+
+            if let walshValue = walshExtractor(entry) {
+                walshEntries.append(ChartDataEntry(x: daysSinceStart, y: walshValue))
+            }
+            if let actualValue = actualExtractor(entry) {
+                actualEntries.append(ChartDataEntry(x: daysSinceStart, y: actualValue))
+            }
+        }
+
+        guard !walshEntries.isEmpty || !actualEntries.isEmpty else { return nil }
+
+        return WalshChartConfig(
+            walshEntries: walshEntries,
+            actualEntries: actualEntries,
+            dates: dates,
+            walshLabel: walshLabel,
+            actualLabel: actualLabel
+        )
+    }
+
     var body: some View {
         ZStack {
             ThemeBackground()
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
+                // Övre graf – enskild metric över tid
                 Picker("Metric", selection: $selectedMetric) {
                     ForEach(Metric.allCases) { metric in
                         Text(metric.rawValue).tag(metric)
@@ -900,13 +987,49 @@ private struct UserDataStatsView: View {
                         title: selectedMetric.rawValue,
                         style: chartConfig.style
                     )
-                    .frame(height: 260)
+                    .frame(height: 250)
                     .padding(.horizontal)
+                    .padding(.bottom, 10)
                 } else {
                     Text("Ingen data att visa ännu.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                         .padding()
+                        .padding(.bottom, 10)
+                }
+
+                // Nedre graf – Walsh baseline vs inställt värde
+                if let walshConfig = walshChartConfig {
+                    Picker("WalshMetric", selection: $selectedComparison) {
+                        ForEach(ComparisonMetric.allCases) { metric in
+                            Text(metric.rawValue).tag(metric)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+
+                    Text("Jämförelse aktuella inställningar vs Walsh baseline")
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .padding(.top, 4)
+                        .padding(.bottom, -8)
+
+                    WalshComparisonLineChartWrapper(
+                        walshEntries: walshConfig.walshEntries,
+                        actualEntries: walshConfig.actualEntries,
+                        dates: walshConfig.dates,
+                        title: selectedComparison.rawValue,
+                        walshLabel: walshConfig.walshLabel,
+                        actualLabel: walshConfig.actualLabel
+                    )
+                    .frame(height: 270)
+                    .padding(.horizontal)
+                } else {
+                    Text("Ingen Walsh-data att jämföra ännu.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
                 }
 
                 Spacer()

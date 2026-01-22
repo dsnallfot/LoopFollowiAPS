@@ -139,51 +139,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         +++ Section("\nTrio inställningar och status")
         <<< ButtonRow() {
-            $0.title = "Trio användare & profilinställningar"
-            $0.presentationMode = .presentModally(
-                controllerProvider: .callback(builder: {
-                    let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
-                    let profileSchedulesView = ProfileSchedulesView(onDone: { [weak self] in
-                        self?.dismissPresentedController()
-                    })
-                        .preferredColorScheme(isDark ? .dark : .light)
-                        .environment(\.colorScheme, isDark ? .dark : .light)
-
-                    let hostingController = UIHostingController(rootView: profileSchedulesView)
-                    hostingController.title = "Trio profil"
-
-                    // Transparent hosting background
-                    hostingController.view.backgroundColor = .clear
-                    hostingController.view.isOpaque = false
-                    hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    let nav = UINavigationController(rootViewController: hostingController)
-                    nav.modalPresentationStyle = .formSheet
-
-                    // Transparent modal container
-                    nav.view.backgroundColor = .clear
-                    nav.view.isOpaque = false
-                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    // Transparent navigation bar
-                    let appearance = UINavigationBarAppearance()
-                    appearance.configureWithTransparentBackground()
-                    nav.navigationBar.standardAppearance = appearance
-                    nav.navigationBar.scrollEdgeAppearance = appearance
-                    nav.navigationBar.compactAppearance = appearance
-
-                    // Match current interface style
-                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
-                    hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
-
-                    return nav
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() {
-            $0.title = "Trio användarinställningar & analys"
+            $0.title = "Trio algoritminställningar & analys"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -231,9 +187,52 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             )
         }
         
+        <<< ButtonRow() {
+            $0.title = "Trio hälsodata & profilinställningar"
+            $0.presentationMode = .presentModally(
+                controllerProvider: .callback(builder: {
+                    let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
+                    let profileSchedulesView = ProfileSchedulesView(onDone: { [weak self] in
+                        self?.dismissPresentedController()
+                    })
+                        .preferredColorScheme(isDark ? .dark : .light)
+                        .environment(\.colorScheme, isDark ? .dark : .light)
+
+                    let hostingController = UIHostingController(rootView: profileSchedulesView)
+                    hostingController.title = "Trio profil"
+
+                    // Transparent hosting background
+                    hostingController.view.backgroundColor = .clear
+                    hostingController.view.isOpaque = false
+                    hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+                    let nav = UINavigationController(rootViewController: hostingController)
+                    nav.modalPresentationStyle = .formSheet
+
+                    // Transparent modal container
+                    nav.view.backgroundColor = .clear
+                    nav.view.isOpaque = false
+                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+                    // Transparent navigation bar
+                    let appearance = UINavigationBarAppearance()
+                    appearance.configureWithTransparentBackground()
+                    nav.navigationBar.standardAppearance = appearance
+                    nav.navigationBar.scrollEdgeAppearance = appearance
+                    nav.navigationBar.compactAppearance = appearance
+
+                    // Match current interface style
+                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+                    hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+                    return nav
+                }),
+                onDismiss: nil
+            )
+        }
         
         <<< ButtonRow() {
-            $0.title = "Trio oref status"
+            $0.title = "Trio oref realtidsstatus"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -333,7 +332,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                 )
             }
         
-        +++ Section(header: "\nDatafångst inställningar", footer: "")
+        +++ Section(header: "\nDatafångstinställningar", footer: "")
         <<< SegmentedRow<String>("units") { row in
             row.title = "Enhet"
             row.options = ["mg/dL", "mmol/L"]
