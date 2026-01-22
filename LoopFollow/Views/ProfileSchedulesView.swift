@@ -21,6 +21,7 @@ private struct LogSearchItem: Identifiable {
 
 @available(iOS 26.0, *)
 struct ProfileSchedulesView: View {
+    @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel = ProfileSchedulesViewModel()
     
     @State private var selectedSection: SectionType = .targets // Default section
@@ -184,7 +185,7 @@ struct ProfileSchedulesView: View {
         .padding(.top, 8)
 
         LineChartWrapper(chartData: multiChartData, title: selectedSection.displayName)
-            .frame(height: 150)
+            .frame(height: 200)
             .padding(.horizontal)
 
         List {
@@ -332,7 +333,7 @@ struct ProfileSchedulesView: View {
                         } label: {
                             Image(systemName: "plus")
                         }
-                        .padding(.leading, 4)
+                        .padding(.leading, 6)
                         .accessibilityLabel("Lägg till användardata")
                         
                         Button {
@@ -350,7 +351,7 @@ struct ProfileSchedulesView: View {
                         } label: {
                             Image(systemName: "square.and.arrow.down")
                         }
-                        .padding(.trailing, 4)
+                        .padding(.trailing, 6)
                         .accessibilityLabel("Importera användardata (CSV)")
                     }
                 }
@@ -369,15 +370,8 @@ struct ProfileSchedulesView: View {
             
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 Button("Klar") {
-                    // Dismiss current modal / view
-                    // If this view is presented modally, this will close it
-                    UIApplication.shared.sendAction(
-                        #selector(UIResponder.resignFirstResponder),
-                        to: nil,
-                        from: nil,
-                        for: nil
-                    )
-                }
+                            dismiss()
+                        }
             }
         }
         .alert(
@@ -417,7 +411,18 @@ struct ProfileSchedulesView: View {
             case .success(let urls):
                 guard let url = urls.first else { return }
                 do {
-                    let data = try Data(contentsOf: url)
+                    var dataURL = url
+                    var needsStop = false
+                    if dataURL.startAccessingSecurityScopedResource() {
+                        needsStop = true
+                    }
+                    defer {
+                        if needsStop {
+                            dataURL.stopAccessingSecurityScopedResource()
+                        }
+                    }
+
+                    let data = try Data(contentsOf: dataURL)
                     if let csvString = String(data: data, encoding: .utf8) {
                         Storage.shared.importUserProfilesCSV(from: csvString)
                     } else {
