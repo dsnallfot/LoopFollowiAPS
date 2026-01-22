@@ -139,6 +139,49 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         +++ Section("\nTrio inställningar och status")
         <<< ButtonRow() {
+            $0.title = "Trio användare och profil"
+            $0.presentationMode = .presentModally(
+                controllerProvider: .callback(builder: {
+                    let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
+                    let profileSchedulesView = ProfileSchedulesView()
+                        .preferredColorScheme(isDark ? .dark : .light)
+                        .environment(\.colorScheme, isDark ? .dark : .light)
+
+                    let hostingController = UIHostingController(rootView: profileSchedulesView)
+                    hostingController.title = "Trio profil"
+
+
+                    // Transparent hosting background
+                    hostingController.view.backgroundColor = .clear
+                    hostingController.view.isOpaque = false
+                    hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+
+                    let nav = UINavigationController(rootViewController: hostingController)
+                    nav.modalPresentationStyle = .formSheet
+
+                    // Transparent modal container
+                    nav.view.backgroundColor = .clear
+                    nav.view.isOpaque = false
+                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+                    // Transparent navigation bar
+                    let appearance = UINavigationBarAppearance()
+                    appearance.configureWithTransparentBackground()
+                    nav.navigationBar.standardAppearance = appearance
+                    nav.navigationBar.scrollEdgeAppearance = appearance
+                    nav.navigationBar.compactAppearance = appearance
+
+                    // Match current interface style
+                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+                    hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
+
+                    return nav
+                }),
+                onDismiss: nil
+            )
+        }
+        
+        <<< ButtonRow() {
             $0.title = "Trio användarinställningar & analys"
             $0.presentationMode = .presentModally(
                 controllerProvider: .callback(builder: {
@@ -205,54 +248,6 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                         target: self,
                         action: #selector(self.dismissPresentedController)
                     )
-
-                    // Transparent hosting background
-                    hostingController.view.backgroundColor = .clear
-                    hostingController.view.isOpaque = false
-                    hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    let nav = UINavigationController(rootViewController: hostingController)
-                    nav.modalPresentationStyle = .formSheet
-
-                    // Transparent modal container
-                    nav.view.backgroundColor = .clear
-                    nav.view.isOpaque = false
-                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    // Transparent navigation bar
-                    let appearance = UINavigationBarAppearance()
-                    appearance.configureWithTransparentBackground()
-                    nav.navigationBar.standardAppearance = appearance
-                    nav.navigationBar.scrollEdgeAppearance = appearance
-                    nav.navigationBar.compactAppearance = appearance
-
-                    // Match current interface style
-                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
-                    hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
-
-                    return nav
-                }),
-                onDismiss: nil
-            )
-        }
-        <<< ButtonRow() {
-            $0.title = "Trio profil"
-            $0.presentationMode = .presentModally(
-                controllerProvider: .callback(builder: {
-                    let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
-                    let profileSchedulesView = ProfileSchedulesView()
-                        .preferredColorScheme(isDark ? .dark : .light)
-                        .environment(\.colorScheme, isDark ? .dark : .light)
-
-                    let hostingController = UIHostingController(rootView: profileSchedulesView)
-                    hostingController.title = "Trio profil"
-
-                    /*hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
-                        title: "Klar",
-                        style: .plain,
-                        target: self,
-                        action: #selector(self.dismissPresentedController)
-                    )*/
 
                     // Transparent hosting background
                     hostingController.view.backgroundColor = .clear

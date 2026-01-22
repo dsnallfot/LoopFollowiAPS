@@ -13,13 +13,13 @@ import UIKit
 import HealthKit
 import UniformTypeIdentifiers
 
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 private struct LogSearchItem: Identifiable {
     let term: String
     var id: String { term }
 }
 
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct ProfileSchedulesView: View {
     @ObservedObject var viewModel = ProfileSchedulesViewModel()
     
@@ -280,6 +280,7 @@ struct ProfileSchedulesView: View {
         .background(Color.clear)
     }
 
+    @available(iOS 26.0, *)
     var body: some View {
         ZStack {
             ThemeBackground()
@@ -355,13 +356,29 @@ struct ProfileSchedulesView: View {
                 }
             }
             
-            ToolbarItem(placement: .navigationBarTrailing) {
-            Button {
-                showStatsView = true
-            } label: {
-                Image(systemName: "chart.line.uptrend.xyaxis")
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                if selectedMode == .user {
+                    Button {
+                        showStatsView = true
+                    } label: {
+                        Image(systemName: "chart.bar.xaxis.ascending")
+                    }
+                }
             }
-        }
+            ToolbarSpacer(placement: .topBarTrailing)
+            
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                Button("Klar") {
+                    // Dismiss current modal / view
+                    // If this view is presented modally, this will close it
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil,
+                        from: nil,
+                        for: nil
+                    )
+                }
+            }
         }
         .alert(
             "Profil uppdaterades \n\(ProfileManager.shared.profileCreatedAtFormatted ?? "Okänt")",
@@ -558,11 +575,13 @@ private struct UserDataViewController: View {
                             }
                         }
                     }
-                    .onLongPressGesture {
-                        if profileImage != nil {
-                            showDeleteImageAlert = true
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+                            if profileImage != nil {
+                                showDeleteImageAlert = true
+                            }
                         }
-                    }
+                    )
                     Spacer()
 
                     // Frames 2 & 3: Rubriker + värden
