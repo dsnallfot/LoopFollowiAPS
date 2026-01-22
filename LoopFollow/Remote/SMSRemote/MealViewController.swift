@@ -185,7 +185,7 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
         if popupView == nil {
             // Create a new UIView for the popup
             let popupView = UIView()
-            popupView.backgroundColor = UIColor.secondarySystemBackground.withAlphaComponent(1.0)
+            popupView.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.9)
             popupView.layer.cornerRadius = 30
             popupView.translatesAutoresizingMaskIntoConstraints = false
             
