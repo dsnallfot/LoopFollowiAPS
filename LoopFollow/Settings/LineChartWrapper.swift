@@ -223,7 +223,7 @@ struct StatsLineChartWrapper: UIViewRepresentable {
         dataSet.lineWidth = 1.0
         // Dölj vertikal/horisontell highlight-indikator (crosshair)
         dataSet.drawHorizontalHighlightIndicatorEnabled = false
-        dataSet.drawVerticalHighlightIndicatorEnabled = false
+        dataSet.drawVerticalHighlightIndicatorEnabled = true
 
         // 🔹 Style från LineChartStyle
         dataSet.setColor(style.lineColor)
@@ -241,6 +241,16 @@ struct StatsLineChartWrapper: UIViewRepresentable {
 
         let data = LineChartData(dataSet: dataSet)
         chartView.data = data
+
+        // 🔹 Dynamisk X-axel: från första datum till idag
+        if let firstDate = dates.first {
+            let secondsPerDay: Double = 60 * 60 * 24
+            let totalDays = Date().timeIntervalSince(firstDate) / secondsPerDay
+            let maxX = max(totalDays, entries.map { $0.x }.max() ?? 0)
+            chartView.xAxis.axisMinimum = 0
+            chartView.xAxis.axisMaximum = maxX
+            chartView.xAxis.labelCount = 6   // lagom antal etiketter
+        }
 
         // 🔹 Dynamisk Y-axel (min/max + lite luft)
         let ys = entries.map { $0.y }
@@ -270,9 +280,11 @@ final class StatsMarker: MarkerView {
 
         backgroundColor = UIColor.secondarySystemBackground
         layer.cornerRadius = 6
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.white.cgColor
         layer.masksToBounds = true
 
-        label.font = UIFont.systemFont(ofSize: 11)
+        label.font = UIFont.systemFont(ofSize: 13)
         label.textColor = UIColor.label
         addSubview(label)
     }
@@ -303,27 +315,32 @@ final class StatsMarker: MarkerView {
     override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
         // Centrera markern horisontellt och lägg den ovanför punkten
         let size = self.bounds.size
-        return CGPoint(x: -size.width / 2, y: -size.height - 8)
+        return CGPoint(x: -size.width / 2, y: -size.height - 100 )
     }
 }
 
 // Formatter för datum på X-axeln (yyMM)
 class StatsDateAxisFormatter: AxisValueFormatter {
-    private let dates: [Date]
+    private let startDate: Date
     private let df: DateFormatter
+    private let calendar = Calendar(identifier: .gregorian)
 
     init(dates: [Date]) {
-        self.dates = dates
+        // Använd första datumet som startpunkt för x = 0
+        self.startDate = dates.first ?? Date()
         let df = DateFormatter()
         df.locale = Locale(identifier: "sv_SE")
-        df.dateFormat = "yyyyMM"
+        df.dateFormat = "yy-MM"
         self.df = df
     }
 
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
-        guard !dates.isEmpty else { return "" }
-        let index = max(0, min(dates.count - 1, Int(round(value))))
-        return df.string(from: dates[index])
+        // value ≈ antal dagar sedan startDate
+        let dayOffset = Int(round(value))
+        guard let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate) else {
+            return ""
+        }
+        return df.string(from: date)
     }
 }
 

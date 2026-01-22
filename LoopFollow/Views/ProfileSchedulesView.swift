@@ -854,10 +854,16 @@ private struct UserDataStatsView: View {
         var entries: [ChartDataEntry] = []
         var dates: [Date] = []
 
+        // 🔹 Första datumet blir x = 0
+        guard let firstDate = sortedProfiles.first?.updatedAt else {
+            return nil
+        }
+        let secondsPerDay: Double = 60 * 60 * 24
+
         for entry in sortedProfiles {
             guard let value = valueExtractor(entry) else { continue }
-            let x = Double(entries.count)       // 0,1,2,... per datapunkt
-            entries.append(ChartDataEntry(x: x, y: value))
+            let daysSinceStart = entry.updatedAt.timeIntervalSince(firstDate) / secondsPerDay
+            entries.append(ChartDataEntry(x: daysSinceStart, y: value))
             dates.append(entry.updatedAt)
         }
 
@@ -866,7 +872,7 @@ private struct UserDataStatsView: View {
         let style = LineChartStyle(
             lineColor: baseColor,
             showCircles: true,
-            circleRadius: 6,   // ≈10pt diameter
+            circleRadius: 6,
             circleColor: circleColorProvider
         )
 
