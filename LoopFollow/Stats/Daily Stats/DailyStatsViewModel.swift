@@ -121,6 +121,61 @@ final class DailyStatsViewModel: ObservableObject {
         return Double(numberOfDaysMeetingTitrTarget) / Double(scope)
     }
 
+    // MARK: - Aggregated averages for DailyStatsView
+
+    /// Genomsnittliga värden baserat på de dagar som faktiskt är i scope (rowsWithSufficientGlucose).
+    var averageCarbs: Double? {
+        let values = rowsWithSufficientGlucose.compactMap { $0.totalCarbs }
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    var averageTDD: Double? {
+        let values = rowsWithSufficientGlucose.compactMap { $0.insulinTDD }
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    var averageMeanGlucose: Double? {
+        let values = rowsWithSufficientGlucose.compactMap { $0.meanGlucoseMmol }
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    /// Genomsnittlig andel låga värden (%).
+    var averageLowPercent: Double? {
+        let values = rowsWithSufficientGlucose.compactMap { $0.lowPercent }
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    /// Genomsnittlig tid i tight målområde (TITR, %).
+    var averageTitr: Double? {
+        let values = rowsWithSufficientGlucose.compactMap { $0.tightRangePercent }
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    /// Genomsnittlig tid i målområde (TIR, %).
+    var averageTir: Double? {
+        let values = rowsWithSufficientGlucose.compactMap { $0.timeInRangePercent }
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    var averageStdDev: Double? {
+        let values = rowsWithSufficientGlucose.compactMap { $0.stdDevMmol }
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
+    /// Genomsnittlig teoretisk basal (E/dag) från profilen.
+    var averageProfileBasal: Double? {
+        let values = rowsWithSufficientGlucose.compactMap { $0.profileBasal }
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
     private let daysBack: Int
 
     init(dataService: StatsDataService, daysBack: Int = 90, todayTDDOverride: Double? = nil) {

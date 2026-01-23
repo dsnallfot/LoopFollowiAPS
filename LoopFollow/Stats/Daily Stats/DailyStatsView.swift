@@ -155,6 +155,10 @@ struct DailyStatsView: View {
                     summarySection
                         .padding(.horizontal, 10)
                         .padding(.top, 8)
+                        .padding(.bottom, 16)
+
+                    averagesSection
+                        .padding(.horizontal, 12)
 
                     ScrollView(.horizontal) {
                         VStack(alignment: .leading, spacing: 0) {
@@ -170,11 +174,11 @@ struct DailyStatsView: View {
                                                 .frame(width: weekdayWidth, alignment: .center)
                                                 .font(.system(size: 10, weight: .semibold))
                                                 .foregroundColor(.secondary)
-
+                                            
                                             Text(dateFormatter.string(from: row.date))
                                                 .frame(width: dateWidth, alignment: .leading)
                                                 .font(.system(size: 10).monospacedDigit())
-
+                                            
                                             numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
                                             numberCell(row.insulinTDD, width: insulinWidth)
                                             meanCell(row.meanGlucoseMmol)
@@ -215,7 +219,7 @@ struct DailyStatsView: View {
                             }
                         }
                         .padding(.horizontal, 10)
-                        .padding(.top, 12)
+                        .padding(.top, 10)
                     }
                 }
             }
@@ -481,10 +485,10 @@ struct DailyStatsView: View {
                                 Text("under ")
                                 Text(showingTitrSummary ? daysMeetingTitrString : daysMeetingTirString)
                                     .fontWeight(.bold)
-                                Text(" av de senaste ")
+                                Text(" av ")
                                 Text(daysInScopeString)
                                     .fontWeight(.bold)
-                                Text(" dagarna.")
+                                Text(" dagar.")
                             }
                         }
                     }
@@ -585,15 +589,15 @@ struct DailyStatsView: View {
                 .font(.system(size: 10, weight: .semibold))
 
             Text("Datum")
-                .frame(width: dateWidth, alignment: .center)
+                .frame(width: dateWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
-            Text("Kolh")
-                .frame(width: carbsWidth, alignment: .leading)
+            Text("KH")
+                .frame(width: carbsWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
             Text("TDD")
-                .frame(width: insulinWidth, alignment: .leading)
+                .frame(width: insulinWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
             Text("Medel")
@@ -612,7 +616,7 @@ struct DailyStatsView: View {
                 .frame(width: tirWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
-            Text("StAv")
+            Text("StdAv")
                 .frame(width: stdWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
@@ -750,6 +754,150 @@ struct DailyStatsView: View {
         }
         return root
     }
+    
+    // MARK: - Averages Section
+
+    private var averagesSection: some View {
+        // Vi baserar oss på samma scope som tabellen (rowsWithSufficientGlucose)
+        let avgCarbs = viewModel.averageCarbs
+        let avgTDD = viewModel.averageTDD
+        let avgMean = viewModel.averageMeanGlucose
+        let avgLow = viewModel.averageLowPercent
+        let avgTitr = viewModel.averageTitr
+        let avgTir = viewModel.averageTir
+        let avgStd = viewModel.averageStdDev
+        let avgBasal = viewModel.averageProfileBasal
+
+        return HStack(spacing: 0) {
+            averageBadge(
+                title: "KH",
+                value: avgCarbs.map { String(format: "%.0f g", $0) } ?? "—",
+                background: Color(UIColor.carbs).opacity(avgCarbs == nil ? 0.25 : 0.8)
+            )
+
+            Spacer(minLength: 0)
+
+            averageBadge(
+                title: "TDD",
+                value: avgTDD.map { String(format: "%.1f E", $0) } ?? "—",
+                background: Color(UIColor.insulin).opacity(avgTDD == nil ? 0.25 : 0.8)
+            )
+            
+            Spacer(minLength: 0)
+
+            averageBadge(
+                title: "Basal",
+                value: avgBasal.map { String(format: "%.1f E", $0) } ?? "—",
+                background: Color(UIColor.insulin).opacity(avgBasal == nil ? 0.25 : 0.8)
+            )
+
+            Spacer(minLength: 0)
+
+            // Medel BG
+            let meanColor: Color = {
+                guard let v = avgMean else { return .gray.opacity(0.4) }
+                if v <= viewModel.bgAverageGreatThreshold {
+                    return .green.opacity(0.8)
+                } else if v <= viewModel.bgAverageOKThreshold {
+                    return .orange.opacity(0.8)
+                } else {
+                    return .red.opacity(0.8)
+                }
+            }()
+            averageBadge(
+                title: "Medel",
+                value: avgMean.map { String(format: "%.1f", $0) } ?? "—",
+                background: meanColor
+            )
+
+            Spacer(minLength: 0)
+
+            // Låg %
+            let lowColor: Color = {
+                guard let p = avgLow else { return .gray.opacity(0.4) }
+                let fraction = (p / 100.0)
+                if fraction <= viewModel.lowGlucoseGreatThreshold {
+                    return .green.opacity(0.8)
+                } else if fraction <= viewModel.lowGlucoseOKThreshold {
+                    return .orange.opacity(0.8)
+                } else {
+                    return .red.opacity(0.8)
+                }
+            }()
+
+            // TITR / TIR (beroende på showingTitrSummary)
+            let titrText = avgTitr.map { String(format: "%.0f%%", $0) } ?? "—"
+            let tirText = avgTir.map { String(format: "%.0f%%", $0) } ?? "—"
+            let combinedText = showingTitrSummary ? titrText : tirText
+            let titrTirColor: Color = {
+                if showingTitrSummary {
+                    guard let p = avgTitr else { return .gray.opacity(0.4) }
+                    let fraction = p / 100.0
+                    return fraction >= viewModel.titrTargetThreshold ? .green.opacity(0.8) : .red.opacity(0.8)
+                } else {
+                    guard let p = avgTir else { return .gray.opacity(0.4) }
+                    let fraction = p / 100.0
+                    return fraction >= viewModel.tirTargetThreshold ? .green.opacity(0.8) : .red.opacity(0.8)
+                }
+            }()
+            
+            averageBadge(
+                title: "Låg",
+                value: avgLow.map { String(format: "%.1f %%", $0) } ?? "—",
+                background: lowColor
+            )
+
+            Spacer(minLength: 0)
+            
+            averageBadge(
+                title: showingTitrSummary ? "TITR" : "TIR",
+                value: combinedText,
+                background: titrTirColor
+            )
+
+            Spacer(minLength: 0)
+
+            // Std Av
+            let stdColor: Color = {
+                guard let s = avgStd else { return .gray.opacity(0.4) }
+                if s <= viewModel.stdDevGreatThreshold {
+                    return .green.opacity(0.8)
+                } else if s <= viewModel.stdDevOkThreshold {
+                    return .orange.opacity(0.8)
+                } else {
+                    return .red.opacity(0.8)
+                }
+            }()
+            averageBadge(
+                title: "StdAv",
+                value: avgStd.map { String(format: "%.1f", $0) } ?? "—",
+                background: stdColor
+            )
+        }
+        .frame(height: 32)
+    }
+
+    // MARK: - Average Badge Helper
+
+    private func averageBadge(title: String, value: String, background: Color) -> some View {
+        ZStack {
+            Capsule()
+                .fill(background)
+            VStack {
+                Text(title)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(.white)
+                Text(value)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 1)
+        }
+        .frame(width: 47, height: 32)
+    }
+
 }
 
 // MARK: - UIActivityViewController bridge

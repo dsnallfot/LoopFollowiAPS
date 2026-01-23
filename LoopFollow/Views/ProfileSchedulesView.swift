@@ -636,6 +636,7 @@ private struct UserDataViewController: View {
                 .padding(.vertical, 16)
                 .padding(.leading, 36)
                 .padding(.trailing, 36)
+                Divider()
 
                 // Sektion: tabell med historik
                 if profiles.isEmpty {
