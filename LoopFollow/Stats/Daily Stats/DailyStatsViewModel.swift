@@ -152,24 +152,33 @@ final class DailyStatsViewModel: ObservableObject {
 
         DispatchQueue.global(qos: .userInitiated).async {
             let calendar = Calendar.current
-            let now = Date()
 
-            // 🎯 Antal dygn vi vill visa i tabellen (1, 7, 14, 30, 90)
-            let daysToShow = max(1, self.dataService.daysToAnalyze)
-            
+            // Använd samma analysintervall som övrig AggregatedStats-logik
+            let interval = self.dataService.currentStatsInterval()
+            let intervalStart = interval.start
+            let intervalEndExclusive = interval.end
+
+            // Justera till kalenderdygn enligt intervallet:
+            // firstDayStart = 00:00 för äldsta dygnet i fönstret
+            // endDayStart = 00:00 för dagen efter sista dygnet i fönstret
+            let firstDayStart = calendar.startOfDay(for: intervalStart)
+            let endDayStart = calendar.startOfDay(for: intervalEndExclusive)
+
+            // Antal dygn i analysfönstret (t.ex. 1, 3, 7, 14, 30, 90)
+            let components = calendar.dateComponents([.day], from: firstDayStart, to: endDayStart)
+            let daysToShow = max(1, components.day ?? 1)
+
             LogManager.shared.log(
                 category: .temporaryDebug,
-                message: "DailyStatsViewModel.loadDailyStats – daysToAnalyze=\(self.dataService.daysToAnalyze)",
+                message: """
+                DailyStatsViewModel.loadDailyStats – daysToAnalyze=\(self.dataService.daysToAnalyze), daysToShow=\(daysToShow)
+                interval=\(intervalStart) → \(intervalEndExclusive)
+                """,
                 isDebug: false
             )
 
-            // 🎯 Vi vill alltid ha kalenderbaserade dygn:
-            //    [periodStart (00:00 för äldsta dagen) .. endOfToday (00:00 imorgon))
-            let todayStart = calendar.startOfDay(for: now)
-            guard
-                let periodStart = calendar.date(byAdding: .day, value: -(daysToShow - 1), to: todayStart),
-                let endOfToday = calendar.date(byAdding: .day, value: 1, to: todayStart)
-            else {
+            // Sista hela dygnet i fönstret är dygnet före endDayStart
+            guard let lastDayStart = calendar.date(byAdding: .day, value: -1, to: endDayStart) else {
                 DispatchQueue.main.async {
                     self.isLoading = false
                     self.errorMessage = "Kunde inte beräkna datumintervall."
@@ -177,13 +186,18 @@ final class DailyStatsViewModel: ObservableObject {
                 return
             }
 
-            let analysisInterval = DateInterval(start: periodStart, end: endOfToday)
+            let analysisInterval = DateInterval(start: firstDayStart, end: endDayStart)
 
             // 1. Hämta alla BG-värden inom detta intervall
             let bgAll = self.dataService.getBGData(in: analysisInterval)
             LogManager.shared.log(
                 category: .analysis,
-                message: "DailyStatsViewModel.loadDailyStats - daysToShow=\(daysToShow), periodStart=\(periodStart), endOfToday=\(endOfToday), bgAllCount=\(bgAll.count)",
+                message: """
+                DailyStatsViewModel.loadDailyStats
+                daysToShow=\(daysToShow)
+                interval=\(analysisInterval.start) → \(analysisInterval.end)
+                bgAllCount=\(bgAll.count)
+                """,
                 isDebug: false
             )
             if bgAll.isEmpty {
@@ -264,9 +278,9 @@ final class DailyStatsViewModel: ObservableObject {
             // 6. Bygg EN rad per kalenderdag, alltid exakt daysToShow st
             var allRows: [DailyStatRow] = []
 
-            // Nyaste först: 0 = idag, 1 = igår, osv
+            // Nyaste först: 0 = sista dagen i intervallet, 1 = dagen före, osv
             for offset in 0..<daysToShow {
-                guard let dayStart = calendar.date(byAdding: .day, value: -offset, to: todayStart),
+                guard let dayStart = calendar.date(byAdding: .day, value: -offset, to: lastDayStart),
                       let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)
                 else { continue }
 

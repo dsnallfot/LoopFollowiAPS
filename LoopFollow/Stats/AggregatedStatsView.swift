@@ -18,6 +18,8 @@ struct AggregatedStatsView: View {
     @State private var showProfileBasal: Bool
     @State private var showLowPercentage: Bool
     @State private var selectedPeriod: Int
+    @State private var startDate: Date
+    @State private var endDate: Date
     @State private var isLoadingData = false
     @State private var lastForcedReloadAt: Date? = nil
     private let forcedReloadThrottleSeconds: TimeInterval = 5 * 60
@@ -35,9 +37,23 @@ struct AggregatedStatsView: View {
         _showDextroAmount = State(initialValue: Storage.shared.showDextroAmount.value)
         _showProfileBasal = State(initialValue: Storage.shared.showProfileBasal.value)
         _showLowPercentage = State(initialValue: Storage.shared.showLowPercentage.value)
-        
+
         let savedPeriod = UserDefaults.standard.object(forKey: "AggregatedStatsSelectedPeriod") as? Int ?? 14
-        _selectedPeriod = State(initialValue: savedPeriod)
+        // Normalisera så att ett ev. gammalt sparat 0-värde ("Idag") blir 1 dag
+        let normalizedPeriod = (savedPeriod == 0 ? 1 : savedPeriod)
+        _selectedPeriod = State(initialValue: normalizedPeriod)
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        // Default-fönster ska alltid sluta igår (hela kalenderdygn)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        let span = max(normalizedPeriod, 1)
+        let defaultEnd = yesterday
+        let defaultStart = calendar.date(byAdding: .day, value: -(span - 1), to: defaultEnd) ?? defaultEnd
+
+        _startDate = State(initialValue: defaultStart)
+        _endDate = State(initialValue: defaultEnd)
+
         _dailyStatsVM = StateObject(wrappedValue: DailyStatsViewModel(
             dataService: viewModel.dataService,
             daysBack: 90,
@@ -55,6 +71,7 @@ struct AggregatedStatsView: View {
                     Picker("Period", selection: $selectedPeriod) {
                         Text("Idag").tag(0)
                         Text("1 d").tag(1)
+                        Text("2 d").tag(2)
                         Text("3 d").tag(3)
                         Text("7 d").tag(7)
                         Text("14 d").tag(14)
@@ -67,12 +84,52 @@ struct AggregatedStatsView: View {
                     .padding(.bottom, 8)
                     .onChange(of: selectedPeriod) { newValue in
                         UserDefaults.standard.set(newValue, forKey: "AggregatedStatsSelectedPeriod")
+                        resetDatesForSelectedPeriod()
                         refreshIfNeeded(forceReload: (newValue == 0 || newValue == 1))
                     }
+
+                    HStack {
+                        Text("Vald period:")
+                            .font(.subheadline)
+                            .fontWeight(.regular)
+                            .foregroundColor(Color.secondary)
+                        Spacer()
+
+                        // Begränsa valbara datum till 90 dagar bakåt t.o.m. idag
+                        let bounds = baseDateBounds()
+
+                        DatePicker(
+                            "",
+                            selection: $startDate,
+                            in: bounds.min...bounds.max,
+                            displayedComponents: .date
+                        )
+                        .datePickerStyle(.compact)
+                        .environment(\.locale, Locale(identifier: "sv_SE"))
+                        .labelsHidden()
+
+                        DatePicker(
+                            "",
+                            selection: $endDate,
+                            in: bounds.min...bounds.max,
+                            displayedComponents: .date
+                        )
+                        .datePickerStyle(.compact)
+                        .environment(\.locale, Locale(identifier: "sv_SE"))
+                        .labelsHidden()
+                    }
+                    .padding(.trailing)
+                    .padding(.leading, 28)
+                    .padding(.bottom, 6)
                 }
-                //.background(Color(.systemBackground))
                 .background(Color.clear)
                 .zIndex(1)
+                .onChange(of: startDate) { newValue in
+                    handleStartDateChange(newValue)
+                }
+                .onChange(of: endDate) { newValue in
+                    handleEndDateChange(newValue)
+                }
                 
                 ScrollView {
                     VStack(spacing: 20) {
@@ -168,6 +225,115 @@ struct AggregatedStatsView: View {
         }
     }
 }
+    private func baseDateBounds() -> (min: Date, max: Date) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        // 90-dagars fönster bakåt inkl idag
+        let minDate = calendar.date(byAdding: .day, value: -89, to: today) ?? today
+        return (minDate, today)
+    }
+
+    private func resetDatesForSelectedPeriod() {
+        let calendar = Calendar.current
+        let bounds = baseDateBounds()
+        let today = bounds.max
+
+        if selectedPeriod == 0 {
+            // "Idag" – både start och slut ska peka på dagens datum
+            let todayStart = today
+            startDate = todayStart
+            endDate = todayStart
+            return
+        }
+
+        // Default-fönster slutar alltid igår för alla andra perioder
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+
+        let span = max(selectedPeriod, 1)
+        let newEnd = yesterday
+        let tentativeStart = calendar.date(byAdding: .day, value: -(span - 1), to: newEnd) ?? bounds.min
+        let clampedStart = max(tentativeStart, bounds.min)
+
+        startDate = clampedStart
+        endDate = newEnd
+    }
+
+    private func handleStartDateChange(_ newValue: Date) {
+        // För \"Idag\" låser vi till idag
+        if selectedPeriod == 0 {
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            if startDate != today { startDate = today }
+            if endDate != today { endDate = today }
+            return
+        }
+
+        let calendar = Calendar.current
+        let bounds = baseDateBounds()
+        let span = max(selectedPeriod, 1)
+
+        var newStart = calendar.startOfDay(for: newValue)
+        if newStart < bounds.min { newStart = bounds.min }
+        if newStart > bounds.max { newStart = bounds.max }
+
+        if let tentativeEnd = calendar.date(byAdding: .day, value: span - 1, to: newStart) {
+            if tentativeEnd > bounds.max {
+                let clampedEnd = bounds.max
+                if let adjustedStart = calendar.date(byAdding: .day, value: -(span - 1), to: clampedEnd) {
+                    startDate = adjustedStart
+                    endDate = clampedEnd
+                } else {
+                    startDate = newStart
+                    endDate = bounds.max
+                }
+            } else {
+                startDate = newStart
+                endDate = tentativeEnd
+            }
+        } else {
+            startDate = newStart
+        }
+
+        refreshIfNeeded(forceReload: false)
+    }
+
+    private func handleEndDateChange(_ newValue: Date) {
+        if selectedPeriod == 0 {
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            if startDate != today { startDate = today }
+            if endDate != today { endDate = today }
+            return
+        }
+
+        let calendar = Calendar.current
+        let bounds = baseDateBounds()
+        let span = max(selectedPeriod, 1)
+
+        var newEnd = calendar.startOfDay(for: newValue)
+        if newEnd < bounds.min { newEnd = bounds.min }
+        if newEnd > bounds.max { newEnd = bounds.max }
+
+        if let tentativeStart = calendar.date(byAdding: .day, value: -(span - 1), to: newEnd) {
+            if tentativeStart < bounds.min {
+                let clampedStart = bounds.min
+                if let adjustedEnd = calendar.date(byAdding: .day, value: span - 1, to: clampedStart) {
+                    startDate = clampedStart
+                    endDate = adjustedEnd
+                } else {
+                    startDate = bounds.min
+                    endDate = newEnd
+                }
+            } else {
+                startDate = tentativeStart
+                endDate = newEnd
+            }
+        } else {
+            endDate = newEnd
+        }
+
+        refreshIfNeeded(forceReload: false)
+    }
     
     private var shouldForceReloadOnOpen: Bool {
         // Kort fönster = volatil statistik => alltid hämta senaste när vyn visas
@@ -197,7 +363,15 @@ struct AggregatedStatsView: View {
 
         isLoadingData = true
         DispatchQueue.main.async {
-            viewModel.updatePeriod(selectedPeriod, forceReload: shouldForce) {
+            let useStart = startDate
+            let useEnd = endDate
+
+            viewModel.updatePeriod(
+                selectedPeriod,
+                startDate: useStart,
+                endDate: useEnd,
+                forceReload: shouldForce
+            ) {
                 isLoadingData = false
             }
         }
@@ -215,6 +389,8 @@ struct AggregatedStatsView: View {
             return "idag"
         case 1:
             return "1 dag"
+        case 2:
+            return "2 dagar"
         case 3:
             return "3 dagar"
         case 7:
@@ -368,7 +544,7 @@ struct StatCard: View {
         guard let pair = tooltipValuePair else { return nil }
         let pct = (pair.curr - pair.prev) / pair.prev * 100.0
         
-        let rawLabel = periodLabel ?? "föregående period"
+        let rawLabel = periodLabel ?? "fg period"
         let label: String
         let format: String
         
@@ -378,8 +554,7 @@ struct StatCard: View {
             label = "igår"
             format = "%+.1f%% vs samma tid %@"
         case "1 dag":
-            // För 1 dag använder vi igår utan "fg"
-            label = "24 timmar"
+            label = "dag"
             format = "%+.1f%% vs fg %@"
         default:
             // Standardtext för övriga perioder

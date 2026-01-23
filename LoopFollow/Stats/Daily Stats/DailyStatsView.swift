@@ -19,19 +19,20 @@ struct DailyStatsView: View {
     
     private let dateFormatter: DateFormatter = {
         let df = DateFormatter()
-        df.dateFormat = " yyyy-MM-dd"
+        df.dateFormat = " yy-MM-dd"
         return df
     }()
     
     // Kolumnbredder för raka marginaler
-    private let dateWidth: CGFloat = 66
+    private let weekdayWidth: CGFloat = 26
+    private let dateWidth: CGFloat = 54
     private let carbsWidth: CGFloat = 36
     private let insulinWidth: CGFloat = 36
     private let meanWidth: CGFloat = 36
-    private let lowWidth: CGFloat = 36
-    private let titrWidth: CGFloat = 36
-    private let tirWidth: CGFloat = 36
-    private let stdWidth: CGFloat = 36
+    private let lowWidth: CGFloat = 30
+    private let titrWidth: CGFloat = 30
+    private let tirWidth: CGFloat = 30
+    private let stdWidth: CGFloat = 32
     private let profileWidth: CGFloat = 36
     private let emptyWidth: CGFloat = 10
     
@@ -124,7 +125,7 @@ struct DailyStatsView: View {
             .filter { $0.tightRangePercent != nil }
         
         let highlightInfo: HighlightInfo = {
-            // Endast highlight om vi har fler än 1 dag (dvs 7, 14, 30, 90 – inte "Idag"/1 dag)
+            // Endast highlight om vi har fler än 1 dag (dvs 7, 14, 30, 90 – inte 1 dag)
             guard daysInScope > 1 else {
                 return HighlightInfo(bestID: nil, worstID: nil)
             }
@@ -165,6 +166,11 @@ struct DailyStatsView: View {
                                 VStack(alignment: .leading, spacing: 0) {
                                     ForEach(Array(filteredRowsForHighlight.enumerated()), id: \.element.id) { index, row in
                                         HStack(spacing: columnSpacing) {
+                                            Text(weekdaySymbol(for: row.date))
+                                                .frame(width: weekdayWidth, alignment: .center)
+                                                .font(.system(size: 10, weight: .semibold))
+                                                .foregroundColor(.secondary)
+
                                             Text(dateFormatter.string(from: row.date))
                                                 .frame(width: dateWidth, alignment: .leading)
                                                 .font(.system(size: 10).monospacedDigit())
@@ -574,16 +580,20 @@ struct DailyStatsView: View {
 
     private var headerRow: some View {
         HStack(spacing: columnSpacing) {
+            Text("Dag")
+                .frame(width: weekdayWidth, alignment: .center)
+                .font(.system(size: 10, weight: .semibold))
+
             Text("Datum")
-                .frame(width: dateWidth, alignment: .leading)
+                .frame(width: dateWidth, alignment: .center)
                 .font(.system(size: 10, weight: .semibold))
 
             Text("Kolh")
-                .frame(width: carbsWidth, alignment: .trailing)
+                .frame(width: carbsWidth, alignment: .leading)
                 .font(.system(size: 10, weight: .semibold))
 
             Text("TDD")
-                .frame(width: insulinWidth, alignment: .trailing)
+                .frame(width: insulinWidth, alignment: .leading)
                 .font(.system(size: 10, weight: .semibold))
 
             Text("Medel")
@@ -602,7 +612,7 @@ struct DailyStatsView: View {
                 .frame(width: tirWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
-            Text("Std.av")
+            Text("StAv")
                 .frame(width: stdWidth, alignment: .trailing)
                 .font(.system(size: 10, weight: .semibold))
 
@@ -783,3 +793,15 @@ struct NightscoutDayReportControllerRepresentable: UIViewControllerRepresentable
     }
 }
 
+
+    private func weekdaySymbol(for date: Date) -> String {
+        switch Calendar.current.component(.weekday, from: date) {
+        case 2: return "Mån"
+        case 3: return "Tis"
+        case 4: return "Ons"
+        case 5: return "Tor"
+        case 6: return "Fre"
+        case 7: return "Lör"
+        default: return "Sön"
+        }
+    }

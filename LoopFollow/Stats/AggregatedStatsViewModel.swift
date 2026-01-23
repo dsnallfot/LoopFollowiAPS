@@ -18,12 +18,9 @@ class AggregatedStatsViewModel: ObservableObject {
         agpStats = AGPViewModel(dataService: dataService)
         griStats = GRIViewModel(dataService: dataService)
         tirStats = TIRViewModel(dataService: dataService)
-
-        // Configure the service immediately for the last selected period so the view doesn't
-        // briefly show default 14-day stats before the first refresh finishes.
         let savedPeriod = UserDefaults.standard.object(forKey: "AggregatedStatsSelectedPeriod") as? Int ?? 14
         applyPeriodSettings(savedPeriod)
-        calculateStats()
+        //calculateStats()
     }
 
     private func applyPeriodSettings(_ days: Int) {
@@ -41,14 +38,38 @@ class AggregatedStatsViewModel: ObservableObject {
     }
 
     func calculateStats() {
+        dataService.clearBGCache()
+
         simpleStats.calculateStats()
         agpStats.calculateAGP()
         griStats.calculateGRI()
         tirStats.calculateTIR()
     }
 
-    func updatePeriod(_ days: Int, forceReload: Bool = false, completion: @escaping () -> Void = {}) {
+    func updatePeriod(
+        _ days: Int,
+        startDate: Date? = nil,
+        endDate: Date? = nil,
+        forceReload: Bool = false,
+        completion: @escaping () -> Void = {}
+    ) {
         applyPeriodSettings(days)
+
+        // Konfigurera ev. anpassat intervall
+        if days == 0 {
+            dataService.customInterval = nil
+        } else if let s = startDate, let e = endDate {
+            let calendar = Calendar.current
+            let start = calendar.startOfDay(for: s)
+            let endDayStart = calendar.startOfDay(for: e)
+            if let endExclusive = calendar.date(byAdding: .day, value: 1, to: endDayStart) {
+                dataService.customInterval = DateInterval(start: start, end: endExclusive)
+            } else {
+                dataService.customInterval = nil
+            }
+        } else {
+            dataService.customInterval = nil
+        }
 
         let shouldForceReload = forceReload
 

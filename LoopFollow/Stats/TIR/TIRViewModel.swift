@@ -25,7 +25,10 @@ class TIRViewModel: ObservableObject {
     }
 
     func calculateTIR() {
-        let bgData = dataService.getBGData()
+        // Använd samma analysfönster som SimpleStatsViewModel/StatsDataService
+        let interval = dataService.currentStatsInterval()
+        let bgData = dataService.getBGData(in: interval)
+
         tirData = TIRCalculator.calculate(bgData: bgData, useTightRange: showTITR)
         averageDayMinutes = Self.computeAverageDayMinutes(bgData: bgData)
         tirWeekdayData = Self.calculateWeekdayWeekendTIR(bgData: bgData, useTightRange: showTITR)

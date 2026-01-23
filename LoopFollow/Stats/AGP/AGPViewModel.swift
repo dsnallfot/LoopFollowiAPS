@@ -15,7 +15,9 @@ class AGPViewModel: ObservableObject {
     }
 
     func calculateAGP() {
-        let bgData = dataService.getBGData()
+        // Använd samma analysfönster som övrig Aggregated Stats-logik
+        let interval = dataService.currentStatsInterval()
+        let bgData = dataService.getBGData(in: interval)
         agpData = AGPCalculator.calculate(bgData: bgData)
     }
 }

@@ -18,7 +18,9 @@ class GRIViewModel: ObservableObject {
     }
 
     func calculateGRI() {
-        let bgData = dataService.getBGData()
+        // Använd samma analysfönster som övrig Aggregated Stats-logik
+        let interval = dataService.currentStatsInterval()
+        let bgData = dataService.getBGData(in: interval)
         guard !bgData.isEmpty else { return }
 
         let result = GRICalculator.calculate(bgData: bgData)

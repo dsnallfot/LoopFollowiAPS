@@ -484,6 +484,8 @@ class StatsDataService {
     var isOneDayOnly: Bool = false
     private let dataFetcher: StatsDataFetcher
     private let maxStatsDays: Int = 90
+    // Om satt används detta intervall som analysfönster istället för rullande daysToAnalyze-baserat fönster.
+    var customInterval: DateInterval?
 
     // Motor för historisk profilbasal (statistik)
     private let statsBasalEngine = StatsProfileBasalEngine()
@@ -491,6 +493,20 @@ class StatsDataService {
     struct DailyBasalStat {
         let dayStart: Date
         let totalUnits: Double
+    }
+    
+    private struct BGIntervalKey: Hashable {
+        let start: Int   // seconds since 1970
+        let end: Int     // seconds since 1970
+    }
+
+    // Enkel cache per intervall
+    private var bgCache: [BGIntervalKey: [ShareGlucoseData]] = [:]
+    private var basalCache: [BGIntervalKey: [DailyBasalStat]] = [:]
+
+    func clearBGCache() {
+        bgCache.removeAll()
+        basalCache.removeAll()
     }
 
     init(mainViewController: MainViewController?) {
@@ -659,8 +675,11 @@ class StatsDataService {
         }
     }
 
-    // Nuvarande analysfönster baserat på isTodayOnly/daysToAnalyze
     func currentStatsInterval() -> DateInterval {
+        if let interval = customInterval {
+            return interval
+        }
+
         let nowDate = Date()
         if isTodayOnly {
             let start = Calendar.current.startOfDay(for: nowDate)
@@ -672,8 +691,15 @@ class StatsDataService {
         }
     }
 
-    // Föregående analysfönster med samma längd som nuvarande
     func previousStatsInterval() -> DateInterval? {
+        if let interval = customInterval {
+            let duration = interval.duration
+            guard duration > 0 else { return nil }
+            let previousEnd = interval.start
+            let previousStart = previousEnd.addingTimeInterval(-duration)
+            return DateInterval(start: previousStart, end: previousEnd)
+        }
+
         if isTodayOnly { return nil }
         let current = currentStatsInterval()
         let duration = current.duration
@@ -695,20 +721,34 @@ class StatsDataService {
             return []
         }
 
-        let start = interval.start.timeIntervalSince1970
-        let end = interval.end.timeIntervalSince1970
+        let startTime = interval.start.timeIntervalSince1970
+        let endTime = interval.end.timeIntervalSince1970
 
-        let filtered = mainVC.statsBGData.filter { $0.date >= start && $0.date < end }
+        // Använd heltalssekunder för cache-nyckeln för att undvika precisionstapp i Double
+        let key = BGIntervalKey(
+            start: Int(startTime),
+            end: Int(endTime)
+        )
 
-        // De-dupe by 5-minute CGM buckets to avoid double-counting when sources overlap.
+        // 1) Kolla cache först
+        if let cached = bgCache[key] {
+            return cached
+        }
+
+        // 2) Filtrera + dedupe som tidigare
+        let filtered = mainVC.statsBGData.filter { $0.date >= startTime && $0.date < endTime }
+
         let deduped = Self.dedupeBGByFiveMinuteBucket(filtered)
 
         LogManager.shared.log(
             category: .analysis,
             message: "getBGData(in:) – interval start=\(interval.start), end=\(interval.end), raw=\(filtered.count), deduped=\(deduped.count)",
-            isDebug: false
+            isDebug: true,
+            isTempDebug: true
         )
 
+        // 3) Lägg i cache
+        bgCache[key] = deduped
         return deduped
     }
     
@@ -737,6 +777,12 @@ class StatsDataService {
         guard let mainVC = mainViewController else { return [] }
         let start = interval.start.timeIntervalSince1970
         let end = interval.end.timeIntervalSince1970
+        LogManager.shared.log(
+            category: .analysis,
+            message: "getBGCheckDates(in:) – interval start=\(interval.start), end=\(interval.end)",
+            isDebug: true,
+            isTempDebug: true
+        )
         return mainVC.statsBGCheckData.filter { $0 >= start && $0 <= end }
     }
 
@@ -744,6 +790,12 @@ class StatsDataService {
         guard let mainVC = mainViewController else { return [] }
         let start = interval.start.timeIntervalSince1970
         let end = interval.end.timeIntervalSince1970
+        LogManager.shared.log(
+            category: .analysis,
+            message: "getBolusData(in:) – interval start=\(interval.start), end=\(interval.end)",
+            isDebug: true,
+            isTempDebug: true
+        )
         return mainVC.statsBolusData.filter { $0.date >= start && $0.date <= end }
     }
 
@@ -751,6 +803,12 @@ class StatsDataService {
         guard let mainVC = mainViewController else { return [] }
         let start = interval.start.timeIntervalSince1970
         let end = interval.end.timeIntervalSince1970
+        LogManager.shared.log(
+            category: .analysis,
+            message: "getSMBData(in:) – interval start=\(interval.start), end=\(interval.end)",
+            isDebug: true,
+            isTempDebug: true
+        )
         return mainVC.statsSMBData.filter { $0.date >= start && $0.date <= end }
     }
 
@@ -758,22 +816,45 @@ class StatsDataService {
         guard let mainVC = mainViewController else { return [] }
         let start = interval.start.timeIntervalSince1970
         let end = interval.end.timeIntervalSince1970
+        LogManager.shared.log(
+            category: .analysis,
+            message: "getCarbData(in:) – interval start=\(interval.start), end=\(interval.end)",
+            isDebug: true,
+            isTempDebug: true
+        )
         return mainVC.statsCarbData.filter { $0.date >= start && $0.date <= end }
     }
 
     func getDailyDeliveredBasal(in interval: DateInterval) -> [DailyBasalStat] {
         guard let mainVC = mainViewController else { return [] }
 
+        let startTime = interval.start.timeIntervalSince1970
+        let endTime = interval.end.timeIntervalSince1970
+        let key = BGIntervalKey(
+            start: Int(startTime),
+            end: Int(endTime)
+        )
+
+        if let cached = basalCache[key] {
+            LogManager.shared.log(
+                category: .analysis,
+                message: "getDailyDeliveredBasal(in:) – cache hit for interval start=\(interval.start), end=\(interval.end)",
+                isDebug: true,
+                isTempDebug: true
+            )
+            return cached
+        }
+
         let calendar = Calendar.current
         let startDate = interval.start
         let endDate = interval.end
 
         let cutoffTime = startDate.timeIntervalSince1970
-        let endTime = endDate.timeIntervalSince1970
+        let endTimeVal = endDate.timeIntervalSince1970
 
         // Ta ut basalstege upp till endTime och inkludera även sista punkt före startDate
         let allBasal = mainVC.statsBasalData
-            .filter { $0.date <= endTime }
+            .filter { $0.date <= endTimeVal }
             .sorted { $0.date < $1.date }
 
         guard !allBasal.isEmpty else { return [] }
@@ -796,12 +877,15 @@ class StatsDataService {
         var results: [DailyBasalStat] = []
 
         var currentDayStart = calendar.startOfDay(for: startDate)
-        let finalDayStart = calendar.startOfDay(for: endDate)
 
-        while currentDayStart <= finalDayStart {
+        // Iterera över kalenderdagar så länge dayStart ligger före intervallets slut.
+        while currentDayStart < endDate {
             guard let nextDayStart = calendar.date(byAdding: .day, value: 1, to: currentDayStart) else { break }
 
             let intervalEnd = min(nextDayStart, endDate)
+            // Om intervallet av någon anledning blir tomt, avbryt
+            guard intervalEnd > currentDayStart else { break }
+
             let dayInterval = DateInterval(start: currentDayStart, end: intervalEnd)
 
             let sim = StatsBasalEngine.simulateDeliveredBasal(
@@ -811,12 +895,29 @@ class StatsDataService {
                 carryOverUndeliveredBasals: false
             )
 
-            results.append(DailyBasalStat(dayStart: currentDayStart,
-                                          totalUnits: sim.totalUnits))
+            results.append(
+                DailyBasalStat(
+                    dayStart: currentDayStart,
+                    totalUnits: sim.totalUnits
+                )
+            )
 
             currentDayStart = nextDayStart
         }
 
+        // Cacha resultatet för detta intervall så vi slipper simulera om vid upprepade anrop
+        let cacheKey = BGIntervalKey(
+            start: Int(startDate.timeIntervalSince1970),
+            end: Int(endDate.timeIntervalSince1970)
+        )
+        basalCache[cacheKey] = results
+
+        let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
+        LogManager.shared.log(
+            category: .analysis,
+            message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)",
+            isDebug: true
+        )
         return results
     }
     
@@ -897,103 +998,13 @@ class StatsDataService {
         }
     }
     
-    /*
-    func getDailyDeliveredBasal() -> [DailyBasalStat] {
-        guard let mainVC = mainViewController else { return [] }
-        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - getDailyDeliveredBasal called. isTodayOnly=\(isTodayOnly), daysToAnalyze=\(daysToAnalyze)", isDebug: true)
-
-        let calendar = Calendar.current
-        let nowDate = Date()
-        let now = nowDate.timeIntervalSince1970
-
-        // Bestäm analysfönster – håll detta i sync med övriga getters
-        let endDate: Date = nowDate
-        let startDate: Date
-
-        if isTodayOnly {
-            // Idag: midnatt → nu
-            startDate = calendar.startOfDay(for: nowDate)
-        } else {
-            // Övriga perioder (1, 7, 14, 30 dagar): rullande fönster bakåt i tid
-            startDate = endDate.addingTimeInterval(-Double(daysToAnalyze) * 24 * 60 * 60)
-        }
-        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - window start=\(startDate), end=\(endDate)", isDebug: true)
-
-        let cutoffTime = startDate.timeIntervalSince1970
-        let endTime = endDate.timeIntervalSince1970
-
-        // 1) Ta ut basalstege inom fönstret
-        let basalPoints = mainVC.statsBasalData
-            .filter { $0.date >= cutoffTime && $0.date <= endTime }
-            .sorted { $0.date < $1.date }
-
-        guard !basalPoints.isEmpty else { return [] }
-
-        // 2) Gör om till BasalChangeEvent (piecewise-constant rate U/h)
-        let events: [StatsBasalEngine.BasalChangeEvent] = basalPoints.map {
-            StatsBasalEngine.BasalChangeEvent(
-                date: Date(timeIntervalSince1970: $0.date),
-                rateUph: $0.basalRate
-            )
-        }
-
-        // 3) Simulera levererad basal med StatsBasalEngine
-        var results: [DailyBasalStat] = []
-
-        // Specialfall: 24 h‑valet (daysToAnalyze == 1 och inte "Idag") ska vara ett rullande 24 h‑fönster
-        if !isTodayOnly && daysToAnalyze == 1 {
-            let interval = DateInterval(start: startDate, end: endDate)
-            let sim = StatsBasalEngine.simulateDeliveredBasal(
-                events: events,
-                in: interval,
-                pulseSize: 0.05,
-                carryOverUndeliveredBasals: false
-            )
-
-            let stat = DailyBasalStat(dayStart: startDate, totalUnits: sim.totalUnits)
-            results.append(stat)
-            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - 24h window start=\(startDate), end=\(endDate), basalUnits=\(sim.totalUnits)", isDebug: true)
-
-            let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
-            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)", isDebug: true)
-            return results
-        }
-
-        // Standardfall: dela upp i kalenderdagar (Idag, 7, 14, 30 dagar)
-        var currentDayStart = calendar.startOfDay(for: startDate)
-        let finalDayStart = calendar.startOfDay(for: endDate)
-
-        while currentDayStart <= finalDayStart {
-            guard let nextDayStart = calendar.date(byAdding: .day, value: 1, to: currentDayStart) else { break }
-
-            let intervalEnd = min(nextDayStart, endDate)
-            let interval = DateInterval(start: currentDayStart, end: intervalEnd)
-
-            let sim = StatsBasalEngine.simulateDeliveredBasal(
-                events: events,
-                in: interval,
-                pulseSize: 0.05,
-                carryOverUndeliveredBasals: false
-            )
-
-            results.append(DailyBasalStat(dayStart: currentDayStart,
-                                          totalUnits: sim.totalUnits))
-            LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - dayStart=\(currentDayStart), basalUnits=\(sim.totalUnits)", isDebug: true)
-
-            currentDayStart = nextDayStart
-        }
-
-        let totalBasal = results.reduce(0.0) { $0 + $1.totalUnits }
-        LogManager.shared.log(category: .analysis, message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)", isDebug: true)
-        return results
-    }
-    */
     func getDailyDeliveredBasal() -> [DailyBasalStat] {
         guard let mainVC = mainViewController else { return [] }
         LogManager.shared.log(
             category: .analysis,
             message: "StatsBasalEngine - getDailyDeliveredBasal called. isTodayOnly=\(isTodayOnly), daysToAnalyze=\(daysToAnalyze)",
-            isDebug: true
+            isDebug: true,
+            isTempDebug: true
         )
 
         let calendar = Calendar.current
