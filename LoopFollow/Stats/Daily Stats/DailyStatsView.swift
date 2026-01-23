@@ -5,7 +5,7 @@ import SwiftUI
 import UIKit
 import WebKit
 
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct DailyStatsView: View {
     @ObservedObject var viewModel: DailyStatsViewModel
     @Environment(\.dismiss) private var dismiss
@@ -16,6 +16,7 @@ struct DailyStatsView: View {
     @State private var showNightscoutAlert: Bool = false
     @State private var showNightscoutReport: Bool = false
     @State private var showDatabaseInfo: Bool = false
+    @State private var showWeekdayFilter: Bool = false
     
     private let dateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -38,12 +39,13 @@ struct DailyStatsView: View {
     
     private let columnSpacing: CGFloat = 1
     
+    @available(iOS 26.0, *)
     var body: some View {
         ZStack {
                 ThemeBackground()
         NavigationStack {
             coreContent
-                .navigationTitle("Daglig statistik")
+                .navigationTitle("Dagstatistik")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
@@ -62,6 +64,18 @@ struct DailyStatsView: View {
                             Image(systemName: "internaldrive")
                         }
                     }
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showWeekdayFilter = true
+                        } label: {
+                            Image(systemName: viewModel.isWeekdayFilterActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                                .foregroundColor(viewModel.isWeekdayFilterActive ? .blue : .primary)
+                        }
+                    }
+                    
+                    ToolbarSpacer(placement: .topBarTrailing)
+                    
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Klar") {
                             dismiss()
@@ -95,6 +109,20 @@ struct DailyStatsView: View {
                 .sheet(isPresented: $showDatabaseInfo) {
                     databaseInfoContent
                 }
+                .sheet(isPresented: $showWeekdayFilter) {
+                    NavigationStack {
+                        WeekdayFilterView(
+                            selectedWeekdays: Binding(
+                                get: { viewModel.selectedWeekdays },
+                                set: { viewModel.selectedWeekdays = $0 }
+                            )
+                        )
+                        .navigationTitle("Välj veckodagar att visa")
+                        .navigationBarTitleDisplayMode(.inline)
+                    }
+                    .presentationDetents([.medium])              // halv-hög sheet
+                    .presentationDragIndicator(.visible)         // drag-handtag
+                }
                 .fullScreenCover(isPresented: $showNightscoutReport) {
                     if let date = selectedDateForReport {
                         NightscoutDayReportView(date: date)
@@ -121,7 +149,7 @@ struct DailyStatsView: View {
         let daysInScope = viewModel.numberOfDaysInScope
         
         // Samma filtrering som tabellen använder (endast dagar med tightRangePercent)
-        let filteredRowsForHighlight = viewModel.rowsWithSufficientGlucose
+        let filteredRowsForHighlight = viewModel.filteredRowsForDisplay
             .filter { $0.tightRangePercent != nil }
         
         let highlightInfo: HighlightInfo = {
@@ -953,3 +981,92 @@ struct NightscoutDayReportControllerRepresentable: UIViewControllerRepresentable
         default: return "Sön"
         }
     }
+
+@available(iOS 26.0, *)
+private struct WeekdayFilterView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedWeekdays: Set<Int>
+    
+    /// Mappar Calendar.weekday (1–7) till svenska kortnamn.
+    private let weekdayOrder: [Int] = [2, 3, 4, 5, 6, 7, 1] // Mån–Sön i visningsordning
+    private let weekdayLabels: [Int: String] = [
+        1: "Sön",
+        2: "Mån",
+        3: "Tis",
+        4: "Ons",
+        5: "Tor",
+        6: "Fre",
+        7: "Lör"
+    ]
+    
+    var body: some View {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+            
+            VStack(spacing: 24) {
+                HStack(spacing: 12) {
+                    // Alla-knapp först
+                    let allWeekdaysSet: Set<Int> = Set(1...7)
+                    let allSelected = selectedWeekdays == allWeekdaysSet
+
+                    Button {
+                        // Toggla alla dagar på/av
+                        selectedWeekdays = allSelected ? [] : allWeekdaysSet
+                    } label: {
+                        Text("Alla")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .frame(width: 44, height: 32)
+                            .background(
+                                Capsule()
+                                    .fill(allSelected ? Color.accentColor : Color.gray.opacity(0.4))
+                            )
+                            .foregroundColor(.white)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Sedan Mån–Sön
+                    ForEach(weekdayOrder, id: \.self) { weekday in
+                        let isSelected = selectedWeekdays.contains(weekday)
+                        Button {
+                            if isSelected {
+                                // Tillåt att alla kan avmarkeras om man vill se en tom lista.
+                                selectedWeekdays.remove(weekday)
+                            } else {
+                                selectedWeekdays.insert(weekday)
+                            }
+                        } label: {
+                            Text(weekdayLabels[weekday] ?? "?")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    Circle()
+                                        .fill(isSelected ? Color.accentColor : Color.gray.opacity(0.4))
+                                )
+                                .foregroundColor(.white)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Spacer()
+            }
+            .padding()
+        }
+        /*.toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Avbryt") {
+                    dismiss()
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Filtrera") {
+                    // Filtret appliceras redan via binding,
+                    // så det räcker att stänga vyn här.
+                    dismiss()
+                }
+            }
+        }*/
+    }
+}

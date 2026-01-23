@@ -33,6 +33,11 @@ final class DailyStatsViewModel: ObservableObject {
     let dataService: StatsDataService
     private let todayTDDOverride: Double?
 
+    /// Vilka veckodagar som är valda i filtret (1 = sön, 2 = mån, ... 7 = lör enligt Calendar)
+    @Published var selectedWeekdays: Set<Int>
+    
+    private let allWeekdaysSet: Set<Int> = Set(1...7)
+
         var mainViewController: MainViewController? {
             dataService.mainViewController
         }
@@ -52,7 +57,7 @@ final class DailyStatsViewModel: ObservableObject {
     let minGlucoseReadingsPerDay: Int = 150
 
     var numberOfDaysMeetingTitrTarget: Int {
-        rowsWithSufficientGlucose.filter { row in
+        filteredRowsForDisplay.filter { row in
             if let tir = row.tightRangePercent {
                 return (tir / 100.0) >= titrTargetThreshold
             } else {
@@ -62,7 +67,7 @@ final class DailyStatsViewModel: ObservableObject {
     }
     
     var numberOfDaysMeetingTirTarget: Int {
-        rowsWithSufficientGlucose.filter { row in
+        filteredRowsForDisplay.filter { row in
             if let tir = row.timeInRangePercent {
                 return (tir / 100.0) >= tirTargetThreshold
             } else {
@@ -72,7 +77,7 @@ final class DailyStatsViewModel: ObservableObject {
     }
 
     var numberOfDaysInScope: Int {
-        rowsWithSufficientGlucose.count
+        filteredRowsForDisplay.count
     }
 
     /// Endast dagar med tillräckligt många glukosvärden (för att slippa med halva dagar).
@@ -111,6 +116,25 @@ final class DailyStatsViewModel: ObservableObject {
         return rows
     }
 
+    /// Rader som ligger i scope och matchar den aktuella veckodagsfiltret.
+    var filteredRowsForDisplay: [DailyStatRow] {
+        let base = rowsWithSufficientGlucose
+        // Om alla veckodagar är valda → ingen extra filtrering
+        guard selectedWeekdays != allWeekdaysSet else {
+            return base
+        }
+        let calendar = Calendar.current
+        return base.filter { row in
+            let weekday = calendar.component(.weekday, from: row.date)
+            return selectedWeekdays.contains(weekday)
+        }
+    }
+    
+    /// True om veckodagsfiltret är aktivt (dvs inte alla dagar är valda).
+    var isWeekdayFilterActive: Bool {
+        selectedWeekdays != allWeekdaysSet
+    }
+
     private func rowHasAnyGlucoseCount(_ row: DailyStatRow) -> Bool {
         (row.glucoseCount ?? 0) > 0
     }
@@ -123,55 +147,55 @@ final class DailyStatsViewModel: ObservableObject {
 
     // MARK: - Aggregated averages for DailyStatsView
 
-    /// Genomsnittliga värden baserat på de dagar som faktiskt är i scope (rowsWithSufficientGlucose).
+    /// Genomsnittliga värden baserat på de dagar som faktiskt är i scope (filteredRowsForDisplay).
     var averageCarbs: Double? {
-        let values = rowsWithSufficientGlucose.compactMap { $0.totalCarbs }
+        let values = filteredRowsForDisplay.compactMap { $0.totalCarbs }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
 
     var averageTDD: Double? {
-        let values = rowsWithSufficientGlucose.compactMap { $0.insulinTDD }
+        let values = filteredRowsForDisplay.compactMap { $0.insulinTDD }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
 
     var averageMeanGlucose: Double? {
-        let values = rowsWithSufficientGlucose.compactMap { $0.meanGlucoseMmol }
+        let values = filteredRowsForDisplay.compactMap { $0.meanGlucoseMmol }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
 
     /// Genomsnittlig andel låga värden (%).
     var averageLowPercent: Double? {
-        let values = rowsWithSufficientGlucose.compactMap { $0.lowPercent }
+        let values = filteredRowsForDisplay.compactMap { $0.lowPercent }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
 
     /// Genomsnittlig tid i tight målområde (TITR, %).
     var averageTitr: Double? {
-        let values = rowsWithSufficientGlucose.compactMap { $0.tightRangePercent }
+        let values = filteredRowsForDisplay.compactMap { $0.tightRangePercent }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
 
     /// Genomsnittlig tid i målområde (TIR, %).
     var averageTir: Double? {
-        let values = rowsWithSufficientGlucose.compactMap { $0.timeInRangePercent }
+        let values = filteredRowsForDisplay.compactMap { $0.timeInRangePercent }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
 
     var averageStdDev: Double? {
-        let values = rowsWithSufficientGlucose.compactMap { $0.stdDevMmol }
+        let values = filteredRowsForDisplay.compactMap { $0.stdDevMmol }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
 
     /// Genomsnittlig teoretisk basal (E/dag) från profilen.
     var averageProfileBasal: Double? {
-        let values = rowsWithSufficientGlucose.compactMap { $0.profileBasal }
+        let values = filteredRowsForDisplay.compactMap { $0.profileBasal }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
@@ -182,6 +206,7 @@ final class DailyStatsViewModel: ObservableObject {
         self.dataService = dataService
         self.todayTDDOverride = todayTDDOverride
         self.daysBack = daysBack
+        self.selectedWeekdays = allWeekdaysSet
     }
 
     // MARK: - Public API
