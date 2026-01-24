@@ -665,9 +665,9 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="f12-G3-H4i" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1722" y="746"/>
+            <point key="canvasLocation" x="2631.8840579710145" y="745.98214285714278"/>
         </scene>
-        <!--App & Data-->
+        <!--Settings View Controller-->
         <scene sceneID="ORV-wr-Fd3">
             <objects>
                 <viewController id="hDv-qK-Udb" customClass="SettingsViewController" customModule="Loop_Follow" customModuleProvider="target" sceneMemberID="viewController">
@@ -677,16 +677,17 @@
                         <viewLayoutGuide key="safeArea" id="aVb-ap-Pwt"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
-                    <tabBarItem key="tabBarItem" title="App &amp; Data" image="gear" catalog="system" id="CBE-5V-OzJ" userLabel="App &amp; Data"/>
+                    <navigationItem key="navigationItem" id="17H-Qh-QdF"/>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="mou-xo-Vm3" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1022" y="746"/>
+            <point key="canvasLocation" x="1845" y="746"/>
         </scene>
         <!--Tab Bar Controller-->
         <scene sceneID="yl2-sM-qoP">
             <objects>
                 <tabBarController id="49e-Tb-3d3" sceneMemberID="viewController">
+                    <navigationItem key="navigationItem" id="ryU-fX-ATe"/>
                     <tabBar key="tabBar" contentMode="scaleToFill" id="W28-zg-YXA">
                         <rect key="frame" x="0.0" y="975" width="768" height="49"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
@@ -697,7 +698,7 @@
                         <segue destination="7an-Fz-r9u" kind="relationship" relationship="viewControllers" id="o3X-OO-dh3"/>
                         <segue destination="e0E-cx-0Wr" kind="relationship" relationship="viewControllers" id="NKn-DR-nLR"/>
                         <segue destination="8rJ-Kc-sve" kind="relationship" relationship="viewControllers" id="lzU-1b-eKA"/>
-                        <segue destination="hDv-qK-Udb" kind="relationship" relationship="viewControllers" id="maf-Gu-a58"/>
+                        <segue destination="Kpc-7L-dtg" kind="relationship" relationship="viewControllers" id="zYr-hG-YJx"/>
                     </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="HuB-VB-40B" sceneMemberID="firstResponder"/>
@@ -938,7 +939,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="930-zy-fBJ" userLabel="Carbs">
                                         <rect key="frame" x="0.0" y="0.0" width="374" height="40.333333333333336"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="pmT-KE-LCq">
-                                            <rect key="frame" x="0.0" y="0.0" width="374" height="40"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="374" height="40.333333333333336"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="k8i-Y0-hBb">
@@ -999,7 +1000,7 @@
                                             <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Ic4-aO-51F" userLabel="Fat">
                                                 <rect key="frame" x="0.0" y="0.0" width="183.66666666666666" height="40.333333333333336"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="Mia-RB-2Re">
-                                                    <rect key="frame" x="0.0" y="0.0" width="184" height="41"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="183.66666666666666" height="40.333333333333336"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="kwN-JR-g2T">
@@ -1059,7 +1060,7 @@
                                             <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gne-oa-kl9" userLabel="Protein">
                                                 <rect key="frame" x="190.66666666666663" y="0.0" width="183.33333333333337" height="40.333333333333336"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="pQK-1E-eck">
-                                                    <rect key="frame" x="0.0" y="0.0" width="183" height="41"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="183.33333333333337" height="40.333333333333336"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="40U-fK-Tgy">
@@ -1122,7 +1123,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="wWb-zP-DKr" userLabel="Notes">
                                         <rect key="frame" x="0.0" y="96.666666666666686" width="374" height="40.333333333333343"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="QdL-8U-aOW">
-                                            <rect key="frame" x="0.0" y="0.0" width="374" height="40"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="374" height="40.333333333333343"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" distribution="equalCentering" baselineRelativeArrangement="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LDf-Sa-0ca">
@@ -1168,7 +1169,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="dlH-5i-A9z" userLabel="Tid">
                                         <rect key="frame" x="0.0" y="145" width="374" height="40.333333333333343"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="qGb-JL-JA0">
-                                            <rect key="frame" x="0.0" y="0.0" width="374" height="40"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="374" height="40.333333333333343"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" distribution="equalCentering" baselineRelativeArrangement="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6E1-G2-TEA">
@@ -1359,7 +1360,7 @@
                                     <visualEffectView opaque="NO" clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qqQ-Pz-Pqc" userLabel="Bolus">
                                         <rect key="frame" x="0.0" y="241.66666666666671" width="374" height="40.333333333333343"/>
                                         <view key="contentView" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="1MG-ka-WeC">
-                                            <rect key="frame" x="0.0" y="0.0" width="374" height="40"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="374" height="40.333333333333343"/>
                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                             <subviews>
                                                 <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="FKe-UD-Eyg">
@@ -2078,6 +2079,26 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="pYk-Ld-tWW" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-1042" y="1422"/>
+        </scene>
+        <!--App & Data-->
+        <scene sceneID="7sa-KG-feZ">
+            <objects>
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="Kpc-7L-dtg" sceneMemberID="viewController">
+                    <tabBarItem key="tabBarItem" title="App &amp; Data" image="gear" catalog="system" id="CBE-5V-OzJ" userLabel="App &amp; Data"/>
+                    <toolbarItems/>
+                    <navigationItem key="navigationItem" id="9zT-3m-Zhl"/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="9QS-bw-VRf">
+                        <rect key="frame" x="0.0" y="88" width="414" height="54"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="hDv-qK-Udb" kind="relationship" relationship="rootViewController" id="YbH-wE-f3n"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="8P0-hL-SEE" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1074" y="746"/>
         </scene>
     </scenes>
     <resources>

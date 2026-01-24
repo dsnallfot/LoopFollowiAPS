@@ -26,9 +26,11 @@ struct AggregatedStatsView: View {
     @State private var showingDailyStats = false
     @State private var showAllTooltips = false
     @State private var tooltipResetToken = 0
+    private let showsDoneButton: Bool
     
-    init(viewModel: AggregatedStatsViewModel) {
+    init(viewModel: AggregatedStatsViewModel, showsDoneButton: Bool = true) {
         self.viewModel = viewModel
+        self.showsDoneButton = showsDoneButton
         _showGMI = State(initialValue: Storage.shared.showGMI.value)
         _showStdDev = State(initialValue: Storage.shared.showStdDev.value)
         _showAvgGlucose = State(initialValue: Storage.shared.showAvgGlucose.value)
@@ -169,19 +171,8 @@ struct AggregatedStatsView: View {
             .navigationTitle("Statistik")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if isLoadingData {
-                        ProgressView()
-                    } else {
-                        Button(action: {
-                            refreshIfNeeded(forceReload: true, overrideThrottle: true)
-                        }) {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                    }
-                }
                 
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         showAllTooltips.toggle()
                         if !showAllTooltips {
@@ -202,9 +193,24 @@ struct AggregatedStatsView: View {
                 
                 ToolbarSpacer(placement: .topBarTrailing)
                 
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button("Klar") {
-                        dismiss()
+                ToolbarItem(placement: .topBarTrailing) {
+                    if isLoadingData {
+                        ProgressView()
+                    } else {
+                        Button(action: {
+                            refreshIfNeeded(forceReload: true, overrideThrottle: true)
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                }
+                if showsDoneButton {
+                    ToolbarSpacer(placement: .topBarTrailing)
+                    
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        Button("Klar") {
+                            dismiss()
+                        }
                     }
                 }
             }
