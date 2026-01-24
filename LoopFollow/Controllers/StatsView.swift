@@ -105,18 +105,16 @@ extension MainViewController {
                 }
 
             case .period:
-                // Existing behavior: use the requested download window (last 24h if >1 day loaded)
-                var lastDayOfData = bgData
-                let graphHours = 24 * UserDefaultsRepository.downloadDays.value
-                if graphHours > 24 {
-                    let oneDayAgo = dateTimeUtils.getTimeIntervalNHoursAgo(N: 24)
-                    var startIndex = 0
-                    while startIndex < bgData.count && bgData[startIndex].date < oneDayAgo {
-                        startIndex += 1
-                    }
-                    lastDayOfData = Array(bgData.dropFirst(startIndex))
+                // Use the full requested download window: downloadDays * 24 hours
+                let hoursToInclude = max(1, 24 * UserDefaultsRepository.downloadDays.value)
+                let cutoffTI = dateTimeUtils.getTimeIntervalNHoursAgo(N: hoursToInclude)
+
+                var startIndex = 0
+                while startIndex < bgData.count && bgData[startIndex].date < cutoffTI {
+                    startIndex += 1
                 }
-                statsSourceData = lastDayOfData
+
+                statsSourceData = Array(bgData.dropFirst(startIndex))
             }
 
             // If no data in the chosen scope, don't update the stats UI
