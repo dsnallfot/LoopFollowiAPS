@@ -44,7 +44,6 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Appinställningar & Data"
         applyTheme()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
