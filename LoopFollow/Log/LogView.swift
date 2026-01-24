@@ -106,20 +106,7 @@ struct LogView: View {
                 }
                 .accessibilityLabel("chart")
             }
-                
-                ToolbarSpacer(placement: .topBarTrailing)
-                
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    
-                    Button("Klar") {
-                        if let onDone {
-                            onDone()
-                        } else {
-                            dismiss()
-                        }
-                    }
-                }
-            }
+        }
         .onAppear {
             viewModel.loadLogEntries()
         }
