@@ -197,7 +197,13 @@ struct AggregatedStatsView: View {
                 
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
-                        showingDailyStats = true
+                        if showsDoneButton {
+                            // Modal variant: öppna som sheet
+                            showingDailyStats = true
+                        } else {
+                            // Pushad från Settings: öppna via UINavigationController
+                            pushDailyStatsViaNavigation()
+                        }
                     } label: {
                         Image(systemName: "tablecells")
                     }
@@ -224,8 +230,13 @@ struct AggregatedStatsView: View {
                     refreshIfNeeded(forceReload: true)
                 }
             }
-            .sheet(isPresented: $showingDailyStats) {
-                DailyStatsView(viewModel: dailyStatsVM)
+            .sheet(isPresented: Binding(
+                get: { showingDailyStats && showsDoneButton },
+                set: { showingDailyStats = $0 }
+            )) {
+                NavigationStack {
+                    DailyStatsView(viewModel: dailyStatsVM, showsDoneButton: true)
+                }
             }
         } else {
             // Fallback on earlier versions
@@ -381,6 +392,35 @@ struct AggregatedStatsView: View {
             ) {
                 isLoadingData = false
             }
+        }
+    }
+    
+    private func pushDailyStatsViaNavigation() {
+        let dailyView = DailyStatsView(viewModel: dailyStatsVM, showsDoneButton: false)
+        let hosting = UIHostingController(rootView: dailyView)
+        hosting.hidesBottomBarWhenPushed = false
+
+        if UserDefaultsRepository.forceDarkMode.value {
+            hosting.overrideUserInterfaceStyle = .dark
+        }
+
+        guard
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = scene.windows.first(where: { $0.isKeyWindow })
+        else { return }
+
+        // Först: försök hitta den valda tabbens nav-controller
+        if let tabBar = window.rootViewController as? UITabBarController,
+           let nav = tabBar.selectedViewController as? UINavigationController {
+            nav.pushViewController(hosting, animated: true)
+            return
+        }
+
+        // Fallbacks om något skulle vara annorlunda
+        if let nav = window.rootViewController as? UINavigationController {
+            nav.pushViewController(hosting, animated: true)
+        } else if let nav = window.rootViewController?.navigationController {
+            nav.pushViewController(hosting, animated: true)
         }
     }
     

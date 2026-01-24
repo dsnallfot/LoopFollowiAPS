@@ -8,6 +8,7 @@ import WebKit
 @available(iOS 26.0, *)
 struct DailyStatsView: View {
     @ObservedObject var viewModel: DailyStatsViewModel
+    var showsDoneButton: Bool = true
     @Environment(\.dismiss) private var dismiss
     
     @State private var exportURL: URL?
@@ -42,13 +43,24 @@ struct DailyStatsView: View {
     @available(iOS 26.0, *)
     var body: some View {
         ZStack {
-                ThemeBackground()
-        NavigationStack {
+            ThemeBackground()
             coreContent
                 .navigationTitle("Dagstatistik")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
+
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showWeekdayFilter = true
+                        } label: {
+                            Image(systemName: viewModel.isWeekdayFilterActive
+                                  ? "line.3.horizontal.decrease.circle.fill"
+                                  : "line.3.horizontal.decrease.circle")
+                                .foregroundColor(viewModel.isWeekdayFilterActive ? .blue : .primary)
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             if let url = viewModel.writeCSVToDisk() {
                                 exportURL = url
@@ -57,7 +69,8 @@ struct DailyStatsView: View {
                             Image(systemName: "square.and.arrow.up")
                         }
                     }
-                    ToolbarItem(placement: .topBarLeading) {
+
+                    ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             showDatabaseInfo = true
                         } label: {
@@ -65,20 +78,13 @@ struct DailyStatsView: View {
                         }
                     }
                     
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            showWeekdayFilter = true
-                        } label: {
-                            Image(systemName: viewModel.isWeekdayFilterActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                                .foregroundColor(viewModel.isWeekdayFilterActive ? .blue : .primary)
-                        }
-                    }
-                    
                     ToolbarSpacer(placement: .topBarTrailing)
-                    
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Klar") {
-                            dismiss()
+
+                    if showsDoneButton {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Klar") {
+                                dismiss()
+                            }
                         }
                     }
                 }
@@ -120,8 +126,8 @@ struct DailyStatsView: View {
                         .navigationTitle("Välj veckodagar att visa")
                         .navigationBarTitleDisplayMode(.inline)
                     }
-                    .presentationDetents([.medium])              // halv-hög sheet
-                    .presentationDragIndicator(.visible)         // drag-handtag
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
                 }
                 .fullScreenCover(isPresented: $showNightscoutReport) {
                     if let date = selectedDateForReport {
@@ -136,7 +142,6 @@ struct DailyStatsView: View {
                 .overlay(nightscoutAlertOverlay)
         }
     }
-}
     
     struct HighlightInfo {
         let bestID: AnyHashable?
