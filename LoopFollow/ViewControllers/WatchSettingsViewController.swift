@@ -17,6 +17,7 @@ class WatchSettingsViewController: ThemedFormViewController {
     
     override func viewDidLoad()  {
         super.viewDidLoad()
+        title = "Kalendertrick"
         applyTheme()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
@@ -72,7 +73,7 @@ class WatchSettingsViewController: ThemedFormViewController {
         }
         
         form
-            +++ Section(header: "Kalendertrick", footer: "Add the Apple calendar complication to your Apple Watch face or Carplay to see BG readings. Create a new calendar called 'Follow' and modify the calendar settings in the iPhone Watch/Carplay App to only display the Follow calendar on your watch or car. It is important to use a new calendar because this will delete other events on the same calendar. Edit Line 1 and Line 2 to be displayed using variables below that will be replaced by the values. Other text entered will not be replaced")
+            +++ Section(header: "Kalenderintegration", footer: "Add the Apple calendar complication to your Apple Watch face or Carplay to see BG readings. Create a new calendar called 'Follow' and modify the calendar settings in the iPhone Watch/Carplay App to only display the Follow calendar on your watch or car. It is important to use a new calendar because this will delete other events on the same calendar. Edit Line 1 and Line 2 to be displayed using variables below that will be replaced by the values. Other text entered will not be replaced")
             <<< LabelRow() {
                 $0.title = "Kalenderaccess nekades"
                 $0.hidden = Condition.function(["hide"], { _ in hasCalendarAccess })

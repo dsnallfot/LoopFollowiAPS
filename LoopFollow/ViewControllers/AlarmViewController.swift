@@ -242,6 +242,7 @@ class AlarmViewController: ThemedFormViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        title = "Alarm"
         applyTheme()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark

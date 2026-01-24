@@ -17,6 +17,7 @@ class GraphSettingsViewController: ThemedFormViewController {
    
    override func viewDidLoad()  {
       super.viewDidLoad()
+       title = "Grafinställningar"
        applyTheme()
       if UserDefaultsRepository.forceDarkMode.value {
          overrideUserInterfaceStyle = .dark

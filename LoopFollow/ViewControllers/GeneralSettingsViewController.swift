@@ -17,6 +17,7 @@ class GeneralSettingsViewController: ThemedFormViewController {
    
    override func viewDidLoad()  {
       super.viewDidLoad()
+       title = "Allmänna inställningar"
        applyTheme()
       
       if UserDefaultsRepository.forceDarkMode.value {
