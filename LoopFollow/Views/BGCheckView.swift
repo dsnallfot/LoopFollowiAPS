@@ -202,7 +202,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             tableView.topAnchor.constraint(equalTo: safe.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: safe.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
