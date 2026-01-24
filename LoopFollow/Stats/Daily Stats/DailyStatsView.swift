@@ -180,13 +180,12 @@ struct DailyStatsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
+                    averagesSection
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
                     summarySection
                         .padding(.horizontal, 10)
                         .padding(.top, 8)
-                        .padding(.bottom, 16)
-
-                    averagesSection
-                        .padding(.horizontal, 12)
 
                     ScrollView(.horizontal) {
                         VStack(alignment: .leading, spacing: 0) {

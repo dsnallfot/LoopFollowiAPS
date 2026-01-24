@@ -463,7 +463,18 @@ extension MainViewController {
             var snoozerDelta = ""
             
             // Set BGText with the latest BG value
-            let bgDisplay = Localizer.toDisplayUnits(String(latestBG)).replacingOccurrences(of: ",", with: ".").replacingOccurrences(of: "2.2", with: "LÅG").replacingOccurrences(of: "22.2", with: "HÖG")
+            let bgValueToModify = latestBG
+
+            let bgDisplay: String
+            if abs(Double(bgValueToModify) - 2.2) < 0.0001 {
+                bgDisplay = "LÅG"
+            } else if abs(Double(bgValueToModify) - 22.2) < 0.0001 {
+                bgDisplay = "HÖG"
+            } else {
+                bgDisplay = Localizer
+                    .toDisplayUnits(String(bgValueToModify))
+                    .replacingOccurrences(of: ",", with: ".")
+            }
             self.BGText.text = bgDisplay
             //Daniel: Added for visualization in remote meal info popup
             sharedLatestBG = bgDisplay

@@ -891,6 +891,7 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         }
 
         var candleEntries: [CandleChartDataEntry] = []
+        var candleColors: [NSUIColor] = []
         weekXAxisFormatter.reset()
 
         for i in 0..<7 {
@@ -902,6 +903,8 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
 
             if daySamples.isEmpty {
                 candleEntries.append(CandleChartDataEntry(x: Double(i), shadowH: 0, shadowL: 0, open: 0, close: 0))
+                // Ingen data för denna dag – håll färgen neutral och diskret
+                candleColors.append(NSUIColor.clear)
                 continue
             }
 
@@ -910,6 +913,10 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
             let lo = percents.min() ?? 0
 
             candleEntries.append(CandleChartDataEntry(x: Double(i), shadowH: hi, shadowL: lo, open: hi, close: lo))
+
+            // Färgkoda per dag baserat på lägsta batterinivån (samma logik som dagsgrafen)
+            let color = colorForBattery(percent: lo, isCharging: false)
+            candleColors.append(color)
         }
 
         let set = CandleChartDataSet(entries: candleEntries, label: "")
@@ -917,12 +924,9 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
         set.highlightEnabled = true
         set.setDrawHighlightIndicators(false)   // så du slipper crosshair-linjer
         set.shadowWidth = 1
-        // Single color for all week candles (focus is on day-to-day range differences)
-        let c = UIColor.systemGreen
-        set.shadowColor = c
-        set.increasingColor = c
-        set.decreasingColor = c
-        set.neutralColor = c
+
+        // Färgkoda varje dag baserat på lägsta batterinivå. Tomma dagar blir transparenta.
+        set.colors = candleColors
         set.shadowColorSameAsCandle = true
         set.formLineWidth = 0
         set.barSpace = 0.2
