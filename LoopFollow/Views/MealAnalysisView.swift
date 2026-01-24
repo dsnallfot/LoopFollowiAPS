@@ -45,13 +45,22 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     private let initialEndOverride: Date?
     private let modalWithTimestamp: Bool
     private let modalTitleString: String
+    private let showsDoneButton: Bool
 
-    init(events: [Event], initialStart: Date? = nil, initialEnd: Date? = nil, modalWithTimestamp: Bool = true, modalTitleString: String = "") {
+    init(
+        events: [Event],
+        initialStart: Date? = nil,
+        initialEnd: Date? = nil,
+        modalWithTimestamp: Bool = true,
+        modalTitleString: String = "",
+        showsDoneButton: Bool = true
+    ) {
         self.events = events
         self.initialStartOverride = initialStart
         self.initialEndOverride = initialEnd
         self.modalWithTimestamp = modalWithTimestamp
         self.modalTitleString = modalTitleString
+        self.showsDoneButton = showsDoneButton
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -390,6 +399,13 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                                       style: .plain,
                                       target: self,
                                       action: #selector(nextDayTapped))
+        
+            let doneButton = UIBarButtonItem(
+                title: "Klar",
+                style: .plain,
+                target: self,
+                action: #selector(dismissSelf)
+            )
 
         // Attach long-press to perform week jumps.
         // (Requires the bar button items' underlying views, so we add gestures after the nav bar has laid out.)
@@ -410,15 +426,12 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 nextView.addGestureRecognizer(lp)
             }
         }
-
-        navigationItem.leftBarButtonItems = [prevBtn, nextBtn]
-
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Klar",
-            style: .plain,
-            target: self,
-            action: #selector(dismissSelf)
-        )
+        if showsDoneButton {
+            //navigationItem.leftBarButtonItems = [prevBtn, nextBtn]
+            navigationItem.rightBarButtonItems = [doneButton, nextBtn, prevBtn]
+        } else {
+            navigationItem.rightBarButtonItems = [nextBtn, prevBtn]
+        }
     }
     
     /// Fetch BG data for the current window.

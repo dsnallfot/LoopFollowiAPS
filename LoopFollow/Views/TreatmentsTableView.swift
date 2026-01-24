@@ -294,10 +294,35 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         let events = buildEventsArray()
         let cal = Calendar.current
         let start = cal.startOfDay(for: selectedDate)
-        let analysisVC = MealAnalysisView(events: events, initialStart: start, modalWithTimestamp: true, modalTitleString: "Analys tid")
-        let navController = UINavigationController(rootViewController: analysisVC)
-        navController.modalPresentationStyle = .formSheet
-        present(navController, animated: true, completion: nil)
+
+        // Detect whether this controller is the root of its navigation stack.
+        // If it is, we're in the modal presentation case.
+        let isModalRoot = navigationController?.viewControllers.first === self
+
+        if isModalRoot {
+            // Modal quick-analysis: wrap in a UINavigationController and show "Klar".
+            let analysisVC = MealAnalysisView(
+                events: events,
+                initialStart: start,
+                modalWithTimestamp: true,
+                modalTitleString: "Analys tid",
+                showsDoneButton: true
+            )
+            let navController = UINavigationController(rootViewController: analysisVC)
+            navController.modalPresentationStyle = .formSheet
+            present(navController, animated: true, completion: nil)
+        } else {
+            // Navigated from Settings: push onto the existing navigation stack,
+            // hide the "Klar" button and rely on the back button instead.
+            let analysisVC = MealAnalysisView(
+                events: events,
+                initialStart: start,
+                modalWithTimestamp: true,
+                modalTitleString: "Analys tid",
+                showsDoneButton: false
+            )
+            navigationController?.pushViewController(analysisVC, animated: true)
+        }
     }
 
     private func buildEventsArray() -> [Event] {
