@@ -321,7 +321,7 @@ struct ProfileSchedulesView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 if selectedMode == .profile {
                     Button {
                         showProfileUpdatedAlert = true
@@ -367,13 +367,6 @@ struct ProfileSchedulesView: View {
                     } label: {
                         Image(systemName: "chart.bar.xaxis.ascending")
                     }
-                }
-            }
-            ToolbarSpacer(placement: .topBarTrailing)
-            
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                Button("Klar") {
-                    onDone?()
                 }
             }
         }

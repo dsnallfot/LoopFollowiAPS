@@ -154,13 +154,6 @@ class WatchSettingsViewController: ThemedFormViewController {
             <<< LabelRow("15MIN"){ row in
             row.title = "%15MIN% : Display 15min trend"
             }
-            
-            
-            +++ ButtonRow() {
-                $0.title = "Klar"
-            }.onCellSelection { (row, arg)  in
-                self.dismiss(animated:true, completion: nil)
-        }
-    }
+                }
     
 }

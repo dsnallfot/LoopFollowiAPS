@@ -3417,11 +3417,6 @@ class AlarmViewController: ThemedFormViewController {
             guard let value = row.value else { return }
             UserDefaultsRepository.quietHourEnd.value = value
         }
-        +++ ButtonRow() {
-            $0.title = "Klar"
-        }.onCellSelection { (row, arg)  in
-            self.dismiss(animated: true, completion: nil)
-        }
     }
 
     func buildTempTargetStart() {

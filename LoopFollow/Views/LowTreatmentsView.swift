@@ -73,14 +73,19 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
 
     // MARK: - Nav bar
 
+    // MARK: - Nav bar
+
     private func setupNavigationBar() {
+        // När vi är root i nav-stack = modalt läge (egen UINavigationController).
+        // När vi är pushade från SettingsVC är vi inte root.
+        let isModalRoot = navigationController?.viewControllers.first === self
+
         let reload = UIBarButtonItem(
             image: UIImage(systemName: "arrow.clockwise"),
             style: .plain,
             target: self,
             action: #selector(refreshTapped)
         )
-        navigationItem.leftBarButtonItem = reload
 
         let done = UIBarButtonItem(
             title: "Klar",
@@ -96,7 +101,16 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
             action: #selector(showLowTreatmentStats)
         )
 
-        navigationItem.rightBarButtonItems = [done, statsBtn]
+        if isModalRoot {
+            // MODAL: stats + Klar till höger, reload till vänster
+            navigationItem.rightBarButtonItems = [statsBtn, done]
+            navigationItem.leftBarButtonItem = reload
+        } else {
+            // PUSH: bara stats till höger, back-pil + reload till vänster
+            navigationItem.rightBarButtonItems = [statsBtn]
+            navigationItem.leftItemsSupplementBackButton = true
+            navigationItem.leftBarButtonItems = [reload]
+        }
     }
 
     @objc private func doneTapped() {

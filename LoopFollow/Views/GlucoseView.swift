@@ -348,6 +348,10 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     private var reloadButton: UIBarButtonItem?
     private var reloadIndicator: UIActivityIndicatorView?
     private func setupNavigationBar() {
+        // När GlucoseView är root i sin navigation stack (egen UINavigationController)
+        // så är vi i modalt läge. När vi är pushade från SettingsVC är vi inte root.
+        let isModalRoot = navigationController?.viewControllers.first === self
+
         let reload = UIBarButtonItem(
             image: UIImage(systemName: "arrow.clockwise"),
             style: .plain,
@@ -355,32 +359,16 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             action: #selector(refreshButtonTapped)
         )
         self.reloadButton = reload
-        /*
-        // Day-stepper chevrons (top-left)
-        let back = UIBarButtonItem(
-            image: UIImage(systemName: "chevron.left"),
-            style: .plain,
-            target: self,
-            action: #selector(prevDayTapped)
-        )
-        let forward = UIBarButtonItem(
-            image: UIImage(systemName: "chevron.right"),
-            style: .plain,
-            target: self,
-            action: #selector(nextDayTapped)
-        )
-        navigationItem.leftBarButtonItems = [reload, back, forward]
-*/
-        let filter = UIBarButtonItem(
-            image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
-            style: .plain,
-            target: self,
-            action: #selector(toggleMissingOnly)
-        )
-        filter.tintColor = .label
-        
-        navigationItem.leftBarButtonItems = [reload, filter]
-        
+
+        if isModalRoot {
+            // Modalt: bara reload + filter på vänster sida
+            navigationItem.leftBarButtonItems = [reload]
+        } else {
+            // Pushat från Settings: behåll back-knappen och supplementera med reload + filter
+            navigationItem.leftItemsSupplementBackButton = true
+            navigationItem.leftBarButtonItems = [reload]
+        }
+
         // Optional close button to mirror other modal logs
         let done = UIBarButtonItem(
             title: "Klar",
@@ -388,15 +376,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             target: self,
             action: #selector(doneTapped)
         )
-/*
-        let filter = UIBarButtonItem(
-            image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
-            style: .plain,
-            target: self,
-            action: #selector(toggleMissingOnly)
-        )
-        filter.tintColor = .label
-*/
+
         let info = UIBarButtonItem(
             image: UIImage(systemName: "chart.bar.xaxis.ascending"),
             style: .plain,
@@ -405,9 +385,21 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         )
         info.tintColor = .label
         
-        //navigationItem.rightBarButtonItems = [done, info, filter]
+        let filter = UIBarButtonItem(
+            image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(toggleMissingOnly)
+        )
+        filter.tintColor = .label
 
-        navigationItem.rightBarButtonItems = [done, info]
+        if isModalRoot {
+            // Modalt: visa både Klar och statistik
+            navigationItem.rightBarButtonItems = [done, info, filter]
+        } else {
+            // Pushat: ingen Klar-knapp, bara statistik
+            navigationItem.rightBarButtonItems = [info, filter]
+        }
     }
 
     @objc private func doneTapped() {

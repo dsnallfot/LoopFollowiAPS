@@ -65,7 +65,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.title = "Sensorlogg"
+        self.title = "Sensorer"
         updateBackgroundForCurrentMode()
         setupNavigationBar()
         searchBar.delegate = self
@@ -115,7 +115,9 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
     // MARK: - Navigation Bar Setup
     
     private func setupNavigationBar() {
-        // --- Left side: custom stack with controlled spacing and 2pt inset from the bubble edge ---
+        let isModalRoot = navigationController?.viewControllers.first === self
+
+        // Left side: custom stack
         let addBtn = UIButton(type: .system)
         addBtn.setImage(UIImage(systemName: "plus"), for: .normal)
         addBtn.tintColor = .label
@@ -131,23 +133,19 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         importBtn.tintColor = .label
         importBtn.addTarget(self, action: #selector(importSensorHistory), for: .touchUpInside)
 
-        // Tighten spacing between icons but keep 2pt leading margin from the nav bar's liquid glass edge
         let leftStack = UIStackView(arrangedSubviews: [addBtn, shareBtn, importBtn])
         leftStack.axis = .horizontal
         leftStack.alignment = .center
-        leftStack.spacing = 9 // tighten icon-to-icon spacing
+        leftStack.spacing = 9
         leftStack.isLayoutMarginsRelativeArrangement = true
-        leftStack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 2, bottom: 0, trailing: 0) // 2pt from edge
+        leftStack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 2, bottom: 0, trailing: 0)
 
-        // Ensure tappable area is comfortable
-        [addBtn, shareBtn, importBtn].forEach { btn in
-            btn.contentEdgeInsets = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+        [addBtn, shareBtn, importBtn].forEach {
+            $0.contentEdgeInsets = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
         }
 
         let leftItem = UIBarButtonItem(customView: leftStack)
-        navigationItem.leftBarButtonItems = [leftItem]
 
-        // --- Right side: info + done ---
         let infoButton = UIBarButtonItem(
             image: UIImage(systemName: "chart.bar.xaxis.ascending"),
             style: .plain,
@@ -162,7 +160,14 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
             action: #selector(doneButtonTapped)
         )
 
-        navigationItem.rightBarButtonItems = [doneButton, infoButton]
+        if isModalRoot {
+            //navigationItem.leftBarButtonItem = leftItem
+            navigationItem.rightBarButtonItems = [doneButton, infoButton, leftItem]
+        } else {
+            navigationItem.leftItemsSupplementBackButton = true
+            //navigationItem.leftBarButtonItems = [leftItem]
+            navigationItem.rightBarButtonItems = [infoButton, leftItem]
+        }
     }
 
 

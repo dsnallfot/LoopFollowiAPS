@@ -153,7 +153,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     override func viewDidLoad() {
         super.viewDidLoad()
         // Shift table content down to make room for the date picker
-        self.title = "Behandlingslogg"
+        self.title = "Behandlingar"
         //view.backgroundColor = .systemBackground
         updateBackgroundForCurrentMode()
         setupNavigationBar()
@@ -239,6 +239,12 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     // MARK: - Navigation Bar Setup
     
     private func setupNavigationBar() {
+        // Detect whether this controller is the *root* of its navigation stack.
+        // When presented modally inside its own UINavigationController,
+        // TreatmentsTableView will be the first (root) view controller.
+        // When pushed from SettingsViewController, it will NOT be the root.
+        let isModalRoot = navigationController?.viewControllers.first === self
+        
         let klarButton = UIBarButtonItem(
             title: "Klar",
             style: .plain,
@@ -251,14 +257,33 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             target: self,
             action: #selector(mealAnalysisButtonTapped)
         )
-        navigationItem.rightBarButtonItems = [klarButton, mealAnalysisButton]
-        // Add new left bar button item with arrow.clockwise symbol for refresh.
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
+        
+        // Right-side items:
+        // - In modal (root) mode: show both Meal Analysis and Klar.
+        // - When pushed from Settings: hide Klar, keep only Meal Analysis.
+        if isModalRoot {
+            navigationItem.rightBarButtonItems = [klarButton, mealAnalysisButton]
+        } else {
+            navigationItem.rightBarButtonItems = [mealAnalysisButton]
+        }
+        
+        // Left-side refresh button:
+        let refreshButton = UIBarButtonItem(
             image: UIImage(systemName: "arrow.clockwise"),
             style: .plain,
             target: self,
             action: #selector(refreshButtonTapped)
         )
+        
+        if isModalRoot {
+            // In modal mode there is no back button, so just show the refresh button.
+            navigationItem.leftBarButtonItem = refreshButton
+        } else {
+            // When pushed in a navigation stack, keep the default back button
+            // and *supplement* it with the refresh button.
+            navigationItem.leftItemsSupplementBackButton = true
+            navigationItem.leftBarButtonItems = [refreshButton]
+        }
     }
     
     @objc private func doneButtonTapped() {

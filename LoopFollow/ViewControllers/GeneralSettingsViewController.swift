@@ -281,12 +281,6 @@ class GeneralSettingsViewController: ThemedFormViewController {
            guard let value = row.value else { return }
            UserDefaultsRepository.speakHighBGLimit.value = Float(value)
        }
-
-       +++ ButtonRow() {
-          $0.title = "Klar"
-       }.onCellSelection { (row, arg)  in
-          self.dismiss(animated:true, completion: nil)
-       }
        
        // Call to update initial visibility based on current settings
        updateSpeakBGSettingsVisibility()

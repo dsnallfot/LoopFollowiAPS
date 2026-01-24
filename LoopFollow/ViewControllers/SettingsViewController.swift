@@ -89,78 +89,88 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             )
         }
         
-        <<< ButtonRow() {
-            $0.title = "Behandlingslogg"
-            $0.presentationMode = .show(
+        <<< ButtonRow() { row in
+            row.title = "Behandlingslogg"
+            row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
-                    // Instantiate the TreatmentsTableView.
                     let treatmentsVC = TreatmentsTableView()
-                    // For a table view controller, you might choose to embed it in a UINavigationController.
-                    return UINavigationController(rootViewController: treatmentsVC)
+                    treatmentsVC.title = "Behandlingslogg"
+                    treatmentsVC.hidesBottomBarWhenPushed = false
+                    return treatmentsVC
                 }),
                 onDismiss: nil
             )
         }
         
-        <<< ButtonRow() {
-                $0.title = "Dextrologg"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let lowTreatVC = LowTreatmentsView()
-                        return UINavigationController(rootViewController: lowTreatVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
+        <<< ButtonRow() { row in
+            row.title = "Dextrologg"
+            row.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let lowTreatVC = LowTreatmentsView()
+                    lowTreatVC.title = "Dextrologg"
+                    lowTreatVC.hidesBottomBarWhenPushed = false
+                    return lowTreatVC
+                }),
+                onDismiss: nil
+            )
+        }
         
-        <<< ButtonRow() {
-                $0.title = "Fingersticklogg"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let bgCheckVC = BGCheckView()
-                        return UINavigationController(rootViewController: bgCheckVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
+        <<< ButtonRow() { row in
+            row.title = "Fingersticklogg"
+            row.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let bgCheckVC = BGCheckView()
+                    bgCheckVC.title = "Fingersticklogg"
+                    bgCheckVC.hidesBottomBarWhenPushed = false
+                    return bgCheckVC
+                }),
+                onDismiss: nil
+            )
+        }
         
-        <<< ButtonRow() {
-                $0.title = "Glukoslogg & sensorfel"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let glucoseVC = GlucoseView()
-                        return UINavigationController(rootViewController: glucoseVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
+        <<< ButtonRow() { row in
+            row.title = "Glukoslogg & sensorfel"
+            row.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let glucoseVC = GlucoseView()
+                    glucoseVC.title = "Glukoslogg & sensorfel"
+                    glucoseVC.hidesBottomBarWhenPushed = false
+                    return glucoseVC
+                }),
+                onDismiss: nil
+            )
+        }
         
-        <<< ButtonRow() {
-                $0.title = "Poddhistorik"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let pumpHistoryVC = PumpHistoryViewController()
-                        return UINavigationController(rootViewController: pumpHistoryVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
+        <<< ButtonRow() { row in
+            row.title = "Poddhistorik"
+            row.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let pumpHistoryVC = PumpHistoryViewController()
+                    pumpHistoryVC.title = "Poddhistorik"
+                    pumpHistoryVC.hidesBottomBarWhenPushed = false
+                    return pumpHistoryVC
+                }),
+                onDismiss: nil
+            )
+        }
         
-        <<< ButtonRow() {
-                $0.title = "Sensorhistorik"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let sensorHistoryVC = SensorHistoryViewController()
-                        return UINavigationController(rootViewController: sensorHistoryVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
+        <<< ButtonRow() { row in
+            row.title = "Sensorhistorik"
+            row.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let sensorHistoryVC = SensorHistoryViewController()
+                    sensorHistoryVC.title = "Sensorhistorik"
+                    sensorHistoryVC.hidesBottomBarWhenPushed = false
+                    return sensorHistoryVC
+                }),
+                onDismiss: nil
+            )
+        }
         
         +++ Section("\nTrio inställningar och status")
         <<< ButtonRow() {
             $0.title = "Trio algoritminställningar & analys"
-            $0.presentationMode = .presentModally(
+            $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
                     let trioView = TrioPreferencesView()
@@ -168,40 +178,12 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                         .environment(\.colorScheme, isDark ? .dark : .light)
 
                     let hostingController = UIHostingController(rootView: trioView)
-                    hostingController.title = "Trio användarinställningar"
+                    hostingController.title = "Trio algoritm & analys"
 
-                    hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
-                        title: "Klar",
-                        style: .plain,
-                        target: self,
-                        action: #selector(self.dismissPresentedController)
-                    )
+                    hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
+                    hostingController.hidesBottomBarWhenPushed = false
 
-                    // Transparent hosting background
-                    hostingController.view.backgroundColor = .clear
-                    hostingController.view.isOpaque = false
-                    hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    let nav = UINavigationController(rootViewController: hostingController)
-                    nav.modalPresentationStyle = .formSheet
-
-                    // Transparent modal container
-                    nav.view.backgroundColor = .clear
-                    nav.view.isOpaque = false
-                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    // Transparent navigation bar
-                    let appearance = UINavigationBarAppearance()
-                    appearance.configureWithTransparentBackground()
-                    nav.navigationBar.standardAppearance = appearance
-                    nav.navigationBar.scrollEdgeAppearance = appearance
-                    nav.navigationBar.compactAppearance = appearance
-
-                    // Match current interface style
-                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
-                    hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
-
-                    return nav
+                    return hostingController
                 }),
                 onDismiss: nil
             )
@@ -209,43 +191,22 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         <<< ButtonRow() {
             $0.title = "Trio hälsodata & profilinställningar"
-            $0.presentationMode = .presentModally(
+            $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
                     let profileSchedulesView = ProfileSchedulesView(onDone: { [weak self] in
-                        self?.dismissPresentedController()
+                        self?.navigationController?.popViewController(animated: true)
                     })
                         .preferredColorScheme(isDark ? .dark : .light)
                         .environment(\.colorScheme, isDark ? .dark : .light)
 
                     let hostingController = UIHostingController(rootView: profileSchedulesView)
-                    hostingController.title = "Trio profil"
+                    hostingController.title = "Profil"
 
-                    // Transparent hosting background
-                    hostingController.view.backgroundColor = .clear
-                    hostingController.view.isOpaque = false
-                    hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
+                    hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
+                    hostingController.hidesBottomBarWhenPushed = false
 
-                    let nav = UINavigationController(rootViewController: hostingController)
-                    nav.modalPresentationStyle = .formSheet
-
-                    // Transparent modal container
-                    nav.view.backgroundColor = .clear
-                    nav.view.isOpaque = false
-                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    // Transparent navigation bar
-                    let appearance = UINavigationBarAppearance()
-                    appearance.configureWithTransparentBackground()
-                    nav.navigationBar.standardAppearance = appearance
-                    nav.navigationBar.scrollEdgeAppearance = appearance
-                    nav.navigationBar.compactAppearance = appearance
-
-                    // Match current interface style
-                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
-                    hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
-
-                    return nav
+                    return hostingController
                 }),
                 onDismiss: nil
             )
@@ -253,7 +214,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         <<< ButtonRow() {
             $0.title = "Trio oref realtidsstatus"
-            $0.presentationMode = .presentModally(
+            $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
                     let trioOrefView = TrioOrefView()
@@ -262,38 +223,10 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
                     let hostingController = UIHostingController(rootView: trioOrefView)
 
-                    hostingController.navigationItem.rightBarButtonItem = UIBarButtonItem(
-                        title: "Klar",
-                        style: .plain,
-                        target: self,
-                        action: #selector(self.dismissPresentedController)
-                    )
+                    hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
+                    hostingController.hidesBottomBarWhenPushed = false
 
-                    // Transparent hosting background
-                    hostingController.view.backgroundColor = .clear
-                    hostingController.view.isOpaque = false
-                    hostingController.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    let nav = UINavigationController(rootViewController: hostingController)
-                    nav.modalPresentationStyle = .formSheet
-
-                    // Transparent modal container
-                    nav.view.backgroundColor = .clear
-                    nav.view.isOpaque = false
-                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    // Transparent navigation bar
-                    let appearance = UINavigationBarAppearance()
-                    appearance.configureWithTransparentBackground()
-                    nav.navigationBar.standardAppearance = appearance
-                    nav.navigationBar.scrollEdgeAppearance = appearance
-                    nav.navigationBar.compactAppearance = appearance
-
-                    // Match current interface style
-                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
-                    hostingController.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
-
-                    return nav
+                    return hostingController
                 }),
                 onDismiss: nil
             )
@@ -301,56 +234,43 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         <<< ButtonRow() {
             $0.title = "Trio inställningslogg"
-            $0.presentationMode = .presentModally(
+            $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let settingsLogVC = TrioSettingsLogView()
-
-                    let nav = UINavigationController(rootViewController: settingsLogVC)
-                    nav.modalPresentationStyle = .formSheet
-
-                    // Transparent modal container
-                    nav.view.backgroundColor = .clear
-                    nav.view.isOpaque = false
-                    nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-                    // Transparent navigation bar
-                    let appearance = UINavigationBarAppearance()
-                    appearance.configureWithTransparentBackground()
-                    nav.navigationBar.standardAppearance = appearance
-                    nav.navigationBar.scrollEdgeAppearance = appearance
-                    nav.navigationBar.compactAppearance = appearance
-
-                    // Match current interface style
-                    nav.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
-                    settingsLogVC.overrideUserInterfaceStyle = nav.overrideUserInterfaceStyle
-
-                    return nav
+                    settingsLogVC.title = "Trio inställningslogg"
+                    settingsLogVC.hidesBottomBarWhenPushed = false
+                    settingsLogVC.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
+                    return settingsLogVC
                 }),
                 onDismiss: nil
             )
         }
         
-        <<< ButtonRow() {
-                $0.title = "Trio batterilogg"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let batteryVC = BatteryLogViewController()
-                        return UINavigationController(rootViewController: batteryVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
+        <<< ButtonRow() { row in
+            row.title = "Trio batterilogg"
+            row.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let batteryVC = BatteryLogViewController()
+                    batteryVC.title = "Trio batterilogg"
+                    batteryVC.hidesBottomBarWhenPushed = false
+                    return batteryVC
+                }),
+                onDismiss: nil
+            )
+        }
         
-        <<< ButtonRow() {
-                $0.title = "Trio omstartslogg"
-                $0.presentationMode = .show(
-                    controllerProvider: .callback(builder: {
-                        let restartsVC = TrioRestartsView()
-                        return UINavigationController(rootViewController: restartsVC)
-                    }),
-                    onDismiss: nil
-                )
-            }
+        <<< ButtonRow() { row in
+            row.title = "Trio omstartslogg"
+            row.presentationMode = .show(
+                controllerProvider: .callback(builder: {
+                    let restartsVC = TrioRestartsView()
+                    restartsVC.title = "Trio omstartslogg"
+                    restartsVC.hidesBottomBarWhenPushed = false
+                    return restartsVC
+                }),
+                onDismiss: nil
+            )
+        }
         
         +++ Section(header: "\nDatafångstinställningar", footer: "")
         <<< SegmentedRow<String>("units") { row in
@@ -781,6 +701,10 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
     @objc private func dismissPresentedController() {
         presentedViewController?.dismiss(animated: true)
+    }
+
+    @objc private func popSettingsChildController() {
+        navigationController?.popViewController(animated: true)
     }
     
     private func resolveMainViewController() -> MainViewController? {

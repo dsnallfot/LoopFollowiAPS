@@ -102,7 +102,9 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
     // MARK: - Nav bar
 
     private func setupNavigationBar() {
-        // Reload-knapp (samma look & feel som GlucoseView)
+        // Behåll "Klar" när vi är modalt root, men göm den när vi är pushade.
+        let isModalRoot = navigationController?.viewControllers.first === self
+
         let reload = UIBarButtonItem(
             image: UIImage(systemName: "arrow.clockwise"),
             style: .plain,
@@ -110,9 +112,6 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
             action: #selector(refreshTapped)
         )
 
-        navigationItem.leftBarButtonItem = reload
-
-        // Klar-knapp till höger, så det känns som Treatments/Glucose
         let done = UIBarButtonItem(
             title: "Klar",
             style: .plain,
@@ -120,7 +119,16 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
             action: #selector(doneTapped)
         )
 
-        navigationItem.rightBarButtonItems = [done]
+        if isModalRoot {
+            // Modal: Klar till höger, reload till vänster.
+            navigationItem.rightBarButtonItems = [done]
+            navigationItem.leftBarButtonItem = reload
+        } else {
+            // Pushad under Settings: ingen Klar, back + reload.
+            navigationItem.rightBarButtonItems = []
+            navigationItem.leftItemsSupplementBackButton = true
+            navigationItem.leftBarButtonItems = [reload]
+        }
     }
 
     @objc private func doneTapped() {

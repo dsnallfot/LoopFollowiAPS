@@ -154,17 +154,11 @@ struct TrioPreferencesView: View {
             .sheet(isPresented: $isShowingAnalyzeDeviations) {
                 NavigationStack {
                     AnalyzeDeviationsView(viewModel: viewModel)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("Klar") {
-                                    isShowingAnalyzeDeviations = false
-                                }
-                            }
-                        }
+                        
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         isShowingAnalyzeDeviations = true
                     } label: {

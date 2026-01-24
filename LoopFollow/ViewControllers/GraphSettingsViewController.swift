@@ -333,11 +333,5 @@ class GraphSettingsViewController: ThemedFormViewController {
                 guard let value = row.value else { return }
                 UserDefaultsRepository.downloadDays.value = Int(value)
         }
-            
-       +++ ButtonRow() {
-          $0.title = "Klar"
-       }.onCellSelection { (row, arg)  in
-          self.dismiss(animated:true, completion: nil)
-       }
     }
 }

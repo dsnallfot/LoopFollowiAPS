@@ -172,6 +172,18 @@ struct AggregatedStatsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 
+                ToolbarItem(placement: .topBarLeading) {
+                    if isLoadingData {
+                        ProgressView()
+                    } else {
+                        Button(action: {
+                            refreshIfNeeded(forceReload: true, overrideThrottle: true)
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                }
+                
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         showAllTooltips.toggle()
@@ -193,17 +205,6 @@ struct AggregatedStatsView: View {
                 
                 ToolbarSpacer(placement: .topBarTrailing)
                 
-                ToolbarItem(placement: .topBarTrailing) {
-                    if isLoadingData {
-                        ProgressView()
-                    } else {
-                        Button(action: {
-                            refreshIfNeeded(forceReload: true, overrideThrottle: true)
-                        }) {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                    }
-                }
                 if showsDoneButton {
                     ToolbarSpacer(placement: .topBarTrailing)
                     

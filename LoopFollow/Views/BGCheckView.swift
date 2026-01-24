@@ -69,7 +69,12 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
 
     // MARK: - Nav bar
 
+    // MARK: - Nav bar
+
     private func setupNavigationBar() {
+        // Samma logik som Behandlingslogg / Dextrologg
+        let isModalRoot = navigationController?.viewControllers.first === self
+
         // Reload-knapp (samma look & feel som GlucoseView)
         let reload = UIBarButtonItem(
             image: UIImage(systemName: "arrow.clockwise"),
@@ -78,9 +83,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             action: #selector(refreshTapped)
         )
 
-        navigationItem.leftBarButtonItem = reload
-
-        // Klar-knapp till höger, så det känns som Treatments/Glucose
+        // Klar-knapp när vi är modala
         let done = UIBarButtonItem(
             title: "Klar",
             style: .plain,
@@ -95,7 +98,16 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             action: #selector(showBGCheckStats)
         )
 
-        navigationItem.rightBarButtonItems = [done, statsBtn]
+        if isModalRoot {
+            // MODAL: stats + Klar, reload till vänster
+            navigationItem.rightBarButtonItems = [statsBtn, done]
+            navigationItem.leftBarButtonItem = reload
+        } else {
+            // PUSH: bara stats till höger, back-pil + reload till vänster
+            navigationItem.rightBarButtonItems = [statsBtn]
+            navigationItem.leftItemsSupplementBackButton = true
+            navigationItem.leftBarButtonItems = [reload]
+        }
     }
 
     @objc private func doneTapped() {

@@ -188,6 +188,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     }
 
     private func setupNavigationBar() {
+        let isModalRoot = navigationController?.viewControllers.first === self
 
         let filter = UIBarButtonItem(
             image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
@@ -196,8 +197,6 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
             action: #selector(toggleMissingOnly)
         )
         filter.tintColor = .label
-
-        navigationItem.leftBarButtonItems = [filter]
 
         let done = UIBarButtonItem(
             title: "Klar",
@@ -214,7 +213,14 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
         )
         stats.tintColor = .label
 
-        navigationItem.rightBarButtonItems = [done, stats]
+        if isModalRoot {
+            navigationItem.leftBarButtonItems = [filter]
+            navigationItem.rightBarButtonItems = [done, stats]
+        } else {
+            navigationItem.leftItemsSupplementBackButton = true
+            navigationItem.leftBarButtonItems = [filter]
+            navigationItem.rightBarButtonItems = [stats]
+        }
     }
     @objc private func toggleMissingOnly() {
         showOnlyMissingBattery.toggle()
