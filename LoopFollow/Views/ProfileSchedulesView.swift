@@ -330,13 +330,13 @@ struct ProfileSchedulesView: View {
                     }
                     .accessibilityLabel("Profil laddades ner:")
                 } else {
-                    HStack(spacing: 8) {
+                    HStack {
                         Button {
                             showAddUserData = true
                         } label: {
                             Image(systemName: "plus")
                         }
-                        .padding(.leading, 6)
+                        .padding(.leading, 2)
                         .accessibilityLabel("Lägg till användardata")
                         
                         Button {
@@ -354,7 +354,7 @@ struct ProfileSchedulesView: View {
                         } label: {
                             Image(systemName: "square.and.arrow.down")
                         }
-                        .padding(.trailing, 6)
+                        //.padding(.trailing, 6)
                         .accessibilityLabel("Importera användardata (CSV)")
                     }
                 }

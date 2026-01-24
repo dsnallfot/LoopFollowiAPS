@@ -214,12 +214,12 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
         stats.tintColor = .label
 
         if isModalRoot {
-            navigationItem.leftBarButtonItems = [filter]
-            navigationItem.rightBarButtonItems = [done, stats]
+            //navigationItem.leftBarButtonItems = [filter]
+            navigationItem.rightBarButtonItems = [done, stats, filter]
         } else {
             navigationItem.leftItemsSupplementBackButton = true
-            navigationItem.leftBarButtonItems = [filter]
-            navigationItem.rightBarButtonItems = [stats]
+            //navigationItem.leftBarButtonItems = [filter]
+            navigationItem.rightBarButtonItems = [stats, filter]
         }
     }
     @objc private func toggleMissingOnly() {

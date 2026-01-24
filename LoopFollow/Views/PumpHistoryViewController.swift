@@ -71,7 +71,7 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
         let leftStack = UIStackView(arrangedSubviews: [addBtn, shareBtn, importBtn])
         leftStack.axis = .horizontal
         leftStack.alignment = .center
-        leftStack.spacing = 9
+        leftStack.spacing = 15
         leftStack.isLayoutMarginsRelativeArrangement = true
         leftStack.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 2, bottom: 0, trailing: 0)
 
