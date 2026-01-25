@@ -363,8 +363,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             insulinStack,
             makeDivider(),
             realCrRow,
-            autoPercentageRow,
-            makeDivider()
+            autoPercentageRow
         ])
         rowsStack.axis = .vertical
         rowsStack.spacing = 5
@@ -374,7 +373,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         
         // Additional stats rows below chart
         let statsStackBelow = UIStackView(arrangedSubviews: [
-            makeStatRow(text: " →  Glukosförändring", valueLabel: changeBGValueLabel, unit: " mmol/L")
+            makeStatRow(text: "  →  Glukosförändring under vald tid", valueLabel: changeBGValueLabel, unit: " mmol/L")
         ])
         statsStackBelow.axis = .vertical
         statsStackBelow.spacing = 5
@@ -395,7 +394,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // chart config & height
         setupBGChart()
         bgChartView.translatesAutoresizingMaskIntoConstraints = false
-        bgChartView.heightAnchor.constraint(equalToConstant: 175).isActive = true
+        bgChartView.heightAnchor.constraint(equalToConstant: 170).isActive = true
 
         NSLayoutConstraint.activate([
             mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8), // reduced padding
@@ -403,10 +402,10 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             mainStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
         ])
         mainStack.setCustomSpacing(8, after: timeRow)          // extra gap before duration
-        mainStack.setCustomSpacing(10, after: durationControl)  // small gap before in-range bar
-        mainStack.setCustomSpacing(16, after: inRangeRow)      // clear separation before totals
+        mainStack.setCustomSpacing(12, after: durationControl)  // small gap before in-range bar
+        mainStack.setCustomSpacing(12, after: inRangeRow)      // clear separation before totals
         mainStack.setCustomSpacing(10, after: rowsStack)       // clear separation
-        mainStack.setCustomSpacing(15, after: bgChartView)     // extra gap before stats
+        mainStack.setCustomSpacing(12, after: bgChartView)     // extra gap before stats
         //mainStack.setCustomSpacing(5, after: statsStack)       // smaller gap after stats
 
         recalcEndTimeBasedOnDuration()
@@ -1477,8 +1476,8 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let textLabel = UILabel()
         textLabel.text = text
         textLabel.font = boldText
-            ? .preferredFont(forTextStyle: .body).withTraits(traits: .traitBold)
-            : .preferredFont(forTextStyle: .body)
+            ? .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
+            : .preferredFont(forTextStyle: .caption1)
         let spacer = UIView()
         // Append unit to value label later; start blank
         valueLabel.text = "--\(unit)"
@@ -1489,6 +1488,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         textLabel.textColor = .label
         valueLabel.textColor = .label
+        valueLabel.font = .preferredFont(forTextStyle: .caption1)
         return row
     }
 
