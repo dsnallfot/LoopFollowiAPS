@@ -56,7 +56,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Fingersticklogg"
+        title = "Fingerstick"
         //view.backgroundColor = .systemBackground
         updateBackgroundForCurrentMode()
 
@@ -66,8 +66,6 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
 
         loadBGChecks()
     }
-
-    // MARK: - Nav bar
 
     // MARK: - Nav bar
 

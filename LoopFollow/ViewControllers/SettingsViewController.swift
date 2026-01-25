@@ -90,11 +90,11 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Behandlingslogg"
+            row.title = "Behandlingshistorik"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let treatmentsVC = TreatmentsTableView()
-                    treatmentsVC.title = "Behandlingslogg"
+                    treatmentsVC.title = "Behandlingar"
                     treatmentsVC.hidesBottomBarWhenPushed = false
                     return treatmentsVC
                 }),
@@ -103,11 +103,11 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Dextrologg"
+            row.title = "Dextrohistorik"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let lowTreatVC = LowTreatmentsView()
-                    lowTreatVC.title = "Dextrologg"
+                    lowTreatVC.title = "Dextro"
                     lowTreatVC.hidesBottomBarWhenPushed = false
                     return lowTreatVC
                 }),
@@ -116,11 +116,11 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Fingersticklogg"
+            row.title = "Fingerstickhistorik"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let bgCheckVC = BGCheckView()
-                    bgCheckVC.title = "Fingersticklogg"
+                    bgCheckVC.title = "Fingerstick"
                     bgCheckVC.hidesBottomBarWhenPushed = false
                     return bgCheckVC
                 }),
@@ -129,11 +129,11 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Glukoslogg & sensorfel"
+            row.title = "Glukoshistorik & sensorfel"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let glucoseVC = GlucoseView()
-                    glucoseVC.title = "Glukoslogg & sensorfel"
+                    glucoseVC.title = "Glukos"
                     glucoseVC.hidesBottomBarWhenPushed = false
                     return glucoseVC
                 }),
@@ -146,7 +146,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let pumpHistoryVC = PumpHistoryViewController()
-                    pumpHistoryVC.title = "Poddhistorik"
+                    pumpHistoryVC.title = "Poddar"
                     pumpHistoryVC.hidesBottomBarWhenPushed = false
                     return pumpHistoryVC
                 }),
@@ -159,7 +159,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let sensorHistoryVC = SensorHistoryViewController()
-                    sensorHistoryVC.title = "Sensorhistorik"
+                    sensorHistoryVC.title = "Sensorer"
                     sensorHistoryVC.hidesBottomBarWhenPushed = false
                     return sensorHistoryVC
                 }),

@@ -60,7 +60,7 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Dextrologg"
+        title = "Dextro"
         //view.backgroundColor = .systemBackground
         updateBackgroundForCurrentMode()
 

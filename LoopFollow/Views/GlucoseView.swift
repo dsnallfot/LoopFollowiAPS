@@ -293,7 +293,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Glukoslogg"
+        title = "Glukos"
         //view.backgroundColor = .systemBackground
         updateBackgroundForCurrentMode()
 

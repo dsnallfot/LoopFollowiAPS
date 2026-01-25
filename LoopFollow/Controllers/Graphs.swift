@@ -445,7 +445,7 @@ extension MainViewController {
         let events = buildEventsForMealAnalysis()
 
         let title: String
-        let end: Date
+        let end: Date // Finns tillgängligt som option ifall man vill styra sluttid för ngt specifikt event
         let adjustedStart: Date
         switch source {
         case .override:
