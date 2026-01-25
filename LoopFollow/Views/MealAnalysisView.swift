@@ -148,7 +148,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         return label
     }()
     // Statistics value labels
-    private let realCRValueLabel          = MealAnalysisView.makeValueLabel()
+    private let realCRValueLabel          = MealAnalysisView.makeValueLabel(bold: false)
     private let manualBolusValueLabel     = MealAnalysisView.makeValueLabel()
     private let smbTempValueLabel         = MealAnalysisView.makeValueLabel()
     private let changeBGValueLabel = MealAnalysisView.makeValueLabel()
@@ -308,10 +308,25 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             valueLabel: fpuValueLabel,
             secondary: true
         )
-
-        let rowsStack = UIStackView(arrangedSubviews: [
-            carbsRow,
-            fpuRow,
+        
+        let realCrRow = makeRow(
+            iconName: "divide",
+            iconColor: UIColor.label.withAlphaComponent(1.0),
+            text: "Verklig Insulinkvot (CR)",
+            valueLabel: realCRValueLabel,
+            boldText: true
+        )
+        
+        let autoPercentageRow = makeRow(
+            iconName: "chart.pie",
+            iconColor: UIColor.label.withAlphaComponent(0.5),
+            text: "Manuell vs auto insulin",
+            valueLabel: manualVsAutomatedLabel,
+            secondary: true
+        )
+        
+        // Additional stats rows below chart
+        let insulinStack = UIStackView(arrangedSubviews: [
             makeRow(iconName: "circle.fill",
                     iconColor: .systemBlue,
                     text: "Måltidsinsulin Netto",
@@ -338,21 +353,31 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                     valueLabel: profileBasalValueLabel,
                     secondary: true)
         ])
+        insulinStack.axis = .vertical
+        insulinStack.spacing = 5
+
+        let rowsStack = UIStackView(arrangedSubviews: [
+            carbsRow,
+            fpuRow,
+            makeDivider(),
+            insulinStack,
+            makeDivider(),
+            realCrRow,
+            autoPercentageRow,
+            makeDivider()
+        ])
         rowsStack.axis = .vertical
         rowsStack.spacing = 5
         rowsStack.setCustomSpacing(5, after: carbsRow) // extra space before fpuRow
-        rowsStack.setCustomSpacing(15, after: fpuRow) // extra space before insulin rows
-
-        // Additional stats rows
-        let statsStack = UIStackView(arrangedSubviews: [
-            makeStatRow(text: " •  Glukosförändring",           valueLabel: changeBGValueLabel,  unit: " mmol/L"),
-            makeStatRow(text: " •  Verklig Insulinkvot (CR)",   valueLabel: realCRValueLabel,    unit: " g/E"),
-            //makeStatRow(text: " •  Andel Manuell Bolus",        valueLabel: manualBolusValueLabel, unit: " %"),
-            //makeStatRow(text: " •  Andel SMB & Temp Basal",     valueLabel: smbTempValueLabel,   unit: " %")
-            makeStatRow(text: " •  Andel Manuellt vs Auto",     valueLabel: manualVsAutomatedLabel,   unit: " %")
+        //rowsStack.setCustomSpacing(15, after: fpuRow) // extra space before insulin rows
+        //rowsStack.setCustomSpacing(15, after: insulinStack) // extra space before realCrRow
+        
+        // Additional stats rows below chart
+        let statsStackBelow = UIStackView(arrangedSubviews: [
+            makeStatRow(text: " →  Glukosförändring", valueLabel: changeBGValueLabel, unit: " mmol/L")
         ])
-        statsStack.axis = .vertical
-        statsStack.spacing = 5
+        statsStackBelow.axis = .vertical
+        statsStackBelow.spacing = 5
 
         let mainStack = UIStackView(arrangedSubviews: [
             timeRow,
@@ -360,7 +385,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             inRangeRow,
             rowsStack,
             bgChartView,
-            statsStack
+            statsStackBelow
         ])
         mainStack.axis = .vertical
         mainStack.spacing = 5
@@ -370,7 +395,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // chart config & height
         setupBGChart()
         bgChartView.translatesAutoresizingMaskIntoConstraints = false
-        bgChartView.heightAnchor.constraint(equalToConstant: 190).isActive = true
+        bgChartView.heightAnchor.constraint(equalToConstant: 175).isActive = true
 
         NSLayoutConstraint.activate([
             mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8), // reduced padding
@@ -382,7 +407,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         mainStack.setCustomSpacing(16, after: inRangeRow)      // clear separation before totals
         mainStack.setCustomSpacing(10, after: rowsStack)       // clear separation
         mainStack.setCustomSpacing(15, after: bgChartView)     // extra gap before stats
-        mainStack.setCustomSpacing(5, after: statsStack)       // smaller gap after stats
+        //mainStack.setCustomSpacing(5, after: statsStack)       // smaller gap after stats
 
         recalcEndTimeBasedOnDuration()
         updateTotals()
@@ -953,9 +978,9 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let smbTempPctString = String(format: "%.0f %%", smbTempPct)
         // update UI
         insulinTotalValueLabel.text = String(format: "%.2f E", netInsulin)
-        bolusValueLabel.text        = String(format: "%.2f E", bolusTotal)
-        smbValueLabel.text          = String(format: "%.2f E", smbTotal)
-        basalValueLabel.text        = String(format: "%.2f E", basalTotal)
+        bolusValueLabel.text        = String(format: "+%.2f E", bolusTotal)
+        smbValueLabel.text          = String(format: "+%.2f E", smbTotal)
+        basalValueLabel.text        = String(format: "+%.2f E", basalTotal)
         profileBasalValueLabel.text = String(format: "-%.2f E", profileBasalTotal)
         carbsValueLabel.text        = String(format: "%.0f g",  carbsTotal)
         fpuValueLabel.text          = String(format: "%.0f g", fpuTotal)
@@ -964,6 +989,16 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         smbTempValueLabel.text      = String(format: "%.0f %%", smbTempPct)
         manualVsAutomatedLabel.text = realCR > 0 ? "\(manualBolusPctString) vs \(smbTempPctString)" : "-- % vs -- %"
         updateBGLabels()
+    }
+    
+    private func makeDivider(height: CGFloat = 1) -> UIView {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.backgroundColor = .separator   // systemanpassad färg
+        NSLayoutConstraint.activate([
+            v.heightAnchor.constraint(equalToConstant: height)
+        ])
+        return v
     }
 
     private static func makeValueLabel(bold: Bool = false) -> UILabel {
@@ -1437,9 +1472,13 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
 
     private func makeStatRow(text: String,
                              valueLabel: UILabel,
+                             boldText: Bool = false,
                              unit: String) -> UIStackView {
         let textLabel = UILabel()
         textLabel.text = text
+        textLabel.font = boldText
+            ? .preferredFont(forTextStyle: .body).withTraits(traits: .traitBold)
+            : .preferredFont(forTextStyle: .body)
         let spacer = UIView()
         // Append unit to value label later; start blank
         valueLabel.text = "--\(unit)"
@@ -1448,8 +1487,8 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         row.spacing = 5
         valueLabel.setContentHuggingPriority(.required, for: .horizontal)
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        textLabel.textColor = .secondaryLabel
-        valueLabel.textColor = .secondaryLabel
+        textLabel.textColor = .label
+        valueLabel.textColor = .label
         return row
     }
 

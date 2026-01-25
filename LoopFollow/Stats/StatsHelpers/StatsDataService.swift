@@ -916,7 +916,8 @@ class StatsDataService {
         LogManager.shared.log(
             category: .analysis,
             message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)",
-            isDebug: true
+            isDebug: true,
+            isTempDebug: true
         )
         return results
     }

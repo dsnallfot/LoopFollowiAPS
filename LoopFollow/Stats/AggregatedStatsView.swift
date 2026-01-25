@@ -763,42 +763,49 @@ struct StatsGridView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            if hasInsulinData && hasCarbData {
+            // Insulin total & Kolhydrater Hstack
             HStack(spacing: 16) {
-                StatCard(
-                    title: isTodayOnly ? "Insulin Totalt" : "Insulin Totalt (TDD)",
-                    value: formatInsulin(simpleStats.totalDailyDose),
-                    unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
-                    color: .blue,
-                    trendArrow: showTrends ? simpleStats.totalDailyDoseTrend : nil,
-                    tooltipCurrent: simpleStats.totalDailyDose,
-                    tooltipPrevious: simpleStats.prevTotalDailyDose,
-                    periodLabel: periodLabel,
-                    showAllTooltips: $showAllTooltips,
-                    tooltipResetToken: $tooltipResetToken
-                )
-                Button(action: {
-                    showFPU.toggle()
-                    Storage.shared.showFPU.value = showFPU
-                }) {
+                if hasInsulinData {
                     StatCard(
-                        title: showFPU ? "Varav FPU" : "Kolhydrater Totalt",
-                        value: formatCarbs(showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs),
-                        unit: isTodayOnly || isOneDayOnly ? "g" : "g/dag",
-                        color: showFPU ? .brown : .orange,
-                        isInteractive: true,
-                        trendArrow: showTrends ? simpleStats.avgCarbsTrend : nil,
-                        tooltipCurrent: showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs,
-                        tooltipPrevious: showFPU ? simpleStats.prevAvgFPUCarbs : simpleStats.prevAvgCarbs,
+                        title: isTodayOnly ? "Insulin Totalt" : "Insulin Totalt (TDD)",
+                        value: formatInsulin(simpleStats.totalDailyDose),
+                        unit: isTodayOnly || isOneDayOnly ? "E" : "E/dag",
+                        color: .blue,
+                        trendArrow: showTrends ? simpleStats.totalDailyDoseTrend : nil,
+                        tooltipCurrent: simpleStats.totalDailyDose,
+                        tooltipPrevious: simpleStats.prevTotalDailyDose,
                         periodLabel: periodLabel,
                         showAllTooltips: $showAllTooltips,
                         tooltipResetToken: $tooltipResetToken
                     )
-                    .buttonStyle(PlainButtonStyle())
+                }
+                if hasCarbData {
+                    Button(action: {
+                        showFPU.toggle()
+                        Storage.shared.showFPU.value = showFPU
+                    }) {
+                        StatCard(
+                            title: showFPU ? "Varav FPU" : "Kolhydrater Totalt",
+                            value: formatCarbs(showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs),
+                            unit: isTodayOnly || isOneDayOnly ? "g" : "g/dag",
+                            color: showFPU ? .brown : .orange,
+                            isInteractive: true,
+                            trendArrow: showTrends ? simpleStats.avgCarbsTrend : nil,
+                            tooltipCurrent: showFPU ? simpleStats.avgFPUCarbs : simpleStats.avgCarbs,
+                            tooltipPrevious: showFPU ? simpleStats.prevAvgFPUCarbs : simpleStats.prevAvgCarbs,
+                            periodLabel: periodLabel,
+                            showAllTooltips: $showAllTooltips,
+                            tooltipResetToken: $tooltipResetToken
+                        )
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                } else {
+                    Color.clear
+                        .frame(maxWidth: .infinity)
                 }
             }
-        }
-            
+        
+            // Bolus total & Måltidsbolus Hstack
             if hasInsulinData && hasCarbData {
                 HStack(spacing: 16) {
                     StatCard(
@@ -828,6 +835,7 @@ struct StatsGridView: View {
                 }
             }
             
+            // Basal & Bolus Hstack
             if hasInsulinData {
                 HStack(spacing: 16) {
                     Button(action: {
@@ -875,7 +883,7 @@ struct StatsGridView: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            
+            // Låga värden & Dextro Hstack
                 HStack(spacing: 16) {
                         Button(action: {
                             showLowPercentage.toggle()
