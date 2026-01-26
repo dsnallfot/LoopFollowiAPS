@@ -361,23 +361,27 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         <<< ButtonRow("backgroundRefreshSettings") { [weak self] row in
             row.title = "Bakgrundsaktivitet"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeBackgroundRefreshSettingsViewController()
-                }),
-                onDismiss: nil
-            )
+            row.presentationMode = .none
+            row.cellUpdate { cell, _ in
+                cell.textLabel?.textAlignment = .left
+                cell.textLabel?.textColor = .label
+                cell.accessoryType = .disclosureIndicator
+            }
+            row.onCellSelection { [weak self] _, _ in
+                self?.presentBackgroundRefreshSettings()
+            }
         }
         <<< ButtonRow("syncNewSensor") { [weak self] row in
             row.title = "Dexcom heartbeat synk"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeSyncNewSensorViewController()
-                }),
-                onDismiss: nil
-            )
+            row.presentationMode = .none
+            row.cellUpdate { cell, _ in
+                cell.textLabel?.textAlignment = .left
+                cell.textLabel?.textColor = .label
+                cell.accessoryType = .disclosureIndicator
+            }
+            row.onCellSelection { [weak self] _, _ in
+                self?.presentSyncNewSensorView()
+            }
         }
         
         <<< ButtonRow("remoteSettings") { [weak self] row in
@@ -575,7 +579,15 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
     func presentBackgroundRefreshSettings() {
         let controller = makeBackgroundRefreshSettingsViewController()
-        navigationController?.show(controller, sender: self)
+        controller.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .done,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
+        let nav = UINavigationController(rootViewController: controller)
+        nav.modalPresentationStyle = .formSheet
+        present(nav, animated: true)
     }
 
     private func makeBackgroundRefreshSettingsViewController() -> UIViewController {
@@ -595,7 +607,15 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
     
     func presentSyncNewSensorView() {
         let controller = makeSyncNewSensorViewController()
-        navigationController?.show(controller, sender: self)
+        controller.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .done,
+            target: self,
+            action: #selector(dismissPresentedController)
+        )
+        let nav = UINavigationController(rootViewController: controller)
+        nav.modalPresentationStyle = .formSheet
+        present(nav, animated: true)
     }
     
     private func makeSyncNewSensorViewController() -> UIViewController {
