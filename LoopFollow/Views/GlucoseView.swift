@@ -467,8 +467,8 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     @objc private func toggleMissingOnly() {
         showOnlyMissingGlucose.toggle()
 
-        //if let filterButton = navigationItem.rightBarButtonItems?.last {
-        if let filterButton = navigationItem.leftBarButtonItems?.last {
+        if let filterButton = navigationItem.rightBarButtonItems?.last {
+        //if let filterButton = navigationItem.leftBarButtonItems?.last {
             let name = showOnlyMissingGlucose
                 ? "line.3.horizontal.decrease.circle.fill"
                 : "line.3.horizontal.decrease.circle"
@@ -711,7 +711,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         let isSensorErrors = (dataMode == .sensorErrors)
         datePicker.isHidden = isSensorErrors
 
-        if let filterButton = navigationItem.leftBarButtonItems?.last {
+        if let filterButton = navigationItem.rightBarButtonItems?.last {
             if isSensorErrors {
                 // När vi går in i Sensorfel-läget: nollställ filtret och inaktivera knappen.
                 showOnlyMissingGlucose = false

@@ -87,7 +87,7 @@ struct LogView: View {
             .background(Color.clear)
         }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
                     viewModel.searchResultsIsHighlighted.toggle()
                 }) {

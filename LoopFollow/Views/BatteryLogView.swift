@@ -225,7 +225,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
     @objc private func toggleMissingOnly() {
         showOnlyMissingBattery.toggle()
 
-        if let filterButton = navigationItem.leftBarButtonItems?.last {
+        if let filterButton = navigationItem.rightBarButtonItems?.last {
             let name = showOnlyMissingBattery
                 ? "line.3.horizontal.decrease.circle.fill"
                 : "line.3.horizontal.decrease.circle"
