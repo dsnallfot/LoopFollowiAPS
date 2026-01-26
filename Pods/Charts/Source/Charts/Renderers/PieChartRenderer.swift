@@ -278,6 +278,7 @@ open class PieChartRenderer: NSObject, DataRenderer
             context.addPath(path)
             context.fillPath(using: .evenOdd)
 
+            /*
             // Daniel: Add the thin line around the slices
             context.beginPath()
             context.addPath(path)
@@ -288,7 +289,7 @@ open class PieChartRenderer: NSObject, DataRenderer
             }
             context.setLineWidth(0.5 / chart.viewPortHandler.scaleX)
             context.strokePath()
-            
+            */
             let axElement = createAccessibleElement(withIndex: j,
                                                     container: chart,
                                                     dataSet: dataSet)
