@@ -95,12 +95,15 @@ private final class EnteredByCell: UITableViewCell {
             bolusLabel.text = ""
             mealLabel.text  = ""
             totalLabel.text = ""
+            // Viktigt: nollställ bakgrund även för spacer‑rader
+            contentView.backgroundColor = .clear
+            backgroundColor = .clear
             return
         }
 
         // Reset bakgrund pga cell-återanvändning
-            contentView.backgroundColor = .clear
-            backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        backgroundColor = .clear
 
             titleLabel.text = row.title
 
@@ -167,16 +170,17 @@ private final class EnteredByCell: UITableViewCell {
 }
 
 final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
-
+    
     // Spåra vilken picker som senast ändrades
     private var lastChangedPicker: UIDatePicker?
-
+    private var chevronLongPressConfigured = false
+    
     private let startTime: Date
     private let endTime: Date
     private var currentStart: Date
     private var currentEnd: Date
     private var treatments: [Treatment] = []
-
+    
     private let dateLabel = UILabel()
     // New date picker UI
     private let startDatePicker = UIDatePicker()
@@ -189,7 +193,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         v.chartDescription.enabled = false
         v.rightAxis.enabled = false
         v.minOffset = 8
-
+        
         // Ingen zoom/scroll – allt viktigt syns i grundläget
         v.pinchZoomEnabled = false
         v.doubleTapToZoomEnabled = false
@@ -200,7 +204,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         v.highlightPerDragEnabled = false
         v.drawMarkers = false
         v.maxVisibleCount = 1000000
-
+        
         return v
     }()
     
@@ -210,7 +214,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
-
+    
     private let xAxisLabelsStack: UIStackView = {()
         let labels = ["Mamma", "Pappa", "Resurs", "Trio"].map { title -> UILabel in
             let label = UILabel()
@@ -222,7 +226,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             label.minimumScaleFactor = 0.7
             return label
         }
-
+        
         let stack = UIStackView(arrangedSubviews: labels)
         stack.axis = .horizontal
         stack.alignment = .fill
@@ -231,14 +235,14 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
-
+    
     private var rows: [EnteredByRow] = []
-
+    
     // Event-typer vi tolkar som bolus respektive måltid
     // Endast manuella bolusar – SMB är automatisk och ska inte räknas här
     private let bolusTypes: Set<String> = ["Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna"]
     private let mealTypes: Set<String>  = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid"]
-
+    
     init(startTime: Date, endTime: Date) {
         self.startTime = startTime
         self.endTime   = endTime
@@ -247,51 +251,91 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         super.init(nibName: nil, bundle: nil)
     }
     
-
-
+    
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
+    
+    // Promote chevron buttons to properties
+    private lazy var backButton: UIBarButtonItem = {
+        let b = UIBarButtonItem(
+            image: UIImage(systemName: "chevron.left"),
+            style: .plain,
+            target: self,
+            action: #selector(stepBackOneDay)
+        )
+        return b
+    }()
+    
+    private lazy var forwardButton: UIBarButtonItem = {
+        let b = UIBarButtonItem(
+            image: UIImage(systemName: "chevron.right"),
+            style: .plain,
+            target: self,
+            action: #selector(stepForwardOneDay)
+        )
+        return b
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        title = "Manuella behandlingar"
+        
+        title = "Behandlingsbeslut"
         updateBackgroundForCurrentMode()
-
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+        
+        let doneButton = UIBarButtonItem(
             title: "Klar",
             style: .plain,
             target: self,
             action: #selector(dismissSelf)
         )
-
+        
+        // Ordning: <  >  Klar
+        navigationItem.rightBarButtonItems = [doneButton, forwardButton, backButton]
+        
+        // Initial enabled-state
+        updateChevronEnabledState()
+        
         //setupHeaderLabel() // No longer needed as visible UI
         setupDatePickers()
         setupTableView()
         loadTreatmentsAndBuildRows()
     }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
+        // Säkerställ att UIBarButtonItem har en underliggande view innan vi lägger till long-press
+        if !chevronLongPressConfigured {
+            addLongPressToChevron(backButton, delta: -7)
+            addLongPressToChevron(forwardButton, delta: 7)
+            chevronLongPressConfigured = true
+        }
+    }
     private func loadTreatmentsAndBuildRows(forcedStart: Date? = nil, forcedEnd: Date? = nil) {
         Task {
             await MainActor.run {
+                self.backButton.isEnabled = false
+                self.forwardButton.isEnabled = false
                 self.startDatePicker.isEnabled = false
                 self.endDatePicker.isEnabled = false
                 self.chartLoadingIndicator.startAnimating()
             }
-
+            
             let from = forcedStart ?? self.startTime
             let to   = forcedEnd   ?? self.endTime
-
+            
             // Persist the updated window
             self.currentStart = from
             self.currentEnd   = to
-
+            
             let (_, treatsJSON) = await NightscoutCache.loadWindow(from: from, to: to)
-
+            
             let iso = ISO8601DateFormatter()
             iso.formatOptions = [.withInternetDateTime]
             iso.timeZone = TimeZone(secondsFromGMT: 0)
-
+            
             let loadedTreatments: [Treatment] = treatsJSON.compactMap { tjson in
                 Treatment(dictionary: [
                     "_id":       tjson._id as AnyObject,
@@ -310,68 +354,69 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                     "duration":  tjson.tempBasalDuration as AnyObject
                 ])
             }
-
+            
             await MainActor.run {
                 self.treatments = loadedTreatments
                 self.buildRows()
                 self.chartLoadingIndicator.stopAnimating()
                 self.startDatePicker.isEnabled = true
                 self.endDatePicker.isEnabled = true
+                self.updateChevronEnabledState()
             }
         }
     }
-
+    
     // MARK: - UI
-
+    
     // Date pickers for selecting whole days
     private func setupDatePickers() {
         startDatePicker.datePickerMode = .date
         endDatePicker.datePickerMode = .date
-
+        
         startDatePicker.preferredDatePickerStyle = .compact
         endDatePicker.preferredDatePickerStyle = .compact
-
+        
         startDatePicker.locale = Locale(identifier: "sv_SE")
         endDatePicker.locale = Locale(identifier: "sv_SE")
-
+        
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
-
+        
         startDatePicker.minimumDate = minDate
         endDatePicker.minimumDate = minDate
         startDatePicker.maximumDate = today
         endDatePicker.maximumDate = today
-
+        
         startDatePicker.addTarget(self, action: #selector(startPickerChanged), for: .valueChanged)
         endDatePicker.addTarget(self, action: #selector(endPickerChanged), for: .valueChanged)
-
+        
         // Initiera med inkommande datumintervall (hela dagar), klampat till [today-90d, today]
         var initialStart = cal.startOfDay(for: startTime)
         var initialEnd = cal.startOfDay(for: endTime)
-
+        
         if initialStart < minDate { initialStart = minDate }
         if initialStart > today   { initialStart = today }
-
+        
         if initialEnd < minDate { initialEnd = minDate }
         if initialEnd > today   { initialEnd = today }
-
+        
         startDatePicker.date = initialStart
         endDatePicker.date = initialEnd
-
+        
         datePickersStack.axis = .horizontal
         datePickersStack.alignment = .center
         datePickersStack.distribution = .equalSpacing
         datePickersStack.translatesAutoresizingMaskIntoConstraints = false
-
+        
         let fromLabel = UILabel()
         fromLabel.text = "Vald period:"
         fromLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
-
+        
         let toLabel = UILabel()
         toLabel.text = ""
         toLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
-
+        
         datePickersStack.addArrangedSubview(fromLabel)
         datePickersStack.addArrangedSubview(UIView()) // spacer
         datePickersStack.addArrangedSubview(startDatePicker)
@@ -383,21 +428,21 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         lastChangedPicker = startDatePicker
         datePickerChanged()
     }
-
+    
     @objc private func endPickerChanged() {
         lastChangedPicker = endDatePicker
         datePickerChanged()
     }
-
+    
     @objc private func datePickerChanged() {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
-
+        
         // Klampa till [today-90d, today]
         startDatePicker.date = min(max(startDatePicker.date, minDate), today)
         endDatePicker.date   = min(max(endDatePicker.date, minDate), today)
-
+        
         // Synka beroende på vilken picker som ändrades
         if lastChangedPicker === startDatePicker {
             if startDatePicker.date > endDatePicker.date {
@@ -408,13 +453,14 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                 startDatePicker.date = endDatePicker.date
             }
         }
-
+        
         let newStart = cal.startOfDay(for: startDatePicker.date)
         let newEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: endDatePicker.date)) ?? endDatePicker.date
-
+        
         loadTreatmentsAndBuildRows(forcedStart: newStart, forcedEnd: newEnd)
+        updateChevronEnabledState()
     }
-
+    
     private func setupTableView() {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .clear
@@ -424,55 +470,55 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         tableView.dataSource = self
         tableView.delegate   = self
         tableView.register(EnteredByCell.self, forCellReuseIdentifier: "EnteredByCell")
-
+        
         view.addSubview(tableView)
-
+        
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
-
+        
         // Bygg en header som innehåller datumrad + stapeldiagram
         let header = UIView()
         header.backgroundColor = .clear
-
+        
         datePickersStack.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
-
+        
         header.addSubview(datePickersStack)
         header.addSubview(chartView)
         header.addSubview(xAxisLabelsStack)
-
+        
         chartView.addSubview(chartLoadingIndicator)
-
+        
         NSLayoutConstraint.activate([
             chartLoadingIndicator.centerXAnchor.constraint(equalTo: chartView.centerXAnchor),
             chartLoadingIndicator.centerYAnchor.constraint(equalTo: chartView.centerYAnchor)
         ])
-
+        
         NSLayoutConstraint.activate([
             datePickersStack.topAnchor.constraint(equalTo: header.topAnchor, constant: 8),
             datePickersStack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             datePickersStack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-
+            
             chartView.topAnchor.constraint(equalTo: datePickersStack.bottomAnchor, constant: 8),
             chartView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -12),
             chartView.heightAnchor.constraint(equalToConstant: 140),
-
+            
             xAxisLabelsStack.topAnchor.constraint(equalTo: chartView.bottomAnchor, constant: -2),
             xAxisLabelsStack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 32),
             xAxisLabelsStack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -20),
             xAxisLabelsStack.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8)
         ])
-
+        
         // Sätt initial storlek; bredd justeras i viewDidLayoutSubviews
         header.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 230)
         tableView.tableHeaderView = header
     }
-
+    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if let header = tableView.tableHeaderView {
@@ -483,17 +529,17 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             }
         }
     }
-
+    
     @objc private func dismissSelf() {
         dismiss(animated: true, completion: nil)
     }
-
+    
     private func updateChart(mamma: (bolus: Int, meal: Int),
                              pappa: (bolus: Int, meal: Int),
                              resurs: (bolus: Int, meal: Int),
                              trioBolus: Int,
                              trioMeal: Int) {
-
+        
         let groups: [(bolus: Int, meal: Int)] = [
             mamma,
             pappa,
@@ -501,10 +547,10 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             (trioBolus, trioMeal)
         ]
         let labels = ["Mamma", "Pappa", "Resurs", "Trio"]
-
+        
         var entries: [BarChartDataEntry] = []
         entries.reserveCapacity(groups.count)
-
+        
         var maxTotal = 0
         for (index, g) in groups.enumerated() {
             let bolus = Double(g.bolus)
@@ -513,33 +559,33 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             let total = g.bolus + g.meal
             if total > maxTotal { maxTotal = total }
         }
-
+        
         let dataSet = BarChartDataSet(entries: entries, label: "")
         dataSet.colors = [UIColor.insulin, UIColor.carbs]
         dataSet.stackLabels = ["Bolus", "Måltid"]
         dataSet.drawValuesEnabled = false
-
+        
         let data = BarChartData(dataSet: dataSet)
         data.barWidth = 0.6
         chartView.data = data
-
+        
         chartView.drawGridBackgroundEnabled = true
         chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
-
+        
         // X-axis – använd bara position för bars; etiketter ritas i egen UIStackView under grafen
         let xAxis = chartView.xAxis
         xAxis.labelPosition = .bottom
         xAxis.granularity = 1
         xAxis.granularityEnabled = true
         xAxis.drawLabelsEnabled = false  // vi visar custom-etiketter i xAxisLabelsStack
-
+        
         // Se alltid till att alla fyra kategorier syns, även om någon har 0 i data
         xAxis.axisMinimum = -0.5
         xAxis.axisMaximum = Double(labels.count) - 0.5
         xAxis.centerAxisLabelsEnabled = false
-
+        
         chartView.fitBars = true
-
+        
         // Y-axis configuration
         let yAxis = chartView.leftAxis
         yAxis.axisMinimum = 0
@@ -551,7 +597,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         yAxis.gridColor = UIColor.lightGray.withAlphaComponent(0.5)
         yAxis.gridLineWidth = 0.5
         yAxis.gridLineDashLengths = [2, 2]
-
+        
         chartView.rightAxis.enabled = false
         
         // Custom X-axis renderer to draw grid lines between bars
@@ -560,17 +606,17 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         chartView.notifyDataSetChanged()
         chartView.setNeedsDisplay()
     }
-
+    
     // MARK: - Data / beräkningar
-
+    
     private func buildRows() {
         // Filtrera behandlingar inom det nuvarande fönstret och som är relevanta (bolus/måltid)
         let relevant = treatments.filter { treatment in
             let t = treatment.timestamp
             guard t >= currentStart && t <= currentEnd else { return false }
-
+            
             let et = treatment.eventType
-
+            
             // Exkludera automatiska Fett & Protein-poster:
             // Carb Correction utan foodType är auto/FPU och ska inte räknas som manuell måltid här.
             if et == "Carb Correction" {
@@ -579,10 +625,10 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                     return false
                 }
             }
-
+            
             return bolusTypes.contains(et) || mealTypes.contains(et)
         }
-
+        
         guard !relevant.isEmpty else {
             chartView.data = nil
             chartView.setNeedsDisplay()
@@ -606,31 +652,31 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             tableView.reloadData()
             return
         }
-
+        
         // Totals
         var totalBolus = 0
         var totalMeal  = 0
-
+        
         // Person + app-kombinationer, t.ex. "Mamma_LF"
         typealias Key = String
         var bolusByKey: [Key: Int] = [:]
         var mealByKey:  [Key: Int] = [:]
-
+        
         // App-summeringar oberoende av person
         var bolusByApp: [String: Int] = [:]   // "LF", "CC", "Trio"
         var mealByApp:  [String: Int] = [:]
-
+        
         func inc(_ dict: inout [Key: Int], key: Key, amount: Int = 1) {
             dict[key, default: 0] += amount
         }
-
+        
         func classifyPerson(_ enteredBy: String) -> String? {
             if enteredBy.contains("Mamma") { return "Mamma" }
             if enteredBy.contains("Pappa") { return "Pappa" }
             if enteredBy.contains("Resurs") { return "Resurs" }
             return nil
         }
-
+        
         func classifyApp(_ enteredBy: String) -> String {
             if enteredBy.contains(" LF") || enteredBy.contains("LF") || enteredBy.contains("Loop") {
                 return "LF"   // Loop Follow
@@ -641,77 +687,77 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             // default: Trio / annat
             return "Trio"
         }
-
+        
         for t in relevant {
             let et = t.eventType
             let enteredBy = (t.rawData["enteredBy"] as? String) ?? ""
-
+            
             let isBolus = bolusTypes.contains(et)
             let isMeal  = mealTypes.contains(et)
-
+            
             if isBolus { totalBolus += 1 }
             if isMeal  { totalMeal  += 1 }
-
+            
             let app = classifyApp(enteredBy)
             let person = classifyPerson(enteredBy)
-
+            
             if isBolus {
                 bolusByApp[app, default: 0] += 1
             }
             if isMeal {
                 mealByApp[app, default: 0] += 1
             }
-
+            
             if let person = person {
                 let key = "\(person) \(app)"
                 if isBolus { inc(&bolusByKey, key: key) }
                 if isMeal  { inc(&mealByKey,  key: key) }
             }
         }
-
+        
         let totalAll = totalBolus + totalMeal
-
+        
         func pct(_ part: Int, of total: Int) -> Int? {
             guard total > 0, part > 0 else { return 0 }
             return Int(round((Double(part) / Double(total)) * 100.0))
         }
-
+        
         // Hjälpare för att plocka combos
         func countsFor(person: String) -> (bolus: Int, meal: Int) {
             let lfKey = "\(person) LF"
             let ccKey = "\(person) CC"
             let trioKey = "\(person) Trio"
-
+            
             let bolus = (bolusByKey[lfKey] ?? 0) +
-                        (bolusByKey[ccKey] ?? 0) +
-                        (bolusByKey[trioKey] ?? 0)
+            (bolusByKey[ccKey] ?? 0) +
+            (bolusByKey[trioKey] ?? 0)
             let meal  = (mealByKey[lfKey] ?? 0) +
-                        (mealByKey[ccKey] ?? 0) +
-                        (mealByKey[trioKey] ?? 0)
+            (mealByKey[ccKey] ?? 0) +
+            (mealByKey[trioKey] ?? 0)
             return (bolus, meal)
         }
-
+        
         func countsFor(person: String, app: String) -> (bolus: Int, meal: Int) {
             let key = "\(person) \(app)"
             return (bolusByKey[key] ?? 0, mealByKey[key] ?? 0)
         }
-
+        
         // Person-summor
         let mamma = countsFor(person: "Mamma")
         let pappa = countsFor(person: "Pappa")
         let resurs = countsFor(person: "Resurs")
-
+        
         let mammaTotal = mamma.bolus + mamma.meal
         let pappaTotal = pappa.bolus + pappa.meal
         let resursTotal = resurs.bolus + resurs.meal
-
+        
         // Första blocket – Mamma / Pappa / Resurs / Trio / Totalt
         let firstTrioBolus = max(0, totalBolus - mamma.bolus - pappa.bolus - resurs.bolus)
         let firstTrioMeal  = max(0, totalMeal  - mamma.meal  - pappa.meal  - resurs.meal)
         let firstTrioTotal = firstTrioBolus + firstTrioMeal
-
+        
         let totalRowTotal = totalAll
-
+        
         // Uppdatera stapeldiagrammet (Mamma/Pappa/Resurs/Trio)
         updateChart(
             mamma: mamma,
@@ -720,20 +766,20 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             trioBolus: firstTrioBolus,
             trioMeal: firstTrioMeal
         )
-
+        
         // Andra blocket – Loop Follow / Carb Counter / Trio / Totalt
         let lfBolus = bolusByApp["LF"] ?? 0
         let lfMeal  = mealByApp["LF"] ?? 0
         let lfTotal = lfBolus + lfMeal
-
+        
         let ccBolus = bolusByApp["CC"] ?? 0
         let ccMeal  = mealByApp["CC"] ?? 0
         let ccTotal = ccBolus + ccMeal
-
+        
         let appTrioBolus = bolusByApp["Trio"] ?? 0
         let appTrioMeal  = mealByApp["Trio"] ?? 0
         let appTrioTotal = appTrioBolus + appTrioMeal
-
+        
         // Tredje blocket – Mamma/Pappa/Resurs per app
         let mammaLF = countsFor(person: "Mamma", app: "LF")
         let mammaCC = countsFor(person: "Mamma", app: "CC")
@@ -741,7 +787,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         let pappaCC = countsFor(person: "Pappa", app: "CC")
         let resursLF = countsFor(person: "Resurs", app: "LF")
         let resursCC = countsFor(person: "Resurs", app: "CC")
-
+        
         func row(_ title: String,
                  bolus: Int, meal: Int,
                  isBold: Bool = false,
@@ -750,7 +796,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                  displayAsPercentOnly: Bool = false,
                  highlightAsTotal: Bool = false,
                  highlightRowBackground: Bool = false) -> EnteredByRow {
-
+            
             let total = bolus + meal
             return EnteredByRow(
                 title: title,
@@ -768,9 +814,9 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                 highlightRowBackground: highlightRowBackground
             )
         }
-
+        
         var rows: [EnteredByRow] = []
-
+        
         // Header-rad
         rows.append(
             EnteredByRow(
@@ -786,14 +832,14 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                 highlightRowBackground: true
             )
         )
-
+        
         // Första blocket
         rows.append(row("Mamma", bolus: mamma.bolus, meal: mamma.meal))
         rows.append(row("Pappa", bolus: pappa.bolus, meal: pappa.meal))
         rows.append(row("Resurs", bolus: resurs.bolus, meal: resurs.meal))
         rows.append(row("Trio",   bolus: firstTrioBolus, meal: firstTrioMeal))
         rows.append(row("Totalt", bolus: totalBolus, meal: totalMeal, isBold: true, highlightAsTotal: true))
-
+        
         // Spacer
         rows.append(
             EnteredByRow(title: "",
@@ -807,7 +853,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                          highlightAsTotal: false,
                          highlightRowBackground: false)
         )
-
+        
         // Section header: Behandlingar per system
         rows.append(
             row("Behandlingar/system",
@@ -817,13 +863,13 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                 hideValues: true,
                 highlightRowBackground: true)
         )
-
+        
         // Andra blocket – appar
         rows.append(row("Loop Follow", bolus: lfBolus, meal: lfMeal))
         rows.append(row("Carb Counter", bolus: ccBolus, meal: ccMeal))
         rows.append(row("Trio", bolus: appTrioBolus, meal: appTrioMeal))
         rows.append(row("Totalt", bolus: totalBolus, meal: totalMeal, isBold: true, highlightAsTotal: true))
-
+        
         // Spacer
         rows.append(
             EnteredByRow(title: "",
@@ -837,7 +883,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                          highlightAsTotal: false,
                          highlightRowBackground: false)
         )
-
+        
         // Section header: Andel behandlingar per system
         rows.append(
             row("Andel behandlingar/system",
@@ -847,16 +893,16 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                 hideValues: true,
                 highlightRowBackground: true)
         )
-
+        
         // Tredje blocket – Mamma/Pappa/Resurs per app (andel per system)
-
+        
         // Mamma
         rows.append(row("Mamma Totalt",
                         bolus: mamma.bolus,
                         meal: mamma.meal,
                         isBold: true,
                         highlightAsTotal: true))
-
+        
         let mammaLFRow = EnteredByRow(
             title: "Mamma LF",
             bolusCount: mammaLF.bolus,
@@ -873,7 +919,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             highlightRowBackground: false
         )
         rows.append(mammaLFRow)
-
+        
         let mammaCCRow = EnteredByRow(
             title: "Mamma CC",
             bolusCount: mammaCC.bolus,
@@ -890,7 +936,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             highlightRowBackground: false
         )
         rows.append(mammaCCRow)
-
+        
         // Spacer
         rows.append(
             EnteredByRow(title: "",
@@ -904,14 +950,14 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                          highlightAsTotal: false,
                          highlightRowBackground: false)
         )
-
+        
         // Pappa
         rows.append(row("Pappa Totalt",
                         bolus: pappa.bolus,
                         meal: pappa.meal,
                         isBold: true,
                         highlightAsTotal: true))
-
+        
         let pappaLFRow = EnteredByRow(
             title: "Pappa LF",
             bolusCount: pappaLF.bolus,
@@ -928,7 +974,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             highlightRowBackground: false
         )
         rows.append(pappaLFRow)
-
+        
         let pappaCCRow = EnteredByRow(
             title: "Pappa CC",
             bolusCount: pappaCC.bolus,
@@ -945,7 +991,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             highlightRowBackground: false
         )
         rows.append(pappaCCRow)
-
+        
         // Spacer
         rows.append(
             EnteredByRow(title: "",
@@ -959,14 +1005,14 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                          highlightAsTotal: false,
                          highlightRowBackground: false)
         )
-
+        
         // Resurs
         rows.append(row("Resurs Totalt",
                         bolus: resurs.bolus,
                         meal: resurs.meal,
                         isBold: true,
                         highlightAsTotal: true))
-
+        
         let resursLFRow = EnteredByRow(
             title: "Resurs LF",
             bolusCount: resursLF.bolus,
@@ -983,7 +1029,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             highlightRowBackground: false
         )
         rows.append(resursLFRow)
-
+        
         let resursCCRow = EnteredByRow(
             title: "Resurs CC",
             bolusCount: resursCC.bolus,
@@ -1000,38 +1046,38 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             highlightRowBackground: false
         )
         rows.append(resursCCRow)
-
+        
         self.rows = rows
         tableView.reloadData()
     }
-
+    
     // MARK: - UITableViewDataSource / Delegate
-
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         rows.count
     }
-
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "EnteredByCell", for: indexPath) as? EnteredByCell else {
             return UITableViewCell()
         }
         let row = rows[indexPath.row]
-
+        
         // Första raden = rubrikrad
         if indexPath.row == 0 {
             let headerFont = UIFont.preferredFont(forTextStyle: .footnote)
                 .withTraits(traits: .traitBold)
-
+            
             cell.titleLabel.text = "Inlagt av"
             cell.bolusLabel.text = "Bolus"
             cell.mealLabel.text  = "Måltid"
             cell.totalLabel.text = "Total"
-
+            
             cell.titleLabel.font = headerFont
             cell.bolusLabel.font = headerFont
             cell.mealLabel.font  = headerFont
             cell.totalLabel.font = headerFont
-
+            
             // Make header columns shrink font size to fit width instead of truncating
             cell.bolusLabel.adjustsFontSizeToFitWidth = true
             cell.bolusLabel.minimumScaleFactor = 0.5
@@ -1041,7 +1087,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             cell.totalLabel.minimumScaleFactor = 0.5
             cell.titleLabel.adjustsFontSizeToFitWidth = true
             cell.titleLabel.minimumScaleFactor = 0.7
-
+            
             let defaultColor = UIColor.label
             cell.titleLabel.textColor = defaultColor
             cell.bolusLabel.textColor = defaultColor
@@ -1050,20 +1096,92 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             
             cell.contentView.backgroundColor = UIColor.insulin.withAlphaComponent(0.5)
             cell.backgroundColor = .clear
-
+            
             return cell
         }
-
+        
         // Övriga rader = data
         cell.configure(with: row, isHeader: false)
         return cell
     }
-
+    
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         let row = rows[indexPath.row]
         if row.isSpacer {
             return 12
         }
         return 26
+    }
+    // MARK: - Datumstegningsknappar
+    @objc private func stepBackOneDay() {
+        stepDays(delta: -1)
+    }
+
+    @objc private func stepForwardOneDay() {
+        stepDays(delta: 1)
+    }
+
+    /// Stega både start- och slutdatum med delta dagar, klampa till [today-90d, today] och trigga reload
+    private func stepDays(delta: Int) {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
+
+        // Räkna ut nya datum
+        let newStart = cal.date(byAdding: .day, value: delta, to: startDatePicker.date) ?? startDatePicker.date
+        let newEnd   = cal.date(byAdding: .day, value: delta, to: endDatePicker.date)   ?? endDatePicker.date
+
+        // Klampa till [today-90d, today]
+        let clampedStart = min(max(newStart, minDate), today)
+        let clampedEnd   = min(max(newEnd,   minDate), today)
+
+        // Sätt pickers (utan att ändra relativ ordning)
+        startDatePicker.date = clampedStart
+        endDatePicker.date   = clampedEnd
+
+        // Synka om något hamnade fel pga klampning
+        if endDatePicker.date < startDatePicker.date {
+            endDatePicker.date = startDatePicker.date
+        }
+
+        let from = cal.startOfDay(for: startDatePicker.date)
+        let to   = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: endDatePicker.date)) ?? endDatePicker.date
+
+        loadTreatmentsAndBuildRows(forcedStart: from, forcedEnd: to)
+        updateChevronEnabledState()
+    }
+
+    // MARK: - Chevron helpers
+
+    private func addLongPressToChevron(_ barButton: UIBarButtonItem, delta: Int) {
+        guard let view = barButton.value(forKey: "view") as? UIView else { return }
+
+        let longPress = UILongPressGestureRecognizer(
+            target: self,
+            action: #selector(handleChevronLongPress(_:))
+        )
+        longPress.minimumPressDuration = 0.45
+        view.addGestureRecognizer(longPress)
+
+        // Store delta on the gesture itself
+        longPress.accessibilityHint = "\(delta)"
+    }
+
+    @objc private func handleChevronLongPress(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began,
+              let hint = gesture.accessibilityHint,
+              let delta = Int(hint)
+        else { return }
+
+        stepDays(delta: delta)
+    }
+
+    private func updateChevronEnabledState() {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
+
+        backButton.isEnabled = startDatePicker.date > minDate
+        forwardButton.isEnabled = endDatePicker.date < today
     }
 }

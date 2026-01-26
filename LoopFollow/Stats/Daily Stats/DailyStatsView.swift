@@ -1058,19 +1058,5 @@ private struct WeekdayFilterView: View {
             }
             .padding()
         }
-        /*.toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Avbryt") {
-                    dismiss()
-                }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Filtrera") {
-                    // Filtret appliceras redan via binding,
-                    // så det räcker att stänga vyn här.
-                    dismiss()
-                }
-            }
-        }*/
     }
 }

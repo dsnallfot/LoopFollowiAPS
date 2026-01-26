@@ -10,7 +10,7 @@ import SwiftUI
 import UIKit
 import Charts
 
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 private struct PreferenceKeyItem: Identifiable {
     let key: String
     var id: String { key }
@@ -85,7 +85,7 @@ private struct UISearchBarRepresentable: UIViewRepresentable {
     }
 }
 
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct TrioPreferencesView: View {
     @ObservedObject var viewModel = TrioPreferencesViewModel()
     @State private var searchText: String = ""
@@ -100,6 +100,7 @@ struct TrioPreferencesView: View {
         }
     }
 
+    @available(iOS 26.0, *)
     var body: some View {
         ZStack {
             ThemeBackground()
@@ -188,11 +189,12 @@ private struct SettingsLogModal: UIViewControllerRepresentable {
 }
 
 
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct AnalyzeDeviationsView: View {
 
     @ObservedObject var viewModel: TrioPreferencesViewModel
     @State private var selectedDate: Date = Date()
+    @Environment(\.dismiss) private var dismiss
 
     private enum DisplayMode: String, CaseIterable, Identifiable {
         case normal = "Normal"
@@ -250,6 +252,7 @@ struct AnalyzeDeviationsView: View {
         selectedDate = clamped
     }
 
+    @available(iOS 26.0, *)
     var body: some View {
         ZStack {
             ThemeBackground()
@@ -428,7 +431,7 @@ struct AnalyzeDeviationsView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     goToPreviousDay()
                 } label: {
@@ -438,7 +441,7 @@ struct AnalyzeDeviationsView: View {
                 .accessibilityLabel("Föregående dag")
             }
 
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarTrailing) {
 
                     Button {
                         goToNextDay()
@@ -448,9 +451,14 @@ struct AnalyzeDeviationsView: View {
                     .disabled(!canGoToNextDay)
                     .accessibilityLabel("Nästa dag")
                 }
+            ToolbarSpacer(placement: .navigationBarTrailing)
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Klar") { dismiss() }
+            }
         }
         .navigationTitle("Utvärdering oref")
         .navigationBarTitleDisplayMode(.inline)
+
         .onAppear {
             viewModel.fetchDevIobCobForDay(selectedDate, count: 600)
             viewModel.fetchGlucoseForDay(selectedDate)
@@ -459,6 +467,7 @@ struct AnalyzeDeviationsView: View {
             viewModel.fetchDevIobCobForDay(newDate, count: 600)
             viewModel.fetchGlucoseForDay(newDate)
         }
+
     }
 }
 @available(iOS 16.0, *)

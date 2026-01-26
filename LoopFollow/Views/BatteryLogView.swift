@@ -578,8 +578,8 @@ final class BatteryLogStatsViewController: ThemedViewController, ChartViewDelega
             action: #selector(nextTapped)
         )
 
-        navigationItem.rightBarButtonItem = done
-        navigationItem.leftBarButtonItems = [prev, next]
+        navigationItem.rightBarButtonItems = [done, next, prev]
+        //navigationItem.leftBarButtonItems = [prev, next]
     }
 
     private func setupHeader() {
