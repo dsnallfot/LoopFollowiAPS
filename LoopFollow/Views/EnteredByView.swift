@@ -170,9 +170,15 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
 
     private let startTime: Date
     private let endTime: Date
+    private var currentStart: Date
+    private var currentEnd: Date
     private var treatments: [Treatment] = []
 
     private let dateLabel = UILabel()
+    // New date picker UI
+    private let startDatePicker = UIDatePicker()
+    private let endDatePicker = UIDatePicker()
+    private let datePickersStack = UIStackView()
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let chartView: BarChartView = {
         let v = BarChartView()
@@ -194,8 +200,15 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
 
         return v
     }()
+    
+    private let chartLoadingIndicator: UIActivityIndicatorView = {
+        let v = UIActivityIndicatorView(style: .medium)
+        v.hidesWhenStopped = true
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
 
-    private let xAxisLabelsStack: UIStackView = {
+    private let xAxisLabelsStack: UIStackView = {()
         let labels = ["Mamma", "Pappa", "Resurs", "Trio"].map { title -> UILabel in
             let label = UILabel()
             label.text = title
@@ -226,8 +239,12 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
     init(startTime: Date, endTime: Date) {
         self.startTime = startTime
         self.endTime   = endTime
+        self.currentStart = startTime
+        self.currentEnd   = endTime
         super.init(nibName: nil, bundle: nil)
     }
+    
+
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -246,13 +263,27 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             action: #selector(dismissSelf)
         )
 
-        setupHeaderLabel()
+        //setupHeaderLabel() // No longer needed as visible UI
+        setupDatePickers()
         setupTableView()
         loadTreatmentsAndBuildRows()
     }
-    private func loadTreatmentsAndBuildRows() {
+    private func loadTreatmentsAndBuildRows(forcedStart: Date? = nil, forcedEnd: Date? = nil) {
         Task {
-            let (_, treatsJSON) = await NightscoutCache.loadWindow(from: startTime, to: endTime)
+            await MainActor.run {
+                self.startDatePicker.isEnabled = false
+                self.endDatePicker.isEnabled = false
+                self.chartLoadingIndicator.startAnimating()
+            }
+
+            let from = forcedStart ?? self.startTime
+            let to   = forcedEnd   ?? self.endTime
+
+            // Persist the updated window
+            self.currentStart = from
+            self.currentEnd   = to
+
+            let (_, treatsJSON) = await NightscoutCache.loadWindow(from: from, to: to)
 
             let iso = ISO8601DateFormatter()
             iso.formatOptions = [.withInternetDateTime]
@@ -280,27 +311,70 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             await MainActor.run {
                 self.treatments = loadedTreatments
                 self.buildRows()
+                self.chartLoadingIndicator.stopAnimating()
+                self.startDatePicker.isEnabled = true
+                self.endDatePicker.isEnabled = true
             }
         }
     }
 
     // MARK: - UI
 
-    private func setupHeaderLabel() {
-        dateLabel.numberOfLines = 0
-        dateLabel.textAlignment = .center
-        dateLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
-        dateLabel.translatesAutoresizingMaskIntoConstraints = false
+    // Date pickers for selecting whole days
+    private func setupDatePickers() {
+        startDatePicker.datePickerMode = .date
+        endDatePicker.datePickerMode = .date
 
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "sv_SE")
-        df.timeZone = .current
-        df.dateFormat = "yyyy-MM-dd HH:mm"
+        startDatePicker.preferredDatePickerStyle = .compact
+        endDatePicker.preferredDatePickerStyle = .compact
 
-        let fromString = df.string(from: startTime)
-        let toString   = df.string(from: endTime)
+        startDatePicker.locale = Locale(identifier: "sv_SE")
+        endDatePicker.locale = Locale(identifier: "sv_SE")
+        let today = Calendar.current.startOfDay(for: Date())
+        startDatePicker.maximumDate = today
+        endDatePicker.maximumDate = today
 
-        dateLabel.text = "Från \(fromString) till \(toString)"
+        startDatePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
+        endDatePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
+
+        // Initiera med inkommande datumintervall (hela dagar)
+        startDatePicker.date = Calendar.current.startOfDay(for: startTime)
+        endDatePicker.date = Calendar.current.startOfDay(for: endTime)
+
+        datePickersStack.axis = .horizontal
+        datePickersStack.alignment = .center
+        datePickersStack.distribution = .equalSpacing
+        datePickersStack.translatesAutoresizingMaskIntoConstraints = false
+
+        let fromLabel = UILabel()
+        fromLabel.text = "Vald period:"
+        fromLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+
+        let toLabel = UILabel()
+        toLabel.text = ""
+        toLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+
+        datePickersStack.addArrangedSubview(fromLabel)
+        datePickersStack.addArrangedSubview(UIView()) // spacer
+        datePickersStack.addArrangedSubview(startDatePicker)
+        //datePickersStack.addArrangedSubview(toLabel)
+        datePickersStack.addArrangedSubview(endDatePicker)
+    }
+
+    @objc private func datePickerChanged() {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+
+        if startDatePicker.date > today { startDatePicker.date = today }
+        if endDatePicker.date > today { endDatePicker.date = today }
+        if endDatePicker.date < startDatePicker.date {
+            endDatePicker.date = startDatePicker.date
+        }
+
+        let newStart = cal.startOfDay(for: startDatePicker.date)
+        let newEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: endDatePicker.date)) ?? endDatePicker.date
+
+        loadTreatmentsAndBuildRows(forcedStart: newStart, forcedEnd: newEnd)
     }
 
     private func setupTableView() {
@@ -326,19 +400,26 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         let header = UIView()
         header.backgroundColor = .clear
 
-        dateLabel.translatesAutoresizingMaskIntoConstraints = false
+        datePickersStack.translatesAutoresizingMaskIntoConstraints = false
         chartView.translatesAutoresizingMaskIntoConstraints = false
 
-        header.addSubview(dateLabel)
+        header.addSubview(datePickersStack)
         header.addSubview(chartView)
         header.addSubview(xAxisLabelsStack)
 
-        NSLayoutConstraint.activate([
-            dateLabel.topAnchor.constraint(equalTo: header.topAnchor, constant: 8),
-            dateLabel.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
-            dateLabel.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
+        chartView.addSubview(chartLoadingIndicator)
 
-            chartView.topAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 8),
+        NSLayoutConstraint.activate([
+            chartLoadingIndicator.centerXAnchor.constraint(equalTo: chartView.centerXAnchor),
+            chartLoadingIndicator.centerYAnchor.constraint(equalTo: chartView.centerYAnchor)
+        ])
+
+        NSLayoutConstraint.activate([
+            datePickersStack.topAnchor.constraint(equalTo: header.topAnchor, constant: 8),
+            datePickersStack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            datePickersStack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
+
+            chartView.topAnchor.constraint(equalTo: datePickersStack.bottomAnchor, constant: 8),
             chartView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 12),
             chartView.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -12),
             chartView.heightAnchor.constraint(equalToConstant: 140),
@@ -350,14 +431,14 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         ])
 
         // Sätt initial storlek; bredd justeras i viewDidLayoutSubviews
-        header.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 210)
+        header.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 230)
         tableView.tableHeaderView = header
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if let header = tableView.tableHeaderView {
-            let targetSize = CGSize(width: tableView.bounds.width, height: 210)
+            let targetSize = CGSize(width: tableView.bounds.width, height: 230)
             if header.frame.size != targetSize {
                 header.frame.size = targetSize
                 tableView.tableHeaderView = header
@@ -445,10 +526,10 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
     // MARK: - Data / beräkningar
 
     private func buildRows() {
-        // Filtrera behandlingar inom fönstret och som är relevanta (bolus/måltid)
+        // Filtrera behandlingar inom det nuvarande fönstret och som är relevanta (bolus/måltid)
         let relevant = treatments.filter { treatment in
             let t = treatment.timestamp
-            guard t >= startTime && t <= endTime else { return false }
+            guard t >= currentStart && t <= currentEnd else { return false }
 
             let et = treatment.eventType
 
@@ -467,6 +548,9 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         guard !relevant.isEmpty else {
             chartView.data = nil
             chartView.setNeedsDisplay()
+            chartLoadingIndicator.stopAnimating()
+            startDatePicker.isEnabled = true
+            endDatePicker.isEnabled = true
             rows = [
                 EnteredByRow(
                     title: "Inga manuella behandlingar i valt tidsintervall",
