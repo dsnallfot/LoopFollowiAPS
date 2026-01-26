@@ -40,6 +40,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
 
     // All fetched events handed in by the presenting VC
     private var events: [Event]          // will be augmented with cached entries
+    private let treatments: [Treatment]?  // original Nightscout treatments (for enteredBy analysis)
     /// Optional initial start time provided by the caller
     private let initialStartOverride: Date?
     private let initialEndOverride: Date?
@@ -49,6 +50,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
 
     init(
         events: [Event],
+        treatments: [Treatment]? = nil,
         initialStart: Date? = nil,
         initialEnd: Date? = nil,
         modalWithTimestamp: Bool = true,
@@ -56,6 +58,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         showsDoneButton: Bool = true
     ) {
         self.events = events
+        self.treatments = treatments
         self.initialStartOverride = initialStart
         self.initialEndOverride = initialEnd
         self.modalWithTimestamp = modalWithTimestamp
@@ -430,6 +433,11 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 target: self,
                 action: #selector(dismissSelf)
             )
+        
+        let enteredByBtn = UIBarButtonItem(image: UIImage(systemName: "person"),
+                                      style: .plain,
+                                      target: self,
+                                      action: #selector(enteredByButtonTapped))
 
         // Attach long-press to perform week jumps.
         // (Requires the bar button items' underlying views, so we add gestures after the nav bar has laid out.)
@@ -451,10 +459,9 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             }
         }
         if showsDoneButton {
-            //navigationItem.leftBarButtonItems = [prevBtn, nextBtn]
-            navigationItem.rightBarButtonItems = [doneButton, nextBtn, prevBtn]
+            navigationItem.rightBarButtonItems = [doneButton, nextBtn, prevBtn, enteredByBtn]
         } else {
-            navigationItem.rightBarButtonItems = [nextBtn, prevBtn]
+            navigationItem.rightBarButtonItems = [nextBtn, prevBtn, enteredByBtn]
         }
     }
     
@@ -503,6 +510,13 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     @objc private func nextButtonLongPressed(_ gr: UILongPressGestureRecognizer) {
         guard gr.state == .began else { return }
         nextWeekTapped()
+    }
+    
+    @objc private func enteredByButtonTapped() {
+        let enteredByVC = EnteredByView(startTime: startTime, endTime: endTime)
+        let nav = UINavigationController(rootViewController: enteredByVC)
+        nav.modalPresentationStyle = .formSheet
+        present(nav, animated: true, completion: nil)
     }
 
     /// Shifts the current time window an integral number of days while keeping its width.
@@ -1733,7 +1747,7 @@ extension MealAnalysisView: AxisValueFormatter {
     }
 }
 
-private extension UIFont {
+extension UIFont {
     func withTraits(traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
         guard let descriptor = fontDescriptor.withSymbolicTraits(traits) else { return self }
         return UIFont(descriptor: descriptor, size: 0)

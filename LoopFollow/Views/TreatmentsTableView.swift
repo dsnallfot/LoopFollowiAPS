@@ -303,6 +303,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             // Modal quick-analysis: wrap in a UINavigationController and show "Klar".
             let analysisVC = MealAnalysisView(
                 events: events,
+                treatments: self.treatments,
                 initialStart: start,
                 modalWithTimestamp: true,
                 modalTitleString: "Analys tid",
@@ -316,6 +317,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             // hide the "Klar" button and rely on the back button instead.
             let analysisVC = MealAnalysisView(
                 events: events,
+                treatments: self.treatments,
                 initialStart: start,
                 modalWithTimestamp: true,
                 modalTitleString: "Analys tid",

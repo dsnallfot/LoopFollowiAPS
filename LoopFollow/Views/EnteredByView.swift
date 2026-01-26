@@ -1,0 +1,787 @@
+//
+//  EnteredByView.swift
+//  LoopFollow
+//
+//  Created by Daniel Snällfot on 2026-01-26.
+//
+
+import UIKit
+
+/// Radmodell för tabellen "Manuella behandlingar"
+private struct EnteredByRow {
+    let title: String
+    let bolusCount: Int
+    let bolusPercent: Int?
+    let mealCount: Int
+    let mealPercent: Int?
+    let totalCount: Int
+    let totalPercent: Int?
+    let isBold: Bool
+    let isSpacer: Bool
+    let hideValues: Bool           // för rena rubriker
+    let displayAsPercentOnly: Bool // för LF/CC-rader i nedersta sektionen
+    let highlightAsTotal: Bool     // blå text för totals-rader
+    let highlightRowBackground: Bool // lila radbakgrund
+}
+
+/// Enkel cell med fyra kolumn-labels
+private final class EnteredByCell: UITableViewCell {
+
+    let titleLabel = UILabel()
+    let bolusLabel = UILabel()
+    let mealLabel  = UILabel()
+    let totalLabel = UILabel()
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        selectionStyle = .none
+
+        titleLabel.textAlignment = .left
+        bolusLabel.textAlignment = .right
+        mealLabel.textAlignment  = .right
+        totalLabel.textAlignment = .right
+
+        // Små typsnitt, monospaced för siffror
+        let valueFont = UIFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
+        bolusLabel.font = valueFont
+        mealLabel.font  = valueFont
+        totalLabel.font = valueFont
+
+        titleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        titleLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, bolusLabel, mealLabel, totalLabel])
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.spacing = 4
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        // Se till att de tre värdekolumnerna är lika breda och “hålls ihop”
+        bolusLabel.setContentHuggingPriority(.required, for: .horizontal)
+        mealLabel.setContentHuggingPriority(.required, for: .horizontal)
+        totalLabel.setContentHuggingPriority(.required, for: .horizontal)
+
+        contentView.addSubview(stack)
+
+        // Kolumnbredder: ge bolus-kolumnen en relativ bredd mot cellens bredd
+        // och låt Måltider/Total matcha samma bredd. Detta gäller för alla rader
+        // (inklusive headern) och ger Excel-liknande raka kolumner.
+        let bolusWidth = bolusLabel.widthAnchor.constraint(equalTo: contentView.widthAnchor, multiplier: 0.13)
+        let mealWidth  = mealLabel.widthAnchor.constraint(equalTo: bolusLabel.widthAnchor)
+        let totalWidth = totalLabel.widthAnchor.constraint(equalTo: bolusLabel.widthAnchor)
+
+        NSLayoutConstraint.activate([
+            bolusWidth,
+            mealWidth,
+            totalWidth,
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
+            stack.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func configure(with row: EnteredByRow, isHeader: Bool) {
+        if row.isSpacer {
+            titleLabel.text = ""
+            bolusLabel.text = ""
+            mealLabel.text  = ""
+            totalLabel.text = ""
+            return
+        }
+
+        // Reset bakgrund pga cell-återanvändning
+            contentView.backgroundColor = .clear
+            backgroundColor = .clear
+
+            titleLabel.text = row.title
+
+        // Färg för totals-rader
+        let totalColor = UIColor.insulin.withAlphaComponent(1.0)
+        let defaultColor = UIColor.label
+
+        let appliedColor: UIColor = row.highlightAsTotal ? totalColor : defaultColor
+        titleLabel.textColor = appliedColor
+        bolusLabel.textColor = appliedColor
+        mealLabel.textColor  = appliedColor
+        totalLabel.textColor = appliedColor
+        
+        if row.highlightRowBackground {
+                contentView.backgroundColor = UIColor.insulin.withAlphaComponent(0.5)
+            }
+
+        func format(_ count: Int, _ percent: Int?, asPercentOnly: Bool) -> String {
+            if row.hideValues {
+                return ""
+            }
+            if asPercentOnly {
+                guard let p = percent else { return "0 %" }
+                return "\(p) %"
+            } else {
+                return "\(count)"
+            }
+        }
+
+        bolusLabel.text = format(row.bolusCount, row.bolusPercent, asPercentOnly: row.displayAsPercentOnly)
+        mealLabel.text  = format(row.mealCount, row.mealPercent, asPercentOnly: row.displayAsPercentOnly)
+        totalLabel.text = format(row.totalCount, row.totalPercent, asPercentOnly: row.displayAsPercentOnly)
+
+        if isHeader {
+            let headerFont = UIFont.preferredFont(forTextStyle: .caption2)
+                .withTraits(traits: .traitBold)
+            titleLabel.font = headerFont
+            bolusLabel.font = headerFont
+            mealLabel.font  = headerFont
+            totalLabel.font = headerFont
+        } else if row.highlightAsTotal {
+            // Gulmarkerade totals-rader: fet text i alla kolumner
+            let totalFont = UIFont.preferredFont(forTextStyle: .footnote)
+                .withTraits(traits: .traitBold)
+            titleLabel.font = totalFont
+            bolusLabel.font = totalFont
+            mealLabel.font  = totalFont
+            totalLabel.font = totalFont
+        } else if row.isBold {
+            // Rubrikrader (t.ex. Mamma Totalt) – fet titel, normala siffror
+            titleLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+                .withTraits(traits: .traitBold)
+            let valueFont = UIFont.preferredFont(forTextStyle: .footnote)
+            bolusLabel.font = valueFont
+            mealLabel.font  = valueFont
+            totalLabel.font = valueFont
+        } else {
+            let valueFont = UIFont.preferredFont(forTextStyle: .footnote)
+            titleLabel.font = valueFont
+            bolusLabel.font = valueFont
+            mealLabel.font  = valueFont
+            totalLabel.font = valueFont
+        }    }
+}
+
+final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
+
+    private let startTime: Date
+    private let endTime: Date
+    private var treatments: [Treatment] = []
+
+    private let dateLabel = UILabel()
+    private let tableView = UITableView(frame: .zero, style: .plain)
+
+    private var rows: [EnteredByRow] = []
+
+    // Event-typer vi tolkar som bolus respektive måltid
+    // Endast manuella bolusar – SMB är automatisk och ska inte räknas här
+    private let bolusTypes: Set<String> = ["Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna"]
+    private let mealTypes: Set<String>  = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid"]
+
+    init(startTime: Date, endTime: Date) {
+        self.startTime = startTime
+        self.endTime   = endTime
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        title = "Manuella behandlingar"
+        updateBackgroundForCurrentMode()
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissSelf)
+        )
+
+        setupHeaderLabel()
+        setupTableView()
+        loadTreatmentsAndBuildRows()
+    }
+    private func loadTreatmentsAndBuildRows() {
+        Task {
+            let (_, treatsJSON) = await NightscoutCache.loadWindow(from: startTime, to: endTime)
+
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime]
+            iso.timeZone = TimeZone(secondsFromGMT: 0)
+
+            let loadedTreatments: [Treatment] = treatsJSON.compactMap { tjson in
+                Treatment(dictionary: [
+                    "_id":       tjson._id as AnyObject,
+                    "eventType": tjson.eventType as AnyObject,
+                    "enteredBy": tjson.enteredBy as AnyObject,
+                    "created_at": iso.string(from: tjson.created_at) as AnyObject,
+                    "rate":      tjson.rate as AnyObject,
+                    "absolute":  tjson.absolute as AnyObject,
+                    "insulin":   tjson.insulin as AnyObject,
+                    "carbs":     tjson.carbs as AnyObject,
+                    "amount":    tjson.amount as AnyObject,
+                    "foodType":  tjson.foodType as AnyObject,
+                    "notes":     tjson.notes as AnyObject,
+                    "glucose":   tjson.glucose as AnyObject,
+                    "units":     tjson.units as AnyObject,
+                    "duration":  tjson.tempBasalDuration as AnyObject
+                ])
+            }
+
+            await MainActor.run {
+                self.treatments = loadedTreatments
+                self.buildRows()
+            }
+        }
+    }
+
+    // MARK: - UI
+
+    private func setupHeaderLabel() {
+        dateLabel.numberOfLines = 0
+        dateLabel.textAlignment = .center
+        dateLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+        dateLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.timeZone = .current
+        df.dateFormat = "yyyy-MM-dd HH:mm"
+
+        let fromString = df.string(from: startTime)
+        let toString   = df.string(from: endTime)
+
+        dateLabel.text = "Från \(fromString) till \(toString)"
+    }
+
+    private func setupTableView() {
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.separatorColor = UIColor.white.withAlphaComponent(0.08)
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        tableView.dataSource = self
+        tableView.delegate   = self
+        tableView.register(EnteredByCell.self, forCellReuseIdentifier: "EnteredByCell")
+
+        let mainStack = UIStackView(arrangedSubviews: [dateLabel, tableView])
+        mainStack.axis = .vertical
+        mainStack.spacing = 8
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(mainStack)
+
+        NSLayoutConstraint.activate([
+            mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            mainStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            mainStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            mainStack.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+
+        dateLabel.setContentHuggingPriority(.required, for: .vertical)
+        tableView.setContentHuggingPriority(.defaultLow, for: .vertical)
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true, completion: nil)
+    }
+
+    // MARK: - Data / beräkningar
+
+    private func buildRows() {
+        // Filtrera behandlingar inom fönstret och som är relevanta (bolus/måltid)
+        let relevant = treatments.filter { treatment in
+            let t = treatment.timestamp
+            guard t >= startTime && t <= endTime else { return false }
+
+            let et = treatment.eventType
+
+            // Exkludera automatiska Fett & Protein-poster:
+            // Carb Correction utan foodType är auto/FPU och ska inte räknas som manuell måltid här.
+            if et == "Carb Correction" {
+                let foodType = treatment.rawData["foodType"] as? String ?? ""
+                if foodType.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return false
+                }
+            }
+
+            return bolusTypes.contains(et) || mealTypes.contains(et)
+        }
+
+        guard !relevant.isEmpty else {
+            rows = [
+                EnteredByRow(
+                    title: "Inga manuella behandlingar i valt tidsintervall",
+                    bolusCount: 0, bolusPercent: nil,
+                    mealCount: 0, mealPercent: nil,
+                    totalCount: 0, totalPercent: nil,
+                    isBold: false,
+                    isSpacer: false,
+                    hideValues: false,
+                    displayAsPercentOnly: false,
+                    highlightAsTotal: false,
+                    highlightRowBackground: false
+                )
+            ]
+            tableView.reloadData()
+            return
+        }
+
+        // Totals
+        var totalBolus = 0
+        var totalMeal  = 0
+
+        // Person + app-kombinationer, t.ex. "Mamma_LF"
+        typealias Key = String
+        var bolusByKey: [Key: Int] = [:]
+        var mealByKey:  [Key: Int] = [:]
+
+        // App-summeringar oberoende av person
+        var bolusByApp: [String: Int] = [:]   // "LF", "CC", "Trio"
+        var mealByApp:  [String: Int] = [:]
+
+        func inc(_ dict: inout [Key: Int], key: Key, amount: Int = 1) {
+            dict[key, default: 0] += amount
+        }
+
+        func classifyPerson(_ enteredBy: String) -> String? {
+            if enteredBy.contains("Mamma") { return "Mamma" }
+            if enteredBy.contains("Pappa") { return "Pappa" }
+            if enteredBy.contains("Resurs") { return "Resurs" }
+            return nil
+        }
+
+        func classifyApp(_ enteredBy: String) -> String {
+            if enteredBy.contains(" LF") || enteredBy.contains("LF") || enteredBy.contains("Loop") {
+                return "LF"   // Loop Follow
+            }
+            if enteredBy.contains(" CC") || enteredBy.contains("CC") || enteredBy.contains("Carb") {
+                return "CC"   // Carb Counter
+            }
+            // default: Trio / annat
+            return "Trio"
+        }
+
+        for t in relevant {
+            let et = t.eventType
+            let enteredBy = (t.rawData["enteredBy"] as? String) ?? ""
+
+            let isBolus = bolusTypes.contains(et)
+            let isMeal  = mealTypes.contains(et)
+
+            if isBolus { totalBolus += 1 }
+            if isMeal  { totalMeal  += 1 }
+
+            let app = classifyApp(enteredBy)
+            let person = classifyPerson(enteredBy)
+
+            if isBolus {
+                bolusByApp[app, default: 0] += 1
+            }
+            if isMeal {
+                mealByApp[app, default: 0] += 1
+            }
+
+            if let person = person {
+                let key = "\(person) \(app)"
+                if isBolus { inc(&bolusByKey, key: key) }
+                if isMeal  { inc(&mealByKey,  key: key) }
+            }
+        }
+
+        let totalAll = totalBolus + totalMeal
+
+        func pct(_ part: Int, of total: Int) -> Int? {
+            guard total > 0, part > 0 else { return 0 }
+            return Int(round((Double(part) / Double(total)) * 100.0))
+        }
+
+        // Hjälpare för att plocka combos
+        func countsFor(person: String) -> (bolus: Int, meal: Int) {
+            let lfKey = "\(person) LF"
+            let ccKey = "\(person) CC"
+            let trioKey = "\(person) Trio"
+
+            let bolus = (bolusByKey[lfKey] ?? 0) +
+                        (bolusByKey[ccKey] ?? 0) +
+                        (bolusByKey[trioKey] ?? 0)
+            let meal  = (mealByKey[lfKey] ?? 0) +
+                        (mealByKey[ccKey] ?? 0) +
+                        (mealByKey[trioKey] ?? 0)
+            return (bolus, meal)
+        }
+
+        func countsFor(person: String, app: String) -> (bolus: Int, meal: Int) {
+            let key = "\(person) \(app)"
+            return (bolusByKey[key] ?? 0, mealByKey[key] ?? 0)
+        }
+
+        // Person-summor
+        let mamma = countsFor(person: "Mamma")
+        let pappa = countsFor(person: "Pappa")
+        let resurs = countsFor(person: "Resurs")
+
+        let mammaTotal = mamma.bolus + mamma.meal
+        let pappaTotal = pappa.bolus + pappa.meal
+        let resursTotal = resurs.bolus + resurs.meal
+
+        // Första blocket – Mamma / Pappa / Resurs / Trio / Totalt
+        let firstTrioBolus = max(0, totalBolus - mamma.bolus - pappa.bolus - resurs.bolus)
+        let firstTrioMeal  = max(0, totalMeal  - mamma.meal  - pappa.meal  - resurs.meal)
+        let firstTrioTotal = firstTrioBolus + firstTrioMeal
+
+        let totalRowTotal = totalAll
+
+        // Andra blocket – Loop Follow / Carb Counter / Trio / Totalt
+        let lfBolus = bolusByApp["LF"] ?? 0
+        let lfMeal  = mealByApp["LF"] ?? 0
+        let lfTotal = lfBolus + lfMeal
+
+        let ccBolus = bolusByApp["CC"] ?? 0
+        let ccMeal  = mealByApp["CC"] ?? 0
+        let ccTotal = ccBolus + ccMeal
+
+        let appTrioBolus = bolusByApp["Trio"] ?? 0
+        let appTrioMeal  = mealByApp["Trio"] ?? 0
+        let appTrioTotal = appTrioBolus + appTrioMeal
+
+        // Tredje blocket – Mamma/Pappa/Resurs per app
+        let mammaLF = countsFor(person: "Mamma", app: "LF")
+        let mammaCC = countsFor(person: "Mamma", app: "CC")
+        let pappaLF = countsFor(person: "Pappa", app: "LF")
+        let pappaCC = countsFor(person: "Pappa", app: "CC")
+        let resursLF = countsFor(person: "Resurs", app: "LF")
+        let resursCC = countsFor(person: "Resurs", app: "CC")
+
+        func row(_ title: String,
+                 bolus: Int, meal: Int,
+                 isBold: Bool = false,
+                 isSpacer: Bool = false,
+                 hideValues: Bool = false,
+                 displayAsPercentOnly: Bool = false,
+                 highlightAsTotal: Bool = false,
+                 highlightRowBackground: Bool = false) -> EnteredByRow {
+
+            let total = bolus + meal
+            return EnteredByRow(
+                title: title,
+                bolusCount: bolus,
+                bolusPercent: pct(bolus, of: totalBolus),
+                mealCount: meal,
+                mealPercent: pct(meal, of: totalMeal),
+                totalCount: total,
+                totalPercent: pct(total, of: totalAll),
+                isBold: isBold,
+                isSpacer: isSpacer,
+                hideValues: hideValues,
+                displayAsPercentOnly: displayAsPercentOnly,
+                highlightAsTotal: highlightAsTotal,
+                highlightRowBackground: highlightRowBackground
+            )
+        }
+
+        var rows: [EnteredByRow] = []
+
+        // Header-rad
+        rows.append(
+            EnteredByRow(
+                title: "Inlagt av",
+                bolusCount: 0, bolusPercent: nil,
+                mealCount: 0, mealPercent: nil,
+                totalCount: 0, totalPercent: nil,
+                isBold: true,
+                isSpacer: false,
+                hideValues: false,
+                displayAsPercentOnly: false,
+                highlightAsTotal: false,
+                highlightRowBackground: true
+            )
+        )
+
+        // Första blocket
+        rows.append(row("Mamma", bolus: mamma.bolus, meal: mamma.meal))
+        rows.append(row("Pappa", bolus: pappa.bolus, meal: pappa.meal))
+        rows.append(row("Resurs", bolus: resurs.bolus, meal: resurs.meal))
+        rows.append(row("Trio",   bolus: firstTrioBolus, meal: firstTrioMeal))
+        rows.append(row("Totalt", bolus: totalBolus, meal: totalMeal, isBold: true, highlightAsTotal: true))
+
+        // Spacer
+        rows.append(
+            EnteredByRow(title: "",
+                         bolusCount: 0, bolusPercent: nil,
+                         mealCount: 0, mealPercent: nil,
+                         totalCount: 0, totalPercent: nil,
+                         isBold: false,
+                         isSpacer: true,
+                         hideValues: true,
+                         displayAsPercentOnly: false,
+                         highlightAsTotal: false,
+                         highlightRowBackground: false)
+        )
+
+        // Section header: Behandlingar per system
+        rows.append(
+            row("Behandlingar/system",
+                bolus: 0,
+                meal: 0,
+                isBold: true,
+                hideValues: true,
+                highlightRowBackground: true)
+        )
+
+        // Andra blocket – appar
+        rows.append(row("Loop Follow", bolus: lfBolus, meal: lfMeal))
+        rows.append(row("Carb Counter", bolus: ccBolus, meal: ccMeal))
+        rows.append(row("Trio", bolus: appTrioBolus, meal: appTrioMeal))
+        rows.append(row("Totalt", bolus: totalBolus, meal: totalMeal, isBold: true, highlightAsTotal: true))
+
+        // Spacer
+        rows.append(
+            EnteredByRow(title: "",
+                         bolusCount: 0, bolusPercent: nil,
+                         mealCount: 0, mealPercent: nil,
+                         totalCount: 0, totalPercent: nil,
+                         isBold: false,
+                         isSpacer: true,
+                         hideValues: true,
+                         displayAsPercentOnly: false,
+                         highlightAsTotal: false,
+                         highlightRowBackground: false)
+        )
+
+        // Section header: Andel behandlingar per system
+        rows.append(
+            row("Andel behandlingar/system",
+                bolus: 0,
+                meal: 0,
+                isBold: true,
+                hideValues: true,
+                highlightRowBackground: true)
+        )
+
+        // Tredje blocket – Mamma/Pappa/Resurs per app (andel per system)
+
+        // Mamma
+        rows.append(row("Mamma Totalt",
+                        bolus: mamma.bolus,
+                        meal: mamma.meal,
+                        isBold: true,
+                        highlightAsTotal: true))
+
+        let mammaLFRow = EnteredByRow(
+            title: "Mamma LF",
+            bolusCount: mammaLF.bolus,
+            bolusPercent: pct(mammaLF.bolus, of: mamma.bolus),
+            mealCount: mammaLF.meal,
+            mealPercent: pct(mammaLF.meal, of: mamma.meal),
+            totalCount: mammaLF.bolus + mammaLF.meal,
+            totalPercent: pct(mammaLF.bolus + mammaLF.meal, of: mammaTotal),
+            isBold: false,
+            isSpacer: false,
+            hideValues: false,
+            displayAsPercentOnly: true,
+            highlightAsTotal: false,
+            highlightRowBackground: false
+        )
+        rows.append(mammaLFRow)
+
+        let mammaCCRow = EnteredByRow(
+            title: "Mamma CC",
+            bolusCount: mammaCC.bolus,
+            bolusPercent: pct(mammaCC.bolus, of: mamma.bolus),
+            mealCount: mammaCC.meal,
+            mealPercent: pct(mammaCC.meal, of: mamma.meal),
+            totalCount: mammaCC.bolus + mammaCC.meal,
+            totalPercent: pct(mammaCC.bolus + mammaCC.meal, of: mammaTotal),
+            isBold: false,
+            isSpacer: false,
+            hideValues: false,
+            displayAsPercentOnly: true,
+            highlightAsTotal: false,
+            highlightRowBackground: false
+        )
+        rows.append(mammaCCRow)
+
+        // Spacer
+        rows.append(
+            EnteredByRow(title: "",
+                         bolusCount: 0, bolusPercent: nil,
+                         mealCount: 0, mealPercent: nil,
+                         totalCount: 0, totalPercent: nil,
+                         isBold: false,
+                         isSpacer: true,
+                         hideValues: true,
+                         displayAsPercentOnly: false,
+                         highlightAsTotal: false,
+                         highlightRowBackground: false)
+        )
+
+        // Pappa
+        rows.append(row("Pappa Totalt",
+                        bolus: pappa.bolus,
+                        meal: pappa.meal,
+                        isBold: true,
+                        highlightAsTotal: true))
+
+        let pappaLFRow = EnteredByRow(
+            title: "Pappa LF",
+            bolusCount: pappaLF.bolus,
+            bolusPercent: pct(pappaLF.bolus, of: pappa.bolus),
+            mealCount: pappaLF.meal,
+            mealPercent: pct(pappaLF.meal, of: pappa.meal),
+            totalCount: pappaLF.bolus + pappaLF.meal,
+            totalPercent: pct(pappaLF.bolus + pappaLF.meal, of: pappaTotal),
+            isBold: false,
+            isSpacer: false,
+            hideValues: false,
+            displayAsPercentOnly: true,
+            highlightAsTotal: false,
+            highlightRowBackground: false
+        )
+        rows.append(pappaLFRow)
+
+        let pappaCCRow = EnteredByRow(
+            title: "Pappa CC",
+            bolusCount: pappaCC.bolus,
+            bolusPercent: pct(pappaCC.bolus, of: pappa.bolus),
+            mealCount: pappaCC.meal,
+            mealPercent: pct(pappaCC.meal, of: pappa.meal),
+            totalCount: pappaCC.bolus + pappaCC.meal,
+            totalPercent: pct(pappaCC.bolus + pappaCC.meal, of: pappaTotal),
+            isBold: false,
+            isSpacer: false,
+            hideValues: false,
+            displayAsPercentOnly: true,
+            highlightAsTotal: false,
+            highlightRowBackground: false
+        )
+        rows.append(pappaCCRow)
+
+        // Spacer
+        rows.append(
+            EnteredByRow(title: "",
+                         bolusCount: 0, bolusPercent: nil,
+                         mealCount: 0, mealPercent: nil,
+                         totalCount: 0, totalPercent: nil,
+                         isBold: false,
+                         isSpacer: true,
+                         hideValues: true,
+                         displayAsPercentOnly: false,
+                         highlightAsTotal: false,
+                         highlightRowBackground: false)
+        )
+
+        // Resurs
+        rows.append(row("Resurs Totalt",
+                        bolus: resurs.bolus,
+                        meal: resurs.meal,
+                        isBold: true,
+                        highlightAsTotal: true))
+
+        let resursLFRow = EnteredByRow(
+            title: "Resurs LF",
+            bolusCount: resursLF.bolus,
+            bolusPercent: pct(resursLF.bolus, of: resurs.bolus),
+            mealCount: resursLF.meal,
+            mealPercent: pct(resursLF.meal, of: resurs.meal),
+            totalCount: resursLF.bolus + resursLF.meal,
+            totalPercent: pct(resursLF.bolus + resursLF.meal, of: resursTotal),
+            isBold: false,
+            isSpacer: false,
+            hideValues: false,
+            displayAsPercentOnly: true,
+            highlightAsTotal: false,
+            highlightRowBackground: false
+        )
+        rows.append(resursLFRow)
+
+        let resursCCRow = EnteredByRow(
+            title: "Resurs CC",
+            bolusCount: resursCC.bolus,
+            bolusPercent: pct(resursCC.bolus, of: resurs.bolus),
+            mealCount: resursCC.meal,
+            mealPercent: pct(resursCC.meal, of: resurs.meal),
+            totalCount: resursCC.bolus + resursCC.meal,
+            totalPercent: pct(resursCC.bolus + resursCC.meal, of: resursTotal),
+            isBold: false,
+            isSpacer: false,
+            hideValues: false,
+            displayAsPercentOnly: true,
+            highlightAsTotal: false,
+            highlightRowBackground: false
+        )
+        rows.append(resursCCRow)
+
+        self.rows = rows
+        tableView.reloadData()
+    }
+
+    // MARK: - UITableViewDataSource / Delegate
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        rows.count
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "EnteredByCell", for: indexPath) as? EnteredByCell else {
+            return UITableViewCell()
+        }
+        let row = rows[indexPath.row]
+
+        // Första raden = rubrikrad
+        if indexPath.row == 0 {
+            let headerFont = UIFont.preferredFont(forTextStyle: .footnote)
+                .withTraits(traits: .traitBold)
+
+            cell.titleLabel.text = "Inlagt av"
+            cell.bolusLabel.text = "Bolus"
+            cell.mealLabel.text  = "Måltid"
+            cell.totalLabel.text = "Total"
+
+            cell.titleLabel.font = headerFont
+            cell.bolusLabel.font = headerFont
+            cell.mealLabel.font  = headerFont
+            cell.totalLabel.font = headerFont
+
+            // Make header columns shrink font size to fit width instead of truncating
+            cell.bolusLabel.adjustsFontSizeToFitWidth = true
+            cell.bolusLabel.minimumScaleFactor = 0.5
+            cell.mealLabel.adjustsFontSizeToFitWidth = true
+            cell.mealLabel.minimumScaleFactor = 0.5
+            cell.totalLabel.adjustsFontSizeToFitWidth = true
+            cell.totalLabel.minimumScaleFactor = 0.5
+            cell.titleLabel.adjustsFontSizeToFitWidth = true
+            cell.titleLabel.minimumScaleFactor = 0.7
+
+            let defaultColor = UIColor.label
+            cell.titleLabel.textColor = defaultColor
+            cell.bolusLabel.textColor = defaultColor
+            cell.mealLabel.textColor  = defaultColor
+            cell.totalLabel.textColor = defaultColor
+            
+            cell.contentView.backgroundColor = UIColor.insulin.withAlphaComponent(0.5)
+            cell.backgroundColor = .clear
+
+            return cell
+        }
+
+        // Övriga rader = data
+        cell.configure(with: row, isHeader: false)
+        return cell
+    }
+
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        let row = rows[indexPath.row]
+        if row.isSpacer {
+            return 12
+        }
+        return 26
+    }
+}
