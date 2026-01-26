@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Charts
 
 /// Radmodell för tabellen "Manuella behandlingar"
 private struct EnteredByRow {
@@ -173,6 +174,47 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
 
     private let dateLabel = UILabel()
     private let tableView = UITableView(frame: .zero, style: .plain)
+    private let chartView: BarChartView = {
+        let v = BarChartView()
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+
+        // Ingen zoom/scroll – allt viktigt syns i grundläget
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = false
+        v.scaleXEnabled = false
+        v.scaleYEnabled = false
+        v.dragEnabled = false
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1000000
+
+        return v
+    }()
+
+    private let xAxisLabelsStack: UIStackView = {
+        let labels = ["Mamma", "Pappa", "Resurs", "Trio"].map { title -> UILabel in
+            let label = UILabel()
+            label.text = title
+            label.textAlignment = .center
+            label.font = UIFont.preferredFont(forTextStyle: .caption2)
+            label.textColor = .label
+            label.adjustsFontSizeToFitWidth = true
+            label.minimumScaleFactor = 0.7
+            return label
+        }
+
+        let stack = UIStackView(arrangedSubviews: labels)
+        stack.axis = .horizontal
+        stack.alignment = .fill
+        stack.distribution = .fillEqually
+        stack.spacing = 0
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
 
     private var rows: [EnteredByRow] = []
 
@@ -271,26 +313,133 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         tableView.delegate   = self
         tableView.register(EnteredByCell.self, forCellReuseIdentifier: "EnteredByCell")
 
-        let mainStack = UIStackView(arrangedSubviews: [dateLabel, tableView])
-        mainStack.axis = .vertical
-        mainStack.spacing = 8
-        mainStack.translatesAutoresizingMaskIntoConstraints = false
-
-        view.addSubview(mainStack)
+        view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
-            mainStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            mainStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            mainStack.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
-        dateLabel.setContentHuggingPriority(.required, for: .vertical)
-        tableView.setContentHuggingPriority(.defaultLow, for: .vertical)
+        // Bygg en header som innehåller datumrad + stapeldiagram
+        let header = UIView()
+        header.backgroundColor = .clear
+
+        dateLabel.translatesAutoresizingMaskIntoConstraints = false
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+
+        header.addSubview(dateLabel)
+        header.addSubview(chartView)
+        header.addSubview(xAxisLabelsStack)
+
+        NSLayoutConstraint.activate([
+            dateLabel.topAnchor.constraint(equalTo: header.topAnchor, constant: 8),
+            dateLabel.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            dateLabel.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
+
+            chartView.topAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 8),
+            chartView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 12),
+            chartView.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -12),
+            chartView.heightAnchor.constraint(equalToConstant: 140),
+
+            xAxisLabelsStack.topAnchor.constraint(equalTo: chartView.bottomAnchor, constant: -2),
+            xAxisLabelsStack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 32),
+            xAxisLabelsStack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -20),
+            xAxisLabelsStack.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8)
+        ])
+
+        // Sätt initial storlek; bredd justeras i viewDidLayoutSubviews
+        header.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 210)
+        tableView.tableHeaderView = header
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let header = tableView.tableHeaderView {
+            let targetSize = CGSize(width: tableView.bounds.width, height: 210)
+            if header.frame.size != targetSize {
+                header.frame.size = targetSize
+                tableView.tableHeaderView = header
+            }
+        }
     }
 
     @objc private func dismissSelf() {
         dismiss(animated: true, completion: nil)
+    }
+
+    private func updateChart(mamma: (bolus: Int, meal: Int),
+                             pappa: (bolus: Int, meal: Int),
+                             resurs: (bolus: Int, meal: Int),
+                             trioBolus: Int,
+                             trioMeal: Int) {
+
+        let groups: [(bolus: Int, meal: Int)] = [
+            mamma,
+            pappa,
+            resurs,
+            (trioBolus, trioMeal)
+        ]
+        let labels = ["Mamma", "Pappa", "Resurs", "Trio"]
+
+        var entries: [BarChartDataEntry] = []
+        entries.reserveCapacity(groups.count)
+
+        var maxTotal = 0
+        for (index, g) in groups.enumerated() {
+            let bolus = Double(g.bolus)
+            let meal  = Double(g.meal)
+            entries.append(BarChartDataEntry(x: Double(index), yValues: [bolus, meal]))
+            let total = g.bolus + g.meal
+            if total > maxTotal { maxTotal = total }
+        }
+
+        let dataSet = BarChartDataSet(entries: entries, label: "")
+        dataSet.colors = [UIColor.insulin, UIColor.carbs]
+        dataSet.stackLabels = ["Bolus", "Måltid"]
+        dataSet.drawValuesEnabled = false
+
+        let data = BarChartData(dataSet: dataSet)
+        data.barWidth = 0.6
+        chartView.data = data
+
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
+
+        // X-axis – använd bara position för bars; etiketter ritas i egen UIStackView under grafen
+        let xAxis = chartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.granularity = 1
+        xAxis.granularityEnabled = true
+        xAxis.drawLabelsEnabled = false  // vi visar custom-etiketter i xAxisLabelsStack
+
+        // Se alltid till att alla fyra kategorier syns, även om någon har 0 i data
+        xAxis.axisMinimum = -0.5
+        xAxis.axisMaximum = Double(labels.count) - 0.5
+        xAxis.centerAxisLabelsEnabled = false
+
+        chartView.fitBars = true
+
+        // Y-axis configuration
+        let yAxis = chartView.leftAxis
+        yAxis.axisMinimum = 0
+        let maxY = max(1, maxTotal)
+        yAxis.axisMaximum = Double(maxY) * 1.2
+        yAxis.granularity = maxY <= 10 ? 1 : max(1, floor(Double(maxY) / 5.0))
+        yAxis.granularityEnabled = true
+        
+        yAxis.gridColor = UIColor.lightGray.withAlphaComponent(0.5)
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        chartView.rightAxis.enabled = false
+        
+        // Custom X-axis renderer to draw grid lines between bars
+        chartView.xAxis.drawGridLinesEnabled = false  // Disable default grid
+        
+        chartView.notifyDataSetChanged()
+        chartView.setNeedsDisplay()
     }
 
     // MARK: - Data / beräkningar
@@ -316,6 +465,8 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         }
 
         guard !relevant.isEmpty else {
+            chartView.data = nil
+            chartView.setNeedsDisplay()
             rows = [
                 EnteredByRow(
                     title: "Inga manuella behandlingar i valt tidsintervall",
@@ -438,6 +589,15 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         let firstTrioTotal = firstTrioBolus + firstTrioMeal
 
         let totalRowTotal = totalAll
+
+        // Uppdatera stapeldiagrammet (Mamma/Pappa/Resurs/Trio)
+        updateChart(
+            mamma: mamma,
+            pappa: pappa,
+            resurs: resurs,
+            trioBolus: firstTrioBolus,
+            trioMeal: firstTrioMeal
+        )
 
         // Andra blocket – Loop Follow / Carb Counter / Trio / Totalt
         let lfBolus = bolusByApp["LF"] ?? 0
