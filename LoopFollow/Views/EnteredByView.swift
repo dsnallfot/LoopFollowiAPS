@@ -168,6 +168,9 @@ private final class EnteredByCell: UITableViewCell {
 
 final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
 
+    // Spåra vilken picker som senast ändrades
+    private var lastChangedPicker: UIDatePicker?
+
     private let startTime: Date
     private let endTime: Date
     private var currentStart: Date
@@ -330,16 +333,31 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
 
         startDatePicker.locale = Locale(identifier: "sv_SE")
         endDatePicker.locale = Locale(identifier: "sv_SE")
-        let today = Calendar.current.startOfDay(for: Date())
+
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
+
+        startDatePicker.minimumDate = minDate
+        endDatePicker.minimumDate = minDate
         startDatePicker.maximumDate = today
         endDatePicker.maximumDate = today
 
-        startDatePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
-        endDatePicker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
+        startDatePicker.addTarget(self, action: #selector(startPickerChanged), for: .valueChanged)
+        endDatePicker.addTarget(self, action: #selector(endPickerChanged), for: .valueChanged)
 
-        // Initiera med inkommande datumintervall (hela dagar)
-        startDatePicker.date = Calendar.current.startOfDay(for: startTime)
-        endDatePicker.date = Calendar.current.startOfDay(for: endTime)
+        // Initiera med inkommande datumintervall (hela dagar), klampat till [today-90d, today]
+        var initialStart = cal.startOfDay(for: startTime)
+        var initialEnd = cal.startOfDay(for: endTime)
+
+        if initialStart < minDate { initialStart = minDate }
+        if initialStart > today   { initialStart = today }
+
+        if initialEnd < minDate { initialEnd = minDate }
+        if initialEnd > today   { initialEnd = today }
+
+        startDatePicker.date = initialStart
+        endDatePicker.date = initialEnd
 
         datePickersStack.axis = .horizontal
         datePickersStack.alignment = .center
@@ -360,15 +378,35 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         //datePickersStack.addArrangedSubview(toLabel)
         datePickersStack.addArrangedSubview(endDatePicker)
     }
+    
+    @objc private func startPickerChanged() {
+        lastChangedPicker = startDatePicker
+        datePickerChanged()
+    }
+
+    @objc private func endPickerChanged() {
+        lastChangedPicker = endDatePicker
+        datePickerChanged()
+    }
 
     @objc private func datePickerChanged() {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
+        let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
 
-        if startDatePicker.date > today { startDatePicker.date = today }
-        if endDatePicker.date > today { endDatePicker.date = today }
-        if endDatePicker.date < startDatePicker.date {
-            endDatePicker.date = startDatePicker.date
+        // Klampa till [today-90d, today]
+        startDatePicker.date = min(max(startDatePicker.date, minDate), today)
+        endDatePicker.date   = min(max(endDatePicker.date, minDate), today)
+
+        // Synka beroende på vilken picker som ändrades
+        if lastChangedPicker === startDatePicker {
+            if startDatePicker.date > endDatePicker.date {
+                endDatePicker.date = startDatePicker.date
+            }
+        } else if lastChangedPicker === endDatePicker {
+            if endDatePicker.date < startDatePicker.date {
+                startDatePicker.date = endDatePicker.date
+            }
         }
 
         let newStart = cal.startOfDay(for: startDatePicker.date)
