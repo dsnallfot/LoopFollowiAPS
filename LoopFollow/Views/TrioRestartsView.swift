@@ -33,6 +33,7 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
     }()
 
     private var activityIndicator: UIActivityIndicatorView?
+    private var reloadButton: UIBarButtonItem?
 
     // MARK: - Lifecycle
 
@@ -63,6 +64,7 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
             target: self,
             action: #selector(refreshTapped)
         )
+        self.reloadButton = reload
 
         // Klar-knapp till höger, så det känns som Treatments/Glucose
         let done = UIBarButtonItem(
@@ -189,18 +191,23 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
     // MARK: - Loading from cache
 
     private func showActivity() {
+        guard let reloadButton = reloadButton else { return }
+
         if activityIndicator == nil {
             let ind = UIActivityIndicatorView(style: .medium)
             ind.hidesWhenStopped = true
             activityIndicator = ind
-            navigationItem.titleView = ind
         }
+
+        reloadButton.image = nil
+        reloadButton.customView = activityIndicator
         activityIndicator?.startAnimating()
     }
 
     private func hideActivity() {
         activityIndicator?.stopAnimating()
-        navigationItem.titleView = nil
+        reloadButton?.customView = nil
+        reloadButton?.image = UIImage(systemName: "arrow.clockwise")
         activityIndicator = nil
     }
 

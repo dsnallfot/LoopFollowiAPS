@@ -61,6 +61,7 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
     }()
 
     private var activityIndicator: UIActivityIndicatorView?
+    private var reloadButton: UIBarButtonItem?
 
     init(initialSearchText: String? = nil) {
         self.initialSearchText = initialSearchText
@@ -111,6 +112,7 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
             target: self,
             action: #selector(refreshTapped)
         )
+        self.reloadButton = reload
 
         let done = UIBarButtonItem(
             title: "Klar",
@@ -214,18 +216,23 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
     // MARK: - Loading from cache
 
     private func showActivity() {
+        guard let reloadButton = reloadButton else { return }
+
         if activityIndicator == nil {
             let ind = UIActivityIndicatorView(style: .medium)
             ind.hidesWhenStopped = true
             activityIndicator = ind
-            navigationItem.titleView = ind
         }
+
+        reloadButton.image = nil
+        reloadButton.customView = activityIndicator
         activityIndicator?.startAnimating()
     }
 
     private func hideActivity() {
         activityIndicator?.stopAnimating()
-        navigationItem.titleView = nil
+        reloadButton?.customView = nil
+        reloadButton?.image = UIImage(systemName: "arrow.clockwise")
         activityIndicator = nil
     }
 
