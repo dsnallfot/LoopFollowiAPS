@@ -62,10 +62,26 @@ struct DailyStatsView: View {
                         Button {
                             showWeekdayFilter = true
                         } label: {
-                            Image(systemName: viewModel.isWeekdayFilterActive
-                                  ? "line.3.horizontal.decrease.circle.fill"
-                                  : "line.3.horizontal.decrease.circle")
-                                .foregroundColor(viewModel.isWeekdayFilterActive ? .blue : .primary)
+                            let weekdayCount = viewModel.selectedWeekdays.count
+                            let (symbolName, symbolColor): (String, Color) = {
+                                switch weekdayCount {
+                                case 7:
+                                    // Alla dagar valda – standardkalender, neutral färg
+                                    return ("7.calendar", .primary)
+                                case 0:
+                                    // Inga dagar valda – varna med badge
+                                    return ("calendar.badge.exclamationmark", .blue)
+                                case 1...6:
+                                    // 1–6 dagar valda – använd siffra + kalender
+                                    return ("\(weekdayCount).calendar", .blue)
+                                default:
+                                    // Fallback
+                                    return ("calendar", .primary)
+                                }
+                            }()
+
+                            Image(systemName: symbolName)
+                                .foregroundColor(symbolColor)
                         }
                     }
                     
