@@ -98,7 +98,7 @@ struct Treatment {
 
 /// A view controller that downloads and displays all treatments in a table view,
 /// with a segmented control above the table to filter the results.
-class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableViewDelegate, TwilioRequestable {
+class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableViewDelegate, TwilioRequestable, MealAnalysisViewDelegate {
 
     private let tableView = UITableView()
     // The complete set of downloaded treatments.
@@ -309,6 +309,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 modalTitleString: "Analys tid",
                 showsDoneButton: true
             )
+            analysisVC.delegate = self
             let navController = UINavigationController(rootViewController: analysisVC)
             navController.modalPresentationStyle = .formSheet
             present(navController, animated: true, completion: nil)
@@ -323,6 +324,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 modalTitleString: "Analys tid",
                 showsDoneButton: false
             )
+            analysisVC.delegate = self
             navigationController?.pushViewController(analysisVC, animated: true)
         }
     }
@@ -732,6 +734,30 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         loadTreatments()
         // End refreshing after data is loaded; you might also call this in the completion of loadTreatments()
         sender.endRefreshing()
+    }
+    
+    // MARK: - MealAnalysisViewDelegate
+    func mealAnalysisView(_ controller: MealAnalysisView,
+                          didReturnWithStartDate startDate: Date,
+                          didVisitEnteredBy: Bool) {
+        let cal = Calendar.current
+        let day = cal.startOfDay(for: startDate)
+        
+        // 1) Alltid synka valt datum från MealAnalysisView → TreatmentsTableView
+        selectedDate = day
+        datePicker.setDate(selectedDate, animated: false)
+        loadTreatments(for: selectedDate)
+        
+        // 2) Om användaren varit inne i EnteredByView, sätt filtret till "Manuell"
+        if didVisitEnteredBy {
+            let manualIndex = (0..<segmentedControl.numberOfSegments).first {
+                segmentedControl.titleForSegment(at: $0) == "Manuell"
+            } ?? 2
+            
+            segmentedControl.selectedSegmentIndex = manualIndex
+            // Använd samma logik som vid vanlig filter-ändring
+            filterChanged()
+        }
     }
     
     // MARK: - UITableViewDataSource Methods

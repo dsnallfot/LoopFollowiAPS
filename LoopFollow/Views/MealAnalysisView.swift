@@ -1,7 +1,3 @@
-// MARK: - EnteredByViewDelegate Protocol
-protocol EnteredByViewDelegate: AnyObject {
-    func enteredByView(_ controller: EnteredByView, didUpdateRange startDate: Date, endDate: Date)
-}
 //
 //  MealAnalysisView.swift
 //  LoopFollow
@@ -13,6 +9,18 @@ protocol EnteredByViewDelegate: AnyObject {
 import HealthKit
 import UIKit
 import Charts
+
+// MARK: - EnteredByViewDelegate Protocol
+protocol EnteredByViewDelegate: AnyObject {
+    func enteredByView(_ controller: EnteredByView, didUpdateRange startDate: Date, endDate: Date)
+}
+
+// MARK: - MealAnalysisViewDelegate Protocol
+protocol MealAnalysisViewDelegate: AnyObject {
+    func mealAnalysisView(_ controller: MealAnalysisView,
+                          didReturnWithStartDate startDate: Date,
+                          didVisitEnteredBy: Bool)
+}
 
 /// Minimal representation of a treatment event we need
 struct Event {
@@ -29,6 +37,11 @@ struct BGEntry {
 }
 
 class MealAnalysisView: ThemedViewController, ChartViewDelegate {
+    
+    weak var delegate: MealAnalysisViewDelegate?
+    
+    // Flagga för om användaren varit inne i EnteredByView under denna session
+    private var hasVisitedEnteredBy = false
 
     // MARK: - BG Bar Width Constraints
     private var belowWidthConstraint: NSLayoutConstraint?
@@ -517,7 +530,10 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     }
     
     @objc private func enteredByButtonTapped() {
-        let enteredByVC = EnteredByView(startTime: startTime, endTime: endTime)
+        // Markera att vi varit inne och fipplat med manuella behandlingar
+        hasVisitedEnteredBy = true
+        
+        let enteredByVC = EnteredByView(startTime: startTime, endTime: endTime - 1) // Sätt ev 00:00 till 23:59:59 för att inte visa 2 dagar i EnteredByView
         enteredByVC.delegate = self
         let nav = UINavigationController(rootViewController: enteredByVC)
         nav.modalPresentationStyle = .formSheet
@@ -1509,6 +1525,23 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         valueLabel.textColor = .label
         valueLabel.font = .preferredFont(forTextStyle: .caption1)
         return row
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        // Skicka tillbaka när vi faktiskt lämnar vyn:
+        //  • pop i navstack (Settings → Treatments → MealAnalysis)
+        //  • modal dismiss (MainVC → Treatments(modal) → MealAnalysis(modal))
+        let isGoingAway = isMovingFromParent || isBeingDismissed || navigationController?.isBeingDismissed == true
+        guard isGoingAway else { return }
+        
+        let calendar = Calendar.current
+        let startDay = calendar.startOfDay(for: startTime)
+        
+        delegate?.mealAnalysisView(self,
+                                   didReturnWithStartDate: startDay,
+                                   didVisitEnteredBy: hasVisitedEnteredBy)
     }
 
     // MARK: - BG Handling
