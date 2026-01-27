@@ -101,7 +101,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                 onDismiss: nil
             )
         }
-        
+        /*
         <<< ButtonRow() { row in
             row.title = "Dextrohistorik"
             row.presentationMode = .show(
@@ -114,9 +114,10 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
                 onDismiss: nil
             )
         }
+         */
         
         <<< ButtonRow() { row in
-            row.title = "Fingerstickhistorik"
+            row.title = "Fingerstick och dextrohistorik"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let bgCheckVC = BGCheckView()

@@ -18,8 +18,39 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         let date: Date
         let mmol: Double
     }
+    
+    private struct CGMPoint {
+        let date: Date
+        let mmol: Double
+    }
+    
+    private struct LowTreatmentEntry {
+        let date: Date
+        let grams: Double
+        let hasBGCheckNearby: Bool
+        let cgmMmol: Double?
+        let bgCheckMmol: Double?
+    }
 
-    private var entries: [BGCheckEntry] = []
+    private enum Mode {
+        case fingerstick
+        case dextro
+    }
+
+    private var mode: Mode = .fingerstick
+
+    private var fingerstickEntries: [BGCheckEntry] = []
+    private var dextroEntries: [LowTreatmentEntry] = []
+    
+    // För Dextro-stats (samma som bgCheckDatesForStats/bgCheckMmolForStats i LowTreatmentsView)
+    private var dextroBGCheckDates: [Date] = []
+    private var dextroBGCheckMmol: [Double] = []
+
+    // Backwards-compat så resten av filen kan fortsätta använda `entries` tills vi fasar om
+    private var entries: [BGCheckEntry] {
+        get { fingerstickEntries }
+        set { fingerstickEntries = newValue }
+    }
 
     // MARK: - UI
 
@@ -49,6 +80,22 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         nf.negativePrefix = "-"
         return nf
     }()
+    
+    private let gramsFormatter: NumberFormatter = {
+        let nf = NumberFormatter()
+        nf.locale = Locale(identifier: "sv_SE")
+        nf.minimumFractionDigits = 0
+        nf.maximumFractionDigits = 0
+        return nf
+    }()
+
+    private let mmolFormatter: NumberFormatter = {
+        let nf = NumberFormatter()
+        nf.locale = Locale(identifier: "sv_SE")
+        nf.minimumFractionDigits = 1
+        nf.maximumFractionDigits = 1
+        return nf
+    }()
 
     private var activityIndicator: UIActivityIndicatorView?
     private var reloadButton: UIBarButtonItem?
@@ -62,6 +109,20 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         dp.locale = Locale(identifier: "sv_SE")
         dp.date = Date()
         return dp
+    }()
+    
+    private let modeControl: UISegmentedControl = {
+        let sc = UISegmentedControl(items: ["Fingerstick", "Dextro"])
+        sc.selectedSegmentIndex = 0
+        return sc
+    }()
+
+    private let topStack: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .horizontal
+        sv.alignment = .center
+        sv.spacing = 8
+        return sv
     }()
 
     // MARK: - Lifecycle
@@ -123,15 +184,33 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
     }
     
     private func setupDatePicker() {
+        topStack.translatesAutoresizingMaskIntoConstraints = false
         datePicker.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(datePicker)
+        modeControl.translatesAutoresizingMaskIntoConstraints = false
+
+        topStack.addArrangedSubview(datePicker)
+
+        let spacer = UIView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        topStack.addArrangedSubview(spacer)
+
+        topStack.addArrangedSubview(modeControl)
+
+        // Ensure spacer expands between datePicker and modeControl
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        view.addSubview(topStack)
+
         datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
+        modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
 
         let safe = view.safeAreaLayoutGuide
 
         NSLayoutConstraint.activate([
-            datePicker.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
-            datePicker.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 16)
+            topStack.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
+            topStack.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 16),
+            topStack.trailingAnchor.constraint(lessThanOrEqualTo: safe.trailingAnchor, constant: -16)
         ])
     }
 
@@ -140,79 +219,166 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
     }
 
     @objc private func refreshTapped() {
-        loadBGChecks()
+        switch mode {
+        case .fingerstick:
+            loadBGChecks()
+        case .dextro:
+            loadLowTreatments()
+        }
     }
 
     @objc private func showBGCheckStats() {
-        let calendar = Calendar.current
-        let now = Date()
-        let daysBack = min(NightscoutCache.retentionDays, 90)
+        switch mode {
+        case .fingerstick:
+            let calendar = Calendar.current
+            let now = Date()
+            let daysBack = min(NightscoutCache.retentionDays, 90)
 
-        // Startdatum = början av dagen (daysBack-1) dagar bakåt
-        guard let startDay = calendar.date(byAdding: .day, value: -(daysBack - 1), to: calendar.startOfDay(for: now)) else {
-            return
-        }
-
-        // Bygg en array av alla dagar i intervallet, med default 0 stick per dag
-        var days: [Date] = []
-        var counts: [Int] = []
-        var dextroCounts: [Int] = []
-        days.reserveCapacity(daysBack)
-        counts.reserveCapacity(daysBack)
-        dextroCounts.reserveCapacity(daysBack)
-
-        for offset in 0..<daysBack {
-            if let day = calendar.date(byAdding: .day, value: offset, to: startDay) {
-                days.append(day)
-                counts.append(0)
-                dextroCounts.append(0)
+            // Startdatum = början av dagen (daysBack-1) dagar bakåt
+            guard let startDay = calendar.date(byAdding: .day, value: -(daysBack - 1), to: calendar.startOfDay(for: now)) else {
+                return
             }
-        }
 
-        // Snabb lookup för dag -> index i counts
-        var indexByDay: [Date: Int] = [:]
-        for (idx, day) in days.enumerated() {
-            indexByDay[calendar.startOfDay(for: day)] = idx
-        }
+            // Bygg en array av alla dagar i intervallet, med default 0 stick per dag
+            var days: [Date] = []
+            var counts: [Int] = []
+            var dextroCounts: [Int] = []
+            days.reserveCapacity(daysBack)
+            counts.reserveCapacity(daysBack)
+            dextroCounts.reserveCapacity(daysBack)
 
-        // Räkna fingerstick per dag inom perioden och dextro per dag
-        for entry in entries {
-            if entry.date < startDay || entry.date > now { continue }
-            let dayStart = calendar.startOfDay(for: entry.date)
-            if let idx = indexByDay[dayStart] {
-                counts[idx] += 1
-                if entry.hasDextroNearby {
-                    dextroCounts[idx] += 1
+            for offset in 0..<daysBack {
+                if let day = calendar.date(byAdding: .day, value: offset, to: startDay) {
+                    days.append(day)
+                    counts.append(0)
+                    dextroCounts.append(0)
                 }
             }
+
+            // Snabb lookup för dag -> index i counts
+            var indexByDay: [Date: Int] = [:]
+            for (idx, day) in days.enumerated() {
+                indexByDay[calendar.startOfDay(for: day)] = idx
+            }
+
+            // Räkna fingerstick per dag inom perioden och dextro per dag
+            for entry in fingerstickEntries {
+                if entry.date < startDay || entry.date > now { continue }
+                let dayStart = calendar.startOfDay(for: entry.date)
+                if let idx = indexByDay[dayStart] {
+                    counts[idx] += 1
+                    if entry.hasDextroNearby {
+                        dextroCounts[idx] += 1
+                    }
+                }
+            }
+
+            let bgCheckDates = fingerstickEntries.map { $0.date }
+            let bgCheckDextroDates = fingerstickEntries.filter { $0.hasDextroNearby }.map { $0.date }
+
+            let statsVC = BGCheckStatsViewController(
+                days: days,
+                counts: counts,
+                dextroCounts: dextroCounts,
+                bgCheckEntries: fingerstickEntries,
+                bgCheckDates: bgCheckDates,
+                bgCheckDextroDates: bgCheckDextroDates
+            )
+            let nav = UINavigationController(rootViewController: statsVC)
+
+            nav.modalPresentationStyle = .formSheet
+            nav.view.backgroundColor = .clear
+            nav.view.isOpaque = false
+            nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            nav.navigationBar.standardAppearance = appearance
+            nav.navigationBar.scrollEdgeAppearance = appearance
+            nav.navigationBar.compactAppearance = appearance
+
+            nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+            present(nav, animated: true)
+
+        case .dextro:
+            let calendar = Calendar.current
+            let now = Date()
+            let daysBack = min(NightscoutCache.retentionDays, 90)
+
+            // Startdatum = början av dagen (daysBack-1) dagar bakåt
+            guard let startDay = calendar.date(
+                byAdding: .day,
+                value: -(daysBack - 1),
+                to: calendar.startOfDay(for: now)
+            ) else {
+                return
+            }
+
+            // Begränsa till perioden vi ska visa i statistiken
+            let filteredEntries = dextroEntries.filter { $0.date >= startDay && $0.date <= now }
+
+            // Bygg en array av alla dagar i intervallet, med default 0 lågbehandlingar per dag
+            var days: [Date] = []
+            var counts: [Int] = []
+            var gramsPerDay: [Double] = []
+            days.reserveCapacity(daysBack)
+            counts.reserveCapacity(daysBack)
+            gramsPerDay.reserveCapacity(daysBack)
+
+            for offset in 0..<daysBack {
+                if let day = calendar.date(byAdding: .day, value: offset, to: startDay) {
+                    days.append(day)
+                    counts.append(0)
+                    gramsPerDay.append(0)
+                }
+            }
+
+            // Snabb lookup för dag -> index i arrays
+            var indexByDay: [Date: Int] = [:]
+            for (idx, day) in days.enumerated() {
+                indexByDay[calendar.startOfDay(for: day)] = idx
+            }
+
+            // Räkna lågbehandlingar och gram per dag
+            for entry in filteredEntries {
+                let dayStart = calendar.startOfDay(for: entry.date)
+                if let idx = indexByDay[dayStart] {
+                    counts[idx] += 1
+                    gramsPerDay[idx] += entry.grams
+                }
+            }
+
+            // Underliggande lista med enskilda behandlingar (för medel/max/streak-beräkningar)
+            let treatmentDates = filteredEntries.map { $0.date }
+            let treatmentGrams = filteredEntries.map { $0.grams }
+            let treatmentHasBGCheck = filteredEntries.map { $0.hasBGCheckNearby }
+
+            let statsVC = LowTreatmentsStatsViewController(
+                days: days,
+                counts: counts,
+                gramsPerDay: gramsPerDay,
+                treatmentDates: treatmentDates,
+                treatmentGrams: treatmentGrams,
+                treatmentHasBGCheck: treatmentHasBGCheck,
+                bgCheckDates: dextroBGCheckDates,
+                bgCheckMmol: dextroBGCheckMmol
+            )
+            let nav = UINavigationController(rootViewController: statsVC)
+
+            nav.modalPresentationStyle = .formSheet
+            nav.view.backgroundColor = .clear
+            nav.view.isOpaque = false
+            nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            nav.navigationBar.standardAppearance = appearance
+            nav.navigationBar.scrollEdgeAppearance = appearance
+            nav.navigationBar.compactAppearance = appearance
+
+            nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+            present(nav, animated: true)
         }
-
-        let bgCheckDates = entries.map { $0.date }
-        let bgCheckDextroDates = entries.filter { $0.hasDextroNearby }.map { $0.date }
-
-        let statsVC = BGCheckStatsViewController(
-            days: days,
-            counts: counts,
-            dextroCounts: dextroCounts,
-            bgCheckEntries: entries,
-            bgCheckDates: bgCheckDates,
-            bgCheckDextroDates: bgCheckDextroDates
-        )
-        let nav = UINavigationController(rootViewController: statsVC)
-
-        nav.modalPresentationStyle = .formSheet
-        nav.view.backgroundColor = .clear
-        nav.view.isOpaque = false
-        nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        nav.navigationBar.standardAppearance = appearance
-        nav.navigationBar.scrollEdgeAppearance = appearance
-        nav.navigationBar.compactAppearance = appearance
-
-        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
-        present(nav, animated: true)
     }
 
     // MARK: - Setup table
@@ -236,18 +402,29 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         let safe = view.safeAreaLayoutGuide
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 8),
+            tableView.topAnchor.constraint(equalTo: topStack.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
     private func updateDatePickerBounds() {
-        guard !entries.isEmpty else { return }
+        let dates: [Date]
+        switch mode {
+        case .fingerstick:
+            dates = fingerstickEntries.map { $0.date }
+        case .dextro:
+            dates = dextroEntries.map { $0.date }
+        }
+        
+        guard !dates.isEmpty else { return }
+
 
         let cal = Calendar.current
 
-        if let oldest = entries.last?.date {
+        // Vi antar att listorna är sorterade nyast först → äldsta = last
+        let sorted = dates.sorted()
+        if let oldest = sorted.first {
             let minDate = cal.startOfDay(for: oldest)
             datePicker.minimumDate = minDate
         } else {
@@ -267,47 +444,99 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
     }
 
     @objc private func datePickerChanged(_ picker: UIDatePicker) {
-        guard !entries.isEmpty else { return }
-
         let cal = Calendar.current
         let selected = picker.date
         let startOfDay = cal.startOfDay(for: selected)
         guard let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay) else { return }
 
-        var targetIndex: Int?
+        switch mode {
+        case .fingerstick:
+            guard !fingerstickEntries.isEmpty else { return }
+            var targetIndex: Int?
 
-        // 1) Försök hitta sista stick denna dag (nyast överst, så vi tar sista index för dagen)
-        for (idx, entry) in entries.enumerated().reversed() {
-            if entry.date >= startOfDay && entry.date < endOfDay {
-                targetIndex = idx
-                break
-            }
-        }
-
-        // 2) Om inga stick denna dag – hitta närmaste stick efter vald tidpunkt
-        if targetIndex == nil {
-            var candidateIndex: Int?
-            for (idx, entry) in entries.enumerated() {
-                if entry.date >= selected {
-                    // Håll kvar den sista (dvs närmast vald tid men fortfarande "efter")
-                    candidateIndex = idx
+            for (idx, entry) in fingerstickEntries.enumerated().reversed() {
+                if entry.date >= startOfDay && entry.date < endOfDay {
+                    targetIndex = idx
+                    break
                 }
             }
 
-            if let candidateIndex {
-                targetIndex = candidateIndex
+            if targetIndex == nil {
+                var candidateIndex: Int?
+                for (idx, entry) in fingerstickEntries.enumerated() {
+                    if entry.date >= selected {
+                        candidateIndex = idx
+                    }
+                }
+
+                if let candidateIndex {
+                    targetIndex = candidateIndex
+                } else {
+                    targetIndex = 0
+                }
+            }
+
+            guard let index = targetIndex,
+                  index >= 0,
+                  index < tableView.numberOfRows(inSection: 0) else { return }
+
+            let indexPath = IndexPath(row: index, section: 0)
+            tableView.scrollToRow(at: indexPath, at: .top, animated: true)
+
+        case .dextro:
+            guard !dextroEntries.isEmpty else { return }
+            var targetIndex: Int?
+
+            for (idx, entry) in dextroEntries.enumerated().reversed() {
+                if entry.date >= startOfDay && entry.date < endOfDay {
+                    targetIndex = idx
+                    break
+                }
+            }
+
+            if targetIndex == nil {
+                var candidateIndex: Int?
+                for (idx, entry) in dextroEntries.enumerated() {
+                    if entry.date >= selected {
+                        candidateIndex = idx
+                    }
+                }
+
+                if let candidateIndex {
+                    targetIndex = candidateIndex
+                } else {
+                    targetIndex = 0
+                }
+            }
+
+            guard let index = targetIndex,
+                  index >= 0,
+                  index < tableView.numberOfRows(inSection: 0) else { return }
+
+            let indexPath = IndexPath(row: index, section: 0)
+            tableView.scrollToRow(at: indexPath, at: .top, animated: true)
+        }
+    }
+    
+    @objc private func modeChanged(_ sender: UISegmentedControl) {
+        let newMode: Mode = (sender.selectedSegmentIndex == 0) ? .fingerstick : .dextro
+        mode = newMode
+
+        switch mode {
+        case .fingerstick:
+            title = "Fingerstick"
+            updateDatePickerBounds()
+            tableView.reloadData()
+
+        case .dextro:
+            title = "Dextro"
+            if dextroEntries.isEmpty {
+                loadLowTreatments()
             } else {
-                // Fallback: scrolla till nyaste om inget stick är efter vald datum (alla äldre)
-                targetIndex = 0
+                updateDatePickerBounds()
+                tableView.reloadData()
             }
         }
-
-        guard let index = targetIndex,
-              index >= 0,
-              index < tableView.numberOfRows(inSection: 0) else { return }
-
-        let indexPath = IndexPath(row: index, section: 0)
-        tableView.scrollToRow(at: indexPath, at: .top, animated: true)
     }
 
     // MARK: - Loading from cache
@@ -450,87 +679,286 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         }
         return points[bestIndex]
     }
+    
+    /// Hämtar alla Carb Correction-treatments med 🍬 i notes (lågbehandlingar) och mappar till LowTreatmentEntry.
+    private func loadLowTreatments() {
+        showActivity()
+
+        Task {
+            let now = Date()
+            let cal = Calendar.current
+
+            // Hämta t.ex. hela cachefönstret (samma retention som övrig cache)
+            let start = cal.date(
+                byAdding: .day,
+                value: -NightscoutCache.retentionDays,
+                to: now
+            ) ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
+
+            // Antag att NightscoutCache.loadWindow(from:to:) returnerar (sgv, treatments)
+            let (sgvs, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
+
+            // Bygg CGM-punkter i mmol/L från SGV-datan
+            let cgmPoints: [CGMPoint] = sgvs
+                .map { sgv in
+                    CGMPoint(
+                        date: Date(timeIntervalSince1970: sgv.date),
+                        mmol: Double(sgv.sgv) / 18.0182
+                    )
+                }
+                .sorted { $0.date < $1.date }
+
+            // Plocka ut alla BG Check-datum (för korsning mot dextro) samt mmol-värde
+            var bgCheckDates: [Date] = []
+            var bgCheckMmol: [Double] = []
+            for t in treatments {
+                guard t.eventType == "BG Check" else { continue }
+                let date = t.created_at
+                guard let raw = t.glucose else { continue }
+
+                let mmol: Double
+                if let units = t.units, units.lowercased().contains("mmol") {
+                    mmol = raw
+                } else {
+                    // mg/dL -> mmol/L
+                    mmol = raw / 18.0182
+                }
+
+                bgCheckDates.append(date)
+                bgCheckMmol.append(mmol)
+            }
+
+            let windowSeconds: TimeInterval = 15 * 60 // ±15 min
+
+            let lowTreatments: [LowTreatmentEntry] = treatments.compactMap { t -> LowTreatmentEntry? in
+                // Endast Carb Correction med carbs > 0 och minst en 🍬 i notes
+                guard t.eventType == "Carb Correction" else { return nil }
+                guard let carbs = t.carbs, carbs > 0 else { return nil }
+                guard let notes = t.notes, notes.contains("🍬") else { return nil }
+
+                let date = t.created_at
+
+                // Hitta närmaste BG Check i tid och se om den ligger inom ±15 minuter
+                var nearestBGIndex: Int?
+                var bestDelta = windowSeconds + 1
+                for (idx, bgDate) in bgCheckDates.enumerated() {
+                    let delta = abs(bgDate.timeIntervalSince(date))
+                    if delta < bestDelta {
+                        bestDelta = delta
+                        nearestBGIndex = idx
+                    }
+                }
+
+                let hasBGCheckNearby: Bool
+                let bgCheckMmolNearby: Double?
+                if let idx = nearestBGIndex, bestDelta <= windowSeconds {
+                    hasBGCheckNearby = true
+                    bgCheckMmolNearby = bgCheckMmol[idx]
+                } else {
+                    hasBGCheckNearby = false
+                    bgCheckMmolNearby = nil
+                }
+
+                // Hitta närmaste CGM-värde vid tidpunkten för dextrobehandlingen
+                let cgmPoint = nearestCGMPoint(around: date, in: cgmPoints)
+                let cgmMmol = cgmPoint?.mmol
+
+                return LowTreatmentEntry(
+                    date: date,
+                    grams: carbs,
+                    hasBGCheckNearby: hasBGCheckNearby,
+                    cgmMmol: cgmMmol,
+                    bgCheckMmol: bgCheckMmolNearby
+                )
+            }
+            .sorted { $0.date > $1.date } // nyast överst
+
+            await MainActor.run {
+                self.dextroEntries = lowTreatments
+                self.dextroBGCheckDates = bgCheckDates
+                self.dextroBGCheckMmol = bgCheckMmol
+                self.tableView.reloadData()
+                // Vi låter updateDatePickerBounds fortsatt bygga på fingerstickEntries tills vi kopplar om den i dextro-läge.
+                self.hideActivity()
+            }
+        }
+    }
+
+    // Hittar närmaste CGM-punkt tidsmässigt runt ett givet mål.
+    private func nearestCGMPoint(around target: Date, in points: [CGMPoint]) -> CGMPoint? {
+        guard !points.isEmpty else { return nil }
+
+        var lo = 0
+        var hi = points.count - 1
+        var bestIndex = 0
+        var bestDiff = abs(points[0].date.timeIntervalSince(target))
+
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = points[mid].date
+            let diff = abs(d.timeIntervalSince(target))
+            if diff < bestDiff {
+                bestDiff = diff
+                bestIndex = mid
+            }
+            if d < target {
+                lo = mid + 1
+            } else if d > target {
+                hi = mid - 1
+            } else {
+                break
+            }
+        }
+        return points[bestIndex]
+    }
 
     // MARK: - UITableViewDataSource
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return entries.count
+        switch mode {
+        case .fingerstick:
+            return fingerstickEntries.count
+        case .dextro:
+            return dextroEntries.count
+        }
     }
 
     func tableView(
         _ tableView: UITableView,
         cellForRowAt indexPath: IndexPath
     ) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "BGCheckCell") ?? UITableViewCell(style: .subtitle, reuseIdentifier: "BGCheckCell")
-        cell.textLabel?.numberOfLines = 1
+        switch mode {
+        case .fingerstick:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "BGCheckCell") ?? UITableViewCell(style: .subtitle, reuseIdentifier: "BGCheckCell")
+            cell.textLabel?.numberOfLines = 1
 
-        let entry = entries[indexPath.row]
+            let entry = fingerstickEntries[indexPath.row]
 
-        // Leading SF Symbol + värde i mmol/L
-        let mmolString = valueFormatter.string(from: NSNumber(value: entry.mmol)) ?? String(format: "%.1f", entry.mmol)
+            let mmolString = valueFormatter.string(from: NSNumber(value: entry.mmol)) ?? String(format: "%.1f", entry.mmol)
 
-        var text = "\(mmolString) mmol/L"
-        if entry.hasDextroNearby {
-            text += " 🍬"   // 👈 markera fingerstick med dextro inom ±10 min
-        }
+            var text = "\(mmolString) mmol/L"
+            if entry.hasDextroNearby {
+                text += " 🍬"
+            }
 
         cell.textLabel?.text = text
         cell.textLabel?.font = .systemFont(ofSize: 17)
 
-        // Sekundär rad: "CGM +10 min: X.X Δ +Y.Y"
-        if let cgm10 = entry.cgm10mMmol, let delta = entry.delta10m {
-            let cgmString = valueFormatter.string(from: NSNumber(value: cgm10)) ?? String(format: "%.1f", cgm10)
-            let deltaString = deltaFormatter.string(from: NSNumber(value: delta)) ?? String(format: "%+.1f", delta)
+            if let cgm10 = entry.cgm10mMmol, let delta = entry.delta10m {
+                let cgmString = valueFormatter.string(from: NSNumber(value: cgm10)) ?? String(format: "%.1f", cgm10)
+                let deltaString = deltaFormatter.string(from: NSNumber(value: delta)) ?? String(format: "%+.1f", delta)
 
-            cell.detailTextLabel?.text = "CGM +10 min: \(cgmString) Δ \(deltaString)"
-            cell.detailTextLabel?.font = .systemFont(ofSize: 12)
-            cell.detailTextLabel?.textColor = .secondaryLabel
-        } else {
-            cell.detailTextLabel?.text = nil
+                cell.detailTextLabel?.text = "CGM +10 min: \(cgmString) Δ \(deltaString)"
+                cell.detailTextLabel?.font = .systemFont(ofSize: 12)
+                cell.detailTextLabel?.textColor = .secondaryLabel
+            } else {
+                cell.detailTextLabel?.text = nil
+            }
+
+            cell.imageView?.image = UIImage(systemName: "drop.fill")
+            cell.imageView?.tintColor = .systemRed
+
+            let rightLabel = UILabel()
+            rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
+            rightLabel.font = .systemFont(ofSize: 14)
+            rightLabel.textColor = .secondaryLabel
+            rightLabel.textAlignment = .right
+            rightLabel.sizeToFit()
+            cell.accessoryView = rightLabel
+
+            cell.backgroundColor = .clear
+            cell.contentView.backgroundColor = .clear
+            cell.backgroundView = nil
+            if #available(iOS 14.0, *) {
+                cell.backgroundConfiguration = nil
+            }
+            cell.textLabel?.backgroundColor = .clear
+            cell.detailTextLabel?.backgroundColor = .clear
+
+            cell.selectionStyle = .default
+            cell.accessoryType = .none
+            let selected = UIView()
+            selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
+            selected.layer.cornerRadius = 10
+            selected.layer.masksToBounds = true
+            cell.selectedBackgroundView = selected
+            return cell
+
+        case .dextro:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "LowTreatmentCell") ?? UITableViewCell(style: .subtitle, reuseIdentifier: "LowTreatmentCell")
+            cell.textLabel?.numberOfLines = 1
+
+            cell.backgroundColor = .clear
+            cell.contentView.backgroundColor = .clear
+            cell.backgroundView = nil
+            if #available(iOS 14.0, *) {
+                cell.backgroundConfiguration = nil
+            }
+            cell.textLabel?.backgroundColor = .clear
+            cell.detailTextLabel?.backgroundColor = .clear
+
+            let entry = dextroEntries[indexPath.row]
+            let gramsString = gramsFormatter.string(from: NSNumber(value: entry.grams)) ?? String(format: "%.0f", entry.grams)
+
+            if let cgm = entry.cgmMmol {
+                let cgmString = mmolFormatter.string(from: NSNumber(value: cgm)) ?? String(format: "%.1f", cgm)
+                if entry.hasBGCheckNearby, let bg = entry.bgCheckMmol {
+                    let bgString = mmolFormatter.string(from: NSNumber(value: bg)) ?? String(format: "%.1f", bg)
+                    cell.detailTextLabel?.text = "CGM: \(cgmString) • Finger: \(bgString) mmol/L"
+                } else {
+                    cell.detailTextLabel?.text = "CGM: \(cgmString) mmol/L"
+                }
+                cell.detailTextLabel?.font = .systemFont(ofSize: 12)
+                cell.detailTextLabel?.textColor = .secondaryLabel
+            } else {
+                cell.detailTextLabel?.text = nil
+            }
+
+            var text = "Dextro • \(gramsString) g"
+            if entry.hasBGCheckNearby {
+                text += " 🩸"
+            }
+            cell.textLabel?.text = text
+            cell.textLabel?.font = .systemFont(ofSize: 17)
+
+            cell.imageView?.image = UIImage(systemName: "pill.fill")
+            cell.imageView?.tintColor = .label
+
+            let rightLabel = UILabel()
+            rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
+            rightLabel.font = .systemFont(ofSize: 14)
+            rightLabel.textColor = .secondaryLabel
+            rightLabel.textAlignment = .right
+            rightLabel.sizeToFit()
+            cell.accessoryView = rightLabel
+
+            cell.selectionStyle = .default
+            cell.accessoryType = .none
+            let selected = UIView()
+            selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
+            selected.layer.cornerRadius = 10
+            selected.layer.masksToBounds = true
+            cell.selectedBackgroundView = selected
+            return cell
         }
-
-        // SF-symbol i imageView (leading)
-        cell.imageView?.image = UIImage(systemName: "drop.fill")
-        cell.imageView?.tintColor = .systemRed
-
-        // Right-aligned full date + time
-        let rightLabel = UILabel()
-        rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
-        rightLabel.font = .systemFont(ofSize: 14)
-        rightLabel.textColor = .secondaryLabel
-        rightLabel.textAlignment = .right
-        rightLabel.sizeToFit()
-        cell.accessoryView = rightLabel
-
-        cell.backgroundColor = .clear
-        cell.contentView.backgroundColor = .clear
-        cell.backgroundView = nil
-        if #available(iOS 14.0, *) {
-            cell.backgroundConfiguration = nil
-        }
-        cell.textLabel?.backgroundColor = .clear
-        cell.detailTextLabel?.backgroundColor = .clear
-        
-        cell.selectionStyle = .default
-        cell.accessoryType = .none
-        // Match Treatments-style selection highlight (subtle overlay over the gradient)
-        cell.selectionStyle = .default
-        let selected = UIView()
-        selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
-        selected.layer.cornerRadius = 10
-        selected.layer.masksToBounds = true
-        cell.selectedBackgroundView = selected
-        return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let entry = entries[indexPath.row]
-        let startDate = entry.date - 60 * 20 //visa vad som hände 20 min före sticket
-        let endDate = entry.date + 60 * 180 //visa utvecklingen 180 min efter sticket
-
-
-        // Hitta MainViewController via root UITabBarController för att få events,
-        // men presentera modalen härifrån så vi kommer tillbaka hit när den stängs.
+        let entryDate: Date
+        let modalTitle: String
+        
+        switch mode {
+        case .fingerstick:
+            let entry = fingerstickEntries[indexPath.row]
+            entryDate = entry.date
+            modalTitle = "Analys Stick"
+        case .dextro:
+            let entry = dextroEntries[indexPath.row]
+            entryDate = entry.date
+            modalTitle = "Analys Dextro"
+        }
+        let startDate = entryDate - 60 * 20  // 20 min före
+        let endDate = entryDate + 60 * 180  // 180 min efter
 
         guard
             let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -543,9 +971,8 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
 
         var mainVC: MainViewController?
 
-        for (index, vc) in tabViewControllers.enumerated() {
+        for vc in tabViewControllers {
             if let nav = vc as? UINavigationController {
-
                 if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
                     mainVC = candidate
                     break
@@ -560,15 +987,14 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             return
         }
 
-        // Bygg events via MainViewController, men presentera modalen härifrån.
         let events = mainVC.buildEventsForMealAnalysis()
 
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: startDate,
-            initialEnd: nil,//endDate,
+            initialEnd: nil,
             modalWithTimestamp: true,
-            modalTitleString: "Analys Stick"
+            modalTitleString: modalTitle
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet
