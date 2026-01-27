@@ -57,6 +57,17 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
     private var activityIndicator: UIActivityIndicatorView?
     private var reloadButton: UIBarButtonItem?
 
+    private let datePicker: UIDatePicker = {
+        let dp = UIDatePicker()
+        dp.datePickerMode = .date
+        if #available(iOS 13.4, *) {
+            dp.preferredDatePickerStyle = .compact
+        }
+        dp.locale = Locale(identifier: "sv_SE")
+        dp.date = Date()
+        return dp
+    }()
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -66,13 +77,12 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
         updateBackgroundForCurrentMode()
 
         setupNavigationBar()
+        setupDatePicker()
         setupTableView()
         setupConstraints()
 
         loadLowTreatments()
     }
-
-    // MARK: - Nav bar
 
     // MARK: - Nav bar
 
@@ -113,6 +123,19 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
             navigationItem.leftItemsSupplementBackButton = true
             navigationItem.leftBarButtonItems = [reload]
         }
+    }
+    
+    private func setupDatePicker() {
+        datePicker.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(datePicker)
+        datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
+
+        let safe = view.safeAreaLayoutGuide
+
+        NSLayoutConstraint.activate([
+            datePicker.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
+            datePicker.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 16)
+        ])
     }
 
     @objc private func doneTapped() {
@@ -227,11 +250,81 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
         let safe = view.safeAreaLayoutGuide
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: safe.topAnchor),
+            tableView.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+
+    private func updateDatePickerBounds() {
+        guard !entries.isEmpty else { return }
+
+        let cal = Calendar.current
+
+        if let oldest = entries.last?.date {
+            let minDate = cal.startOfDay(for: oldest)
+            datePicker.minimumDate = minDate
+        } else {
+            datePicker.minimumDate = nil
+        }
+
+        // Maxdatum = idag
+        datePicker.maximumDate = Date()
+
+        // Klampa vald datum inom intervallet om den hamnat utanför
+        if let min = datePicker.minimumDate, datePicker.date < min {
+            datePicker.date = min
+        }
+        if let max = datePicker.maximumDate, datePicker.date > max {
+            datePicker.date = max
+        }
+    }
+
+    @objc private func datePickerChanged(_ picker: UIDatePicker) {
+        guard !entries.isEmpty else { return }
+
+        let cal = Calendar.current
+        let selected = picker.date
+        let startOfDay = cal.startOfDay(for: selected)
+        guard let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay) else { return }
+
+        var targetIndex: Int?
+
+        // 1) Försök hitta sista behandling denna dag (nyast överst i tabellen, så vi tar sista index för dagen)
+        for (idx, entry) in entries.enumerated().reversed() {
+            if entry.date >= startOfDay && entry.date < endOfDay {
+                targetIndex = idx
+                break
+            }
+        }
+
+        // 2) Om inga behandlingar denna dag – hitta närmaste behandling efter valt datum
+        if targetIndex == nil {
+            var candidateIndex: Int?
+            for (idx, entry) in entries.enumerated() {
+                if entry.date >= selected {
+                    // Håll kvar den sista (dvs närmast vald tid men fortfarande "efter")
+                    candidateIndex = idx
+                }
+            }
+
+            if let candidateIndex {
+                targetIndex = candidateIndex
+            } else {
+                // Fallback: scrolla till nyaste om inget är efter vald datum (alla äldre)
+                targetIndex = 0
+            }
+        }
+
+        guard
+            let index = targetIndex,
+            index >= 0,
+            index < tableView.numberOfRows(inSection: 0)
+        else { return }
+
+        let indexPath = IndexPath(row: index, section: 0)
+        tableView.scrollToRow(at: indexPath, at: .top, animated: true)
     }
 
     // MARK: - Loading from cache
@@ -355,6 +448,7 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
                 self.bgCheckDatesForStats = bgCheckDates
                 self.bgCheckMmolForStats = bgCheckMmol
                 self.tableView.reloadData()
+                self.updateDatePickerBounds()
                 self.hideActivity()
             }
         }
@@ -505,7 +599,7 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
             initialStart: startDate,
             initialEnd: nil,//endDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utv. kring Dextro"
+            modalTitleString: "Analys Dextro"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

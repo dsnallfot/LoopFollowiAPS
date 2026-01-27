@@ -53,6 +53,17 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
     private var activityIndicator: UIActivityIndicatorView?
     private var reloadButton: UIBarButtonItem?
 
+    private let datePicker: UIDatePicker = {
+        let dp = UIDatePicker()
+        dp.datePickerMode = .date
+        if #available(iOS 13.4, *) {
+            dp.preferredDatePickerStyle = .compact
+        }
+        dp.locale = Locale(identifier: "sv_SE")
+        dp.date = Date()
+        return dp
+    }()
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -62,6 +73,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         updateBackgroundForCurrentMode()
 
         setupNavigationBar()
+        setupDatePicker()
         setupTableView()
         setupConstraints()
 
@@ -108,6 +120,19 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             navigationItem.leftItemsSupplementBackButton = true
             navigationItem.leftBarButtonItems = [reload]
         }
+    }
+    
+    private func setupDatePicker() {
+        datePicker.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(datePicker)
+        datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
+
+        let safe = view.safeAreaLayoutGuide
+
+        NSLayoutConstraint.activate([
+            datePicker.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
+            datePicker.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 16)
+        ])
     }
 
     @objc private func doneTapped() {
@@ -211,11 +236,78 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         let safe = view.safeAreaLayoutGuide
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: safe.topAnchor),
+            tableView.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+    private func updateDatePickerBounds() {
+        guard !entries.isEmpty else { return }
+
+        let cal = Calendar.current
+
+        if let oldest = entries.last?.date {
+            let minDate = cal.startOfDay(for: oldest)
+            datePicker.minimumDate = minDate
+        } else {
+            datePicker.minimumDate = nil
+        }
+
+        // Maxdatum = idag
+        datePicker.maximumDate = Date()
+
+        // Klampa vald datum inom intervallet om den hamnat utanför
+        if let min = datePicker.minimumDate, datePicker.date < min {
+            datePicker.date = min
+        }
+        if let max = datePicker.maximumDate, datePicker.date > max {
+            datePicker.date = max
+        }
+    }
+
+    @objc private func datePickerChanged(_ picker: UIDatePicker) {
+        guard !entries.isEmpty else { return }
+
+        let cal = Calendar.current
+        let selected = picker.date
+        let startOfDay = cal.startOfDay(for: selected)
+        guard let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay) else { return }
+
+        var targetIndex: Int?
+
+        // 1) Försök hitta sista stick denna dag (nyast överst, så vi tar sista index för dagen)
+        for (idx, entry) in entries.enumerated().reversed() {
+            if entry.date >= startOfDay && entry.date < endOfDay {
+                targetIndex = idx
+                break
+            }
+        }
+
+        // 2) Om inga stick denna dag – hitta närmaste stick efter vald tidpunkt
+        if targetIndex == nil {
+            var candidateIndex: Int?
+            for (idx, entry) in entries.enumerated() {
+                if entry.date >= selected {
+                    // Håll kvar den sista (dvs närmast vald tid men fortfarande "efter")
+                    candidateIndex = idx
+                }
+            }
+
+            if let candidateIndex {
+                targetIndex = candidateIndex
+            } else {
+                // Fallback: scrolla till nyaste om inget stick är efter vald datum (alla äldre)
+                targetIndex = 0
+            }
+        }
+
+        guard let index = targetIndex,
+              index >= 0,
+              index < tableView.numberOfRows(inSection: 0) else { return }
+
+        let indexPath = IndexPath(row: index, section: 0)
+        tableView.scrollToRow(at: indexPath, at: .top, animated: true)
     }
 
     // MARK: - Loading from cache
@@ -325,6 +417,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             await MainActor.run {
                 self.entries = bgChecks
                 self.tableView.reloadData()
+                self.updateDatePickerBounds()
                 self.hideActivity()
             }
         }
@@ -475,7 +568,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             initialStart: startDate,
             initialEnd: nil,//endDate,
             modalWithTimestamp: true,
-            modalTitleString: "Utv. kring Stick"
+            modalTitleString: "Analys Stick"
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet
