@@ -25,18 +25,27 @@ struct DailyStatsView: View {
         return df
     }()
     
-    // Kolumnbredder för raka marginaler
-    private let weekdayWidth: CGFloat = 26
-    private let dateWidth: CGFloat = 54
-    private let carbsWidth: CGFloat = 36
-    private let insulinWidth: CGFloat = 36
-    private let meanWidth: CGFloat = 36
-    private let lowWidth: CGFloat = 30
-    private let titrWidth: CGFloat = 30
-    private let tirWidth: CGFloat = 30
-    private let stdWidth: CGFloat = 32
-    private let profileWidth: CGFloat = 36
-    private let emptyWidth: CGFloat = 10
+    // Kolumnbredder för raka marginaler – proportionella mot skärmbredden (efter 10 pt horisontell padding)
+    private let totalBaseColumnWidth: CGFloat = 356 // 26+54+36+36+36+30+30+30+32+36+10
+    
+    private func scaledColumnWidth(base: CGFloat) -> CGFloat {
+        // Tillgänglig bredd efter 10 pt padding på vardera sida (matchar .padding(.horizontal, 10))
+        let screenWidth = UIScreen.main.bounds.width
+        let availableWidth = max(screenWidth - 30, 0)
+        return (base / totalBaseColumnWidth) * availableWidth
+    }
+    
+    private var weekdayWidth: CGFloat { scaledColumnWidth(base: 26) }
+    private var dateWidth: CGFloat { scaledColumnWidth(base: 54) }
+    private var carbsWidth: CGFloat { scaledColumnWidth(base: 36) }
+    private var insulinWidth: CGFloat { scaledColumnWidth(base: 36) }
+    private var meanWidth: CGFloat { scaledColumnWidth(base: 36) }
+    private var lowWidth: CGFloat { scaledColumnWidth(base: 30) }
+    private var titrWidth: CGFloat { scaledColumnWidth(base: 30) }
+    private var tirWidth: CGFloat { scaledColumnWidth(base: 30) }
+    private var stdWidth: CGFloat { scaledColumnWidth(base: 32) }
+    private var profileWidth: CGFloat { scaledColumnWidth(base: 36) }
+    private var emptyWidth: CGFloat { scaledColumnWidth(base: 10) }
     
     private let columnSpacing: CGFloat = 1
     
@@ -186,13 +195,12 @@ struct DailyStatsView: View {
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     averagesSection
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, 15)
                         .padding(.vertical, 8)
                     summarySection
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, 15)
                         .padding(.top, 8)
 
-                    ScrollView(.horizontal) {
                         VStack(alignment: .leading, spacing: 0) {
                             headerRow
                                 .padding(.vertical, 6)
@@ -250,9 +258,8 @@ struct DailyStatsView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, 15)
                         .padding(.top, 10)
-                    }
                 }
             }
         }

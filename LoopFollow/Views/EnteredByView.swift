@@ -1071,7 +1071,89 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             highlightRowBackground: false
         )
         rows.append(resursCCRow)
-        
+
+        // --------------------------------------------
+        // Ny sektion: Medel behandlingar/dag
+        // Visa bara om vald period omfattar mer än 1 dag.
+        // --------------------------------------------
+        let calendar = Calendar.current
+        let daySpan = calendar.dateComponents([.day], from: currentStart, to: currentEnd).day ?? 1
+        let daysInScope = max(daySpan, 1)
+
+        if daysInScope > 1 {
+            // Spacer före sektionen
+            rows.append(
+                EnteredByRow(title: "",
+                             bolusCount: 0, bolusPercent: nil,
+                             mealCount: 0, mealPercent: nil,
+                             totalCount: 0, totalPercent: nil,
+                             isBold: false,
+                             isSpacer: true,
+                             hideValues: true,
+                             displayAsPercentOnly: false,
+                             highlightAsTotal: false,
+                             highlightRowBackground: false)
+            )
+
+            // Sektion‑header
+            rows.append(
+                row("Medel behandlingar/dag",
+                    bolus: 0,
+                    meal: 0,
+                    isBold: true,
+                    hideValues: true,
+                    highlightRowBackground: true)
+            )
+
+            func avg(_ value: Int) -> Int {
+                guard daysInScope > 0 else { return 0 }
+                return Int((Double(value) / Double(daysInScope)).rounded())
+            }
+
+            // Mamma/Pappa/Resurs/Trio – medel per dag för Bolus/Måltid/Total
+            let mammaAvgBolus = avg(mamma.bolus)
+            let mammaAvgMeal  = avg(mamma.meal)
+            rows.append(
+                row("Mamma",
+                    bolus: mammaAvgBolus,
+                    meal: mammaAvgMeal)
+            )
+
+            let pappaAvgBolus = avg(pappa.bolus)
+            let pappaAvgMeal  = avg(pappa.meal)
+            rows.append(
+                row("Pappa",
+                    bolus: pappaAvgBolus,
+                    meal: pappaAvgMeal)
+            )
+
+            let resursAvgBolus = avg(resurs.bolus)
+            let resursAvgMeal  = avg(resurs.meal)
+            rows.append(
+                row("Resurs",
+                    bolus: resursAvgBolus,
+                    meal: resursAvgMeal)
+            )
+
+            let trioAvgBolus = avg(firstTrioBolus)
+            let trioAvgMeal  = avg(firstTrioMeal)
+            rows.append(
+                row("Trio",
+                    bolus: trioAvgBolus,
+                    meal: trioAvgMeal)
+            )
+
+            let totalAvgBolus = avg(totalBolus)
+            let totalAvgMeal  = avg(totalMeal)
+            rows.append(
+                row("Totalt",
+                    bolus: totalAvgBolus,
+                    meal: totalAvgMeal,
+                    isBold: true,
+                    highlightAsTotal: true)
+            )
+        }
+
         self.rows = rows
         tableView.reloadData()
     }
