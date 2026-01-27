@@ -805,7 +805,7 @@ struct DailyStatsView: View {
         let avgTitr = viewModel.averageTitr
         let avgTir = viewModel.averageTir
         let avgStd = viewModel.averageStdDev
-        let avgBasal = viewModel.averageProfileBasal
+        //let avgBasal = viewModel.averageProfileBasal
 
         return HStack(spacing: 0) {
             averageBadge(
@@ -823,7 +823,7 @@ struct DailyStatsView: View {
             )
             
             Spacer(minLength: 0)
-
+/*
             averageBadge(
                 title: "Basal",
                 value: avgBasal.map { String(format: "%.1f E", $0) } ?? "—",
@@ -831,7 +831,7 @@ struct DailyStatsView: View {
             )
 
             Spacer(minLength: 0)
-
+*/
             // Medel BG
             let meanColor: Color = {
                 guard let v = avgMean else { return .gray.opacity(0.4) }
@@ -844,7 +844,7 @@ struct DailyStatsView: View {
                 }
             }()
             averageBadge(
-                title: "Medel",
+                title: "MEDEL",
                 value: avgMean.map { String(format: "%.1f", $0) } ?? "—",
                 background: meanColor
             )
@@ -865,8 +865,8 @@ struct DailyStatsView: View {
             }()
 
             // TITR / TIR (beroende på showingTitrSummary)
-            let titrText = avgTitr.map { String(format: "%.0f%%", $0) } ?? "—"
-            let tirText = avgTir.map { String(format: "%.0f%%", $0) } ?? "—"
+            let titrText = avgTitr.map { String(format: "%.0f %%", $0) } ?? "—"
+            let tirText = avgTir.map { String(format: "%.0f %%", $0) } ?? "—"
             let combinedText = showingTitrSummary ? titrText : tirText
             let titrTirColor: Color = {
                 if showingTitrSummary {
@@ -881,7 +881,7 @@ struct DailyStatsView: View {
             }()
             
             averageBadge(
-                title: "Låg",
+                title: "LÅG",
                 value: avgLow.map { String(format: "%.1f %%", $0) } ?? "—",
                 background: lowColor
             )
@@ -908,12 +908,12 @@ struct DailyStatsView: View {
                 }
             }()
             averageBadge(
-                title: "StdAv",
+                title: "STD.AV",
                 value: avgStd.map { String(format: "%.1f", $0) } ?? "—",
                 background: stdColor
             )
         }
-        .frame(height: 32)
+        .frame(height: 35)
     }
 
     // MARK: - Average Badge Helper
@@ -922,19 +922,20 @@ struct DailyStatsView: View {
         ZStack {
             Capsule()
                 .fill(background)
-            VStack {
+            VStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.white)
                 Text(value)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.white)
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
             }
-            .padding(.horizontal, 1)
+            .padding(.horizontal, 2)
         }
-        .frame(width: 47, height: 32)
+        .frame(width: 56, height: 35) // utan basal-pill
+        //.frame(width: 47, height: 32) // med basal-pill
     }
 
 }

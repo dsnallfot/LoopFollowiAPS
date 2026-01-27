@@ -192,14 +192,14 @@ final class DailyStatsViewModel: ObservableObject {
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
-
+/*
     /// Genomsnittlig teoretisk basal (E/dag) från profilen.
     var averageProfileBasal: Double? {
         let values = filteredRowsForDisplay.compactMap { $0.profileBasal }
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
-
+*/
     private let daysBack: Int
 
     init(dataService: StatsDataService, daysBack: Int = 90, todayTDDOverride: Double? = nil) {
