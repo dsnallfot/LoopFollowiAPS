@@ -1,3 +1,7 @@
+// MARK: - EnteredByViewDelegate Protocol
+protocol EnteredByViewDelegate: AnyObject {
+    func enteredByView(_ controller: EnteredByView, didUpdateRange startDate: Date, endDate: Date)
+}
 //
 //  MealAnalysisView.swift
 //  LoopFollow
@@ -514,6 +518,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     
     @objc private func enteredByButtonTapped() {
         let enteredByVC = EnteredByView(startTime: startTime, endTime: endTime)
+        enteredByVC.delegate = self
         let nav = UINavigationController(rootViewController: enteredByVC)
         nav.modalPresentationStyle = .formSheet
         present(nav, animated: true, completion: nil)
@@ -1751,5 +1756,44 @@ extension UIFont {
     func withTraits(traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
         guard let descriptor = fontDescriptor.withSymbolicTraits(traits) else { return self }
         return UIFont(descriptor: descriptor, size: 0)
+    }
+}
+
+// MARK: - EnteredByViewDelegate Conformance
+extension MealAnalysisView: EnteredByViewDelegate {
+    func enteredByView(_ controller: EnteredByView, didUpdateRange startDate: Date, endDate: Date) {
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: Date())
+
+        // Normalize to whole days
+        let newStartDay = calendar.startOfDay(for: startDate)
+        let newEndDay   = calendar.startOfDay(for: endDate)
+
+        // Start is always 00:00 of chosen start day
+        startTime = newStartDay
+
+        // End is 00:00 next day, except if the chosen end day is today → end = now
+        let newEnd: Date
+        if calendar.isDate(newEndDay, inSameDayAs: todayStart) {
+            newEnd = Date()
+        } else {
+            newEnd = calendar.date(byAdding: .day, value: 1, to: newEndDay)
+                ?? newEndDay.addingTimeInterval(24 * 60 * 60)
+        }
+        endTime = newEnd
+
+        // Reflect that we are in "Dag"-läge in UI
+        let dagIndex = (0..<durationControl.numberOfSegments).first(where: {
+            durationControl.titleForSegment(at: $0) == "Dag"
+        }) ?? 6
+        durationControl.selectedSegmentIndex = dagIndex
+
+        // Update pickers to match the new window
+        startPicker.date = startTime
+        endPicker.date   = endTime
+
+        // Recalculate stats and graph
+        updateTotals()
+        updateBGLabels()
     }
 }

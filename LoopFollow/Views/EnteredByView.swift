@@ -175,6 +175,12 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
     private var lastChangedPicker: UIDatePicker?
     private var chevronLongPressConfigured = false
     
+    // Delegate tillbaka till MealAnalysisView
+    weak var delegate: EnteredByViewDelegate?
+    
+    // Har användaren justerat datumintervallet (via pickers eller chevrons) under denna session?
+    private var hasUserAdjustedDates = false
+    
     private let startTime: Date
     private let endTime: Date
     private var currentStart: Date
@@ -435,6 +441,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
     }
     
     @objc private func datePickerChanged() {
+        hasUserAdjustedDates = true
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
@@ -529,7 +536,25 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             }
         }
     }
-    
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        // Bara agera när vyn faktiskt är på väg bort (swipe-ner eller "Klar" i navbaren)
+        let isGoingAway = isBeingDismissed || isMovingFromParent || navigationController?.isBeingDismissed == true
+        guard isGoingAway else { return }
+        
+        // Om användaren aldrig ändrat datumintervallet under denna session → gör inget
+        guard hasUserAdjustedDates else { return }
+        
+        // Skicka tillbaka hela dagar (00:00 på respektive dag) till MealAnalysisView
+        let calendar = Calendar.current
+        let newStartDay = calendar.startOfDay(for: startDatePicker.date)
+        let newEndDay   = calendar.startOfDay(for: endDatePicker.date)
+        
+        delegate?.enteredByView(self, didUpdateRange: newStartDay, endDate: newEndDay)
+    }
+
     @objc private func dismissSelf() {
         dismiss(animated: true, completion: nil)
     }
@@ -1123,6 +1148,8 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
 
     /// Stega både start- och slutdatum med delta dagar, klampa till [today-90d, today] och trigga reload
     private func stepDays(delta: Int) {
+        // Chevron-klick/långtryck räknas också som att användaren ändrat datum
+        hasUserAdjustedDates = true
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
