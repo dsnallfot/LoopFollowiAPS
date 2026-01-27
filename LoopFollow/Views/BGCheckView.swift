@@ -188,19 +188,26 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         datePicker.translatesAutoresizingMaskIntoConstraints = false
         modeControl.translatesAutoresizingMaskIntoConstraints = false
 
+        // Arranged subviews: exakt som i TreatMentsTableView (datePicker + segmentedControl)
+        topStack.axis = .horizontal
+        topStack.spacing = 6
+        topStack.alignment = .center
         topStack.addArrangedSubview(datePicker)
-
-        let spacer = UIView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-        topStack.addArrangedSubview(spacer)
-
         topStack.addArrangedSubview(modeControl)
 
-        // Ensure spacer expands between datePicker and modeControl
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
         view.addSubview(topStack)
+
+        // Samma hugging/compression-trick som i TreatMentsTableView
+        datePicker.setContentHuggingPriority(.required, for: .horizontal)
+        datePicker.setContentCompressionResistancePriority(.required, for: .horizontal)
+        modeControl.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        modeControl.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        // Uniform compact heights
+        datePicker.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        modeControl.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        // Ge datumtexten plats (samma som kommentaren i TreatMentsTableView)
+        datePicker.widthAnchor.constraint(lessThanOrEqualToConstant: 105).isActive = true
 
         datePicker.addTarget(self, action: #selector(datePickerChanged(_:)), for: .valueChanged)
         modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
@@ -209,8 +216,8 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
 
         NSLayoutConstraint.activate([
             topStack.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
-            topStack.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 16),
-            topStack.trailingAnchor.constraint(lessThanOrEqualTo: safe.trailingAnchor, constant: -16)
+            topStack.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            topStack.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8)
         ])
     }
 
@@ -454,7 +461,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             guard !fingerstickEntries.isEmpty else { return }
             var targetIndex: Int?
 
-            for (idx, entry) in fingerstickEntries.enumerated().reversed() {
+            for (idx, entry) in fingerstickEntries.enumerated() {
                 if entry.date >= startOfDay && entry.date < endOfDay {
                     targetIndex = idx
                     break
@@ -487,7 +494,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             guard !dextroEntries.isEmpty else { return }
             var targetIndex: Int?
 
-            for (idx, entry) in dextroEntries.enumerated().reversed() {
+            for (idx, entry) in dextroEntries.enumerated() {
                 if entry.date >= startOfDay && entry.date < endOfDay {
                     targetIndex = idx
                     break
@@ -527,14 +534,19 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             title = "Fingerstick"
             updateDatePickerBounds()
             tableView.reloadData()
+            // Autoscrolla till rätt rad för det aktuella datumet
+            datePickerChanged(datePicker)
 
         case .dextro:
             title = "Dextro"
             if dextroEntries.isEmpty {
+                // När dextro laddas första gången, låt loadLowTreatments sköta bounds + autoscroll
                 loadLowTreatments()
             } else {
                 updateDatePickerBounds()
                 tableView.reloadData()
+                // Autoscrolla även här till rätt rad
+                datePickerChanged(datePicker)
             }
         }
     }
@@ -778,7 +790,9 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
                 self.dextroBGCheckDates = bgCheckDates
                 self.dextroBGCheckMmol = bgCheckMmol
                 self.tableView.reloadData()
-                // Vi låter updateDatePickerBounds fortsatt bygga på fingerstickEntries tills vi kopplar om den i dextro-läge.
+                self.updateDatePickerBounds()
+                // Autoscrolla till det datum som redan är valt i datePickern, nu baserat på dextro-listan
+                self.datePickerChanged(self.datePicker)
                 self.hideActivity()
             }
         }

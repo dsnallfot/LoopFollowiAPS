@@ -117,7 +117,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
          */
         
         <<< ButtonRow() { row in
-            row.title = "Fingerstick och dextrohistorik"
+            row.title = "Fingerstick- & dextrohistorik"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let bgCheckVC = BGCheckView()
@@ -130,7 +130,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Glukoshistorik & sensorfel"
+            row.title = "Glukos- & sensorfelhistorik"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let glucoseVC = GlucoseView()
