@@ -1165,15 +1165,46 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             }
         }
         
-        // Format the timestamp as HH:mm and prefix with status symbol for Kh-rader.
+        // Format the timestamp as HH:mm och visa den i en separat trailing-view
+        // tillsammans med status-symbolen så att symbolerna kan alignas lodrätt.
         let timeFormatter = DateFormatter()
         timeFormatter.locale = Locale(identifier: "sv_SE")
         timeFormatter.dateFormat = "HH:mm"
-        var timeText = timeFormatter.string(from: treatment.timestamp)
-        if !mealStatusSymbol.isEmpty {
-            timeText = "\(timeText) \(mealStatusSymbol)"
-        }
-        cell.detailTextLabel?.text = timeText
+        let timeString = timeFormatter.string(from: treatment.timestamp)
+        
+        // Använd monospaced digits för att alla tider ska ta samma horisontella utrymme.
+        let baseFontSize = cell.detailTextLabel?.font.pointSize
+            ?? UIFont.preferredFont(forTextStyle: .subheadline).pointSize
+        let timeFont = UIFont.monospacedDigitSystemFont(ofSize: baseFontSize, weight: .regular)
+        let statusFont = UIFont.monospacedDigitSystemFont(ofSize: 10, weight: .regular)
+        
+        // Mått för den lilla "kolumnen" med status-emoji + tid.
+        let timeWidth: CGFloat = 50      // räcker för "00:00"
+        let symbolWidth: CGFloat = 13    // lagom för en emoji
+        let spacing: CGFloat = 2
+        let height: CGFloat = timeFont.lineHeight
+        
+        let containerWidth = symbolWidth + spacing + timeWidth
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: containerWidth, height: height))
+        container.backgroundColor = .clear
+        
+        let statusLabel = UILabel(frame: CGRect(x: 0, y: 0, width: symbolWidth, height: height))
+        statusLabel.text = mealStatusSymbol
+        statusLabel.font = statusFont//timeFont
+        statusLabel.textAlignment = .right
+        statusLabel.textColor = .label
+        
+        let timeLabel = UILabel(frame: CGRect(x: symbolWidth + spacing, y: 0, width: timeWidth, height: height))
+        timeLabel.text = timeString
+        timeLabel.font = timeFont
+        timeLabel.textAlignment = .right
+        timeLabel.textColor = .label
+        
+        container.addSubview(statusLabel)
+        container.addSubview(timeLabel)
+        
+        cell.accessoryView = container
+        cell.detailTextLabel?.text = nil
         
         // Determine symbol and color.
         let symbolInfo: (name: String, color: UIColor) = {
