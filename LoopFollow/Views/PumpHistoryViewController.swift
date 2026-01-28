@@ -355,12 +355,12 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
             .scaledFont(for: baseFont.withSize(baseFont.pointSize - 1))
 
         let attrsBase: [NSAttributedString.Key: Any] = [
-            .font: smallBody,
+            .font: UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular),//smallBody,
             .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
         ]
 
         let sessionAttrs: [NSAttributedString.Key: Any] = [
-            .font: smallBody,
+            .font: UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular),//smallBody,
             .foregroundColor: sessionColor(for: sessionInfo.hours, isOngoing: sessionInfo.isOngoing)
         ]
 

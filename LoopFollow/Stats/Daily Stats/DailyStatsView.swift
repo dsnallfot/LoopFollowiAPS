@@ -227,12 +227,12 @@ struct DailyStatsView: View {
                                     ForEach(Array(filteredRowsForHighlight.enumerated()), id: \.element.id) { index, row in
                                         HStack(spacing: columnSpacing) {
                                             Text(weekdaySymbol(for: row.date))
-                                                .frame(width: weekdayWidth, alignment: .center)
-                                                .font(.system(size: 10, weight: .semibold))
+                                                .frame(width: weekdayWidth, alignment: .leading)
+                                                .font(.system(size: 10, weight: .semibold).monospaced())
                                                 .foregroundColor(.secondary)
                                             
                                             Text(dateFormatter.string(from: row.date))
-                                                .frame(width: dateWidth, alignment: .leading)
+                                                .frame(width: dateWidth, alignment: .center)
                                                 .font(.system(size: 10).monospacedDigit())
                                             
                                             numberCell(row.totalCarbs, width: carbsWidth, decimals: 0)
@@ -640,11 +640,11 @@ struct DailyStatsView: View {
     private var headerRow: some View {
         HStack(spacing: columnSpacing) {
             Text("Dag")
-                .frame(width: weekdayWidth, alignment: .center)
+                .frame(width: weekdayWidth, alignment: .leading)
                 .font(.system(size: 10, weight: .semibold))
 
             Text("Datum")
-                .frame(width: dateWidth, alignment: .trailing)
+                .frame(width: dateWidth, alignment: .center)
                 .font(.system(size: 10, weight: .semibold))
 
             Text("KH")
@@ -1000,13 +1000,13 @@ struct NightscoutDayReportControllerRepresentable: UIViewControllerRepresentable
 
     private func weekdaySymbol(for date: Date) -> String {
         switch Calendar.current.component(.weekday, from: date) {
-        case 2: return "Mån"
-        case 3: return "Tis"
-        case 4: return "Ons"
-        case 5: return "Tor"
-        case 6: return "Fre"
-        case 7: return "Lör"
-        default: return "Sön"
+        case 2: return " Mån"
+        case 3: return " Tis"
+        case 4: return " Ons"
+        case 5: return " Tor"
+        case 6: return " Fre"
+        case 7: return " Lör"
+        default: return " Sön"
         }
     }
 

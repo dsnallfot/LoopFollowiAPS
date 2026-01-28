@@ -1188,8 +1188,9 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
                 cell.textLabel?.text = valueString
             }
 
-            cell.textLabel?.font = .systemFont(ofSize: 17)
+            cell.textLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)//.systemFont(ofSize: 17)
             cell.detailTextLabel?.text = timeFormatter.string(from: entry.date)
+            cell.detailTextLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)
             cell.backgroundColor = .clear
             cell.contentView.backgroundColor = .clear
 
@@ -1199,7 +1200,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             if isPlaceholder {
                 cell.textLabel?.text = "Inga saknade värden denna dag ✅"
                 cell.detailTextLabel?.text = ""
-                cell.textLabel?.font = .systemFont(ofSize: 17)
+                cell.textLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)//.systemFont(ofSize: 17)
                 let tint = UIColor.systemGreen.withAlphaComponent(0.12)
                 cell.backgroundColor = tint
                 cell.contentView.backgroundColor = tint
@@ -1216,16 +1217,18 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
                 }
                 cell.textLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
                 cell.detailTextLabel?.text = timeFormatter.string(from: date)
+                cell.detailTextLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)
             }
 
         case .sensorError(let date, let durationMinutes, _):
             cell.textLabel?.text = "Sensorfel • \(durationMinutes) min"
-            cell.textLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+            cell.textLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)//.systemFont(ofSize: 17, weight: .semibold)
 
             let df = DateFormatter()
             df.locale = Locale(identifier: "sv_SE")
             df.dateFormat = "yyyy-MM-dd, HH:mm"
             cell.detailTextLabel?.text = df.string(from: date)
+            cell.detailTextLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)
 
             let tint = UIColor.systemRed.withAlphaComponent(0.15)
             cell.backgroundColor = tint

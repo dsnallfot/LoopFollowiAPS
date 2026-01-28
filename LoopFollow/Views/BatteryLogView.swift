@@ -426,6 +426,7 @@ final class BatteryLogViewController: ThemedViewController, UITableViewDataSourc
             let charging = e.isCharging ? "⚡" : ""
             cell.textLabel?.text = String(format: "%.0f%% %@", e.percent, charging)
             cell.detailTextLabel?.text = timeStr
+            cell.detailTextLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)
             cell.backgroundColor = .clear
             cell.contentView.backgroundColor = .clear
 

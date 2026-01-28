@@ -269,17 +269,17 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         // Use a slightly smaller dynamic font than default body
         let baseBody = UIFont.preferredFont(forTextStyle: .body)
         let smallBody = UIFontMetrics(forTextStyle: .body).scaledFont(for: baseBody.withSize(baseBody.pointSize - 1))
-        cell.textLabel?.font = smallBody
+        cell.textLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .regular)//smallBody
         cell.textLabel?.adjustsFontForContentSizeCategory = true
 
         // Build: "<date> <session-info>" (first line), then "<note>" (second line)
         let baseAttrs: [NSAttributedString.Key: Any] = [
-            .font: smallBody,
+            .font: UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .regular),//smallBody,
             .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
         ]
         let append = sessionAppendInfo(forEntry: entry)
         let sessionAttrs: [NSAttributedString.Key: Any] = [
-            .font: smallBody,
+            .font: UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .regular),//smallBody,
             .foregroundColor: append.color
         ]
 

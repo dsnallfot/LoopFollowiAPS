@@ -850,20 +850,20 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
 
             let mmolString = valueFormatter.string(from: NSNumber(value: entry.mmol)) ?? String(format: "%.1f", entry.mmol)
 
-            var text = "\(mmolString) mmol/L"
+            var text = "\(mmolString) mmol/L".replacingOccurrences(of: ",", with: ".")
             if entry.hasDextroNearby {
                 text += " 🍬"
             }
 
         cell.textLabel?.text = text
-        cell.textLabel?.font = .systemFont(ofSize: 17)
+        cell.textLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)//.systemFont(ofSize: 17)
 
             if let cgm10 = entry.cgm10mMmol, let delta = entry.delta10m {
                 let cgmString = valueFormatter.string(from: NSNumber(value: cgm10)) ?? String(format: "%.1f", cgm10)
                 let deltaString = deltaFormatter.string(from: NSNumber(value: delta)) ?? String(format: "%+.1f", delta)
 
-                cell.detailTextLabel?.text = "CGM +10 min: \(cgmString) Δ \(deltaString)"
-                cell.detailTextLabel?.font = .systemFont(ofSize: 12)
+                cell.detailTextLabel?.text = "CGM +10 min: \(cgmString) Δ \(deltaString)".replacingOccurrences(of: ",", with: ".")
+                cell.detailTextLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)//.systemFont(ofSize: 12)
                 cell.detailTextLabel?.textColor = .secondaryLabel
             } else {
                 cell.detailTextLabel?.text = nil
@@ -874,7 +874,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
 
             let rightLabel = UILabel()
             rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
-            rightLabel.font = .systemFont(ofSize: 14)
+            rightLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 14, weight: .regular)//.systemFont(ofSize: 14)
             rightLabel.textColor = .secondaryLabel
             rightLabel.textAlignment = .right
             rightLabel.sizeToFit()
@@ -918,29 +918,29 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
                 let cgmString = mmolFormatter.string(from: NSNumber(value: cgm)) ?? String(format: "%.1f", cgm)
                 if entry.hasBGCheckNearby, let bg = entry.bgCheckMmol {
                     let bgString = mmolFormatter.string(from: NSNumber(value: bg)) ?? String(format: "%.1f", bg)
-                    cell.detailTextLabel?.text = "CGM: \(cgmString) • Finger: \(bgString) mmol/L"
+                    cell.detailTextLabel?.text = "CGM: \(cgmString) • Finger: \(bgString) mmol/L".replacingOccurrences(of: ",", with: ".")
                 } else {
-                    cell.detailTextLabel?.text = "CGM: \(cgmString) mmol/L"
+                    cell.detailTextLabel?.text = "CGM: \(cgmString) mmol/L".replacingOccurrences(of: ",", with: ".")
                 }
-                cell.detailTextLabel?.font = .systemFont(ofSize: 12)
+                cell.detailTextLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)//.systemFont(ofSize: 12)
                 cell.detailTextLabel?.textColor = .secondaryLabel
             } else {
                 cell.detailTextLabel?.text = nil
             }
 
-            var text = "Dextro • \(gramsString) g"
+            var text = "Dextro • \(gramsString) g".replacingOccurrences(of: ",", with: ".")
             if entry.hasBGCheckNearby {
                 text += " 🩸"
             }
             cell.textLabel?.text = text
-            cell.textLabel?.font = .systemFont(ofSize: 17)
+            cell.textLabel?.font = UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular)//.systemFont(ofSize: 17)
 
             cell.imageView?.image = UIImage(systemName: "pill.fill")
             cell.imageView?.tintColor = .label
 
             let rightLabel = UILabel()
             rightLabel.text = DateFormatter.localizedString(from: entry.date, dateStyle: .short, timeStyle: .short)
-            rightLabel.font = .systemFont(ofSize: 14)
+            rightLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 14, weight: .regular)//.systemFont(ofSize: 14)
             rightLabel.textColor = .secondaryLabel
             rightLabel.textAlignment = .right
             rightLabel.sizeToFit()
