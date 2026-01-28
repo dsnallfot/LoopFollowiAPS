@@ -186,6 +186,14 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
     private var currentStart: Date
     private var currentEnd: Date
     private var treatments: [Treatment] = []
+
+    /// Enkel modell för CGM-värden inom valt intervall
+    private struct BGPoint {
+        let date: Date
+        let mmol: Double
+    }
+
+    private var bgPoints: [BGPoint] = []
     
     private let dateLabel = UILabel()
     // New date picker UI
@@ -328,20 +336,20 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                 self.endDatePicker.isEnabled = false
                 self.chartLoadingIndicator.startAnimating()
             }
-            
+
             let from = forcedStart ?? self.startTime
             let to   = forcedEnd   ?? self.endTime
-            
+
             // Persist the updated window
             self.currentStart = from
             self.currentEnd   = to
-            
-            let (_, treatsJSON) = await NightscoutCache.loadWindow(from: from, to: to)
-            
+
+            let (sgvs, treatsJSON) = await NightscoutCache.loadWindow(from: from, to: to)
+
             let iso = ISO8601DateFormatter()
             iso.formatOptions = [.withInternetDateTime]
             iso.timeZone = TimeZone(secondsFromGMT: 0)
-            
+
             let loadedTreatments: [Treatment] = treatsJSON.compactMap { tjson in
                 Treatment(dictionary: [
                     "_id":       tjson._id as AnyObject,
@@ -360,9 +368,19 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
                     "duration":  tjson.tempBasalDuration as AnyObject
                 ])
             }
-            
+
+            // Bygg BG-punkter (mmol/L) från SGVs för detta fönster
+            let newBGPoints: [BGPoint] = sgvs.map { sgv in
+                BGPoint(
+                    date: Date(timeIntervalSince1970: sgv.date),
+                    mmol: Double(sgv.sgv) / 18.0182
+                )
+            }
+            .sorted { $0.date < $1.date }
+
             await MainActor.run {
                 self.treatments = loadedTreatments
+                self.bgPoints = newBGPoints
                 self.buildRows()
                 self.chartLoadingIndicator.stopAnimating()
                 self.startDatePicker.isEnabled = true
@@ -632,6 +650,42 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         chartView.setNeedsDisplay()
     }
     
+    // MARK: - BG-hjälpare
+
+    /// Hittar BG-punkten som ligger närmast i tid till target, givet att bgPoints är sorterade på date.
+    /// Om maxDelta anges, returnerar nil om närmaste punkt ligger längre bort än maxDelta.
+    private func nearestBGPoint(around target: Date,
+                                in points: [BGPoint],
+                                maxDelta: TimeInterval? = nil) -> BGPoint? {
+        guard !points.isEmpty else { return nil }
+        var lo = 0
+        var hi = points.count - 1
+        var bestIndex = 0
+        var bestDiff = abs(points[0].date.timeIntervalSince(target))
+
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = points[mid].date
+            let diff = abs(d.timeIntervalSince(target))
+            if diff < bestDiff {
+                bestDiff = diff
+                bestIndex = mid
+            }
+            if d < target {
+                lo = mid + 1
+            } else if d > target {
+                hi = mid - 1
+            } else {
+                break
+            }
+        }
+
+        if let maxDelta = maxDelta, bestDiff > maxDelta {
+            return nil
+        }
+        return points[bestIndex]
+    }
+
     // MARK: - Data / beräkningar
     
     private func buildRows() {
@@ -1154,6 +1208,116 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             )
         }
 
+        // --------------------------------------------
+        // Ny sektion: Glukos 3h efter måltid
+        // --------------------------------------------
+        // Använd samma manuellt filtrerade behandlingar (relevant) och bgPoints.
+        var countLow = 0
+        var countOK  = 0
+        var countHigh = 0
+
+        if !bgPoints.isEmpty {
+            let lowMgdl = Double(UserDefaultsRepository.lowLine.value)
+            let highMgdl = Double(UserDefaultsRepository.highLine.value)
+            let maxDelta: TimeInterval = 30 * 60  // ±30 min runt +3h
+
+            for t in relevant {
+                guard mealTypes.contains(t.eventType) else { continue }
+
+                // Target = 3h efter måltid
+                let target = t.timestamp.addingTimeInterval(3 * 60 * 60)
+
+                guard let point = nearestBGPoint(around: target, in: bgPoints, maxDelta: maxDelta) else {
+                    // Ingen BG tillräckligt nära target → hoppa över denna måltid
+                    continue
+                }
+
+                let endMgdl = point.mmol * 18.0182
+
+                if endMgdl < lowMgdl {
+                    countLow += 1
+                } else if endMgdl > highMgdl {
+                    countHigh += 1
+                } else {
+                    countOK += 1
+                }
+            }
+        }
+
+        let totalEvaluatedMeals = countLow + countOK + countHigh
+
+        if totalEvaluatedMeals > 0 {
+            func pctMeal(_ value: Int) -> Int {
+                guard totalEvaluatedMeals > 0, value > 0 else { return 0 }
+                return Int((Double(value) / Double(totalEvaluatedMeals) * 100.0).rounded())
+            }
+
+            // Spacer före sektionen
+            rows.append(
+                EnteredByRow(title: "",
+                             bolusCount: 0, bolusPercent: nil,
+                             mealCount: 0, mealPercent: nil,
+                             totalCount: 0, totalPercent: nil,
+                             isBold: false,
+                             isSpacer: true,
+                             hideValues: true,
+                             displayAsPercentOnly: false,
+                             highlightAsTotal: false,
+                             highlightRowBackground: false)
+            )
+
+            // Header-rad för sektionen (kolumnrubrikerna justeras i cellForRowAt)
+            rows.append(
+                EnteredByRow(
+                    title: "Glukos 3h efter måltid",
+                    bolusCount: 0, bolusPercent: nil,
+                    mealCount: 0, mealPercent: nil,
+                    totalCount: 0, totalPercent: nil,
+                    isBold: true,
+                    isSpacer: false,
+                    hideValues: true,
+                    displayAsPercentOnly: false,
+                    highlightAsTotal: false,
+                    highlightRowBackground: true
+                )
+            )
+
+            // Rad: Antal måltider
+            rows.append(
+                EnteredByRow(
+                    title: "Antal måltider",
+                    bolusCount: countLow, bolusPercent: nil,
+                    mealCount: countOK, mealPercent: nil,
+                    totalCount: countHigh, totalPercent: nil,
+                    isBold: false,
+                    isSpacer: false,
+                    hideValues: false,
+                    displayAsPercentOnly: false,
+                    highlightAsTotal: false,
+                    highlightRowBackground: false
+                )
+            )
+
+            // Rad: Andel måltider %
+            rows.append(
+                EnteredByRow(
+                    title: "Andel måltider %",
+                    bolusCount: 0,
+                    bolusPercent: pctMeal(countLow),
+                    mealCount: 0,
+                    mealPercent: pctMeal(countOK),
+                    totalCount: 0,
+                    totalPercent: pctMeal(countHigh),
+                    isBold: false,
+                    isSpacer: false,
+                    hideValues: false,
+                    displayAsPercentOnly: true,
+                    highlightAsTotal: false,
+                    highlightRowBackground: false
+                )
+            )
+        }
+
         self.rows = rows
         tableView.reloadData()
     }
@@ -1169,22 +1333,22 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             return UITableViewCell()
         }
         let row = rows[indexPath.row]
-        
+
         // Första raden = rubrikrad
         if indexPath.row == 0 {
             let headerFont = UIFont.preferredFont(forTextStyle: .footnote)
                 .withTraits(traits: .traitBold)
-            
+
             cell.titleLabel.text = "Inlagt av"
             cell.bolusLabel.text = "Bolus"
             cell.mealLabel.text  = "Måltid"
             cell.totalLabel.text = "Total"
-            
+
             cell.titleLabel.font = headerFont
             cell.bolusLabel.font = headerFont
             cell.mealLabel.font  = headerFont
             cell.totalLabel.font = headerFont
-            
+
             // Make header columns shrink font size to fit width instead of truncating
             cell.bolusLabel.adjustsFontSizeToFitWidth = true
             cell.bolusLabel.minimumScaleFactor = 0.5
@@ -1194,21 +1358,63 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
             cell.totalLabel.minimumScaleFactor = 0.5
             cell.titleLabel.adjustsFontSizeToFitWidth = true
             cell.titleLabel.minimumScaleFactor = 0.7
-            
+
             let defaultColor = UIColor.label
             cell.titleLabel.textColor = defaultColor
             cell.bolusLabel.textColor = defaultColor
             cell.mealLabel.textColor  = defaultColor
             cell.totalLabel.textColor = defaultColor
-            
+
             cell.contentView.backgroundColor = UIColor.insulin.withAlphaComponent(0.5)
             cell.backgroundColor = .clear
-            
+
             return cell
         }
-        
+
         // Övriga rader = data
         cell.configure(with: row, isHeader: false)
+
+        // Visa kolumnrubriker ("Bolus", "Måltid", "Total") på alla blå underrubriker
+        if row.highlightRowBackground,
+           !row.isSpacer,
+           row.title != "Glukos 3h efter måltid" {
+            let headerFont = UIFont.preferredFont(forTextStyle: .footnote)
+                .withTraits(traits: .traitBold)
+
+            cell.bolusLabel.text = "Bolus"
+            cell.mealLabel.text  = "Måltid"
+            cell.totalLabel.text = "Total"
+
+            cell.bolusLabel.font = headerFont
+            cell.mealLabel.font  = headerFont
+            cell.totalLabel.font = headerFont
+        }
+
+        // Specialheader för "Glukos 3h efter måltid" längst ned:
+        if row.title == "Glukos 3h efter måltid" {
+            let headerFont = UIFont.preferredFont(forTextStyle: .footnote)
+                .withTraits(traits: .traitBold)
+
+            cell.titleLabel.text = "Glukos 3h efter måltid"
+            cell.bolusLabel.text = "🔴"
+            cell.mealLabel.text  = "🟢"
+            cell.totalLabel.text = "🟣"
+
+            cell.titleLabel.font = headerFont
+            cell.bolusLabel.font = headerFont
+            cell.mealLabel.font  = headerFont
+            cell.totalLabel.font = headerFont
+
+            let defaultColor = UIColor.label
+            cell.titleLabel.textColor = defaultColor
+            cell.bolusLabel.textColor = defaultColor
+            cell.mealLabel.textColor  = defaultColor
+            cell.totalLabel.textColor = defaultColor
+
+            cell.contentView.backgroundColor = UIColor.insulin.withAlphaComponent(0.5)
+            cell.backgroundColor = .clear
+        }
+
         return cell
     }
     
