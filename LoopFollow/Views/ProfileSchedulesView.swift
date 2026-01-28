@@ -463,10 +463,10 @@ struct ProfileSchedulesView: View {
     private func scheduleRow(_ entry: ScheduleEntry, isBold: Bool = false) -> some View {
         HStack {
             Text(entry.time)
-                .font(isBold ? .headline.bold() : .subheadline)
+                .font(isBold ? .headline.bold().monospacedDigit() : .subheadline.monospacedDigit())
             Spacer()
             Text(entry.value)
-                .font(isBold ? .headline.bold() : .subheadline)
+                .font(isBold ? .headline.bold().monospacedDigit() : .subheadline.monospacedDigit())
         }
     }
     
@@ -598,11 +598,11 @@ private struct UserDataViewController: View {
                             Text("Vikt (BMI):")
                             Text("Uppdaterades:")
                         }
-                        .font(.caption2)
+                        .font(.caption2.monospacedDigit())
 
                         // Frame 3: Värden (senaste profil eller placeholders)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(profile?.name ?? "Förnamn Efternamn")
+                            Text(profile?.name ?? "För- Efternamn")
                             Text(profile?.birthDate.map { Self.shortDateFormatter.string(from: $0) } ?? "ÅÅ-MM-DD")
                             Text(profile?.t1dSince.map { Self.shortDateFormatter.string(from: $0) } ?? "ÅÅ-MM-DD")
                             Text(profile?.heightCm.map { String(format: "%.1f cm", $0) } ?? "-- cm")
@@ -621,7 +621,7 @@ private struct UserDataViewController: View {
                             }())
                             Text(profile.map { Self.shortDateFormatter.string(from: $0.updatedAt) } ?? "ÅÅ-MM-DD")
                         }
-                        .font(.caption2)
+                        .font(.caption2.monospacedDigit())
                         .foregroundColor(.secondary)
 
                         //Spacer()
@@ -746,7 +746,7 @@ private struct UserProfileRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(Self.dateFormatter.string(from: entry.updatedAt))
-                    .font(.subheadline)
+                    .font(.subheadline.monospacedDigit())
                     .fontWeight(.semibold)
 
                 Spacer()
@@ -774,7 +774,7 @@ private struct UserProfileRow: View {
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                     }
-                    .offset(x: 0, y: 13)
+                    .offset(x: 0, y: 12)
                 }
             }
 
@@ -784,7 +784,7 @@ private struct UserProfileRow: View {
             let insulinPerKgString = entry.insulinPerKg.map { String(format: "%.2f", $0) } ?? "--"
 
             Text("TDD: \(tddString) E • Vikt: \(weightString) kg • \(insulinPerKgString) E/kg/d • Längd: \(heightString) cm")
-                .font(.caption2)
+                .font(.system(size: 10).monospacedDigit())
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 2)
