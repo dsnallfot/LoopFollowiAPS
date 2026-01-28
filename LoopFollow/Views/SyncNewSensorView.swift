@@ -298,7 +298,7 @@ struct SyncNewSensorSheetContainer: View {
     var body: some View {
         NavigationStack {
             SyncNewSensorView()
-                .navigationTitle("Synka heartbeat för ny sensor")
+                .navigationTitle("Synka heartbeat vid sensorbyte")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {

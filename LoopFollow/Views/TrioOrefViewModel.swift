@@ -15,7 +15,7 @@ struct Oref2Entry: Identifiable {
 
 class TrioOrefViewModel: ObservableObject {
     @Published var orefEntries: [Oref2Entry] = []
-    @Published var formattedTitle: String = "Oref status"
+    @Published var formattedTitle: String = "Trio oref status"
     
     init() {
         fetchLatestOref2()
@@ -30,14 +30,14 @@ class TrioOrefViewModel: ObservableObject {
                     guard let firstStatus = statusList.first else {
                         LogManager.shared.log(category: .trio, message: "✅ Successfully fetched device status, but status list is empty.", isDebug: true)
                         self.orefEntries = []
-                        self.formattedTitle = "Oref status"
+                        self.formattedTitle = "Trio oref status"
                         return
                     }
 
                     guard let oref2 = firstStatus.oref2 else {
                         LogManager.shared.log(category: .trio, message: "✅ Fetched device status, but oref2 field is missing.", isDebug: true)
                         self.orefEntries = []
-                        self.formattedTitle = "Oref status"
+                        self.formattedTitle = "Trio oref status"
                         return
                     }
 
@@ -60,13 +60,13 @@ class TrioOrefViewModel: ObservableObject {
                         LogManager.shared.log(category: .trio, message: "✅ Parsed and displayed local date: \(localTime)", isDebug: true)
                     } else {
                         LogManager.shared.log(category: .trio, message: "⚠️ Could not parse oref2.date: \(oref2.date)", isDebug: true)
-                        self.formattedTitle = "Oref status"
+                        self.formattedTitle = "Trio oref status"
                     }
 
                 case .failure(let error):
                     LogManager.shared.log(category: .trio, message: "❌ Failed to fetch oref2: \(error)", isDebug: true)
                     self.orefEntries = []
-                    self.formattedTitle = "Oref status"
+                    self.formattedTitle = "Trio oref status"
                 }
             }
         }

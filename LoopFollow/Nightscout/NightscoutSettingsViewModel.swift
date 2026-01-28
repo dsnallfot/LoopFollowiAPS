@@ -35,7 +35,7 @@ class NightscoutSettingsViewModel: ObservableObject {
             }
         }
     }
-    @Published var nightscoutStatus: String = "Checking..."
+    @Published var nightscoutStatus: String = "Kontrollerar..."
 
     private var cancellables = Set<AnyCancellable>()
     private var checkStatusSubject = PassthroughSubject<Void, Never>()
@@ -61,7 +61,7 @@ class NightscoutSettingsViewModel: ObservableObject {
     private func triggerCheckStatus() {
         checkStatusWorkItem?.cancel()
 
-        nightscoutStatus = "Checking..."
+        nightscoutStatus = "Kontrollerar..."
 
         checkStatusWorkItem = DispatchWorkItem {
             self.checkStatusSubject.send()
@@ -111,22 +111,22 @@ class NightscoutSettingsViewModel: ObservableObject {
         if let error = error {
             switch error {
             case .invalidURL:
-                nightscoutStatus = "Invalid URL"
+                nightscoutStatus = "🔴 Felaktig URL"
             case .networkError:
-                nightscoutStatus = "Network Error"
+                nightscoutStatus = "🔴 Nätverksfel"
             case .invalidToken:
-                nightscoutStatus = "Invalid Token"
+                nightscoutStatus = "🔴 Felaktig token"
             case .tokenRequired:
-                nightscoutStatus = "Token Required"
+                nightscoutStatus = "🟡 Token krävs"
             case .siteNotFound:
-                nightscoutStatus = "Site Not Found"
+                nightscoutStatus = "🔴 Site hittades inte"
             case .unknown:
-                nightscoutStatus = "Unknown Error"
+                nightscoutStatus = "🔴 Okänt fel"
             case .emptyAddress:
-                nightscoutStatus = "Address Empty"
+                nightscoutStatus = "🟡 Tom adress"
             }
         } else {
-            nightscoutStatus = "OK (Read\(ObservableUserDefaults.shared.nsWriteAuth.value ? " & Write" : ""))"
+            nightscoutStatus = "🟢 OK (Läsa\(ObservableUserDefaults.shared.nsWriteAuth.value ? " & Skriva" : ""))"
 
             if (nightscoutURL != initialURL || nightscoutToken != initialToken) {
                 NotificationCenter.default.post(name: NSNotification.Name("refresh"), object: nil)

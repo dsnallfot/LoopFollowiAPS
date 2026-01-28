@@ -700,10 +700,13 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     @objc private func modeChanged(_ sender: UISegmentedControl) {
         switch sender.selectedSegmentIndex {
         case 0:
+            title = "Glukos"
             dataMode = .allValues
         case 1:
+            title = "Glukos"
             dataMode = .nsOnly
         default:
+            title = "Sensorfel"
             dataMode = .sensorErrors
         }
 

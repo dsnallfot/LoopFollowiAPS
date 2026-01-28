@@ -300,6 +300,8 @@ struct ProfileSchedulesView: View {
                 }
             }
         }
+        .navigationTitle(selectedMode == .user ? "Hälsodata" : "Profilinställningar")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedLogSearchItem) { item in
             ZStack {
                 // Lägg till bakgrunden här för att fylla hela modalen

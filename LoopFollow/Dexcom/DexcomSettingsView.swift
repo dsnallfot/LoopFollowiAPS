@@ -29,7 +29,7 @@ struct DexcomSettingsView: View {
 
                     Picker("Server", selection: $viewModel.server) {
                         Text("US").tag("US")
-                        Text("NON-US").tag("NON-US")
+                        Text("EU").tag("NON-US")
                     }
                     .pickerStyle(SegmentedPickerStyle())
 

@@ -44,6 +44,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        title = "App & Data"
         applyTheme()
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
@@ -61,7 +62,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         form
         +++ Section("Historik & statistik")
         <<< ButtonRow() { [weak self] row in
-            row.title = "Aggregerad statistik"
+            row.title = "Statistik"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     guard let self = self else { return UIViewController() }
@@ -90,7 +91,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Behandlingshistorik"
+            row.title = "Behandlingar"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let treatmentsVC = TreatmentsTableView()
@@ -117,7 +118,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
          */
         
         <<< ButtonRow() { row in
-            row.title = "Fingerstick- & dextrohistorik"
+            row.title = "Fingerstick & dextro"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let bgCheckVC = BGCheckView()
@@ -130,7 +131,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Glukos- & sensorfelhistorik"
+            row.title = "Glukos & sensorfel"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let glucoseVC = GlucoseView()
@@ -143,7 +144,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Poddhistorik"
+            row.title = "Poddar"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let pumpHistoryVC = PumpHistoryViewController()
@@ -156,7 +157,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Sensorhistorik"
+            row.title = "Sensorer"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let sensorHistoryVC = SensorHistoryViewController()
@@ -170,7 +171,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         +++ Section("\nTrio inställningar och status")
         <<< ButtonRow() {
-            $0.title = "Trio algoritminställningar & analys"
+            $0.title = "Algoritminställningar & analys"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -191,7 +192,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() {
-            $0.title = "Trio hälsodata & profilinställningar"
+            $0.title = "Hälsodata & profilinställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -214,7 +215,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() {
-            $0.title = "Trio oref realtidsstatus"
+            $0.title = "Oref realtidsstatus"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
@@ -234,11 +235,11 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() {
-            $0.title = "Trio inställningslogg"
+            $0.title = "Inställningslogg"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let settingsLogVC = TrioSettingsLogView()
-                    settingsLogVC.title = "Trio inställningslogg"
+                    settingsLogVC.title = "Inställningslogg"
                     settingsLogVC.hidesBottomBarWhenPushed = false
                     settingsLogVC.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
                     return settingsLogVC
@@ -248,11 +249,11 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Trio batterilogg"
+            row.title = "Batterilogg"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let batteryVC = BatteryLogViewController()
-                    batteryVC.title = "Trio batterilogg"
+                    batteryVC.title = "Batterilogg"
                     batteryVC.hidesBottomBarWhenPushed = false
                     return batteryVC
                 }),
@@ -261,11 +262,11 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         }
         
         <<< ButtonRow() { row in
-            row.title = "Trio omstartslogg"
+            row.title = "Omstartslogg"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     let restartsVC = TrioRestartsView()
-                    restartsVC.title = "Trio omstartslogg"
+                    restartsVC.title = "Omstartslogg"
                     restartsVC.hidesBottomBarWhenPushed = false
                     return restartsVC
                 }),
@@ -306,7 +307,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         +++ Section("\nAppinställningar")
         
         <<< ButtonRow("alarmsSettings") {
-            $0.title = "Alarm"
+            $0.title = "Alarminställningar"
             $0.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     guard let alarmVC = ViewControllerManager.shared.alarmViewController else {
@@ -373,7 +374,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
             }
         }
         <<< ButtonRow("syncNewSensor") { [weak self] row in
-            row.title = "Dexcom heartbeat synk"
+            row.title = "Sensorbyten synk"
             row.presentationMode = .none
             row.cellUpdate { cell, _ in
                 cell.textLabel?.textAlignment = .left
@@ -419,7 +420,7 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         
         +++ Section("\nSystemlogg")
         <<< ButtonRow("viewlog") { [weak self] row in
-            row.title = "Se logg"
+            row.title = "Se dagens logg"
             row.presentationMode = .show(
                 controllerProvider: .callback(builder: {
                     guard let self = self else { return UIViewController() }
