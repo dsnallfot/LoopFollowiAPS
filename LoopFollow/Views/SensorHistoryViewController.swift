@@ -274,7 +274,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
         // Build: "<date> <session-info>" (first line), then "<note>" (second line)
         let baseAttrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .regular),//smallBody,
+            .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),//smallBody,
             .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
         ]
         let append = sessionAppendInfo(forEntry: entry)

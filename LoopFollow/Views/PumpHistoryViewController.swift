@@ -358,6 +358,11 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
             .font: UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular),//smallBody,
             .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
         ]
+        
+        let noteBase: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),//smallBody,
+            .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
+        ]
 
         let sessionAttrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.monospacedDigitSystemFont(ofSize: 17, weight: .regular),//smallBody,
@@ -367,7 +372,7 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
         let composed = NSMutableAttributedString()
         composed.append(NSAttributedString(string: dateString, attributes: attrsBase))
         composed.append(NSAttributedString(string: " \(sessionInfo.text)\n", attributes: sessionAttrs))
-        composed.append(NSAttributedString(string: "Omnipod Dash startades", attributes: attrsBase))
+        composed.append(NSAttributedString(string: "Omnipod Dash startades", attributes: noteBase))
 
         cell.textLabel?.numberOfLines = 0
         cell.textLabel?.attributedText = composed
