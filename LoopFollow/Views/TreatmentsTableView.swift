@@ -101,8 +101,18 @@ struct Treatment {
 class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableViewDelegate, TwilioRequestable, MealAnalysisViewDelegate {
 
     private let tableView = UITableView()
-    // The complete set of downloaded treatments.
+    /// The complete set of downloaded treatments.
     private var treatments: [Treatment] = []
+    
+    /// Simple BG point model (in mmol/L) for this view's date window
+    private struct BGPoint {
+        let date: Date
+        let mmol: Double
+    }
+
+    /// Glucose points loaded for the current date window
+    private var bgPoints: [BGPoint] = []
+    
     /// Picker for selecting a calendar date (“Valt datum”)
     private let datePicker: UIDatePicker = {
         let picker = UIDatePicker()
@@ -690,7 +700,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
         Task {
             // För alla datum (inkl. idag) försöker vi först läsa från NightscoutCache.
-            let (_, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
+                let (sgvs, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
             let newTreatments = treatsJSON.compactMap { tjson in
                 Treatment(dictionary: [
                     "_id":      tjson._id as AnyObject,
@@ -709,6 +719,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     "duration": tjson.tempBasalDuration as AnyObject
                 ])
             }
+            
+            // Bygg BG-punkter (mmol/L) från SGVs
+                let newBGPoints: [BGPoint] = sgvs.map { sgv in
+                    BGPoint(
+                        date: Date(timeIntervalSince1970: sgv.date),
+                        mmol: Double(sgv.sgv) / 18.0182
+                    )
+                }
+                .sorted { $0.date < $1.date }
 
             DispatchQueue.main.async {
                 if !newTreatments.isEmpty {
@@ -723,6 +742,10 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     } else {
                         self.treatments = newTreatments.sorted { $0.timestamp > $1.timestamp }
                     }
+                    
+                    // Spara BG-punkterna när vi faktiskt använder cache-datan
+                    self.bgPoints = newBGPoints
+                    
                     self.tableView.reloadData()
                     self.hideRefreshIndicator()
                 } else {
@@ -849,6 +872,72 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         }
     }
     
+    // MARK: - BG helpers for meal status
+
+    /// Hittar BG-punkten som ligger närmast i tid till target, givet att bgPoints är sorterade på date.
+    /// Om maxDelta anges, returnerar nil om närmaste punkt ligger längre bort än maxDelta.
+    private func nearestBGPoint(around target: Date,
+                                in points: [BGPoint],
+                                maxDelta: TimeInterval? = nil) -> BGPoint? {
+        guard !points.isEmpty else { return nil }
+        var lo = 0
+        var hi = points.count - 1
+        var bestIndex = 0
+        var bestDiff = abs(points[0].date.timeIntervalSince(target))
+
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let d = points[mid].date
+            let diff = abs(d.timeIntervalSince(target))
+            if diff < bestDiff {
+                bestDiff = diff
+                bestIndex = mid
+            }
+            if d < target {
+                lo = mid + 1
+            } else if d > target {
+                hi = mid - 1
+            } else {
+                break
+            }
+        }
+        
+        if let maxDelta = maxDelta, bestDiff > maxDelta {
+            return nil
+        }
+        return points[bestIndex]
+    }
+
+    /// Låg / ok / hög-symbol för en Kh-måltid, baserat på BG ~3h efter.
+    /// Om ingen BG finns inom ±30 min runt +3h visas "–".
+    private func statusSymbolForCarbMeal(at mealDate: Date) -> String {
+        guard !bgPoints.isEmpty else { return "–" }
+
+        // Target time = 3h efter måltid
+        let target = mealDate.addingTimeInterval(3 * 60 * 60)
+
+        // Tillåt max ±30 minuter från target
+        let maxDelta: TimeInterval = 30 * 60
+        
+        guard let point = nearestBGPoint(around: target, in: bgPoints, maxDelta: maxDelta) else {
+            // Ingen BG tillräckligt nära target → kan inte utvärdera ännu
+            return "⏳"
+        }
+
+        let endBG = point.mmol
+        let endMgdl = endBG * 18.0182
+        let lowMgdl = Double(UserDefaultsRepository.lowLine.value)
+        let highMgdl = Double(UserDefaultsRepository.highLine.value)
+
+        if endMgdl > highMgdl {
+            return "🟣"
+        } else if endMgdl < lowMgdl {
+            return "🔴"
+        } else {
+            return "🟢"
+        }
+    }
+    
     // MARK: - UITableViewDataSource Methods
     
     private func previewOverrideText(for text: String) -> String {
@@ -969,6 +1058,14 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             }
         }()
         
+        // Statussymbol för måltider (Kh) baserat på BG ca 3h efter
+        let mealStatusSymbol: String
+        if displayEventType == "Kh" {
+            mealStatusSymbol = statusSymbolForCarbMeal(at: treatment.timestamp)
+        } else {
+            mealStatusSymbol = ""
+        }
+        
         // Handle different treatment types.
         if treatment.eventType == "BG Check" {
             if let glucose = treatment.rawData["glucose"] as? Double,
@@ -1068,11 +1165,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             }
         }
         
-        // Format the timestamp as HH:mm.
+        // Format the timestamp as HH:mm and prefix with status symbol for Kh-rader.
         let timeFormatter = DateFormatter()
         timeFormatter.locale = Locale(identifier: "sv_SE")
         timeFormatter.dateFormat = "HH:mm"
-        cell.detailTextLabel?.text = timeFormatter.string(from: treatment.timestamp)
+        var timeText = timeFormatter.string(from: treatment.timestamp)
+        if !mealStatusSymbol.isEmpty {
+            timeText = "\(timeText) \(mealStatusSymbol)"
+        }
+        cell.detailTextLabel?.text = timeText
         
         // Determine symbol and color.
         let symbolInfo: (name: String, color: UIColor) = {

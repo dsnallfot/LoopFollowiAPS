@@ -171,8 +171,9 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     private let realCRValueLabel          = MealAnalysisView.makeValueLabel(bold: false)
     private let manualBolusValueLabel     = MealAnalysisView.makeValueLabel()
     private let smbTempValueLabel         = MealAnalysisView.makeValueLabel()
-    private let changeBGValueLabel = MealAnalysisView.makeValueLabel()
-    private let inRangeValueLabel     = MealAnalysisView.makeValueLabel()
+    private let changeBGTitleLabel        = UILabel()
+    private let changeBGValueLabel        = MealAnalysisView.makeValueLabel()
+    private let inRangeValueLabel         = MealAnalysisView.makeValueLabel()
     private let manualVsAutomatedLabel    = MealAnalysisView.makeValueLabel()
     private var inRange: Double = 0.0
 
@@ -393,7 +394,10 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         
         // Additional stats rows below chart
         let statsStackBelow = UIStackView(arrangedSubviews: [
-            makeStatRow(text: "  →  Glukosförändring under vald tid", valueLabel: changeBGValueLabel, unit: " mmol/L")
+            makeStatRow(textLabel: changeBGTitleLabel,
+                        text: "Glukosförändring under vald tid",
+                        valueLabel: changeBGValueLabel,
+                        unit: " mmol/L")
         ])
         statsStackBelow.axis = .vertical
         statsStackBelow.spacing = 5
@@ -1504,11 +1508,12 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         bgChartView.notifyDataSetChanged()
     }
 
-    private func makeStatRow(text: String,
+    private func makeStatRow(textLabel externalTextLabel: UILabel? = nil,
+                             text: String,
                              valueLabel: UILabel,
                              boldText: Bool = false,
                              unit: String) -> UIStackView {
-        let textLabel = UILabel()
+        let textLabel = externalTextLabel ?? UILabel()
         textLabel.text = text
         textLabel.font = boldText
             ? .preferredFont(forTextStyle: .caption1).withTraits(traits: .traitBold)
@@ -1769,6 +1774,25 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         let endText = endBG != nil
         ? String(format: "%.1f", endBG!)
         : "--"
+
+        // Statuscirkel baserat på slut-BG relativt användarens gränser (konvertera till mg/dL)
+        let statusSymbol: String
+        if let endBG = endBG {
+            let endMgdl = endBG * 18.0182
+            let lowMgdl = Double(UserDefaultsRepository.lowLine.value)
+            let highMgdl = Double(UserDefaultsRepository.highLine.value)
+            if endMgdl > highMgdl {
+                statusSymbol = "🟣"
+            } else if endMgdl < lowMgdl {
+                statusSymbol = "🔴"
+            } else {
+                statusSymbol = "🟢"
+            }
+        } else {
+            statusSymbol = "⚪️"
+        }
+        changeBGTitleLabel.text = " \(statusSymbol)  Glukosförändring under vald tid"
+
         changeBGValueLabel.text = "\(startText) → \(endText) mmol/L"
         // ——— NEW: compute percentages below, within, and above target ———
         let windowEntries = bgEntries.filter { $0.date >= startTime && $0.date <= endTime }
