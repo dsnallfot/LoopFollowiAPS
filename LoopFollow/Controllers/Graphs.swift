@@ -348,6 +348,28 @@ extension MainViewController {
     func buildEventsForMealAnalysis() -> [Event] {
         var events: [Event] = []
 
+        // Poddbyten
+        for pumpChange in pumpChangeGraphData {
+            var seconds = Double(pumpChange.date)
+
+            // Heuristik: om värdet ser ut som millisekunder (större än ~år 2286 i sekunder),
+            // dela med 1000.
+            if seconds > 10_000_000_000 {
+                seconds = seconds / 1000.0
+            }
+
+            let date = Date(timeIntervalSince1970: seconds)
+
+            events.append(
+                Event(
+                    date: date,
+                    eventType: "Site Change",
+                    amount: 0.0,
+                    foodType: nil
+                )
+            )
+        }
+        
         // SMB events (auto micro-boluser)
         for smb in smbData {
             let date = Date(timeIntervalSince1970: Double(smb.date))
@@ -461,11 +483,11 @@ extension MainViewController {
             adjustedStart = start - 60 * 20
             end = start + 60 * 180
         case .pumpChange:
-            title = "Analys poddbyte"
-            adjustedStart = start - 30
-            end = start + 60 * 360
+            title = "Analys podd"
+            adjustedStart = start - 60 * 180
+            end = start + 60 * 180
         case .sensorChange:
-            title = "Analys sensorbyte"
+            title = "Analys sensor"
             adjustedStart = start - 30
             end = start + 60 * 360
         case .lowTreatment:
@@ -477,7 +499,7 @@ extension MainViewController {
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: adjustedStart,
-            initialEnd: nil,//end,
+            initialEnd: end,
             modalWithTimestamp: true,
             modalTitleString: title
         )

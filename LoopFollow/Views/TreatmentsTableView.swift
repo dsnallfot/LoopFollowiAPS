@@ -482,6 +482,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     )
                 }
                 return nil
+                
+            case "Site Change":
+                // Map Site changes to Event
+                    return Event(
+                        date: treatment.timestamp,
+                        eventType: "Site Change",
+                        amount: 0.0,
+                        foodType: nil
+                    )
 
             default:
                 return nil
@@ -1052,7 +1061,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     return "Fett & Protein"
                 }
             } else if treatment.eventType == "Site Change" {
-                return "Pumpbyte"
+                return "Poddbyte"
             } else {
                 return treatment.eventType
             }
@@ -1381,7 +1390,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 } else if treatment.eventType == "Exercise" {
                     displayEventName = "Override"
                 } else if treatment.eventType == "Site Change" {
-                    displayEventName = "Pumpbyte"
+                    displayEventName = "Poddbyte"
                 } else {
                     displayEventName = treatment.eventType
                 }
@@ -2080,17 +2089,17 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         }
         
         if treatment.eventType == "Site Change" {
-            let title = "\(timeString)\n\nPumpbyte"
+            let title = "\(timeString)\n\nPoddbyte"
             var message = ""
             if let enteredBy = treatment.rawData["enteredBy"] as? String {
                 message = "Inlagt av: \(enteredBy)"
             }
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Analysera Pumpbyte", style: .default, handler: { _ in
+            alert.addAction(UIAlertAction(title: "Analysera Poddbyte", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
-                let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
-                let analysisEnd = treatment.timestamp.addingTimeInterval(21600) // end 360 min after start
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys poddbyte")
+                let analysisStart = treatment.timestamp.addingTimeInterval(-10800) // minus 3h
+                let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 3h after start
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: analysisEnd, modalWithTimestamp: true, modalTitleString: "Analys podd")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)
@@ -2111,7 +2120,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     message += "\nInlagt av: \(enteredBy)"
                 }
                 let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "Analysera Fingerstick", style: .default, handler: { _ in
+                alert.addAction(UIAlertAction(title: "Analys stick", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-1200) // minus 20 min
                     let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start - använder nil tillsvidare
@@ -2145,7 +2154,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     message += "\nInlagt av: \(enteredBy)"
                 }
                 let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "Analysera Override", style: .default, handler: { _ in
+                alert.addAction(UIAlertAction(title: "Analys override", style: .default, handler: { _ in
                     let events = self.buildEventsArray()
                     let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
                     let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start - använder nil tillsvidare
@@ -2177,7 +2186,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 message += "\nInlagt av: \(enteredBy)"
             }
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Analysera Måltid", style: .default, handler: { _ in
+            alert.addAction(UIAlertAction(title: "Analys måltid", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
                 let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start - använder nil tillsvidare

@@ -1,4 +1,4 @@
-
+// Den mesta koden nedan konsoliderad med BGCheckView 2026-01-27 - att städa upp vid tillfälle
 
 import UIKit
 import Charts

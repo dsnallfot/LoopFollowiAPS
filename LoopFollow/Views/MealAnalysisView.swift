@@ -1294,7 +1294,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             ChartDataEntry(
                 x: event.date.timeIntervalSince(startTime) / 3600.0,
                 y: 20.0,
-                data: String(format: "%.2f E", event.amount)
+                data: String(format: "Bolus: %.2f E", event.amount)
             )
         }
         let bolusDots = ScatterChartDataSet(entries: bolusEntries, label: "")
@@ -1313,7 +1313,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             ChartDataEntry(
                 x: event.date.timeIntervalSince(startTime) / 3600.0,
                 y: 22.0,
-                data: String(format: "%.2f E", event.amount)
+                data: String(format: "SMB: %.2f E", event.amount)
             )
         }
         let smbDots = ScatterChartDataSet(entries: smbEntries, label: "")
@@ -1338,7 +1338,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 ChartDataEntry(
                     x: event.date.timeIntervalSince(startTime) / 3600.0,
                     y: 2.0,
-                    data: String(format: "%.0f g", event.amount)
+                    data: String(format: "Kolhydrater: %.0f g", event.amount)
                 )
             }
         let orangeDots = ScatterChartDataSet(entries: orangeEntries, label: "")
@@ -1357,7 +1357,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 ChartDataEntry(
                     x: event.date.timeIntervalSince(startTime) / 3600.0,
                     y: 2.0,
-                    data: String(format: "%.0f g", event.amount)
+                    data: String(format: "FPU Kh: %.0f g", event.amount)
                 )
             }
         let brownDots = ScatterChartDataSet(entries: brownEntries, label: "")
@@ -1383,7 +1383,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             ChartDataEntry(
                 x: event.date.timeIntervalSince(startTime) / 3600.0,
                 y: event.amount,
-                data: String(format: "%.1f mmol", event.amount)
+                data: String(format: "Fingerstick: %.1f mmol", event.amount)
             )
         }
         let bgCheckDots = ScatterChartDataSet(entries: bgCheckEntries, label: "")
@@ -1394,6 +1394,27 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         bgCheckDots.highlightEnabled = true
         bgCheckDots.highlightColor = .clear
         bgCheckDots.highlightLineWidth = 0
+        
+        // ▸ Gray circles for Pump changes events at their glucose level
+        let siteChangeEvents = events.filter {
+            $0.eventType == "Site Change" && $0.date >= startTime && $0.date <= endTime
+        }
+
+        let siteChangeEntries = siteChangeEvents.map { event in
+            ChartDataEntry(
+                x: event.date.timeIntervalSince(startTime) / 3600.0,
+                y: 2.0,
+                data: String("Poddbyte")
+            )
+        }
+        let siteChangeDots = ScatterChartDataSet(entries: siteChangeEntries, label: "")
+        siteChangeDots.setColor(.label.withAlphaComponent(0.5))
+        siteChangeDots.setScatterShape(.circle)
+        siteChangeDots.scatterShapeSize = 7
+        siteChangeDots.drawValuesEnabled = false
+        siteChangeDots.highlightEnabled = true
+        siteChangeDots.highlightColor = .clear
+        siteChangeDots.highlightLineWidth = 0
 
         // ▸ Squares for Temp Basal actual deliveries (0.05 U pulses) at y = 23 mmol
         // Pulse interval = 180 / rate seconds. Counter resets on each rate change.
@@ -1448,7 +1469,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                         ChartDataEntry(
                             x: t.timeIntervalSince(startTime) / 3600.0,
                             y: 23.0,
-                            data: String(format: "%.2f U/h", rate)
+                            data: String(format: "Temp basal: %.2f E/h", rate)
                         )
                     )
                     //#if DEBUG
@@ -1471,7 +1492,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // Combine
         let combined = CombinedChartData()
         combined.lineData   = LineChartData(dataSets: lineDataSets)
-        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, orangeDots, brownDots, bgCheckDots, basalSquares])
+        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, orangeDots, brownDots, bgCheckDots, siteChangeDots, basalSquares])
         bgChartView.data = combined
 
         // X range & labels

@@ -36,12 +36,13 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Poddar"
-        //view.backgroundColor = .systemBackground
-        updateBackgroundForCurrentMode()
 
         setupNavigationBar()
         setupTableView()
         setupConstraints()
+
+        // Uppdatera bakgrunden efter att tabellen är på plats så att gradienten appliceras korrekt.
+        updateBackgroundForCurrentMode()
 
         loadPumpHistoryFromStorage()
         fetchInitialPumpChangesIfNeeded()
@@ -116,6 +117,7 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
         tableView.backgroundColor = .clear
         tableView.backgroundView = nil
         tableView.isOpaque = false
+        tableView.layer.backgroundColor = UIColor.clear.cgColor
     }
 
     private func setupConstraints() {
@@ -382,14 +384,115 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
         cell.contentView.backgroundColor = .clear
         cell.backgroundView = nil
         if #available(iOS 14.0, *) {
-            var bg = UIBackgroundConfiguration.clear()
-            bg.backgroundColor = .clear
-            cell.backgroundConfiguration = bg
+            // IMPORTANT: Disable iOS 14+ backgroundConfiguration completely,
+            // otherwise UITableView injects a default background and kills the gradient.
+            cell.backgroundConfiguration = nil
         }
         cell.textLabel?.backgroundColor = .clear
         cell.detailTextLabel?.backgroundColor = .clear
 
+        // Samma mjuka fade-in-highlight som i BGCheckView
+        cell.selectionStyle = .default
+        let selected = UIView()
+        selected.backgroundColor = UIColor.label.withAlphaComponent(0.2)
+        selected.layer.cornerRadius = 10
+        selected.layer.masksToBounds = true
+        cell.selectedBackgroundView = selected
+
         return cell
+    }
+
+    // MARK: - UITableViewDelegate
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        // Datum för själva pumpbytet
+        let entry = pumpHistory[indexPath.row]
+        let entryDate = Date(timeIntervalSince1970: entry.date)
+        let modalTitle = "Analys podd"
+
+        // Analysera 3h före och 3h efter pumpbytet
+        let startDate = entryDate.addingTimeInterval(-3 * 60 * 60)
+        let endDate = entryDate.addingTimeInterval(3 * 60 * 60)
+
+        // Hitta MainViewController via tabbens root (samma mönster som i BGCheckView)
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+            let tabBar = window.rootViewController as? UITabBarController,
+            let tabViewControllers = tabBar.viewControllers
+        else {
+            tableView.deselectRow(at: indexPath, animated: true)
+            return
+        }
+
+        var mainVC: MainViewController?
+
+        for vc in tabViewControllers {
+            if let nav = vc as? UINavigationController {
+                if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = candidate
+                    break
+                }
+            } else if let candidate = vc as? MainViewController {
+                mainVC = candidate
+                break
+            }
+        }
+
+        guard let mainVC else {
+            tableView.deselectRow(at: indexPath, animated: true)
+            return
+        }
+
+        var events = mainVC.buildEventsForMealAnalysis()
+
+        // Säkerställ att just detta pumpbyte finns som "Site Change"-event.
+        // Om pumpChangeGraphData bara innehåller senaste bytet så lägger vi in det här manuellt
+        // så att en grå prick alltid ritas för raden du tryckt på.
+        let hasMatchingSiteChange = events.contains {
+            $0.eventType == "Site Change" &&
+            abs($0.date.timeIntervalSince(entryDate)) < 60  // inom 1 min från detta entry
+        }
+
+        if !hasMatchingSiteChange {
+            events.append(
+                Event(
+                    date: entryDate,
+                    eventType: "Site Change",
+                    amount: 0.0,
+                    foodType: nil
+                )
+            )
+        }
+
+        let analysisVC = MealAnalysisView(
+            events: events,
+            initialStart: startDate,
+            initialEnd: endDate,
+            modalWithTimestamp: true,
+            modalTitleString: modalTitle
+        )
+
+        let nav = UINavigationController(rootViewController: analysisVC)
+        nav.modalPresentationStyle = .formSheet
+
+        // Gör modalen transparent så den blå gradienten syns bakom (samma som i showPumpSessionStats)
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Matcha aktuellt dark/light-läge
+        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+
+        present(nav, animated: true) { [weak self] in
+            self?.tableView.deselectRow(at: indexPath, animated: true)
+        }
     }
 
     // MARK: - Swipe actions (Redigera / Radera)
