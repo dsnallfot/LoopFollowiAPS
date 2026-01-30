@@ -1034,8 +1034,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             } else {
                 return ("circle.fill", .label.withAlphaComponent(0.5))
             }
-        case "Site Change", "Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart", "Insulin Change":
-            return ("repeat.circle.fill", .label.withAlphaComponent(0.5))
+        case "Site Change", "Insulin Change", "Sensor Start", "Sensor Change", "Sensorbyte", "Sensorstart":
+            return ("repeat.circle.fill", .systemTeal.withAlphaComponent(0.75))
         default:
             return ("circle.fill", .label.withAlphaComponent(0.5))
         }
@@ -1077,6 +1077,10 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 }
             } else if treatment.eventType == "Site Change" {
                 return "Poddbyte"
+            } else if treatment.eventType == "Insulin Change" {
+                return "Nytt insulin"
+            } else if treatment.eventType == "Sensor Start" {
+                return "Sensorbyte"
             } else {
                 return treatment.eventType
             }
