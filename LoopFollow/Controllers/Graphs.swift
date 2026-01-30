@@ -561,6 +561,14 @@ extension MainViewController {
             return
         }
 
+        // Dextro / lågbehandling – identifieras via 🍬 i måltidstexten.
+        if dataString.contains("🍬") {
+            BGChart.highlightValue(nil, callDelegate: false)
+            BGChartFull.highlightValue(nil, callDelegate: false)
+            presentMealAnalysis(for: analysisStart, source: .lowTreatment)
+            return
+        }
+
         // Måltid / kolhydrater – uppfångas via texten vi satte i updateCarbGraph
         // ("Kolhydrater ...", eller "Fett/Protein ...").
         if dataString.contains("Kolhydrater") || dataString.contains("Fett/Protein") {
@@ -1800,15 +1808,18 @@ extension MainViewController {
             formatter.minimumIntegerDigits = 1
 
             
-            var valueString: String = formatter.string(from: NSNumber(value: carbData[i].value))!
-            
-            var fatString: String = formatter.string(from: NSNumber(value: carbData[i].fat)) ?? ""
-            
-            var proteinString: String = formatter.string(from: NSNumber(value: carbData[i].protein)) ?? ""
-            
-            guard var foodType = String?(carbData[i].foodType ?? "") else { return }
-            if (carbData[i].foodType != nil) {
-                valueString += " " + foodType
+            let valueStringBase = formatter.string(from: NSNumber(value: carbData[i].value)) ?? "0"
+            var valueString = valueStringBase
+
+            let fatString = formatter.string(from: NSNumber(value: carbData[i].fat)) ?? ""
+            let proteinString = formatter.string(from: NSNumber(value: carbData[i].protein)) ?? ""
+
+            let rawFoodType = carbData[i].foodType ?? ""
+            let foodType = rawFoodType
+            let isDextro = rawFoodType.contains("🍬")
+
+            if !rawFoodType.isEmpty {
+                valueString += " " + rawFoodType
             }
             
             var hours = 3
@@ -1821,9 +1832,12 @@ extension MainViewController {
             let carbShift = findNextCarbTime(timeWithin: 250, needle: carbData[i].date, haystack: carbData, startingIndex: i)
             var dateTimeStamp = carbData[i].date
             
-            // Check condition: if foodType is empty we are most likely dealing with FPUs
-            if (carbData[i].foodType ?? "").isEmpty {
+            // Check condition: if foodType is empty we are most likely dealing with FPUs.
+            // Dextro (🍬) markeras separat.
+            if rawFoodType.isEmpty {
                 colors.append(NSUIColor.systemBrown.withAlphaComponent(0.35))
+            } else if isDextro {
+                colors.append(NSUIColor.white)
             } else {
                 colors.append(NSUIColor.systemOrange.withAlphaComponent(1.0))
             }

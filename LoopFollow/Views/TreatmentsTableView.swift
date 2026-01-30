@@ -984,8 +984,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     
     // Helper to determine symbol name and color for a given event type.
     private func symbolForEventType(_ eventType: String, foodType: String? = nil, fullNote: String? = nil) -> (name: String, color: UIColor) {
+        // Identifiera Dextro via foodType som innehåller 🍬
+        let isDextro = (foodType ?? "").contains("🍬")
+        
         if eventType == "Carb Correction" {
-            // If foodType is empty or nil, use brown; otherwise use systemOrange.
+            // Dextro / lågbehandling som registrerats som Carb Correction men har 🍬 i foodType
+            if isDextro {
+                return ("circle.fill", .white)
+            }
+            // Om foodType är tomt → Fett & Protein (brun), annars vanlig Kh (orange)
             if let food = foodType, !food.isEmpty {
                 return ("circle.fill", .systemOrange.withAlphaComponent(0.8))
             } else {
@@ -1000,8 +1007,16 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             return ("circle.fill", .systemBlue.withAlphaComponent(0.8))
         case "SMB":
             return ("bolt.circle.fill", .systemBlue.withAlphaComponent(0.8))
-        case "Kolhydrater", "Dextro", "Måltid":
-            return ("circle.fill", .systemOrange.withAlphaComponent(0.8))
+        case "Dextro":
+            // Dextro / lågbehandling – egen färg
+            return ("circle.fill", .white)
+        case "Kolhydrater", "Måltid":
+            // Om foodType råkar innehålla 🍬 här också, använd samma Dextro-färg.
+            if isDextro {
+                return ("circle.fill", .white)
+            } else {
+                return ("circle.fill", .systemOrange.withAlphaComponent(0.8))
+            }
         case "BG Check":
             return ("circle.fill", .systemRed.withAlphaComponent(1.0))
         case "Exercise":
@@ -2172,8 +2187,23 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
         if treatment.eventType == "Carb Correction" {
             let foodTypeValue = treatment.rawData["foodType"] as? String ?? ""
-            let title = foodTypeValue.isEmpty ? "\(timeString)\n\nFett & Protein" : "\(timeString)\n\nMåltid"
-            var message = foodTypeValue.isEmpty ? "Kolhydratsekvivalenter: " : foodTypeValue
+            let isDextro = foodTypeValue.contains("🍬")
+            let title: String
+            if isDextro {
+                title = "\(timeString)\n\nDextro"
+            } else {
+                title = foodTypeValue.isEmpty
+                    ? "\(timeString)\n\nFett & Protein"
+                    : "\(timeString)\n\nMåltid"
+            }
+            var message: String
+            if isDextro {
+                message = foodTypeValue
+            } else {
+                message = foodTypeValue.isEmpty
+                    ? "Kolhydratsekvivalenter: "
+                    : foodTypeValue
+            }
             let carbsValue: Double = treatment.rawData["carbs"] as? Double ?? 0.0
             message += foodTypeValue.isEmpty ? "\(formatValue(carbsValue)) g" : "\nKolhydrater: \(formatValue(carbsValue)) g"
             if let fatValue = treatment.rawData["fat"] as? Double, fatValue != 0 {
@@ -2186,11 +2216,11 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 message += "\nInlagt av: \(enteredBy)"
             }
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Analys måltid", style: .default, handler: { _ in
+            alert.addAction(UIAlertAction(title: isDextro ? "Analys dextro" : "Analys måltid", style: .default, handler: { _ in
                 let events = self.buildEventsArray()
                 let analysisStart = treatment.timestamp.addingTimeInterval(-30) // minus 30 s
                 let analysisEnd = treatment.timestamp.addingTimeInterval(10800) // end 180 min after start - använder nil tillsvidare
-                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: nil, modalWithTimestamp: true, modalTitleString: "Analys måltid")
+                let analysisVC = MealAnalysisView(events: events, initialStart: analysisStart, initialEnd: nil, modalWithTimestamp: true, modalTitleString: isDextro ? "Analys dextro" : "Analys måltid")
                 let nav = UINavigationController(rootViewController: analysisVC)
                 nav.modalPresentationStyle = .formSheet
                 self.present(nav, animated: true)

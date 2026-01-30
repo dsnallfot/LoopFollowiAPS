@@ -1325,15 +1325,40 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         smbDots.highlightColor = .clear
         smbDots.highlightLineWidth = 0
 
-        // ▸ Triangles for Carb Correction: orange for “real” carbs, brown for fat/protein equivalents
+        // ▸ Triangles for Carb Correction:
+        //   • Teal for Dextro (foodType innehåller 🍬)
+        //   • Orange for “real” carbs (icke-tom foodType utan 🍬)
+        //   • Brown for fat/protein equivalents (tom foodType)
         let carbCorrections = events.filter {
             $0.eventType == "Carb Correction" &&
             $0.date >= startTime && $0.date <= endTime
         }
 
-        // Orange for those with a non-empty foodType
+        // Dextro: foodType innehåller 🍬
+        let dextroEntries = carbCorrections
+            .filter { ($0.foodType ?? "").contains("🍬") }
+            .map { event in
+                ChartDataEntry(
+                    x: event.date.timeIntervalSince(startTime) / 3600.0,
+                    y: 2.0,
+                    data: String(format: "Dextro: %.0f g", event.amount)
+                )
+            }
+        let dextroDots = ScatterChartDataSet(entries: dextroEntries, label: "")
+        dextroDots.setColor(.white)
+        dextroDots.setScatterShape(.triangle)
+        dextroDots.scatterShapeSize = 8
+        dextroDots.drawValuesEnabled = false
+        dextroDots.highlightEnabled = true
+        dextroDots.highlightColor = .clear
+        dextroDots.highlightLineWidth = 0
+
+        // Orange för vanliga kolhydrater: foodType är icke-tom och innehåller INTE 🍬
         let orangeEntries = carbCorrections
-            .filter { ($0.foodType ?? "").isEmpty == false }
+            .filter {
+                let ft = $0.foodType ?? ""
+                return !ft.isEmpty && !ft.contains("🍬")
+            }
             .map { event in
                 ChartDataEntry(
                     x: event.date.timeIntervalSince(startTime) / 3600.0,
@@ -1350,7 +1375,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         orangeDots.highlightColor = .clear
         orangeDots.highlightLineWidth = 0
 
-        // Brown for fat/protein equivalents (empty foodType)
+        // Brown för fett/protein-ekvivalenter (tom foodType)
         let brownEntries = carbCorrections
             .filter { ($0.foodType ?? "").isEmpty }
             .map { event in
@@ -1492,7 +1517,9 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // Combine
         let combined = CombinedChartData()
         combined.lineData   = LineChartData(dataSets: lineDataSets)
-        combined.scatterData = ScatterChartData(dataSets: [bolusDots, smbDots, orangeDots, brownDots, bgCheckDots, siteChangeDots, basalSquares])
+        combined.scatterData = ScatterChartData(
+            dataSets: [bolusDots, smbDots, orangeDots, dextroDots, brownDots, bgCheckDots, siteChangeDots, basalSquares]
+        )
         bgChartView.data = combined
 
         // X range & labels
