@@ -1026,9 +1026,9 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             if let noteText = fullNote, noteText.contains("Justerad") || noteText.contains("ändrades") {
                 return ("gearshape.circle.fill", .label.withAlphaComponent(0.5))
             } else if let noteText = fullNote, noteText.contains("PumpSuspend") {
-                return ("pause.circle.fill", .label.withAlphaComponent(0.5))
+                return ("pause.circle.fill", .systemTeal.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("PumpResume") {
-                return ("play.circle.fill", .label.withAlphaComponent(0.5))
+                return ("play.circle.fill", .systemTeal.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("Trio startades om") {
                 return ("repeat.circle.fill", .label.withAlphaComponent(0.5))
             } else {

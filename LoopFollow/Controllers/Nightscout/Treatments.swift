@@ -128,7 +128,21 @@ extension MainViewController {
             case "Temporary Target":
                 temporaryTarget.append(entry)
             case "Note", "Announcement":
-                note.append(entry)
+                if let notesText = entry["notes"] as? String {
+                    if notesText.contains("PumpSuspend") {
+                        // Tolka denna note som en Pump Suspend, inte som vanlig note
+                        suspendPump.append(entry)
+                    } else if notesText.contains("PumpResume") {
+                        // Tolka denna note som en Pump Resume, inte som vanlig note
+                        resumePump.append(entry)
+                    } else {
+                        // Vanlig note/announcement
+                        note.append(entry)
+                    }
+                } else {
+                    // Saknar notes-text, behandla som vanlig note
+                    note.append(entry)
+                }
             case "BG Check":
                 bgCheck.append(entry)
             case "Suspend Pump":

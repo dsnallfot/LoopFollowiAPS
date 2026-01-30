@@ -791,7 +791,7 @@ extension MainViewController {
         let chartEntrySensor = [ChartDataEntry]()
         let lineSensor = LineChartDataSet(entries:chartEntrySensor, label: "")
         lineSensor.circleRadius = CGFloat(globalVariables.dotOther)
-        lineSensor.circleColors = [NSUIColor.label.withAlphaComponent(0.5)]
+        lineSensor.circleColors = [NSUIColor.label.withAlphaComponent(0.3)]
         lineSensor.drawCircleHoleEnabled = false
         lineSensor.setDrawHighlightIndicators(false)
         lineSensor.setColor(NSUIColor.systemGray3, alpha: 1.0)
@@ -806,7 +806,7 @@ extension MainViewController {
         var chartEntryPump = [ChartDataEntry]()
         let linePump = LineChartDataSet(entries:chartEntryPump, label: "")
         linePump.circleRadius = CGFloat(globalVariables.dotOther)
-        linePump.circleColors = [NSUIColor.label.withAlphaComponent(0.5)]
+        linePump.circleColors = [NSUIColor.label.withAlphaComponent(0.3)]
         linePump.drawCircleHoleEnabled = false
         linePump.setDrawHighlightIndicators(false)
         linePump.setColor(NSUIColor.systemGray3, alpha: 1.0)
@@ -821,7 +821,7 @@ extension MainViewController {
         let chartEntryNote = [ChartDataEntry]()
         let lineNote = LineChartDataSet(entries:chartEntryNote, label: "")
         lineNote.circleRadius = CGFloat(globalVariables.dotOther)
-        lineNote.circleColors = [NSUIColor.label.withAlphaComponent(0.5)]
+        lineNote.circleColors = [NSUIColor.label.withAlphaComponent(0.3)]
         lineNote.drawCircleHoleEnabled = false
         lineNote.setDrawHighlightIndicators(false)
         lineNote.setColor(NSUIColor.white, alpha: 1.0)
@@ -2249,7 +2249,7 @@ extension MainViewController {
         var chartEntrySensor = [ChartDataEntry]()
         let lineSensor = LineChartDataSet(entries:chartEntrySensor, label: "")
         lineSensor.circleRadius = 2
-        lineSensor.circleColors = [NSUIColor.label.withAlphaComponent(0.5)]
+        lineSensor.circleColors = [NSUIColor.label.withAlphaComponent(0.3)]
         lineSensor.drawCircleHoleEnabled = false
         lineSensor.setDrawHighlightIndicators(false)
         lineSensor.setColor(NSUIColor.systemGray3, alpha: 1.0)
@@ -2264,7 +2264,7 @@ extension MainViewController {
         var chartEntryPump = [ChartDataEntry]()
         let linePump = LineChartDataSet(entries:chartEntryPump, label: "")
         linePump.circleRadius = 2
-        linePump.circleColors = [NSUIColor.label.withAlphaComponent(0.5)]
+        linePump.circleColors = [NSUIColor.label.withAlphaComponent(0.3)]
         linePump.drawCircleHoleEnabled = false
         linePump.setDrawHighlightIndicators(false)
         linePump.setColor(NSUIColor.systemGray3, alpha: 1.0)
@@ -2279,7 +2279,7 @@ extension MainViewController {
         var chartEntryNote = [ChartDataEntry]()
         let lineNote = LineChartDataSet(entries:chartEntryNote, label: "")
         lineNote.circleRadius = 2
-        lineNote.circleColors = [NSUIColor.label.withAlphaComponent(0.5)]
+        lineNote.circleColors = [NSUIColor.label.withAlphaComponent(0.3)]
         lineNote.drawCircleHoleEnabled = false
         lineNote.setDrawHighlightIndicators(false)
         lineNote.setColor(NSUIColor.systemGray3, alpha: 1.0)
