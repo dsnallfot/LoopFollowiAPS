@@ -1046,24 +1046,30 @@ extension MainViewController {
         BGChart.xAxis.drawLimitLinesBehindDataEnabled = true
 
         BGChart.leftAxis.enabled = true
+        BGChart.leftAxis.labelTextColor = NSUIColor.secondaryLabel
         BGChart.leftAxis.labelPosition = YAxis.LabelPosition.insideChart
+        BGChart.leftAxis.labelFont = UIFont.boldSystemFont(ofSize: 10)
         BGChart.leftAxis.axisMaximum = maxBasal
         BGChart.leftAxis.axisMinimum = 0
         BGChart.leftAxis.drawGridLinesEnabled = false
         BGChart.leftAxis.granularityEnabled = true
         BGChart.leftAxis.granularity = 0.5
         BGChart.leftAxis.drawLimitLinesBehindDataEnabled = true
+        BGChart.leftAxis.axisLineColor = .clear
 
-        BGChart.rightAxis.labelTextColor = NSUIColor.label
+        BGChart.rightAxis.labelTextColor = NSUIColor.secondaryLabel
         BGChart.rightAxis.labelPosition = YAxis.LabelPosition.insideChart
+        BGChart.rightAxis.labelFont = UIFont.boldSystemFont(ofSize: 10)
         BGChart.rightAxis.axisMinimum = 0.0
         BGChart.rightAxis.drawLimitLinesBehindDataEnabled = true
+        BGChart.rightAxis.axisLineColor = .clear
 
         if UserDefaultsRepository.units.value == "mmol/L" {
             let forcedMax = ceil(Double(maxBG) / 72.0) * 72.0
             BGChart.rightAxis.axisMaximum = forcedMax
-            BGChart.rightAxis.gridLineDashLengths = [5.0, 5.0]
+            BGChart.rightAxis.gridLineDashLengths = [2.0, 2.0]
             BGChart.rightAxis.drawGridLinesEnabled = false
+            BGChart.rightAxis.gridColor = NSUIColor.secondaryLabel.withAlphaComponent(0.2)
             BGChart.rightAxis.valueFormatter = ChartYMMOLValueFormatter()
             BGChart.rightAxis.granularityEnabled = true
             BGChart.rightAxis.granularity = 72
@@ -1072,8 +1078,9 @@ extension MainViewController {
             BGChart.rightAxis.setLabelCount(labelCount, force: true)
         } else {
             BGChart.rightAxis.axisMaximum = Double(maxBG)
-            BGChart.rightAxis.gridLineDashLengths = [5.0, 5.0]
+            BGChart.rightAxis.gridLineDashLengths = [2.0, 2.0]
             BGChart.rightAxis.drawGridLinesEnabled = false
+            BGChart.rightAxis.gridColor = NSUIColor.secondaryLabel.withAlphaComponent(0.2)
             BGChart.rightAxis.valueFormatter = ChartYMMOLValueFormatter()
             BGChart.rightAxis.granularityEnabled = true
             BGChart.rightAxis.granularity = 50
@@ -2379,10 +2386,12 @@ extension MainViewController {
         BGChartFull.leftAxis.enabled = false
         BGChartFull.leftAxis.axisMaximum = maxBasal
         BGChartFull.leftAxis.axisMinimum = 0
+        BGChartFull.leftAxis.axisLineColor = .clear
         
         BGChartFull.rightAxis.enabled = false
         BGChartFull.rightAxis.axisMinimum = 0.0
         BGChartFull.rightAxis.axisMaximum = Double(maxBG)
+        BGChartFull.rightAxis.axisLineColor = .clear
                                                
         BGChartFull.xAxis.drawLabelsEnabled = false
         BGChartFull.xAxis.drawGridLinesEnabled = false
