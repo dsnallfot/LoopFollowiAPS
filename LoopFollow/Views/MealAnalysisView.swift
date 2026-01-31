@@ -1984,6 +1984,6 @@ extension MealAnalysisView: EnteredByViewDelegate {
         updateBGLabels()
         
         // Visa overlay — vi vet att EnteredByView bara kallar delegaten när datum faktisk ändrats
-        showDateSyncOverlay(message: "Datumvalen från föregående vy följde med till denna vy")
+        showDateSyncOverlay(message: "Datumvalen från föregående vy följde med tillbaka till denna vy")
     }
 }

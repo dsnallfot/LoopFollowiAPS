@@ -878,7 +878,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         
         // 3) Visa overlay endast om datumet faktiskt ändrades
         if dateChanged {
-            showDateSyncOverlay(message: "Datumvalet från föregående vy följde med till denna vy")
+            showDateSyncOverlay(message: "Datumvalet från föregående vy följde med tillbaka till denna vy")
         }
     }
     
