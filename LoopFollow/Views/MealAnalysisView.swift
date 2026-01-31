@@ -1669,7 +1669,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             overlay.alpha = 1.0
         }, completion: { _ in
             UIView.animate(withDuration: 0.3,
-                           delay: 2.0,
+                           delay: 1.4,
                            options: [.curveEaseInOut],
                            animations: {
                 overlay.alpha = 0.0
