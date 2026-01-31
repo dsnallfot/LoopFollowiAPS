@@ -35,7 +35,7 @@ struct TIRView: View {
 
                     // Threshold values depending on TIR/TITR mode
                     let highThreshold = viewModel.showTITR ? 7.8 : 10.0   // upper range for "Inom mål"
-                    let high = viewModel.showTITR ? 7.8 : 10.0           // lower range for "Högt"
+                    let high = viewModel.showTITR ? 7.9 : 10.1           // lower range for "Högt"
 
                     VStack(alignment: .leading, spacing: 4) {
                         if let average = graphData.first(where: { $0.period == .average }) {
