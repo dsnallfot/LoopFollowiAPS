@@ -1608,7 +1608,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         // Centered solid container
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
-        container.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.9)
+        container.backgroundColor = UIColor.systemPurple.withAlphaComponent(0.9)
         container.layer.cornerRadius = 14
         container.clipsToBounds = true
         
@@ -1627,18 +1627,18 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         label.numberOfLines = 0
         
         let stack = UIStackView(arrangedSubviews: [imageView, label])
-        stack.axis = .vertical
+        stack.axis = .horizontal
         stack.alignment = .center
-        stack.spacing = 8
+        stack.spacing = 12
         stack.translatesAutoresizingMaskIntoConstraints = false
         
         container.addSubview(stack)
         NSLayoutConstraint.activate([
-            imageView.heightAnchor.constraint(equalToConstant: 26),
-            imageView.widthAnchor.constraint(equalToConstant: 26),
+            imageView.heightAnchor.constraint(equalToConstant: 40),
+            imageView.widthAnchor.constraint(equalToConstant: 40),
 
-            stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
-            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12),
+            stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 17),
+            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -17),
             stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16)
         ])
@@ -1646,18 +1646,19 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         overlay.addSubview(container)
         view.addSubview(overlay)
         
+        let containerTopInset: CGFloat = showsDoneButton ? 77 : 120
+
         NSLayoutConstraint.activate([
             overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             overlay.topAnchor.constraint(equalTo: view.topAnchor),
             overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
+
+            container.topAnchor.constraint(equalTo: overlay.topAnchor, constant: containerTopInset),
             container.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
-            container.centerYAnchor.constraint(equalTo: overlay.centerYAnchor),
-            container.leadingAnchor.constraint(greaterThanOrEqualTo: overlay.leadingAnchor, constant: 24),
-            container.trailingAnchor.constraint(lessThanOrEqualTo: overlay.trailingAnchor, constant: -24)
+            container.leadingAnchor.constraint(equalTo: overlay.leadingAnchor, constant: 12),
+            container.trailingAnchor.constraint(equalTo: overlay.trailingAnchor, constant: -12)
         ])
-        
         view.layoutIfNeeded()
         
         // Light haptic feedback when the overlay appears
@@ -1983,6 +1984,6 @@ extension MealAnalysisView: EnteredByViewDelegate {
         updateBGLabels()
         
         // Visa overlay — vi vet att EnteredByView bara kallar delegaten när datum faktisk ändrats
-        showDateSyncOverlay(message: "Datumet du använde i \"Inlagt-av\"-vyn används nu också här i Analysvyn.")
+        showDateSyncOverlay(message: "Datumvalen från föregående vy följde med till denna vy")
     }
 }
