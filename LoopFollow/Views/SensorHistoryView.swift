@@ -274,6 +274,11 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
 
         // Build: "<date> <session-info>" (first line), then "<note>" (second line)
         let baseAttrs: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .regular),//smallBody,
+            .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
+        ]
+        
+        let detailsAttrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),//smallBody,
             .foregroundColor: cell.textLabel?.textColor ?? UIColor.label
         ]
@@ -288,7 +293,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
         composed.append(NSAttributedString(string: " ", attributes: baseAttrs))
         composed.append(NSAttributedString(string: append.text, attributes: sessionAttrs))
         composed.append(NSAttributedString(string: "\n", attributes: baseAttrs))
-        composed.append(NSAttributedString(string: cleanedNote, attributes: baseAttrs))
+        composed.append(NSAttributedString(string: cleanedNote, attributes: detailsAttrs))
 
         cell.textLabel?.attributedText = composed
         cell.textLabel?.numberOfLines = 0

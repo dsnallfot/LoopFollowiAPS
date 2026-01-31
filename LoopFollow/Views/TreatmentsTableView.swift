@@ -1237,7 +1237,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         timeLabel.text = timeString
         timeLabel.font = timeFont
         timeLabel.textAlignment = .right
-        timeLabel.textColor = .label
+        timeLabel.textColor = .secondaryLabel
         timeLabel.backgroundColor = .clear
 
         container.addSubview(statusLabel)
