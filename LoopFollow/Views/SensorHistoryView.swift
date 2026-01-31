@@ -1,5 +1,5 @@
 //
-//  SensorHistoryViewController.swift
+//  SensorHistoryView.swift
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2025-03-09.
