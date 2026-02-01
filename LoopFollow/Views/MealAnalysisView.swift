@@ -81,10 +81,41 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         self.modalWithTimestamp = modalWithTimestamp
         self.modalTitleString = modalTitleString
         self.showsDoneButton = showsDoneButton
+
+        let now = Date()
+        let calendar = Calendar.current
+
+        // Grundläggande, säkert initialt tidsfönster så att endTime > startTime
+        if let start = initialStart, let end = initialEnd {
+            self.startTime = start
+            self.endTime = end
+        } else if let start = initialStart {
+            self.startTime = start
+            // defaulta till 3h-fönster framåt eller till nu, vilket som kommer först
+            let candidateEnd = calendar.date(byAdding: .hour, value: 3, to: start) ?? start
+            self.endTime = min(candidateEnd, now)
+        } else if let end = initialEnd {
+            let clampedEnd = min(end, now)
+            self.endTime = clampedEnd
+            // defaulta till 3h bakåt från end
+            let candidateStart = calendar.date(byAdding: .hour, value: -3, to: clampedEnd) ?? clampedEnd
+            self.startTime = candidateStart
+        } else {
+            // Ingen override: rullande 3h-fönster fram till nu
+            self.endTime = now
+            self.startTime = calendar.date(byAdding: .hour, value: -3, to: now) ?? now
+        }
+
+        // För-initiera lastDurationTitle med defaultsegmentets titel ("3h")
+        // Denna kommer sedan att överskrivas i viewDidLoad när vi sätter rätt segment
+        self.lastDurationTitle = "3h"
+
         super.init(nibName: nil, bundle: nil)
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     // MARK: - UI components & state
 
@@ -216,8 +247,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
                 startTime = dayStart
                 endTime = endOverride
-            }
-             else if isExactMidnight {
+            } else if isExactMidnight {
                 durationControl.selectedSegmentIndex = 6   // "Dag"
                 startTime = dayStart
                 if calendar.isDateInToday(dayStart) {
@@ -236,19 +266,24 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         updateBackgroundForCurrentMode()
 
         // Configure picker limits (now‒24h ... ∞) and initial value
-        endPicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
-        endPicker.maximumDate = Date()
+        let minDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
+        let now = Date()
+
+        endPicker.minimumDate = minDate
+        endPicker.maximumDate = now
         endPicker.date = endTime
         endPicker.addTarget(self, action: #selector(endTimeChanged(_:)), for: .valueChanged)
 
-        startPicker.minimumDate = Date().addingTimeInterval(TimeInterval(-24 * 60 * 60 * UserDefaultsRepository.downloadDays.value))
-        startPicker.maximumDate = Date()
+        startPicker.minimumDate = minDate
+        startPicker.maximumDate = now
         startPicker.date = startTime
-        // Apply caller‑provided start time override if provided
+
+        // Apply caller-provided start time override if provided
         if modalWithTimestamp, let startOverride = initialStartOverride {
             startTime = startOverride
             startPicker.date = startOverride
-            recalcEndTimeBasedOnDuration()
+            // Här låter vi recalcEndTimeBasedOnDuration() längst ner ta hand om endTime,
+            // så vi behöver inte kalla den en extra gång här.
         }
         startPicker.addTarget(self, action: #selector(startTimeChanged(_:)), for: .valueChanged)
 
@@ -391,9 +426,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         rowsStack.axis = .vertical
         rowsStack.spacing = 5
         rowsStack.setCustomSpacing(5, after: carbsRow) // extra space before fpuRow
-        //rowsStack.setCustomSpacing(15, after: fpuRow) // extra space before insulin rows
-        //rowsStack.setCustomSpacing(15, after: insulinStack) // extra space before realCrRow
-        
+
         // Additional stats rows below chart
         let statsStackBelow = UIStackView(arrangedSubviews: [
             makeStatRow(textLabel: changeBGTitleLabel,
@@ -432,16 +465,26 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         mainStack.setCustomSpacing(12, after: inRangeRow)      // clear separation before totals
         mainStack.setCustomSpacing(10, after: rowsStack)       // clear separation
         mainStack.setCustomSpacing(12, after: bgChartView)     // extra gap before stats
-        //mainStack.setCustomSpacing(5, after: statsStack)       // smaller gap after stats
 
-        lastDurationTitle = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex)
-        recalcEndTimeBasedOnDuration()
+        // NEW: se till att lastDurationTitle alltid matchar det segment vi faktiskt står på
+        let initialIndex = durationControl.selectedSegmentIndex
+        if initialIndex != UISegmentedControl.noSegment,
+           initialIndex < durationControl.numberOfSegments {
+            lastDurationTitle = durationControl.titleForSegment(at: initialIndex)
+            // NEW: första gången – låt recalcEndTimeBasedOnDuration normalisera fönstret
+            recalcEndTimeBasedOnDuration()
+        } else {
+            // Ingen aktivt valt segment (t.ex. vid exakta override-intervall):
+            // behåll startTime/endTime som de är och låt lastDurationTitle vara nil.
+            lastDurationTitle = nil
+        }
+
         updateTotals()
         fetchBGData()
-        // — Pull additional days from NightscoutCache (if any) —
+        // — Pull additional days from NightscoutCache (if any) —
         loadCachedData()
 
-        // ← / → dag‑hopp (tap) + vecka‑hopp (long‑press)
+        // ← / → dag-hopp (tap) + vecka-hopp (long-press)
         let prevBtn = UIBarButtonItem(image: UIImage(systemName: "chevron.left"),
                                       style: .plain,
                                       target: self,
@@ -451,12 +494,12 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                                       target: self,
                                       action: #selector(nextDayTapped))
         
-            let doneButton = UIBarButtonItem(
-                title: "Klar",
-                style: .plain,
-                target: self,
-                action: #selector(dismissSelf)
-            )
+        let doneButton = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissSelf)
+        )
         
         let enteredByBtn = UIBarButtonItem(image: UIImage(systemName: "person"),
                                       style: .plain,
@@ -727,11 +770,19 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             return
         }
 
+        // 🔐 Extra safety: om tidsfönstret är trasigt (eller inte satt än) – använd bara standardlogik
+        if endTime <= startTime {
+            recalcEndTimeBasedOnDuration()
+            lastDurationTitle = newTitle
+            updateTotals()
+            updateBGLabels()
+            return
+        }
+
         let previousTitle = lastDurationTitle
 
-        // Special handling: when we are currently in "Dag" and switch to an hour preset (1h–24h)
-        // while looking at today, clamp endTime to now and set startTime to (now - hours).
-        // For earlier days, use the day start as anchor and show startTime → startTime + hours.
+        // Special handling: när vi står i "Dag" och byter till en tim-preset (1h–24h)
+        // – men BARA i så fall.
         if let previousTitle,
            previousTitle == "Dag",
            ["1h", "2h", "3h", "6h", "12h", "24h"].contains(newTitle) {
@@ -741,20 +792,19 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             let hours = Int(newTitle.replacingOccurrences(of: "h", with: "")) ?? 1
 
             if isToday {
+                // Idag: clamp end till nu, rullande X timmar bakåt
                 let now = Date()
                 endTime = now
                 var newStart = calendar.date(byAdding: .hour, value: -hours, to: now) ?? now
-                // Clamp to minimum date if we have one configured
                 if let minDate = startPicker.minimumDate, newStart < minDate {
                     newStart = minDate
                 }
                 startTime = newStart
             } else {
-                // Older day: anchor at the calendar day start and go forward hours
+                // Äldre dag: fönster från 00:00 -> +X timmar (max till nästa midnatt)
                 let dayStart = calendar.startOfDay(for: startTime)
                 startTime = dayStart
                 var newEnd = calendar.date(byAdding: .hour, value: hours, to: dayStart) ?? dayStart
-                // Optional: don't spill into next calendar day
                 let nextMidnight = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? newEnd
                 if newEnd > nextMidnight {
                     newEnd = nextMidnight
@@ -762,7 +812,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
                 endTime = newEnd
             }
 
-            // Sync pickers with the new window
+            // Synca pickers
             startPicker.date = startTime
             endPicker.date = endTime
 
@@ -772,7 +822,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             return
         }
 
-        // Default behaviour for all other transitions
+        // Defaultbeteende för alla andra byten
         recalcEndTimeBasedOnDuration()
         lastDurationTitle = newTitle
         updateTotals()
@@ -2071,6 +2121,7 @@ extension MealAnalysisView: EnteredByViewDelegate {
             durationControl.titleForSegment(at: $0) == "Dag"
         }) ?? 6
         durationControl.selectedSegmentIndex = dagIndex
+        lastDurationTitle = durationControl.titleForSegment(at: dagIndex)
 
         // Update pickers to match the new window
         startPicker.date = startTime
