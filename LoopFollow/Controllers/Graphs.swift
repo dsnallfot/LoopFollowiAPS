@@ -64,6 +64,7 @@ class CompositeRenderer: LineChartRenderer {
     let tempTargetRenderer: TempTargetRenderer
     let triangleRenderer: TriangleRenderer
     let bgCheckRenderer: BGCheckRenderer
+    let inRangeBandRenderer: InRangeBandRenderer
 
     init(
         dataProvider: LineChartDataProvider?,
@@ -73,29 +74,48 @@ class CompositeRenderer: LineChartRenderer {
         smbDataSetIndex: Int,
         bgCheckDataSetIndex: Int
     ) {
+        // Säkerställ att Charts alltid får giltiga objekt
+        let provider = dataProvider!
+        let animator = animator!
+        let viewPortHandler = viewPortHandler!
+
         self.tempTargetRenderer = TempTargetRenderer(
-            dataProvider: dataProvider,
+            dataProvider: provider,
             animator: animator,
             viewPortHandler: viewPortHandler,
             tempTargetDataSetIndex: tempTargetDataSetIndex
         )
+
         self.triangleRenderer = TriangleRenderer(
-            dataProvider: dataProvider,
+            dataProvider: provider,
             animator: animator,
             viewPortHandler: viewPortHandler,
             smbDataSetIndex: smbDataSetIndex
         )
+
         self.bgCheckRenderer = BGCheckRenderer(
-            dataProvider: dataProvider,
+            dataProvider: provider,
             animator: animator,
             viewPortHandler: viewPortHandler,
             bgCheckDataSetIndex: bgCheckDataSetIndex
         )
-        super.init(dataProvider: dataProvider!, animator: animator!, viewPortHandler: viewPortHandler!)
+
+        self.inRangeBandRenderer = InRangeBandRenderer(
+            dataProvider: provider,
+            animator: animator,
+            viewPortHandler: viewPortHandler
+        )
+
+        super.init(
+            dataProvider: provider,
+            animator: animator,
+            viewPortHandler: viewPortHandler
+        )
     }
 
     override func drawExtras(context: CGContext) {
         super.drawExtras(context: context)
+        inRangeBandRenderer.drawExtras(context: context)
         tempTargetRenderer.drawExtras(context: context)
         bgCheckRenderer.drawExtras(context: context)
         // Daniel: Do not draw those triangles for smbs // triangleRenderer.drawExtras(context: context)
@@ -236,6 +256,54 @@ class TempTargetRenderer: LineChartRenderer {
                 context.restoreGState()
             }
         }
+    }
+}
+
+class InRangeBandRenderer: LineChartRenderer {
+
+    override func drawExtras(context: CGContext) {
+        super.drawExtras(context: context)
+
+        guard let dataProvider = dataProvider else { return }
+
+        // In-range-gränser i *data*-värden (mg/dL eller mmol*18)
+        let yLow = Double(UserDefaultsRepository.lowLine.value)
+        let yHigh = Double(UserDefaultsRepository.highLine.value)
+
+        // Om de av någon anledning är fel, rita inget
+        guard yHigh > yLow else { return }
+
+        // Vi utgår från högra Y-axeln, där BG ligger
+        let trans = dataProvider.getTransformer(forAxis: .right)
+
+        // Använd det synliga X-intervallet så bandet följer zoom/scroll
+        let xMin = dataProvider.lowestVisibleX
+        let xMax = dataProvider.highestVisibleX
+
+        let leftTop = trans.pixelForValues(x: xMin, y: yHigh)
+        let rightBottom = trans.pixelForValues(x: xMax, y: yLow)
+
+        var rect = CGRect(
+            x: leftTop.x,
+            y: leftTop.y,
+            width: rightBottom.x - leftTop.x,
+            height: rightBottom.y - leftTop.y
+        )
+
+        // Normalisera ifall något blir negativt
+        if rect.width < 0 {
+            rect.origin.x += rect.width
+            rect.size.width = -rect.width
+        }
+        if rect.height < 0 {
+            rect.origin.y += rect.height
+            rect.size.height = -rect.height
+        }
+
+        context.saveGState()
+        context.setFillColor(UIColor.systemGreen.withAlphaComponent(0.1).cgColor)
+        context.fill(rect)
+        context.restoreGState()
     }
 }
 
