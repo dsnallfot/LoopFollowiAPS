@@ -134,6 +134,8 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         return control
     }()
     
+    private var lastDurationTitle: String?
+    
     private var freeSegmentIndex: Int {
         return durationControl.numberOfSegments - 1   // sista = "☆"
     }
@@ -432,6 +434,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         mainStack.setCustomSpacing(12, after: bgChartView)     // extra gap before stats
         //mainStack.setCustomSpacing(5, after: statsStack)       // smaller gap after stats
 
+        lastDurationTitle = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex)
         recalcEndTimeBasedOnDuration()
         updateTotals()
         fetchBGData()
@@ -568,27 +571,66 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         if let maxDate = endPicker.maximumDate, newEnd > maxDate {
             newEnd = maxDate
 
-            // Om vi stegar FRAMÅT (days > 0) med ett ~24h-fönster och går in i "idag",
-            // visa alltid start-of-day → nu (00:00 → nu) istället för ett baklänges 24h-fönster.
             let isApproxOneDay = span >= 23 * 3600 && span <= 25 * 3600
+            let todayStart = calendar.startOfDay(for: maxDate)
+
             if days > 0 && isApproxOneDay {
-                let todayStart = calendar.startOfDay(for: maxDate)
+                // 24h-liknande fönster som kliver in i "idag"
                 if let minDate = startPicker.minimumDate, todayStart < minDate {
                     // Fallback om 00:00 idag hamnar före minDate
                     newStart = maxDate.addingTimeInterval(-span)
                 } else {
+                    // Visa 00:00 → nu
                     newStart = todayStart
                 }
+
+                // NEW:
+                // Om vi kom från ett 24h-fönster och idag inte har fulla 24h ännu,
+                // och fönstret nu är 00:00 → nu, så representera det som "Dag" i UI.
+                let startsAtMidnightToday =
+                    calendar.isDate(newStart, inSameDayAs: maxDate) &&
+                    calendar.component(.hour, from: newStart) == 0 &&
+                    calendar.component(.minute, from: newStart) == 0 &&
+                    calendar.component(.second, from: newStart) == 0
+
+                if calendar.isDateInToday(maxDate),
+                   startsAtMidnightToday,
+                   let currentTitle = durationControl.titleForSegment(at: durationControl.selectedSegmentIndex),
+                   currentTitle == "24h" {
+                    if let dagIndex = (0..<durationControl.numberOfSegments)
+                        .first(where: { durationControl.titleForSegment(at: $0) == "Dag" }) {
+                        durationControl.selectedSegmentIndex = dagIndex
+                    }
+                }
+
             } else {
                 // Övriga fall (t.ex. 1–12h, Ⓢ): behåll newStart (samma klockslag) och bara clamp:a slutet till nu.
                 // newStart lämnas orörd här.
 
                 // Men om det valda tidsfönstret inte får plats (dvs vi visar mindre än span)
-                // och vi hade en tim-presets vald (1h–12h), flippa över till "☆" så att UI:t
-                // speglar att vi inte längre visar exakt preset-längden.
+                // och vi hade en tim-presets vald (1h–12h, 24h), justera UI.
                 let actualSpan = newEnd.timeIntervalSince(newStart)
-                if actualSpan + 0.5 < span, (0...5).contains(durationControl.selectedSegmentIndex) {
-                    durationControl.selectedSegmentIndex = freeSegmentIndex
+                if actualSpan + 0.5 < span,
+                   (0...5).contains(durationControl.selectedSegmentIndex) {
+
+                    let startsAtMidnightToday =
+                        calendar.isDate(newStart, inSameDayAs: maxDate) &&
+                        calendar.component(.hour, from: newStart) == 0 &&
+                        calendar.component(.minute, from: newStart) == 0 &&
+                        calendar.component(.second, from: newStart) == 0
+
+                    if calendar.isDateInToday(maxDate), startsAtMidnightToday {
+                        // NEW:
+                        // Vi står på idag, startar 00:00, men preset-spannet får inte plats.
+                        // Detta ska visas som "Dag" istället för "☆".
+                        if let dagIndex = (0..<durationControl.numberOfSegments)
+                            .first(where: { durationControl.titleForSegment(at: $0) == "Dag" }) {
+                            durationControl.selectedSegmentIndex = dagIndex
+                        }
+                    } else {
+                        // Gammalt beteende: fall tillbaka till fri-läget "☆"
+                        durationControl.selectedSegmentIndex = freeSegmentIndex
+                    }
                 }
             }
         }
@@ -677,7 +719,62 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     }
 
     @objc private func durationChanged(_ sender: UISegmentedControl) {
+        let calendar = Calendar.current
+        let newIdx = sender.selectedSegmentIndex
+        guard newIdx != UISegmentedControl.noSegment,
+              newIdx < sender.numberOfSegments,
+              let newTitle = sender.titleForSegment(at: newIdx) else {
+            return
+        }
+
+        let previousTitle = lastDurationTitle
+
+        // Special handling: when we are currently in "Dag" and switch to an hour preset (1h–24h)
+        // while looking at today, clamp endTime to now and set startTime to (now - hours).
+        // For earlier days, use the day start as anchor and show startTime → startTime + hours.
+        if let previousTitle,
+           previousTitle == "Dag",
+           ["1h", "2h", "3h", "6h", "12h", "24h"].contains(newTitle) {
+
+            let dayStart = calendar.startOfDay(for: startTime)
+            let isToday = calendar.isDateInToday(dayStart)
+            let hours = Int(newTitle.replacingOccurrences(of: "h", with: "")) ?? 1
+
+            if isToday {
+                let now = Date()
+                endTime = now
+                var newStart = calendar.date(byAdding: .hour, value: -hours, to: now) ?? now
+                // Clamp to minimum date if we have one configured
+                if let minDate = startPicker.minimumDate, newStart < minDate {
+                    newStart = minDate
+                }
+                startTime = newStart
+            } else {
+                // Older day: anchor at the calendar day start and go forward hours
+                let dayStart = calendar.startOfDay(for: startTime)
+                startTime = dayStart
+                var newEnd = calendar.date(byAdding: .hour, value: hours, to: dayStart) ?? dayStart
+                // Optional: don't spill into next calendar day
+                let nextMidnight = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? newEnd
+                if newEnd > nextMidnight {
+                    newEnd = nextMidnight
+                }
+                endTime = newEnd
+            }
+
+            // Sync pickers with the new window
+            startPicker.date = startTime
+            endPicker.date = endTime
+
+            lastDurationTitle = newTitle
+            updateTotals()
+            updateBGLabels()
+            return
+        }
+
+        // Default behaviour for all other transitions
         recalcEndTimeBasedOnDuration()
+        lastDurationTitle = newTitle
         updateTotals()
         updateBGLabels()
     }
