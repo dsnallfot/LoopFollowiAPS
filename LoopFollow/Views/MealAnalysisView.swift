@@ -1580,9 +1580,9 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             )
         }
         let siteChangeDots = ScatterChartDataSet(entries: siteChangeEntries, label: "")
-        siteChangeDots.setColor(.label.withAlphaComponent(0.5))
+        siteChangeDots.setColor(.systemTeal.withAlphaComponent(0.75))
         siteChangeDots.setScatterShape(.circle)
-        siteChangeDots.scatterShapeSize = 7
+        siteChangeDots.scatterShapeSize = 9
         siteChangeDots.drawValuesEnabled = false
         siteChangeDots.highlightEnabled = true
         siteChangeDots.highlightColor = .clear
