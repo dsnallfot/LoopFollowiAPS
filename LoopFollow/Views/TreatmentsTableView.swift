@@ -113,6 +113,10 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     /// Glucose points loaded for the current date window
     private var bgPoints: [BGPoint] = []
     
+    /// Tracks whether we've already auto-scrolled to the latest non-future
+    /// treatment for "today" in the current session, to avoid fighting the user.
+    private var hasAutoScrolledToTodayLatest = false
+    
     /// Picker for selecting a calendar date (“Valt datum”)
     private let datePicker: UIDatePicker = {
         let picker = UIDatePicker()
@@ -595,8 +599,9 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         // Show local loading indicator immediately so the user sees that work has started
         showRefreshIndicator()
 
-        // Reset picker to today
+        // Reset picker to today and allow a new auto-scroll to latest for today.
         selectedDate = Date()
+        hasAutoScrolledToTodayLatest = false
         datePicker.setDate(selectedDate, animated: true)
 
         // We no longer guess with a fixed delay. When MainViewController has
@@ -754,6 +759,38 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     self.bgPoints = newBGPoints
 
                     self.tableView.reloadData()
+
+                    // När vi tittar på "idag", auto-scrolla en gång till den senaste
+                    // behandlingen som inte ligger i framtiden, så att realtidsinfo
+                    // är i fokus men framtida/historiska rader finns kvar ovan/under.
+                    let cal = Calendar.current
+                    if cal.isDate(date, inSameDayAs: Date()),
+                       !self.hasAutoScrolledToTodayLatest {
+
+                        let now = Date()
+
+                        // Basera auto-scroll på det aktuella filtret.
+                        // Är segmentet "Alla" valt använder vi alla treatments,
+                        // annars använder vi filteredTreatments.
+                        let baseList: [Treatment]
+                        if self.segmentedControl.selectedSegmentIndex == 0 {
+                            baseList = self.treatments
+                        } else {
+                            baseList = self.filteredTreatments
+                        }
+
+                        if let rowIndex = baseList
+                            .enumerated()
+                            .filter({ $0.element.timestamp <= now })
+                            .map({ $0.offset })
+                            .first {
+
+                            let indexPath = IndexPath(row: rowIndex, section: 0)
+                            self.tableView.scrollToRow(at: indexPath, at: .top, animated: false)
+                            self.hasAutoScrolledToTodayLatest = true
+                        }
+                    }
+
                     self.hideRefreshIndicator()
                 } else {
                     // Ingen cache-data för den här dagen: fall back till live-fetch.
@@ -832,6 +869,9 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
     @objc private func dateChanged(_ sender: UIDatePicker) {
         selectedDate = sender.date
+        // Nytt datum → låt auto-scroll till "senaste idag" ske igen
+        // om vi kommer tillbaka till dagens datum.
+        hasAutoScrolledToTodayLatest = false
         loadTreatments(for: selectedDate)
     }
     
@@ -854,6 +894,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         // 1) Alltid synka valt datum från MealAnalysisView → TreatmentsTableView
         selectedDate = newDay
         datePicker.setDate(selectedDate, animated: false)
+        hasAutoScrolledToTodayLatest = false
         loadTreatments(for: selectedDate)
         
         // 2) Om användaren varit inne i EnteredByView, sätt filtret till "Manuell"
