@@ -194,6 +194,12 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             name: NSNotification.Name("TreatmentsCacheUpdated"),
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleGlobalTreatmentsUpdated(_:)),
+            name: .treatmentsUpdated,
+            object: nil
+        )
         
         // Register observers for shortcut callback notifications
         NotificationCenter.default.addObserver(self, selector: #selector(handleShortcutSuccess), name: NSNotification.Name("ShortcutSuccess"), object: nil)
@@ -243,6 +249,13 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
         // Reload treatments from cache for the selected date now that
         // NightscoutCache has been refreshed.
+        loadTreatments(for: selectedDate)
+    }
+    
+    @objc private func handleGlobalTreatmentsUpdated(_ notification: Notification) {
+        // Whenever MainViewController has finished processing fresh treatments
+        // (updateTreatments + cache sync), reload the current day's treatments
+        // from NightscoutCache.
         loadTreatments(for: selectedDate)
     }
     
@@ -578,18 +591,17 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         // Trigger the same global refresh logic used in MainViewController
         NotificationCenter.default.post(name: NSNotification.Name("refresh"), object: nil)
 
-        // Show local loading indicator
+        // Show local loading indicator immediately so the user sees that work has started
         showRefreshIndicator()
 
         // Reset picker to today
         selectedDate = Date()
         datePicker.setDate(selectedDate, animated: true)
 
-        // Reload treatments after refresh has been triggered
-        // (MainViewController will refresh Nightscout data; then we reload from cache)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            self.loadTreatments(for: self.selectedDate)
-        }
+        // We no longer guess with a fixed delay. When MainViewController has
+        // finished fetching and processing treatments, it will post the
+        // .treatmentsUpdated notification, which we listen for in
+        // handleGlobalTreatmentsUpdated(_:) and reload from NightscoutCache.
     }
     
     private func showRefreshIndicator() {

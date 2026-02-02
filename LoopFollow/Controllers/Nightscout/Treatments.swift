@@ -7,6 +7,10 @@
 //
 
 import Foundation
+
+extension Notification.Name {
+    static let treatmentsUpdated = Notification.Name("TreatmentsUpdated")
+}
 fileprivate var isTreatmentsFetchInProgress = false
 extension MainViewController {
     // NS Treatments Web Call
@@ -14,7 +18,15 @@ extension MainViewController {
     func WebLoadNSTreatments() {
         if !UserDefaultsRepository.downloadTreatments.value { return }
 
-        if isTreatmentsFetchInProgress { return }
+        if isTreatmentsFetchInProgress {
+            LogManager.shared.log(
+                category: .nightscout,
+                message: "WebLoadNSTreatments skipped: fetch already in progress",
+                isDebug: true,
+                isTempDebug: true
+            )
+            return
+        }
         isTreatmentsFetchInProgress = true
         
         let startTimeString = dateTimeUtils.getDateTimeString(addingDays: -1 * UserDefaultsRepository.downloadDays.value)
@@ -266,5 +278,6 @@ extension MainViewController {
         self.stats_syncTreatmentsFromLive()
         self.updateStats()
         self.stats_saveToCache()
+        NotificationCenter.default.post(name: .treatmentsUpdated, object: nil)
     }
 }

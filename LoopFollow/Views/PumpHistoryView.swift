@@ -604,7 +604,7 @@ final class PumpSessionStatsViewController: ThemedTableViewController {
         tableView.backgroundColor = .clear
         tableView.isOpaque = false
         tableView.layer.backgroundColor = UIColor.clear.cgColor
-        title = "Sessionstid pumpar"
+        title = "Sessionstid poddar"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Klar",
             style: .plain,
@@ -801,7 +801,7 @@ final class PumpSessionStatsViewController: ThemedTableViewController {
                 cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
                 cell.detailTextLabel?.textColor = .label
             case .all:
-                cell.textLabel?.text = "Alla pumpar"
+                cell.textLabel?.text = "Alla poddar"
                 cell.detailTextLabel?.text = "\(buckets.total) st (100%)"
                 cell.detailTextLabel?.textColor = .label
             case .lt1:
@@ -835,7 +835,7 @@ final class PumpSessionStatsViewController: ThemedTableViewController {
                 cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
                 cell.detailTextLabel?.textColor = .label
             case .all:
-                cell.textLabel?.text = "Alla pumpar"
+                cell.textLabel?.text = "Alla poddar"
                 cell.detailTextLabel?.text = avgText(count: buckets.total, totalHours: buckets.hrs_total)
                 cell.detailTextLabel?.textColor = .label
             case .allExclLt1:
