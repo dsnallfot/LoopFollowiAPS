@@ -9,6 +9,10 @@
 import Foundation
 import UIKit
 
+extension Notification.Name {
+    static let taskSchedulerNoTasks = Notification.Name("taskSchedulerNoTasks")
+}
+
 enum TaskID: CaseIterable {
     case profile
     case deviceStatus
@@ -42,7 +46,7 @@ class TaskScheduler {
     func scheduleTask(id: TaskID, nextRun: Date, action: @escaping () -> Void) {
         queue.async {
             let timeString = self.formatTime(nextRun)
-            //LogManager.shared.log(category: .taskScheduler, message: "scheduleTask(\(id)): next run = \(timeString)", isDebug: true)
+            LogManager.shared.log(category: .taskScheduler, message: "scheduleTask(\(id)): next run = \(timeString)", isDebug: true)
             
             self.tasks[id] = ScheduledTask(nextRun: nextRun, action: action)
             self.rescheduleTimer()
@@ -51,7 +55,7 @@ class TaskScheduler {
     
     func rescheduleTask(id: TaskID, to newRunDate: Date) {
         let timeString = self.formatTime(newRunDate)
-        //LogManager.shared.log(category: .taskScheduler, message: "Reschedule Task \(id): next run = \(timeString)", isDebug: true)
+        LogManager.shared.log(category: .taskScheduler, message: "Reschedule Task \(id): next run = \(timeString)", isDebug: true)
         
         queue.async {
             guard var existingTask = self.tasks[id] else { return }
@@ -76,6 +80,9 @@ class TaskScheduler {
 
         guard let (_, earliestTask) = tasks.min(by: { $0.value.nextRun < $1.value.nextRun }) else {
             LogManager.shared.log(category: .taskScheduler, message: "No tasks, no timer scheduled.")
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .taskSchedulerNoTasks, object: nil)
+            }
             return
         }
 
@@ -120,7 +127,7 @@ class TaskScheduler {
             var updatedTask = task
             updatedTask.nextRun = .distantFuture
             tasks[taskID] = updatedTask
-            LogManager.shared.log(category: .taskScheduler, message: "Executing task \(taskID)", isDebug: true)
+            LogManager.shared.log(category: .taskScheduler, message: "Executing task \(taskID)", isDebug: true, isTempDebug: false)
 
             DispatchQueue.main.async {
                 task.action()

@@ -320,6 +320,12 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             name: .bluetoothHeartbeatUpdated,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleTaskSchedulerEmpty),
+            name: .taskSchedulerNoTasks,
+            object: nil
+        )
 
         // Setup the Graph
         if firstGraphLoad {
@@ -437,6 +443,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name("refresh"), object: nil)
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name("RefreshTreatmentsCacheForDay"), object: nil)
         NotificationCenter.default.removeObserver(self, name: .bluetoothHeartbeatUpdated, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .taskSchedulerNoTasks, object: nil)
     }
     /// Updates the Bluetooth ping info display in the info table.
     @objc private func updateBluetoothHeartbeatInfo() {
@@ -517,7 +524,16 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
 
         MinAgoText.text = "Refreshing"
         latestMinAgoString = "Refreshing"
+        // Force immediate Nightscout treatments refresh on manual pull-to-refresh
+        if IsNightscoutEnabled(), UserDefaultsRepository.downloadTreatments.value {
+            LogManager.shared.log(
+                category: .taskScheduler,
+                message: "Manual refresh: forcing WebLoadNSTreatments()", isDebug: true, isTempDebug: true
+            )
+            WebLoadNSTreatments()
+        }
         scheduleAllTasks()
+        TaskScheduler.shared.checkTasksNow()
 
         currentCage = nil
         currentSage = nil
@@ -1024,12 +1040,6 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         }
 
         TaskScheduler.shared.checkTasksNow()
-/* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
-        // Kick MinAgo immediately when returning to foreground
-        minAgoTaskAction()
-        TaskScheduler.shared.rescheduleTask(id: .minAgoUpdate,
-                                            to: Date().addingTimeInterval(1))
-*/
         
         checkAndNotifyVersionStatus()
         checkAppExpirationStatus()
@@ -1421,4 +1431,15 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
 
         present(hostingController, animated: true, completion: nil)
     }
+    
+    @objc private func handleTaskSchedulerEmpty() {
+        LogManager.shared.log(
+            category: .taskScheduler,
+            message: "[TaskScheduler] No tasks reported, calling scheduleAllTasks()",
+            isDebug: true,
+            isTempDebug: true
+        )
+        scheduleAllTasks()
+    }
 }
+
