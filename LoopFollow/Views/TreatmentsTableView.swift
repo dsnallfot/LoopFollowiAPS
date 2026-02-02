@@ -179,7 +179,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                                   to: Date()) {
             datePicker.minimumDate = oldest
         }
-        datePicker.maximumDate = Date()
+        let maxSelectableDate = Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date()
+        datePicker.maximumDate = maxSelectableDate
         datePicker.date = selectedDate
         setupConstraints()
         
@@ -698,31 +699,23 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         loadTreatments(for: selectedDate)
     }
 
-    /// Load treatments for a full calendar day from NightscoutCache or fall back to dynamic fetch
+    /// Load treatments for a full calendar day (00:00–00:00) from NightscoutCache
+    /// or fall back to a dynamic Nightscout fetch.
     private func loadTreatments(for date: Date) {
         let cal = Calendar.current
 
-        let start: Date
-        let end: Date
-
-        if cal.isDate(date, inSameDayAs: Date()) {
-            // Rolling window for “today”: match MainViewController’s chart window
-            // (graphHours = 24 * downloadDays) up to now.
-            let hours = 24 * max(1, UserDefaultsRepository.downloadDays.value)
-            start = Date().addingTimeInterval(-Double(hours) * 60 * 60)
-            end = Date()
-        } else {
-            // Specific calendar day window
-            start = cal.startOfDay(for: date)
-            end = cal.date(byAdding: .day, value: 1, to: start)!
-        }
+        // Always use a full local calendar day for the selected date.
+        // Any future-dated treatments that fall within this [start, end)
+        // window (e.g. FPU-behandlingar senare ikväll) will be included.
+        let start = cal.startOfDay(for: date)
+        let end = cal.date(byAdding: .day, value: 1, to: start)!
 
         // Visa alltid någon form av "loading" medan vi läser cachen.
         showRefreshIndicator()
 
         Task {
             // För alla datum (inkl. idag) försöker vi först läsa från NightscoutCache.
-                let (sgvs, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
+            let (sgvs, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
             let newTreatments = treatsJSON.compactMap { tjson in
                 Treatment(dictionary: [
                     "_id":      tjson._id as AnyObject,
@@ -741,47 +734,32 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     "duration": tjson.tempBasalDuration as AnyObject
                 ])
             }
-            
+
             // Bygg BG-punkter (mmol/L) från SGVs
-                let newBGPoints: [BGPoint] = sgvs.map { sgv in
-                    BGPoint(
-                        date: Date(timeIntervalSince1970: sgv.date),
-                        mmol: Double(sgv.sgv) / 18.0182
-                    )
-                }
-                .sorted { $0.date < $1.date }
+            let newBGPoints: [BGPoint] = sgvs.map { sgv in
+                BGPoint(
+                    date: Date(timeIntervalSince1970: sgv.date),
+                    mmol: Double(sgv.sgv) / 18.0182
+                )
+            }
+            .sorted { $0.date < $1.date }
 
             DispatchQueue.main.async {
                 if !newTreatments.isEmpty {
-                    // Cache-data fanns – visa den och avsluta.
-                    // NOTE: If "today" is selected, only SHOW entries from local midnight → now.
-                    if cal.isDate(date, inSameDayAs: Date()) {
-                        let todayStart = cal.startOfDay(for: Date())
-                        let now = Date()
-                        self.treatments = newTreatments
-                            .filter { $0.timestamp >= todayStart && $0.timestamp <= now }
-                            .sorted { $0.timestamp > $1.timestamp }
-                    } else {
-                        self.treatments = newTreatments.sorted { $0.timestamp > $1.timestamp }
-                    }
-                    
+                    // Cache-data fanns – visa hela kalenderdygnet 00:00–00:00 för valt datum.
+                    self.treatments = newTreatments
+                        .sorted { $0.timestamp > $1.timestamp }
+
                     // Spara BG-punkterna när vi faktiskt använder cache-datan
                     self.bgPoints = newBGPoints
-                    
+
                     self.tableView.reloadData()
                     self.hideRefreshIndicator()
                 } else {
                     // Ingen cache-data för den här dagen: fall back till live-fetch.
-                    // Stäng av nuvarande indikator, fallback-metoderna sköter sin egen show/hide.
+                    // Stäng av nuvarande indikator, fallback-metoden sköter sin egen show/hide.
                     self.hideRefreshIndicator()
-
-                    if cal.isDate(date, inSameDayAs: Date()) {
-                        // För "idag" använder vi en rolling-window-fall-back (matchar downloadDays).
-                        self.fetchDynamicTreatmentsForToday24h()
-                    } else {
-                        // För andra dagar hämtar vi ett lokalt kalenderdygn.
-                        self.fetchDynamicTreatments(for: date)
-                    }
+                    self.fetchDynamicTreatments(for: date)
                 }
             }
         }

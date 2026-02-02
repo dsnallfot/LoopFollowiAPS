@@ -32,7 +32,7 @@ extension MainViewController {
         let startTimeString = dateTimeUtils.getDateTimeString(addingDays: -1 * UserDefaultsRepository.downloadDays.value)
         
         //let currentTimeString = dateTimeUtils.getDateTimeString(addingHours: 6)
-        let currentTimeString = dateTimeUtils.getDateTimeString() //TEST
+        let currentTimeString = dateTimeUtils.getDateTimeString(addingHours: 6) //TEST
         let estimatedCount = max(UserDefaultsRepository.downloadDays.value * 100, 5000)//TEST
         
         let parameters: [String: String] = [
