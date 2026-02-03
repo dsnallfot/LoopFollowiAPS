@@ -537,31 +537,38 @@ extension MainViewController {
         let title: String
         let end: Date // Finns tillgängligt som option ifall man vill styra sluttid för ngt specifikt event
         let adjustedStart: Date
+        let segment: Int?
         switch source {
         case .override:
             title = "Analys override"
             adjustedStart = start - 30
-            end = start + 60 * 180
+            end = adjustedStart + 60 * 180
+            segment = 2
         case .meal:
             title = "Analys måltid"
             adjustedStart = start - 30
-            end = start + 60 * 180
+            end = adjustedStart + 60 * 180
+            segment = 2
         case .bgCheck:
             title = "Analys stick"
             adjustedStart = start - 60 * 20
-            end = start + 60 * 180
+            end = adjustedStart + 60 * 180
+            segment = 2
         case .pumpChange:
             title = "Analys podd"
             adjustedStart = start - 60 * 180
             end = start + 60 * 180
+            segment = 3
         case .sensorChange:
             title = "Analys sensor"
             adjustedStart = start - 30
-            end = start + 60 * 360
+            end = adjustedStart + 60 * 360
+            segment = 3
         case .lowTreatment:
             title = "Analys dextro"
             adjustedStart = start - 60 * 20
-            end = start + 60 * 180
+            end = adjustedStart + 60 * 180
+            segment = 2
         }
 
         let analysisVC = MealAnalysisView(
@@ -569,7 +576,8 @@ extension MainViewController {
             initialStart: adjustedStart,
             initialEnd: end,
             modalWithTimestamp: true,
-            modalTitleString: title
+            modalTitleString: title,
+            preSelectedSegment: segment
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

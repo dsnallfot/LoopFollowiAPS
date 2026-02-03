@@ -324,7 +324,8 @@ struct DailyStatsView: View {
             initialStart: startOfDay,
             initialEnd: endOfDay,
             modalWithTimestamp: true,
-            modalTitleString: "Dagens utfall"
+            modalTitleString: "Dagens utfall",
+            preSelectedSegment: nil
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

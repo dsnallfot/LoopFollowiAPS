@@ -470,7 +470,8 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
             initialStart: startDate,
             initialEnd: endDate,
             modalWithTimestamp: true,
-            modalTitleString: modalTitle
+            modalTitleString: modalTitle,
+            preSelectedSegment: 3
         )
 
         let nav = UINavigationController(rootViewController: analysisVC)

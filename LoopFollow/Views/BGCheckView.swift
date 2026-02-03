@@ -972,7 +972,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             modalTitle = "Analys Dextro"
         }
         let startDate = entryDate - 60 * 20  // 20 min före
-        let endDate = entryDate + 60 * 180  // 180 min efter
+        let endDate = entryDate + 60 * 180  // 160 min efter
 
         guard
             let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -1008,7 +1008,8 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
             initialStart: startDate,
             initialEnd: nil,
             modalWithTimestamp: true,
-            modalTitleString: modalTitle
+            modalTitleString: modalTitle,
+            preSelectedSegment: 2
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

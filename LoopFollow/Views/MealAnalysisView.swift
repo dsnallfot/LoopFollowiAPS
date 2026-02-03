@@ -64,6 +64,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
     private let modalWithTimestamp: Bool
     private let modalTitleString: String
     private let showsDoneButton: Bool
+    private let preSelectedSegment: Int?
 
     init(
         events: [Event],
@@ -72,7 +73,8 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         initialEnd: Date? = nil,
         modalWithTimestamp: Bool = true,
         modalTitleString: String = "",
-        showsDoneButton: Bool = true
+        showsDoneButton: Bool = true,
+        preSelectedSegment: Int? = 0
     ) {
         self.events = events
         self.treatments = treatments
@@ -81,6 +83,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
         self.modalWithTimestamp = modalWithTimestamp
         self.modalTitleString = modalTitleString
         self.showsDoneButton = showsDoneButton
+        self.preSelectedSegment = preSelectedSegment
 
         let now = Date()
         let calendar = Calendar.current
@@ -244,7 +247,7 @@ class MealAnalysisView: ThemedViewController, ChartViewDelegate {
             // "modalWithExactMidnight": start time is exactly at this day's 00:00
             let isExactMidnight = calendar.compare(startOverride, to: dayStart, toGranularity: .minute) == .orderedSame
             if let endOverride = initialEndOverride {
-                durationControl.selectedSegmentIndex = UISegmentedControl.noSegment
+                durationControl.selectedSegmentIndex = preSelectedSegment ?? 8//UISegmentedControl.noSegment
                 startTime = dayStart
                 endTime = endOverride
             } else if isExactMidnight {

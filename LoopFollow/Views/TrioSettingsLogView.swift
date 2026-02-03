@@ -436,7 +436,8 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
             initialStart: startDate,
             initialEnd: endDate,
             modalWithTimestamp: true,
-            modalTitleString: "Analys ändring"
+            modalTitleString: "Analys ändring",
+            preSelectedSegment: 4
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet

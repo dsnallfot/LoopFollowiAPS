@@ -343,9 +343,10 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
         let analysisVC = MealAnalysisView(
             events: events,
             initialStart: startDate,
-            initialEnd: nil,//endDate,
+            initialEnd: endDate,
             modalWithTimestamp: true,
-            modalTitleString: "Analys omstart"
+            modalTitleString: "Analys omstart",
+            preSelectedSegment: 2
         )
         let nav = UINavigationController(rootViewController: analysisVC)
         nav.modalPresentationStyle = .formSheet
