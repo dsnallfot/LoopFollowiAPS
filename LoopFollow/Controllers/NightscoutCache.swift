@@ -31,6 +31,8 @@ struct TreatmentJSON: Codable {
     let insulin:    Double?      // SMB / Bolus
     let carbs:      Double?      // Carb Correction
     let glucose:    Double?      // Fingersticks
+    let fat:        Double?      // Fat (grams)
+    let protein:    Double?      // Protein (grams)
 
     // --- textual amount Nightscout sometimes stores in `amount` ---
     let amount:     String?      // “0.2u”, “12g”, … // Daniel: Denna tror jag inte finns
@@ -67,6 +69,24 @@ struct TreatmentJSON: Codable {
         self.foodType   = dict["foodType"] as? String
         self.notes      = dict["notes"] as? String
         self.glucose      = dict["glucose"]    as? Double
+
+        // Parse fat and protein, supporting both Double and String (with "," or ".")
+        if let fatVal = dict["fat"] as? Double {
+            self.fat = fatVal
+        } else if let fatStr = dict["fat"] as? String, let fatVal = Double(fatStr.replacingOccurrences(of: ",", with: ".")) {
+            self.fat = fatVal
+        } else {
+            self.fat = nil
+        }
+
+        if let proteinVal = dict["protein"] as? Double {
+            self.protein = proteinVal
+        } else if let proteinStr = dict["protein"] as? String, let proteinVal = Double(proteinStr.replacingOccurrences(of: ",", with: ".")) {
+            self.protein = proteinVal
+        } else {
+            self.protein = nil
+        }
+
         self.units      = dict["units"] as? String
         self.tempBasalDuration = dict["duration"] as? Double
     }

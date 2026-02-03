@@ -733,6 +733,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     "absolute": tjson.absolute as AnyObject,
                     "insulin":  tjson.insulin  as AnyObject,
                     "carbs":    tjson.carbs    as AnyObject,
+                    "fat":      tjson.fat      as AnyObject,
+                    "protein":  tjson.protein  as AnyObject,
                     "amount":   tjson.amount   as AnyObject,
                     "foodType": tjson.foodType as AnyObject,
                     "notes":    tjson.notes as AnyObject,
