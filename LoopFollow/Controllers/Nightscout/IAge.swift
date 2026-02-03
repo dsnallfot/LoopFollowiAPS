@@ -8,11 +8,34 @@
 
 import Foundation
 fileprivate var isIageFetchInProgress = false
+fileprivate var iageFetchStartedAt: Date? = nil
 extension MainViewController {
     // NS Iage Web Call
     func webLoadNSIage() {
-        if isIageFetchInProgress { return }
+        let now = Date()
+        
+        if isIageFetchInProgress {
+            let elapsed = now.timeIntervalSince(iageFetchStartedAt ?? now)
+            
+            if elapsed > 60 {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[IAge] Detected stale in-progress IAge fetch (\(Int(elapsed)) s). Forcing reset and starting a new request.",
+                    isDebug: false
+                )
+                isIageFetchInProgress = false
+                iageFetchStartedAt = nil
+            } else {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[IAge] webLoadNSIage skipped: fetch already in progress (\(Int(elapsed)) s).",
+                    isDebug: false
+                )
+                return
+            }
+        }
         isIageFetchInProgress = true
+        iageFetchStartedAt = now
 
         let lastDateString = dateTimeUtils.getDateTimeString(addingDays: -60)
         let currentTimeString = dateTimeUtils.getDateTimeString()
@@ -31,9 +54,11 @@ extension MainViewController {
                     self.updateIage(data: data)
                 }
                 isIageFetchInProgress = false
+                iageFetchStartedAt = nil
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "webLoadNSIage, failed to fetch data: \(error.localizedDescription)")
                 isIageFetchInProgress = false
+                iageFetchStartedAt = nil
             }
         }
     }

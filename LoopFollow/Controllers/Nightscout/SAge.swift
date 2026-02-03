@@ -1,12 +1,37 @@
 import Foundation
 
 fileprivate var isSageFetchInProgress = false
+fileprivate var sageFetchStartedAt: Date? = nil
 
 extension MainViewController {
     // NS Sage Web Call
     func webLoadNSSage() {
-        if isSageFetchInProgress { return }
+        let now = Date()
+        
+        if isSageFetchInProgress {
+            let elapsed = now.timeIntervalSince(sageFetchStartedAt ?? now)
+            
+            if elapsed > 60 {
+                // En pågående fetch verkar ha hängt → släpp låset och börja om.
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[Sage] Detected stale in-progress Sage fetch (\(Int(elapsed)) s). Forcing reset and starting a new request.",
+                    isDebug: false
+                )
+                isSageFetchInProgress = false
+                sageFetchStartedAt = nil
+            } else {
+                // Normal “in progress” → logga och hoppa över.
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[Sage] webLoadNSSage skipped: fetch already in progress (\(Int(elapsed)) s).",
+                    isDebug: false
+                )
+                return
+            }
+        }
         isSageFetchInProgress = true
+        sageFetchStartedAt = now
 
         let lastDateString = dateTimeUtils.getDateTimeString(addingDays: -60)
         let currentTimeString = dateTimeUtils.getDateTimeString()
@@ -25,9 +50,11 @@ extension MainViewController {
                     self.updateSage(data: data)
                 }
                 isSageFetchInProgress = false
+                sageFetchStartedAt = nil
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "webLoadNSSage error, failed to fetch data: \(error.localizedDescription)")
                 isSageFetchInProgress = false
+                sageFetchStartedAt = nil
             }
         }
     }

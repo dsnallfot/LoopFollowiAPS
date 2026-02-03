@@ -9,12 +9,35 @@
 import Foundation
 
 fileprivate var isCageFetchInProgress = false
+fileprivate var cageFetchStartedAt: Date? = nil
 
 extension MainViewController {
     // NS Cage Web Call
     func webLoadNSCage() {
-        if isCageFetchInProgress { return }
+        let now = Date()
+        
+        if isCageFetchInProgress {
+            let elapsed = now.timeIntervalSince(cageFetchStartedAt ?? now)
+            
+            if elapsed > 60 {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[Cage] Detected stale in-progress Cage fetch (\(Int(elapsed)) s). Forcing reset and starting a new request.",
+                    isDebug: false
+                )
+                isCageFetchInProgress = false
+                cageFetchStartedAt = nil
+            } else {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[Cage] webLoadNSCage skipped: fetch already in progress (\(Int(elapsed)) s).",
+                    isDebug: false
+                )
+                return
+            }
+        }
         isCageFetchInProgress = true
+        cageFetchStartedAt = now
 
         let currentTimeString = dateTimeUtils.getDateTimeString()
 
@@ -29,9 +52,11 @@ extension MainViewController {
             case .success(let data):
                 self.updateCage(data: data)
                 isCageFetchInProgress = false
+                cageFetchStartedAt = nil
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "webLoadNSCage, error: \(error.localizedDescription)")
                 isCageFetchInProgress = false
+                cageFetchStartedAt = nil
             }
         }
     }

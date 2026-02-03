@@ -24,7 +24,7 @@ extension MainViewController {
                 LogManager.shared.log(
                     category: .deviceStatus,
                     message: "Device status fetch watchdog: unlock after timeout",
-                    isDebug: true
+                    isDebug: false
                 )
                 // Try again soon.
                 TaskScheduler.shared.rescheduleTask(id: .deviceStatus, to: Date().addingTimeInterval(5))

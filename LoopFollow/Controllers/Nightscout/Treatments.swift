@@ -12,22 +12,40 @@ extension Notification.Name {
     static let treatmentsUpdated = Notification.Name("TreatmentsUpdated")
 }
 fileprivate var isTreatmentsFetchInProgress = false
+fileprivate var treatmentsFetchStartedAt: Date? = nil
 extension MainViewController {
     // NS Treatments Web Call
     // Downloads Basal, Bolus, Carbs, BG Check, Notes, Overrides
     func WebLoadNSTreatments() {
         if !UserDefaultsRepository.downloadTreatments.value { return }
 
+        let now = Date()
+        
         if isTreatmentsFetchInProgress {
-            LogManager.shared.log(
-                category: .nightscout,
-                message: "WebLoadNSTreatments skipped: fetch already in progress",
-                isDebug: true,
-                isTempDebug: true
-            )
-            return
+            let elapsed = now.timeIntervalSince(treatmentsFetchStartedAt ?? now)
+            
+            if elapsed > 60 {
+                // En pågående fetch verkar ha hängt → släpp låset och börja om.
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[Treatments] Detected stale in-progress treatments fetch (\(Int(elapsed)) s). Forcing reset and starting a new request.",
+                    isDebug: false
+                )
+                isTreatmentsFetchInProgress = false
+                treatmentsFetchStartedAt = nil
+            } else {
+                // Normal “in progress” → logga och hoppa över.
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[Treatments] WebLoadNSTreatments skipped: fetch already in progress (\(Int(elapsed)) s).",
+                    isDebug: false
+                )
+                return
+            }
         }
+        
         isTreatmentsFetchInProgress = true
+        treatmentsFetchStartedAt = now
         
         let startTimeString = dateTimeUtils.getDateTimeString(addingDays: -1 * UserDefaultsRepository.downloadDays.value)
         
@@ -90,9 +108,11 @@ extension MainViewController {
                     LogManager.shared.log(category: .nightscout, message: "WebLoadNSTreatments, Unexpected data structure")
                 }
                 isTreatmentsFetchInProgress = false
+                treatmentsFetchStartedAt = nil
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "WebLoadNSTreatments, error \(error.localizedDescription)")
                 isTreatmentsFetchInProgress = false
+                treatmentsFetchStartedAt = nil
             }
         }
     }

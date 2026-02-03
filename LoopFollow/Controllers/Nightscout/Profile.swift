@@ -8,20 +8,45 @@
 
 import Foundation
 fileprivate var isProfileFetchInProgress = false
+fileprivate var profileFetchStartedAt: Date? = nil
 extension MainViewController {
     // NS Profile Web Call
     func webLoadNSProfile() {
-        if isProfileFetchInProgress { return }
+        let now = Date()
+        
+        if isProfileFetchInProgress {
+            let elapsed = now.timeIntervalSince(profileFetchStartedAt ?? now)
+            
+            if elapsed > 60 {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[Profile] Detected stale in-progress profile fetch (\(Int(elapsed)) s). Forcing reset and starting a new request.",
+                    isDebug: false
+                )
+                isProfileFetchInProgress = false
+                profileFetchStartedAt = nil
+            } else {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "[Profile] webLoadNSProfile skipped: fetch already in progress (\(Int(elapsed)) s).",
+                    isDebug: false
+                )
+                return
+            }
+        }
         isProfileFetchInProgress = true
+        profileFetchStartedAt = now
 
         NightscoutUtils.executeRequest(eventType: .profile, parameters: [:]) { (result: Result<NSProfile, Error>) in
             switch result {
             case .success(let profileData):
                 self.updateProfile(profileData: profileData)
                 isProfileFetchInProgress = false
+                profileFetchStartedAt = nil
             case .failure(let error):
                 LogManager.shared.log(category: .nightscout, message: "webLoadNSProfile, error fetching profile data: \(error.localizedDescription)")
                 isProfileFetchInProgress = false
+                profileFetchStartedAt = nil
             }
         }
     }

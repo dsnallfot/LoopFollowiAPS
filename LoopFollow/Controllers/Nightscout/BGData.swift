@@ -19,26 +19,66 @@ var sharedLatestDelta: String = ""
 extension MainViewController {
     // Dex Share Web Call
     func webLoadDexShare() {
-        if isBGFetchInProgress { return }
+        let now = Date()
+        
+        // Samma stale-skydd som för Nightscout-fetchen
+        if isBGFetchInProgress {
+            let elapsed = now.timeIntervalSince(bgFetchStartedAt ?? now)
+            
+            if elapsed > 60 {
+                // En pågående fetch verkar ha hängt → släpp låset och börja om.
+                LogManager.shared.log(
+                    category: .dexcom,
+                    message: "[BGFetch] Detected stale in-progress Dexcom fetch (\(Int(elapsed)) s). Forcing reset and starting a new request.",
+                    isDebug: false
+                )
+                isBGFetchInProgress = false
+                bgFetchStartedAt = nil
+            } else {
+                // Normal “in progress” → logga och hoppa över.
+                LogManager.shared.log(
+                    category: .dexcom,
+                    message: "[BGFetch] Skipping webLoadDexShare – fetch already in progress (\(Int(elapsed)) s).",
+                    isDebug: false
+                )
+                return
+            }
+        }
+        
+        // Starta en ny Dexcom-fetch
         isBGFetchInProgress = true
+        bgFetchStartedAt = now
+        
         // Dexcom Share only returns 24 hrs of data as of now
         // Requesting more just for consistency with NS
         let graphHours = 24 * UserDefaultsRepository.downloadDays.value
         let count = graphHours * 12
+        
         dexShare?.fetchData(count) { (err, result) -> () in
             LogManager.shared.log(
                 category: .dexcom,
                 message: "[BGFetch] webLoadDexShare callback – error=\(err?.localizedDescription ?? "nil"), resultCount=\(result?.count ?? 0)",
                 isDebug: true
             )
+            
             if let error = err {
-                LogManager.shared.log(category: .dexcom, message: "Error fetching Dexcom data: \(error.localizedDescription)", limitIdentifier: "Error fetching Dexcom data")
+                LogManager.shared.log(
+                    category: .dexcom,
+                    message: "Error fetching Dexcom data: \(error.localizedDescription)",
+                    limitIdentifier: "Error fetching Dexcom data"
+                )
+                // Låt Nightscout-fallback ta över; den kommer att nolla in-progress-flaggan i sin callback.
                 self.webLoadNSBGData(fromDexFallback: true)
                 return
             }
             
             guard let data = result else {
-                LogManager.shared.log(category: .dexcom, message: "Received nil data from Dexcom", limitIdentifier: "Received nil data from Dexcom")
+                LogManager.shared.log(
+                    category: .dexcom,
+                    message: "Received nil data from Dexcom",
+                    limitIdentifier: "Received nil data from Dexcom"
+                )
+                // Fallback till Nightscout (nollar flaggor i sin callback)
                 self.webLoadNSBGData(fromDexFallback: true)
                 return
             }
@@ -47,13 +87,19 @@ extension MainViewController {
             let latestDate = data[0].date
             let now = dateTimeUtils.getNowTimeIntervalUTC()
             if (latestDate + 330) < now && IsNightscoutEnabled() {
-                LogManager.shared.log(category: .dexcom, message: "Dexcom data is old, loading from NS instead", limitIdentifier: "Dexcom data is old, loading from NS instead")
+                LogManager.shared.log(
+                    category: .dexcom,
+                    message: "Dexcom data is old, loading from NS instead",
+                    limitIdentifier: "Dexcom data is old, loading from NS instead"
+                )
+                // Fallback till Nightscout (nollar flaggor i sin callback)
                 self.webLoadNSBGData(fromDexFallback: true)
                 return
             }
             
             // Dexcom only returns 24 hrs of data. If we need more, call NS.
             if graphHours > 24 && IsNightscoutEnabled() {
+                // Här låter vi NS göra jobbet (och nolla flaggor i sin callback).
                 self.webLoadNSBGData(dexData: data, fromDexFallback: true)
             } else {
                 if let latest = data.first {
@@ -67,11 +113,14 @@ extension MainViewController {
                     LogManager.shared.log(
                         category: .temporaryDebug,
                         message: "[BGFetch] webLoadDexShare SUCCESS, but no entries returned",
-                        isDebug: true
+                        isDebug: false
                     )
                 }
-                // Dex-only success: clear in-progress flag here.
+                
+                // Dex-only success: nu är vi klara → släpp låset.
                 isBGFetchInProgress = false
+                bgFetchStartedAt = nil
+                
                 self.ProcessDexBGData(data: data, sourceName: "Dexcom")
             }
         }
@@ -91,7 +140,7 @@ extension MainViewController {
                     LogManager.shared.log(
                         category: .nightscout,
                         message: "[BGFetch] Detected stale in-progress NS fetch (\(Int(elapsed)) s). Forcing reset and starting a new request.",
-                        isDebug: true
+                        isDebug: false
                     )
                     isBGFetchInProgress = false
                     bgFetchStartedAt = nil
@@ -100,7 +149,7 @@ extension MainViewController {
                     LogManager.shared.log(
                         category: .nightscout,
                         message: "[BGFetch] Skipping webLoadNSBGData – fetch already in progress (\(Int(elapsed)) s).",
-                        isDebug: true
+                        isDebug: false
                     )
                     return
                 }
@@ -148,7 +197,7 @@ extension MainViewController {
                     LogManager.shared.log(
                         category: .temporaryDebug,
                         message: "[BGFetch] webLoadNSBGData SUCCESS, but no entries returned",
-                        isDebug: true
+                        isDebug: false
                     )
                 }
                 var nsData = entriesResponse
@@ -191,7 +240,7 @@ extension MainViewController {
                 LogManager.shared.log(
                     category: .temporaryDebug,
                     message: "[BGFetch] webLoadNSBGData FAILED: \(error.localizedDescription)",
-                    isDebug: true
+                    isDebug: false
                 )
                 LogManager.shared.log(category: .nightscout,
                                       message: "Failed to fetch bg data: \(error)",
@@ -229,20 +278,6 @@ extension MainViewController {
                 isBGFetchInProgress = false
                 bgFetchStartedAt = nil
                 return
-            /* SPARAR GAMMAL KOD UNDER TEST NY KOD
-             case .failure(let error):
-                LogManager.shared.log(category: .nightscout, message: "Failed to fetch bg data: \(error)", limitIdentifier: "Failed to fetch bg data")
-                DispatchQueue.main.async {
-                    TaskScheduler.shared.rescheduleTask(
-                        id: .fetchBG,
-                        to: Date().addingTimeInterval(10)
-                    )
-                }
-                // if we have Dex data, use it
-                if !dexData.isEmpty {
-                    self.ProcessDexBGData(data: dexData, sourceName: "Dexcom")
-                }
-                return*/
             }
         }
     }
