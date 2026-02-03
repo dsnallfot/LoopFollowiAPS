@@ -662,11 +662,12 @@ extension MainViewController {
         topPredictionBG = UserDefaultsRepository.minBGScale.value
         
         if let predbgdata = enactedOrSuggested["predBGs"] as? [String: AnyObject] {
-            let predictionTypes: [(type: String, colorName: String, dataIndex: Int)] = [
-                ("ZT", "ZT", 12),
-                ("IOB", "Insulin", 13),
-                ("COB", "LoopYellow", 14),
-                ("UAM", "UAM", 15)
+            // Lägg till en flagga includeInMinMax
+            let predictionTypes: [(type: String, colorName: String, dataIndex: Int, includeInMinMax: Bool)] = [
+                ("ZT",  "ZT",        12, true),
+                ("IOB", "Insulin",   13, true), // ⬅️ EXKLUDERA från min/max om du sätter "false"
+                ("COB", "LoopYellow",14, true),
+                ("UAM", "UAM",       15, true)
             ]
             
             var minPredBG = Double.infinity
@@ -684,13 +685,21 @@ extension MainViewController {
                     basePredictionTime = deliverAtDate.timeIntervalSince1970
                     //print("✅ Successfully parsed deliverAt: \(deliverAtString), converted to \(basePredictionTime)")
                 } else {
-                    LogManager.shared.log(category: .deviceStatus, message: "❌ Failed to parse deliverAt: \(deliverAtString), falling back to alertLastLoopTime: \(basePredictionTime)", isDebug: true)
+                    LogManager.shared.log(
+                        category: .deviceStatus,
+                        message: "❌ Failed to parse deliverAt: \(deliverAtString), falling back to alertLastLoopTime: \(basePredictionTime)",
+                        isDebug: true
+                    )
                 }
             } else {
-                LogManager.shared.log(category: .deviceStatus, message: "⚠️ No deliverAt found in enactedOrSuggested, using alertLastLoopTime: \(basePredictionTime)", isDebug: true)
+                LogManager.shared.log(
+                    category: .deviceStatus,
+                    message: "⚠️ No deliverAt found in enactedOrSuggested, using alertLastLoopTime: \(basePredictionTime)",
+                    isDebug: true
+                )
             }
             
-            for (type, colorName, dataIndex) in predictionTypes {
+            for (type, colorName, dataIndex, includeInMinMax) in predictionTypes {
                 var predictionData = [ShareGlucoseData]()
                 
                 // Reset predictionTime for each dataset so they all start at the same time
@@ -704,10 +713,18 @@ extension MainViewController {
                     for i in 0...toLoad {
                         if i < graphdata.count {
                             let predictionValue = graphdata[i]
-                            minPredBG = min(minPredBG, predictionValue)
-                            maxPredBG = max(maxPredBG, predictionValue)
                             
-                            let prediction = ShareGlucoseData(sgv: Int(round(predictionValue)), date: predictionTime, direction: "flat")
+                            // ⬅️ Uppdatera min/max bara om denna kurva ska räknas med
+                            if includeInMinMax {
+                                minPredBG = min(minPredBG, predictionValue)
+                                maxPredBG = max(maxPredBG, predictionValue)
+                            }
+                            
+                            let prediction = ShareGlucoseData(
+                                sgv: Int(round(predictionValue)),
+                                date: predictionTime,
+                                direction: "flat"
+                            )
                             predictionData.append(prediction)
                             predictionTime += 300
                         }
