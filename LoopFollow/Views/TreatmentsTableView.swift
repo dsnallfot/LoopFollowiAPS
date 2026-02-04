@@ -378,13 +378,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             navigationItem.rightBarButtonItems = [mealAnalysisButton]
         }
         
-        // Left-side refresh button:
-        let refreshButton = UIBarButtonItem(
-            image: UIImage(systemName: "arrow.clockwise"),
-            style: .plain,
-            target: self,
-            action: #selector(refreshButtonTapped)
-        )
+        // Left-side refresh button (with tap + long press)
+        let refreshButton = makeRefreshBarButtonItem()
         
         if isModalRoot {
             // In modal mode there is no back button, so just show the refresh button.
@@ -395,6 +390,30 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             navigationItem.leftItemsSupplementBackButton = true
             navigationItem.leftBarButtonItems = [refreshButton]
         }
+    }
+
+    /// Returns a UIBarButtonItem with a custom UIButton for refresh (tap + long press).
+    private func makeRefreshBarButtonItem() -> UIBarButtonItem {
+        let button = UIButton(type: .system)
+
+        // Use label color to match other toolbar icons
+        button.tintColor = .label
+
+        // Configure SF Symbol with semibold weight
+        let config = UIImage.SymbolConfiguration(weight: .semibold)
+        let image = UIImage(systemName: "arrow.clockwise", withConfiguration: config)
+        button.setImage(image, for: .normal)
+
+        button.sizeToFit()
+        button.addTarget(self, action: #selector(refreshButtonTapped), for: .touchUpInside)
+
+        let longPress = UILongPressGestureRecognizer(
+            target: self,
+            action: #selector(refreshButtonLongPressed(_:))
+        )
+        button.addGestureRecognizer(longPress)
+
+        return UIBarButtonItem(customView: button)
     }
     
     @objc private func doneButtonTapped() {
@@ -558,7 +577,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         if let indicator = activityIndicator {
             refreshButton = UIBarButtonItem(customView: indicator)
         } else {
-            refreshButton = UIBarButtonItem(image: UIImage(systemName: "arrow.clockwise"), style: .plain, target: self, action: #selector(refreshButtonTapped))
+            refreshButton = makeRefreshBarButtonItem()
         }
         
         if duplicatesExist {
@@ -610,6 +629,81 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         // finished fetching and processing treatments, it will post the
         // .treatmentsUpdated notification, which we listen for in
         // handleGlobalTreatmentsUpdated(_:) and reload from NightscoutCache.
+    }
+
+    @objc private func refreshButtonLongPressed(_ gesture: UILongPressGestureRecognizer) {
+        // Only trigger once when the long press begins
+        guard gesture.state == .began else { return }
+        
+        let alert = UIAlertController(
+            title: "Återfylla cache?",
+            message: "Vill du hämta 90 dagars behandlingshistorik från Nightscout?\n\nHämtningen kan ta ett par minuter, så ha tålamod.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+        alert.addAction(UIAlertAction(title: "Hämta", style: .default, handler: { [weak self] _ in
+            self?.startBackfillLast90Days()
+        }))
+        
+        present(alert, animated: true, completion: nil)
+    }
+
+    /// Manuell 90-dagars återfyllnad av behandlingshistorik från Nightscout.
+    /// Hämtar alla treatments inom cache-fönstret (ca 90 dagar) och upsertar dem i NightscoutCache.
+    private func startBackfillLast90Days() {
+        // Visa samma indikator som vid vanlig refresh
+        showRefreshIndicator()
+        
+        let cal = Calendar.current
+        let now = Date()
+        let todayStart = cal.startOfDay(for: now)
+        
+        // Äldsta dag i cache-fönstret: samma logik som för datePicker.minimumDate
+        let oldestDay = cal.date(byAdding: .day,
+                                 value: -NightscoutCache.retentionDays + 1,
+                                 to: todayStart) ?? todayStart
+        
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+        // Använd lokal tidszon för att täcka hela kalenderdygnen
+        iso.timeZone = .current
+        
+        let params: [String: String] = [
+            "find[created_at][$gte]": iso.string(from: oldestDay),
+            "find[created_at][$lte]": iso.string(from: now),
+            "count": "50000"
+        ]
+        
+        NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let raw):
+                    if let entries = raw as? [[String: AnyObject]] {
+                        // Upsert:a samtliga treatments i cache. upsertTreatment bör hantera dubletter via _id.
+                        for entry in entries {
+                            NightscoutCache.upsertTreatment(from: entry)
+                        }
+                        
+                        // Ladda om aktuell dag från cache (om användaren står på en dag inom fönstret).
+                        self.loadTreatments(for: self.selectedDate)
+                        
+                        // Visa en liten bekräftelse-overlay
+                        self.showDateSyncOverlay(message: "Cache återfylld med \(entries.count) behandlingar")
+                    } else {
+                        self.showAlert(title: "Fel", message: "Kunde inte tolka behandlingsdata från Nightscout") { }
+                    }
+                case .failure(let error):
+                    self.showAlert(
+                        title: "Kunde inte hämta historik",
+                        message: "\n\(error.localizedDescription)"
+                    ) { }
+                }
+                
+                // Återställ refresh-knappen
+                self.hideRefreshIndicator()
+            }
+        }
     }
     
     private func showRefreshIndicator() {
