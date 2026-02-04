@@ -197,7 +197,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
         case .historyStats:
             return "Historik & statistik"
         case .trioSettings:
-            return "\nTrio inställningar och status"
+            return "\nTrio inställningar & status"
         case .dataCapture:
             return "\nDatafångstinställningar"
         case .appSettings:
@@ -249,7 +249,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             if indexPath.row == 0 {
                 // Enhet with segmented control
                 let cell = tableView.dequeueReusableCell(withIdentifier: "UnitsCell") ?? UITableViewCell(style: .default, reuseIdentifier: "UnitsCell")
-                cell.textLabel?.text = "Enhet"
+                cell.textLabel?.text = "Glukosenhet"
                 cell.selectionStyle = .none
 
                 let segmented = UISegmentedControl(items: ["mg/dL", "mmol/L"])
@@ -262,9 +262,9 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
                 let cell = tableView.dequeueReusableCell(withIdentifier: "DataCaptureCell") ?? UITableViewCell(style: .default, reuseIdentifier: "DataCaptureCell")
                 cell.accessoryType = .disclosureIndicator
                 if indexPath.row == 1 {
-                    cell.textLabel?.text = "Nightscoutinställningar"
+                    cell.textLabel?.text = "Nightscout"
                 } else {
-                    cell.textLabel?.text = "Dexcominställningar"
+                    cell.textLabel?.text = "Dexcom"
                 }
                 return cell
             }
@@ -275,15 +275,15 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             cell.accessoryType = .disclosureIndicator
             switch rowKind {
             case .alarms:
-                cell.textLabel?.text = "Alarminställningar"
+                cell.textLabel?.text = "Alarm"
             case .general:
-                cell.textLabel?.text = "Allmänna inställningar"
+                cell.textLabel?.text = "Allmänt"
             case .graphs:
-                cell.textLabel?.text = "Grafinställningar"
+                cell.textLabel?.text = "Graf"
             case .infoDisplay:
-                cell.textLabel?.text = "Informationsinställningar"
+                cell.textLabel?.text = "Informationspanel"
             case .advanced:
-                cell.textLabel?.text = "Avancerade inställningar"
+                cell.textLabel?.text = "Avancerat"
             }
             return cell
 
@@ -293,7 +293,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             switch indexPath.row {
             case 0: cell.textLabel?.text = "Bakgrundsaktivitet"
             case 1: cell.textLabel?.text = "Sensorbyten synk"
-            case 2: cell.textLabel?.text = "Fjärrkontrollinställningar"
+            case 2: cell.textLabel?.text = "Fjärrkontroll"
             case 3: cell.textLabel?.text = "Kalendertrick"
             case 4: cell.textLabel?.text = "Kontakttrick"
             default: break
@@ -728,7 +728,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             .environment(\.colorScheme, isDark ? .dark : .light)
 
         let hostingController = UIHostingController(rootView: view)
-        hostingController.title = "Nightscoutinställningar"
+        hostingController.title = "Nightscout"
         hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
         hostingController.hidesBottomBarWhenPushed = false
         return hostingController
@@ -752,7 +752,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             .environment(\.colorScheme, isDark ? .dark : .light)
 
         let hostingController = UIHostingController(rootView: settingsView)
-        hostingController.title = "Dexcominställningar"
+        hostingController.title = "Dexcom"
         hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
         hostingController.hidesBottomBarWhenPushed = false
         return hostingController

@@ -10,10 +10,6 @@
 //
 //
 
-
-
-
-
 import UIKit
 import Eureka
 
@@ -402,20 +398,15 @@ class AlarmViewController: ThemedFormViewController {
         buildHigh()
         buildUrgentHigh()
 
-
-
+        buildMissedReadings()
         buildFastDropAlert()
         buildFastRiseAlert()
-        buildMissedReadings()
-
-
+        buildTemporaryAlert()
 
         buildNotLooping()
         buildMissedBolus()
         buildSage()
         buildCage()
-
-        buildTemporaryAlert()
 
         buildOverrideStart()
         buildOverrideEnd()
@@ -424,6 +415,7 @@ class AlarmViewController: ThemedFormViewController {
         buildIOB()
         buildCOB()
         buildBatteryAlarm()
+        
         buildRecBolus()
         buildTempTargetStart()
         buildTempTargetEnd()
@@ -476,8 +468,6 @@ class AlarmViewController: ThemedFormViewController {
             row5.evaluateHidden()
         }
 
-
-
         if IsNightscoutEnabled() {
             isEnabled = true
         }
@@ -486,6 +476,8 @@ class AlarmViewController: ThemedFormViewController {
         nightscoutTab.isEnabled = isEnabled
 
     }
+    
+    // MARK: Snooze Mute all
 
     func buildSnoozeAll(){
         form
@@ -578,65 +570,8 @@ class AlarmViewController: ThemedFormViewController {
         }
     }
 
-    func buildTemporaryAlert(){
-        form
-
-
-        +++ Section(header: "Temporary Alert", footer: "Temporary Alert will trigger once and disable. Disabling Alert Below BG will trigger it as a high alert above the BG.") { row in
-            row.hidden = "$bgExtraAlerts != 'Temporary'"
-        }
-        <<< SwitchRow("alertTemporaryActive"){ row in
-            row.title = "Active"
-            row.value = UserDefaultsRepository.alertTemporaryActive.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.alertTemporaryActive.value = value
-        }
-        <<< SwitchRow("alertTemporaryBelow"){ row in
-            row.title = "Alert Below BG"
-            row.value = UserDefaultsRepository.alertTemporaryBelow.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.alertTemporaryBelow.value = value
-        }
-        <<< StepperRow("alertTemporaryBG") { row in
-            row.title = "BG"
-            row.cell.stepper.stepValue = 1
-            row.cell.stepper.minimumValue = 40
-            row.cell.stepper.maximumValue = 400
-            row.value = Double(UserDefaultsRepository.alertTemporaryBG.value)
-            row.displayValueFor = { value in
-                guard let value = value else { return nil }
-                return Localizer.toDisplayUnits(String(value))
-            }
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.alertTemporaryBG.value = Float(value)
-        }
-        <<< PickerInputRow<String>("alertTemporarySound") { row in
-            row.title = "Sound"
-            row.options = soundFiles
-            row.value = UserDefaultsRepository.alertTemporarySound.value
-            row.displayValueFor = { value in
-                guard let value = value else { return nil }
-                return "\(String(value.replacingOccurrences(of: "_", with: " ")))"
-            }
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.alertTemporarySound.value = value
-            AlarmSound.setSoundFile(str: value)
-            AlarmSound.stop()
-            AlarmSound.playTest()
-        }
-        <<< SwitchRow("alertTemporaryRepeat"){ row in
-            row.title = "Repeat Sound"
-            row.value = UserDefaultsRepository.alertTemporaryBGRepeat.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.alertTemporaryBGRepeat.value = value
-        }
-    }
-
+    // MARK: Urgent low
+    
     func buildUrgentLow(){
         form
         +++ Section(header: "Urgent Low Alert", footer: "Alerts when BG drops below value") { row in
@@ -797,6 +732,8 @@ class AlarmViewController: ThemedFormViewController {
         }
     }
 
+    // MARK: Low
+    
     func buildLow(){
         form
         +++ Section(header: "Low Alert", footer: "Alerts when BG drops below value. Persitent for minutes will allow the alert to be ignored within the Delta value to prevent alerts that Loop self-corrected the drop. Predictive minutes looks forward to Loop's prediction and will trigger an alert if a low is predicted within that time frame. Predictive uses the minimum persistence Delta value for the trigger.") { row in
@@ -972,6 +909,9 @@ class AlarmViewController: ThemedFormViewController {
         }
     }
 
+    // MARK: High
+    
+    
     func buildHigh(){
         form
         +++ Section(header: "High Alert", footer: "Alerts when BG rises above value. If Persistence is set greater than 0, it will not alert until BG has been high for that many minutes.") { row in
@@ -1133,6 +1073,8 @@ class AlarmViewController: ThemedFormViewController {
         }
     }
 
+    // MARK: Urgent high
+    
     func buildUrgentHigh(){
         form
         +++ Section(header: "Urgent High Alert", footer: "Alerts when BG rises above value.") { row in
@@ -1276,6 +1218,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: Fast drop
 
     func buildFastDropAlert(){
         form
@@ -1458,6 +1402,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: Fast rise
 
     func buildFastRiseAlert(){
         form
@@ -1639,6 +1585,68 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: Temporary Alert
+    
+    func buildTemporaryAlert(){
+        form
+
+        +++ Section(header: "Temporary Alert", footer: "Temporary Alert will trigger once and disable. Disabling Alert Below BG will trigger it as a high alert above the BG.") { row in
+            row.hidden = "$bgExtraAlerts != 'Temporary'"
+        }
+        <<< SwitchRow("alertTemporaryActive"){ row in
+            row.title = "Active"
+            row.value = UserDefaultsRepository.alertTemporaryActive.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertTemporaryActive.value = value
+        }
+        <<< SwitchRow("alertTemporaryBelow"){ row in
+            row.title = "Alert Below BG"
+            row.value = UserDefaultsRepository.alertTemporaryBelow.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertTemporaryBelow.value = value
+        }
+        <<< StepperRow("alertTemporaryBG") { row in
+            row.title = "BG"
+            row.cell.stepper.stepValue = 1
+            row.cell.stepper.minimumValue = 40
+            row.cell.stepper.maximumValue = 400
+            row.value = Double(UserDefaultsRepository.alertTemporaryBG.value)
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                return Localizer.toDisplayUnits(String(value))
+            }
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertTemporaryBG.value = Float(value)
+        }
+        <<< PickerInputRow<String>("alertTemporarySound") { row in
+            row.title = "Sound"
+            row.options = soundFiles
+            row.value = UserDefaultsRepository.alertTemporarySound.value
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                return "\(String(value.replacingOccurrences(of: "_", with: " ")))"
+            }
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertTemporarySound.value = value
+            AlarmSound.setSoundFile(str: value)
+            AlarmSound.stop()
+            AlarmSound.playTest()
+        }
+        <<< SwitchRow("alertTemporaryRepeat"){ row in
+            row.title = "Repeat Sound"
+            row.value = UserDefaultsRepository.alertTemporaryBGRepeat.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertTemporaryBGRepeat.value = value
+        }
+    }
+    
+    // MARK: No readings
 
     func buildMissedReadings(){
         form
@@ -1785,6 +1793,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: Not looping
 
     func buildNotLooping(){
         form
@@ -1966,6 +1976,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: Missed bolus
 
     func buildMissedBolus(){
         form
@@ -2174,7 +2186,7 @@ class AlarmViewController: ThemedFormViewController {
         }
     }
 
-
+    // MARK: Sage
 
     func buildSage(){
         form
@@ -2328,6 +2340,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: Cage
 
     func buildCage(){
         form
@@ -2479,6 +2493,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: Override start
 
     func buildOverrideStart(){
         form
@@ -2604,6 +2620,8 @@ class AlarmViewController: ThemedFormViewController {
         }
 
     }
+    
+    // MARK: Override end
 
     func buildOverrideEnd(){
         form
@@ -2728,6 +2746,8 @@ class AlarmViewController: ThemedFormViewController {
         }
 
     }
+    
+    // MARK: Pump
 
     func buildPump() {
         form
@@ -2880,6 +2900,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: IOB
 
     func buildIOB() {
         form
@@ -3068,6 +3090,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: COB
 
     func buildCOB() {
         form
@@ -3214,6 +3238,8 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
     }
+    
+    // MARK: Battery
 
     func buildBatteryAlarm(){
         form
@@ -3278,6 +3304,8 @@ class AlarmViewController: ThemedFormViewController {
             UserDefaultsRepository.alertBatteryRepeat.value = value
         }
     }
+    
+    // MARK: Rec bolus
 
     func buildRecBolus(){
         form
@@ -3342,82 +3370,8 @@ class AlarmViewController: ThemedFormViewController {
             UserDefaultsRepository.alertRecBolusRepeat.value = value
         }
     }
-
-    func buildAlarmSettings() {
-        form
-        +++ Section(header: "Alarminställningar", footer: "")
-
-        <<< SwitchRow("overrideSystemOutputVolume"){ row in
-            row.title = "Override System Volume"
-            row.value = UserDefaultsRepository.overrideSystemOutputVolume.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.overrideSystemOutputVolume.value = value
-        }
-        <<< StepperRow("forcedOutputVolume") { row in
-            row.title = "Volume Level"
-            row.cell.stepper.stepValue = 0.05
-            row.cell.stepper.minimumValue = 0
-            row.cell.stepper.maximumValue = 1
-            row.value = Double(UserDefaultsRepository.forcedOutputVolume.value)
-            row.hidden = "$overrideSystemOutputVolume == false"
-            row.displayValueFor = { value in
-                guard let value = value else { return nil }
-                return "\(Int(value*100))%"
-            }
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.forcedOutputVolume.value = Float(value)
-        }
-        <<< SwitchRow("alertAudioDuringPhone"){ row in
-            row.title = "Audio During Calls"
-            row.value = UserDefaultsRepository.alertAudioDuringPhone.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.alertAudioDuringPhone.value = value
-        }
-        <<< SwitchRow("alertIgnoreZero"){ row in
-            row.title = "Ignore Zero BG"
-            row.value = UserDefaultsRepository.alertIgnoreZero.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.alertIgnoreZero.value = value
-        }
-        <<< SwitchRow("alertAutoSnoozeCGMStart"){ row in
-            row.title = "Auto-Snooze CGM Start"
-            row.value = UserDefaultsRepository.alertAutoSnoozeCGMStart.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.alertAutoSnoozeCGMStart.value = value
-        }
-        <<< SwitchRow("enableVolumeButtonSnooze"){ row in
-            row.title = "Enable Volume Button Snooze"
-            row.value = UserDefaultsRepository.enableVolumeButtonSnooze.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.enableVolumeButtonSnooze.value = value
-        }
-
-        +++ Section(header: "Nattinställningar", footer: "Night time hours are used to differ how alerts are managed during the day and at night.  For instance, automatically snooze, at night time, non-critical alerts that you do not wish to be awakened for such as a sensor change pre-alert.")  { row in
-            row.tag = "quietHourSection"
-        }
-        <<< TimeInlineRow("quietHourStart") { row in
-            row.title = "Night Time Starts Today"
-            row.value = UserDefaultsRepository.quietHourStart.value
-
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.quietHourStart.value = value
-        }
-        <<< TimeInlineRow("quietHourEnd") { row in
-            row.title = "Night Time Ends Tomorrow"
-            row.value = UserDefaultsRepository.quietHourEnd.value
-
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.quietHourEnd.value = value
-        }
-    }
+    
+    // MARK: Temp target start
 
     func buildTempTargetStart() {
         form
@@ -3536,6 +3490,8 @@ class AlarmViewController: ThemedFormViewController {
         }
 
     }
+    
+    // MARK: Temp target end
 
     func buildTempTargetEnd() {
         form
@@ -3653,6 +3609,84 @@ class AlarmViewController: ThemedFormViewController {
             }
         }
 
+    }
+    
+    // MARK: Alarm and night settings
+
+    func buildAlarmSettings() {
+        form
+        +++ Section(header: "Alarminställningar", footer: "")
+
+        <<< SwitchRow("overrideSystemOutputVolume"){ row in
+            row.title = "Override System Volume"
+            row.value = UserDefaultsRepository.overrideSystemOutputVolume.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.overrideSystemOutputVolume.value = value
+        }
+        <<< StepperRow("forcedOutputVolume") { row in
+            row.title = "Volume Level"
+            row.cell.stepper.stepValue = 0.05
+            row.cell.stepper.minimumValue = 0
+            row.cell.stepper.maximumValue = 1
+            row.value = Double(UserDefaultsRepository.forcedOutputVolume.value)
+            row.hidden = "$overrideSystemOutputVolume == false"
+            row.displayValueFor = { value in
+                guard let value = value else { return nil }
+                return "\(Int(value*100))%"
+            }
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.forcedOutputVolume.value = Float(value)
+        }
+        <<< SwitchRow("alertAudioDuringPhone"){ row in
+            row.title = "Audio During Calls"
+            row.value = UserDefaultsRepository.alertAudioDuringPhone.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertAudioDuringPhone.value = value
+        }
+        <<< SwitchRow("alertIgnoreZero"){ row in
+            row.title = "Ignore Zero BG"
+            row.value = UserDefaultsRepository.alertIgnoreZero.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertIgnoreZero.value = value
+        }
+        <<< SwitchRow("alertAutoSnoozeCGMStart"){ row in
+            row.title = "Auto-Snooze CGM Start"
+            row.value = UserDefaultsRepository.alertAutoSnoozeCGMStart.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.alertAutoSnoozeCGMStart.value = value
+        }
+        <<< SwitchRow("enableVolumeButtonSnooze"){ row in
+            row.title = "Enable Volume Button Snooze"
+            row.value = UserDefaultsRepository.enableVolumeButtonSnooze.value
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.enableVolumeButtonSnooze.value = value
+        }
+
+        +++ Section(header: "Nattinställningar", footer: "Night time hours are used to differ how alerts are managed during the day and at night.  For instance, automatically snooze, at night time, non-critical alerts that you do not wish to be awakened for such as a sensor change pre-alert.")  { row in
+            row.tag = "quietHourSection"
+        }
+        <<< TimeInlineRow("quietHourStart") { row in
+            row.title = "Night Time Starts Today"
+            row.value = UserDefaultsRepository.quietHourStart.value
+
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.quietHourStart.value = value
+        }
+        <<< TimeInlineRow("quietHourEnd") { row in
+            row.title = "Night Time Ends Tomorrow"
+            row.value = UserDefaultsRepository.quietHourEnd.value
+
+        }.onChange { [weak self] row in
+            guard let value = row.value else { return }
+            UserDefaultsRepository.quietHourEnd.value = value
+        }
     }
 }
 
