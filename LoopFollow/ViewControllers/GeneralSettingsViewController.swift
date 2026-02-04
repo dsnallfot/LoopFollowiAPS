@@ -7,339 +7,513 @@
 //
 
 import Foundation
-import Eureka
+import UIKit
 import EventKit
 import EventKitUI
 
-class GeneralSettingsViewController: ThemedFormViewController {
-   
-   var appStateController: AppStateController?
-   
-   override func viewDidLoad()  {
-      super.viewDidLoad()
-       title = "Allmänna inställningar"
-       applyTheme()
-      
-      if UserDefaultsRepository.forceDarkMode.value {
-         overrideUserInterfaceStyle = .dark
-      }
-      buildGeneralSettings()
-
-      // Register the GeneralSettingsViewController as an observer for the UIApplication.willEnterForegroundNotification, which will be triggered when the app enters the foreground. This helps ensure that the "Speak BG" switch in the General Settings is updated according to the current setting.
-      NotificationCenter.default.addObserver(self, selector: #selector(handleAppWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
-   }
-   
-   private func buildGeneralSettings() {
-      form
-        +++ Section("Appinställningar")
-        <<< SwitchRow("appBadge"){ row in
-            row.title = "Visa app-brickor för BG"
-            row.tag = "appBadge"
-            row.value = UserDefaultsRepository.appBadge.value
-        }.onChange { [weak self] row in
-                    guard let value = row.value else { return }
-                    UserDefaultsRepository.appBadge.value = value
-                    // Force main screen update
-                    //guard let mainScreen = self?.tabBarController!.viewControllers?[0] as? MainViewController else { return }
-                    //mainScreen.nightscoutLoader(forceLoad: true)
-                    
-           // set the appstate to indicate settings change and flags
-           if let appState = self!.appStateController {
-              appState.generalSettingsChanged = true
-              appState.generalSettingsChanges |= GeneralSettingsChangeEnum.appBadgeChange.rawValue
-           }
-           
-        }
-        <<< SwitchRow("persistentNotification") { row in
-        row.title = "Beständiga notiser"
-        row.value = UserDefaultsRepository.persistentNotification.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-                UserDefaultsRepository.persistentNotification.value = value
-        }
-        
-        +++ Section("Visningsinställningar")
-        <<< SwitchRow("forceDarkMode") { row in
-        row.title = "Forcera mörkt läge (omstart krävs)"
-        row.value = UserDefaultsRepository.forceDarkMode.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.forceDarkMode.value = value
-             
-        }
-        <<< SwitchRow("showStats") { row in
-        row.title = "Visa statistik"
-        row.value = UserDefaultsRepository.showStats.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.showStats.value = value
-            
-             // set the appstate to indicate settings change and flags
-             if let appState = self!.appStateController {
-                appState.generalSettingsChanged = true
-                appState.generalSettingsChanges |= GeneralSettingsChangeEnum.showStatsChange.rawValue
-             }
-        }
-        <<< SwitchRow("useIFCC") { row in
-        row.title = "Använd IFCC A1C"
-        row.value = UserDefaultsRepository.useIFCC.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.useIFCC.value = value
-            
-             // set the appstate to indicate settings change and flags
-             if let appState = self!.appStateController {
-                appState.generalSettingsChanged = true
-                appState.generalSettingsChanges |= GeneralSettingsChangeEnum.useIFCCChange.rawValue
-             }
-        }
-        <<< SwitchRow("showSmallGraph") { row in
-        row.title = "Visa liten graf"
-        row.value = UserDefaultsRepository.showSmallGraph.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.showSmallGraph.value = value
-             
-            // set the appstate to indicate settings change and flags
-            if let appState = self!.appStateController {
-               appState.generalSettingsChanged = true
-               appState.generalSettingsChanges |= GeneralSettingsChangeEnum.showSmallGraphChange.rawValue
-            }
-        }
-        <<< SwitchRow("colorBGText") { row in
-        row.title = "Färglägg BG-text"
-        row.value = UserDefaultsRepository.colorBGText.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.colorBGText.value = value
-            // Force main screen update
-            //guard let mainScreen = self?.tabBarController!.viewControllers?[0] as? MainViewController else { return }
-            //mainScreen.setBGTextColor()
-            
-            // set the appstate to indicate settings change and flags
-            if let appState = self!.appStateController {
-              appState.generalSettingsChanged = true
-              appState.generalSettingsChanges |= GeneralSettingsChangeEnum.colorBGTextChange.rawValue
-           }
-        }
-        
-        <<< SwitchRow("screenlockSwitchState") { row in
-            row.title = "Håll skärmen aktiv"
-            row.value = UserDefaultsRepository.screenlockSwitchState.value
-            }.onChange { [weak self] row in
-                guard let value = row.value else { return }
-                UserDefaultsRepository.screenlockSwitchState.value = value
-            }
-       
-       <<< SwitchRow("showDisplayName") { row in
-           row.title = "Visa namn"
-           row.value = UserDefaultsRepository.showDisplayName.value
-       }.onChange { [weak self] row in
-           guard let value = row.value else { return }
-           UserDefaultsRepository.showDisplayName.value = value
-
-           if let appState = self!.appStateController {
-               appState.generalSettingsChanged = true
-               appState.generalSettingsChanges |= GeneralSettingsChangeEnum.showDisplayNameChange.rawValue
-           }
-       }
-        
-       +++ Section("Läs upp BG inställningar")
-       <<< SwitchRow("speakBG") { row in
-           row.title = "Läs upp BG"
-           row.value = UserDefaultsRepository.speakBG.value
-       }.onChange { [weak self] row in
-           guard let value = row.value else { return }
-           UserDefaultsRepository.speakBG.value = value
-           self?.updateSpeakBGSettingsVisibility()
-       }
-       
-       <<< PushRow<String>("speakLanguage") { row in
-           row.title = "Speaking Language"
-           row.options = ["en", "it", "sk", "sv"]
-           row.value = UserDefaultsRepository.speakLanguage.value
-           row.displayValueFor = { value in
-               switch value {
-               case "en": return "English"
-               case "it": return "Italian"
-               case "sk": return "Slovak"
-               case "sv": return "Swedish"
-               default: return "Unknown"
-               }
-           }
-           row.hidden = Condition.function(["speakBG"], { form in
-               let speakBGRow: SwitchRow! = form.rowBy(tag: "speakBG")
-               return !(speakBGRow.value ?? false)
-           })
-           row.presentationMode = PresentationMode.presentModally(
-            controllerProvider: ControllerProvider.callback {
-                return SelectorViewController<SelectorRow<PushSelectorCell<String>>> { _ in }
-            },
-            onDismiss: { vc in
-                vc.dismiss(animated: true)
-            })
-       }.onChange { row in
-           guard let value = row.value else { return }
-           UserDefaultsRepository.speakLanguage.value = value
-       }
-
-       <<< SwitchRow("speakBGAlways") { row in
-           row.title = "Always"
-           row.value = UserDefaultsRepository.speakBGAlways.value
-       }.onChange { [weak self] row in
-           guard let value = row.value else { return }
-           UserDefaultsRepository.speakBGAlways.value = value
-           self?.updateSpeakBGSettingsVisibility()
-       }
-       
-       <<< SwitchRow("speakLowBG") { row in
-           row.title = "Low"
-           row.value = UserDefaultsRepository.speakLowBG.value
-       }.onChange { [weak self] row in
-           self?.handleLowProactiveLowToggle(row: row, opposingRowTag: "speakProactiveLowBG")
-       }
-       
-       <<< SwitchRow("speakProactiveLowBG") { row in
-           row.title = "Proactive Low"
-           row.value = UserDefaultsRepository.speakProactiveLowBG.value
-       }.onChange { [weak self] row in
-           self?.handleLowProactiveLowToggle(row: row, opposingRowTag: "speakLowBG")
-       }
-       
-       <<< StepperRow("speakLowBGLimit") { row in
-           row.title = "Low BG Limit"
-           row.cell.stepper.stepValue = 1
-           row.cell.stepper.minimumValue = 40
-           row.cell.stepper.maximumValue = 108
-           row.value = Double(UserDefaultsRepository.speakLowBGLimit.value)
-           row.displayValueFor = { value in
-               guard let value = value else { return nil }
-               return Localizer.toDisplayUnits(String(value))
-           }
-           // Visibility depends on either 'speakLowBG' or 'speakProactiveLowBG' being true
-           row.hidden = Condition.function(["speakLowBG", "speakProactiveLowBG", "speakBG", "speakBGAlways"], { form in
-               let speakBGRow: SwitchRow! = form.rowBy(tag: "speakBG")
-               let speakBGAlwaysRow: SwitchRow! = form.rowBy(tag: "speakBGAlways")
-               let speakLowBGRow: SwitchRow! = form.rowBy(tag: "speakLowBG")
-               let speakProactiveLowBGRow: SwitchRow! = form.rowBy(tag: "speakProactiveLowBG")
-               return !(speakLowBGRow.value ?? false) && !(speakProactiveLowBGRow.value ?? false) || !(speakBGRow.value ?? true) || (speakBGAlwaysRow.value ?? false)
-           })
-       }.onChange { [weak self] row in
-           guard let value = row.value else { return }
-           UserDefaultsRepository.speakLowBGLimit.value = Float(value)
-       }
-
-       <<< StepperRow("speakFastDropDelta") { row in
-           row.title = "Fast Drop Delta"
-           row.cell.stepper.stepValue = 1
-           row.cell.stepper.minimumValue = 3
-           row.cell.stepper.maximumValue = 20
-           row.value = Double(UserDefaultsRepository.speakFastDropDelta.value)
-           row.displayValueFor = { value in
-               guard let value = value else { return nil }
-               return Localizer.toDisplayUnits(String(value))
-           }
-           // Visibility depends on 'speakProactiveLowBG' being true
-           row.hidden = Condition.function(["speakProactiveLowBG", "speakBG", "speakBGAlways"], { form in
-               let speakBGRow: SwitchRow! = form.rowBy(tag: "speakBG")
-               let speakBGAlwaysRow: SwitchRow! = form.rowBy(tag: "speakBGAlways")
-               let speakProactiveLowBGRow: SwitchRow! = form.rowBy(tag: "speakProactiveLowBG")
-               return !(speakProactiveLowBGRow.value ?? false) || !(speakBGRow.value ?? true) || (speakBGAlwaysRow.value ?? false)
-           })
-       }.onChange { [weak self] row in
-           guard let value = row.value else { return }
-           UserDefaultsRepository.speakFastDropDelta.value = Float(value)
-       }
-       
-       <<< SwitchRow("speakHighBG") { row in
-           row.title = "High"
-           row.value = UserDefaultsRepository.speakHighBG.value
-       }.onChange { row in
-           guard let value = row.value else { return }
-           UserDefaultsRepository.speakHighBG.value = value
-       }
-       
-       <<< StepperRow("speakHighBGLimit") { row in
-           row.title = "High BG Limit"
-           row.cell.stepper.stepValue = 1
-           row.cell.stepper.minimumValue = 140
-           row.cell.stepper.maximumValue = 300
-           row.value = Double(UserDefaultsRepository.speakHighBGLimit.value)
-           row.displayValueFor = { value in
-               guard let value = value else { return nil }
-               return Localizer.toDisplayUnits(String(value))
-           }
-           // Visibility depends on 'speakHighBG' or 'speakProactiveLowBG' being true
-           row.hidden = Condition.function(["speakHighBG", "speakProactiveLowBG", "speakBG", "speakBGAlways"], { form in
-               let speakBGRow: SwitchRow! = form.rowBy(tag: "speakBG")
-               let speakBGAlwaysRow: SwitchRow! = form.rowBy(tag: "speakBGAlways")
-               let speakHighBGRow: SwitchRow! = form.rowBy(tag: "speakHighBG")
-               let speakProactiveLowBGRow: SwitchRow! = form.rowBy(tag: "speakProactiveLowBG")
-               return !(speakHighBGRow.value ?? false) && !(speakProactiveLowBGRow.value ?? false) || !(speakBGRow.value ?? true) || (speakBGAlwaysRow.value ?? false)
-           })
-       }.onChange { [weak self] row in
-           guard let value = row.value else { return }
-           UserDefaultsRepository.speakHighBGLimit.value = Float(value)
-       }
-       
-       // Call to update initial visibility based on current settings
-       updateSpeakBGSettingsVisibility()
+class GeneralSettingsViewController: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
+    
+    var appStateController: AppStateController?
+    
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    
+    // Background color used for section "cards", mirroring other settings views.
+    private let sectionBackgroundColor = UIColor.systemGray.withAlphaComponent(0.1)
+    
+    private enum Section: Int, CaseIterable {
+        case appSettings
+        case displaySettings
+        case speakSettings
     }
     
-    func updateSpeakBGSettingsVisibility() {
-        let alwaysOn = UserDefaultsRepository.speakBGAlways.value
+    private enum AppRow: Int, CaseIterable {
+        case appBadge
+        case persistentNotification
+    }
+    
+    private enum DisplayRow: Int, CaseIterable {
+        case forceDarkMode
+        case showStats
+        case useIFCC
+        case showSmallGraph
+        case colorBGText
+        case screenLock
+        case showDisplayName
+    }
+    
+    private enum SpeakRow {
+        case speakBG
+        case language
+        case always
+        case low
+        case proactiveLow
+        case lowLimit
+        case fastDropDelta
+        case high
+        case highLimit
+    }
+    
+    // Keep a reference to the "Speak BG" switch so it can be updated when the app enters the foreground.
+    private weak var speakBGSwitch: UISwitch?
+    
+    // Compute which rows should be visible in the "Läs upp BG" section based on current settings.
+    private var visibleSpeakRows: [SpeakRow] {
         let speakBGOn = UserDefaultsRepository.speakBG.value
+        let alwaysOn = UserDefaultsRepository.speakBGAlways.value
+        let lowOn = UserDefaultsRepository.speakLowBG.value
+        let proactiveOn = UserDefaultsRepository.speakProactiveLowBG.value
+        let highOn = UserDefaultsRepository.speakHighBG.value
         
-        // Determine visibility for "Always", "Low", "Proactive Low", and "High" based on "Speak BG" and "Always"
-        let shouldHideAlways = !speakBGOn
-        let shouldHideSettings = alwaysOn || !speakBGOn
+        var rows: [SpeakRow] = [.speakBG]
         
-        form.rowBy(tag: "speakBGAlways")?.hidden = Condition(booleanLiteral: shouldHideAlways)
-        form.rowBy(tag: "speakBGAlways")?.evaluateHidden()
-        
-        ["speakLowBG", "speakProactiveLowBG", "speakHighBG"].forEach { tag in
-            if let row = form.rowBy(tag: tag) {
-                row.hidden = Condition(booleanLiteral: shouldHideSettings)
-                row.evaluateHidden()
-                row.updateCell()
-            }
-        }
-    }
-    
-    func handleLowProactiveLowToggle(row: BaseRow, opposingRowTag: String) {
-        guard let switchRow = row as? SwitchRow, let value = switchRow.value else { return }
-        
-        // Update the UserDefaults value for the current row.
-        if row.tag == "speakLowBG" {
-            UserDefaultsRepository.speakLowBG.value = value
-        } else if row.tag == "speakProactiveLowBG" {
-            UserDefaultsRepository.speakProactiveLowBG.value = value
-        }
-        
-        // If the current switch is being turned ON, turn the opposing switch OFF.
-        if value {
-            if let opposingRow = form.rowBy(tag: opposingRowTag) as? SwitchRow {
-                opposingRow.value = false
-                opposingRow.updateCell()
+        if speakBGOn {
+            rows.append(.language)
+            rows.append(.always)
+            
+            if !alwaysOn {
+                rows.append(.low)
+                rows.append(.proactiveLow)
+                rows.append(.high)
                 
-                // Update the UserDefaults value for the opposing row.
-                if opposingRowTag == "speakLowBG" {
-                    UserDefaultsRepository.speakLowBG.value = false
-                } else if opposingRowTag == "speakProactiveLowBG" {
-                    UserDefaultsRepository.speakProactiveLowBG.value = false
+                if lowOn || proactiveOn {
+                    rows.append(.lowLimit)
+                }
+                
+                if proactiveOn {
+                    rows.append(.fastDropDelta)
+                }
+                
+                if highOn || proactiveOn {
+                    rows.append(.highLimit)
                 }
             }
         }
-    }
         
-    // Update the "Speak BG" SwitchRow value in the General Settings when the app enters the foreground. This ensures that the switch reflects the current setting in UserDefaultsRepository, even if it was changed using the Home Screen Quick Action while the app was in the background.
-    @objc func handleAppWillEnterForeground() {
-        if let row = self.form.rowBy(tag: "speakBG") as? SwitchRow {
-            row.value = UserDefaultsRepository.speakBG.value
-            row.updateCell()
+        return rows
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        title = "Allmänna inställningar"
+        
+        if UserDefaultsRepository.forceDarkMode.value {
+            overrideUserInterfaceStyle = .dark
+        }
+        
+        // Configure table view
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.backgroundColor = .clear
+        tableView.separatorStyle = .singleLine
+        view.addSubview(tableView)
+        
+        NSLayoutConstraint.activate([
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
+        // Observe when app enters foreground to sync "Speak BG" switch
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleAppWillEnterForeground),
+                                               name: UIApplication.willEnterForegroundNotification,
+                                               object: nil)
+    }
+    
+    // MARK: - UITableViewDataSource
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        Section.allCases.count
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        guard let sectionKind = Section(rawValue: section) else { return 0 }
+        switch sectionKind {
+        case .appSettings:
+            return AppRow.allCases.count
+        case .displaySettings:
+            return DisplayRow.allCases.count
+        case .speakSettings:
+            return visibleSpeakRows.count
         }
     }
-
+    
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        guard let sectionKind = Section(rawValue: section) else { return nil }
+        switch sectionKind {
+        case .appSettings:
+            return "Appinställningar"
+        case .displaySettings:
+            return "Visningsinställningar"
+        case .speakSettings:
+            return "Läs upp BG inställningar"
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let sectionKind = Section(rawValue: indexPath.section) else {
+            return UITableViewCell(style: .default, reuseIdentifier: "Cell")
+        }
+        
+        switch sectionKind {
+        case .appSettings:
+            let rowKind = AppRow(rawValue: indexPath.row)!
+            let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell") ?? UITableViewCell(style: .default, reuseIdentifier: "SwitchCell")
+            cell.selectionStyle = .none
+            
+            let toggle = UISwitch()
+            toggle.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
+            
+            switch rowKind {
+            case .appBadge:
+                cell.textLabel?.text = "Visa glukos som app-bricka"
+                toggle.isOn = UserDefaultsRepository.appBadge.value
+                toggle.accessibilityIdentifier = "appBadge"
+            case .persistentNotification:
+                cell.textLabel?.text = "Beständiga notiser"
+                toggle.isOn = UserDefaultsRepository.persistentNotification.value
+                toggle.accessibilityIdentifier = "persistentNotification"
+            }
+            
+            cell.accessoryView = toggle
+            return cell
+            
+        case .displaySettings:
+            let rowKind = DisplayRow(rawValue: indexPath.row)!
+            let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell") ?? UITableViewCell(style: .default, reuseIdentifier: "SwitchCell")
+            cell.selectionStyle = .none
+            
+            let toggle = UISwitch()
+            toggle.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
+            
+            switch rowKind {
+            case .forceDarkMode:
+                cell.textLabel?.text = "Forcera mörkt läge (omstart)"
+                toggle.isOn = UserDefaultsRepository.forceDarkMode.value
+                toggle.accessibilityIdentifier = "forceDarkMode"
+            case .showStats:
+                cell.textLabel?.text = "Visa statistik"
+                toggle.isOn = UserDefaultsRepository.showStats.value
+                toggle.accessibilityIdentifier = "showStats"
+            case .useIFCC:
+                cell.textLabel?.text = "Använd IFCC A1C"
+                toggle.isOn = UserDefaultsRepository.useIFCC.value
+                toggle.accessibilityIdentifier = "useIFCC"
+            case .showSmallGraph:
+                cell.textLabel?.text = "Visa liten graf"
+                toggle.isOn = UserDefaultsRepository.showSmallGraph.value
+                toggle.accessibilityIdentifier = "showSmallGraph"
+            case .colorBGText:
+                cell.textLabel?.text = "Färglägg BG-text"
+                toggle.isOn = UserDefaultsRepository.colorBGText.value
+                toggle.accessibilityIdentifier = "colorBGText"
+            case .screenLock:
+                cell.textLabel?.text = "Håll skärmen aktiv"
+                toggle.isOn = UserDefaultsRepository.screenlockSwitchState.value
+                toggle.accessibilityIdentifier = "screenlockSwitchState"
+            case .showDisplayName:
+                cell.textLabel?.text = "Visa namn"
+                toggle.isOn = UserDefaultsRepository.showDisplayName.value
+                toggle.accessibilityIdentifier = "showDisplayName"
+            }
+            
+            cell.accessoryView = toggle
+            return cell
+            
+        case .speakSettings:
+            let rowKind = visibleSpeakRows[indexPath.row]
+            
+            switch rowKind {
+            case .speakBG:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell") ?? UITableViewCell(style: .default, reuseIdentifier: "SwitchCell")
+                cell.textLabel?.text = "Läs upp glukos"
+                cell.selectionStyle = .none
+                
+                let toggle = UISwitch()
+                toggle.isOn = UserDefaultsRepository.speakBG.value
+                toggle.addTarget(self, action: #selector(speakBGChanged(_:)), for: .valueChanged)
+                speakBGSwitch = toggle
+                cell.accessoryView = toggle
+                return cell
+                
+            case .language:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "ValueCell") ?? UITableViewCell(style: .value1, reuseIdentifier: "ValueCell")
+                cell.textLabel?.text = "Talat språk"
+                cell.accessoryType = .disclosureIndicator
+                cell.selectionStyle = .default
+                let code = UserDefaultsRepository.speakLanguage.value
+                cell.detailTextLabel?.text = languageDisplayName(for: code)
+                return cell
+                
+            case .always:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell") ?? UITableViewCell(style: .default, reuseIdentifier: "SwitchCell")
+                cell.textLabel?.text = "Alltid"
+                cell.selectionStyle = .none
+                
+                let toggle = UISwitch()
+                toggle.isOn = UserDefaultsRepository.speakBGAlways.value
+                toggle.addTarget(self, action: #selector(speakBGAlwaysChanged(_:)), for: .valueChanged)
+                cell.accessoryView = toggle
+                return cell
+                
+            case .low, .proactiveLow, .high:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "SwitchCell") ?? UITableViewCell(style: .default, reuseIdentifier: "SwitchCell")
+                cell.selectionStyle = .none
+                let toggle = UISwitch()
+                
+                switch rowKind {
+                case .low:
+                    cell.textLabel?.text = "Lågt"
+                    toggle.isOn = UserDefaultsRepository.speakLowBG.value
+                    toggle.addTarget(self, action: #selector(speakLowChanged(_:)), for: .valueChanged)
+                case .proactiveLow:
+                    cell.textLabel?.text = "Proaktivt lågt"
+                    toggle.isOn = UserDefaultsRepository.speakProactiveLowBG.value
+                    toggle.addTarget(self, action: #selector(speakProactiveLowChanged(_:)), for: .valueChanged)
+                case .high:
+                    cell.textLabel?.text = "Högt"
+                    toggle.isOn = UserDefaultsRepository.speakHighBG.value
+                    toggle.addTarget(self, action: #selector(speakHighChanged(_:)), for: .valueChanged)
+                default:
+                    break
+                }
+                
+                cell.accessoryView = toggle
+                return cell
+                
+            case .lowLimit, .fastDropDelta, .highLimit:
+                let cell = tableView.dequeueReusableCell(withIdentifier: "StepperCell") ?? UITableViewCell(style: .value1, reuseIdentifier: "StepperCell")
+                cell.selectionStyle = .none
+                
+                let stepper = UIStepper()
+                stepper.addTarget(self, action: #selector(stepperChanged(_:)), for: .valueChanged)
+                
+                switch rowKind {
+                case .lowLimit:
+                    cell.textLabel?.text = "Glukos lägre än"
+                    stepper.minimumValue = 40
+                    stepper.maximumValue = 108
+                    stepper.stepValue = 1
+                    stepper.tag = 1
+                    stepper.value = Double(UserDefaultsRepository.speakLowBGLimit.value)
+                    cell.detailTextLabel?.text = Localizer.toDisplayUnits(String(stepper.value))
+                case .fastDropDelta:
+                    cell.textLabel?.text = "Sjunker snabbt"
+                    stepper.minimumValue = 3
+                    stepper.maximumValue = 20
+                    stepper.stepValue = 1
+                    stepper.tag = 2
+                    stepper.value = Double(UserDefaultsRepository.speakFastDropDelta.value)
+                    cell.detailTextLabel?.text = Localizer.toDisplayUnits(String(stepper.value))
+                case .highLimit:
+                    cell.textLabel?.text = "Glukos högre än"
+                    stepper.minimumValue = 140
+                    stepper.maximumValue = 300
+                    stepper.stepValue = 1
+                    stepper.tag = 3
+                    stepper.value = Double(UserDefaultsRepository.speakHighBGLimit.value)
+                    cell.detailTextLabel?.text = Localizer.toDisplayUnits(String(stepper.value))
+                default:
+                    break
+                }
+                
+                cell.accessoryView = stepper
+                return cell
+            }
+        }
+    }
+    
+    // MARK: - UITableViewDelegate
+    
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        // Match the semi-transparent card background used in other settings views, including under the accessory chevrons.
+        if #available(iOS 14.0, *) {
+            var background = UIBackgroundConfiguration.listGroupedCell()
+            background.backgroundColor = sectionBackgroundColor
+            cell.backgroundConfiguration = background
+        } else {
+            cell.backgroundColor = sectionBackgroundColor
+            cell.contentView.backgroundColor = sectionBackgroundColor
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        guard let sectionKind = Section(rawValue: indexPath.section) else { return }
+        
+        if sectionKind == .speakSettings {
+            let rowKind = visibleSpeakRows[indexPath.row]
+            if case .language = rowKind {
+                presentLanguagePicker()
+            }
+        }
+    }
+    
+    // MARK: - Actions for switches and steppers
+    
+    @objc private func switchChanged(_ sender: UISwitch) {
+        switch sender.accessibilityIdentifier {
+        case "appBadge":
+            UserDefaultsRepository.appBadge.value = sender.isOn
+            if let appState = appStateController {
+                appState.generalSettingsChanged = true
+                appState.generalSettingsChanges |= GeneralSettingsChangeEnum.appBadgeChange.rawValue
+            }
+        case "persistentNotification":
+            UserDefaultsRepository.persistentNotification.value = sender.isOn
+        case "forceDarkMode":
+            UserDefaultsRepository.forceDarkMode.value = sender.isOn
+        case "showStats":
+            UserDefaultsRepository.showStats.value = sender.isOn
+            if let appState = appStateController {
+                appState.generalSettingsChanged = true
+                appState.generalSettingsChanges |= GeneralSettingsChangeEnum.showStatsChange.rawValue
+            }
+        case "useIFCC":
+            UserDefaultsRepository.useIFCC.value = sender.isOn
+            if let appState = appStateController {
+                appState.generalSettingsChanged = true
+                appState.generalSettingsChanges |= GeneralSettingsChangeEnum.useIFCCChange.rawValue
+            }
+        case "showSmallGraph":
+            UserDefaultsRepository.showSmallGraph.value = sender.isOn
+            if let appState = appStateController {
+                appState.generalSettingsChanged = true
+                appState.generalSettingsChanges |= GeneralSettingsChangeEnum.showSmallGraphChange.rawValue
+            }
+        case "colorBGText":
+            UserDefaultsRepository.colorBGText.value = sender.isOn
+            if let appState = appStateController {
+                appState.generalSettingsChanged = true
+                appState.generalSettingsChanges |= GeneralSettingsChangeEnum.colorBGTextChange.rawValue
+            }
+        case "screenlockSwitchState":
+            UserDefaultsRepository.screenlockSwitchState.value = sender.isOn
+        case "showDisplayName":
+            UserDefaultsRepository.showDisplayName.value = sender.isOn
+            if let appState = appStateController {
+                appState.generalSettingsChanged = true
+                appState.generalSettingsChanges |= GeneralSettingsChangeEnum.showDisplayNameChange.rawValue
+            }
+        default:
+            break
+        }
+    }
+    
+    @objc private func speakBGChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.speakBG.value = sender.isOn
+        updateSpeakBGSettingsVisibility()
+    }
+    
+    @objc private func speakBGAlwaysChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.speakBGAlways.value = sender.isOn
+        updateSpeakBGSettingsVisibility()
+    }
+    
+    @objc private func speakLowChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.speakLowBG.value = sender.isOn
+        handleLowProactiveLowToggle(currentIsLow: true, value: sender.isOn)
+    }
+    
+    @objc private func speakProactiveLowChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.speakProactiveLowBG.value = sender.isOn
+        handleLowProactiveLowToggle(currentIsLow: false, value: sender.isOn)
+    }
+    
+    @objc private func speakHighChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.speakHighBG.value = sender.isOn
+        updateSpeakBGSettingsVisibility()
+    }
+    
+    @objc private func stepperChanged(_ sender: UIStepper) {
+        let value = sender.value
+        switch sender.tag {
+        case 1:
+            UserDefaultsRepository.speakLowBGLimit.value = Float(value)
+        case 2:
+            UserDefaultsRepository.speakFastDropDelta.value = Float(value)
+        case 3:
+            UserDefaultsRepository.speakHighBGLimit.value = Float(value)
+        default:
+            break
+        }
+        
+        // Update the visible label text for this stepper's cell
+        if let indexPath = indexPathForStepper(sender),
+           let cell = tableView.cellForRow(at: indexPath) {
+            cell.detailTextLabel?.text = Localizer.toDisplayUnits(String(value))
+        }
+    }
+    
+    private func indexPathForStepper(_ stepper: UIStepper) -> IndexPath? {
+        let point = stepper.convert(CGPoint(x: 0, y: 0), to: tableView)
+        return tableView.indexPathForRow(at: point)
+    }
+    
+    // MARK: - Speak BG helpers
+    
+    private func languageDisplayName(for code: String?) -> String {
+        switch code {
+        case "en": return "Engelska"
+        case "it": return "Italienska"
+        case "sk": return "Slovakiska"
+        case "sv": return "Svenska"
+        default: return "Unknown"
+        }
+    }
+    
+    private func presentLanguagePicker() {
+        let alert = UIAlertController(title: "Välj språk", message: nil, preferredStyle: .actionSheet)
+        
+        let codes = ["en", "it", "sk", "sv"]
+        for code in codes {
+            let title = languageDisplayName(for: code)
+            let action = UIAlertAction(title: title, style: .default) { _ in
+                UserDefaultsRepository.speakLanguage.value = code
+                self.updateSpeakBGSettingsVisibility()
+            }
+            alert.addAction(action)
+        }
+        
+        alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+        
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        
+        present(alert, animated: true, completion: nil)
+    }
+    
+    private func updateSpeakBGSettingsVisibility() {
+        if let sectionIndex = Section.allCases.firstIndex(of: .speakSettings) {
+            tableView.reloadSections(IndexSet(integer: sectionIndex), with: .automatic)
+        }
+    }
+    
+    private func handleLowProactiveLowToggle(currentIsLow: Bool, value: Bool) {
+        // Mirror the old Eureka behavior: when one of Low / Proactive Low is turned ON, the other is turned OFF.
+        if value {
+            if currentIsLow {
+                UserDefaultsRepository.speakProactiveLowBG.value = false
+            } else {
+                UserDefaultsRepository.speakLowBG.value = false
+            }
+        }
+        updateSpeakBGSettingsVisibility()
+    }
+    
+    // MARK: - Foreground handling
+    
+    @objc func handleAppWillEnterForeground() {
+        // Ensure the Speak BG switch reflects the current setting when app returns to foreground.
+        speakBGSwitch?.isOn = UserDefaultsRepository.speakBG.value
+    }
+    
     deinit {
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
     }

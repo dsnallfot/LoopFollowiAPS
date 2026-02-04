@@ -8,471 +8,116 @@
 
 
 import UIKit
-import Eureka
 import EventKit
 import EventKitUI
 import SwiftUI
 
 @available(iOS 26.0, *)
-class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewModelDelegate {
-    var tokenRow: TextRow?
+class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelDelegate, UITableViewDataSource, UITableViewDelegate {
     var appStateController: AppStateController?
-    var statusLabelRow: LabelRow!
+
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+
+    // Background color used for section "cards", mirroring TrioOrefView list row background.
+    private let sectionBackgroundColor = UIColor.systemGray.withAlphaComponent(0.1)
+    
+    // Controls whether the Nightscout-specific "Informationsinställningar" row is shown.
+    private var hideNightscoutInfoRow = false
+    
+    // App info strings for the "Appinformation" section.
+    private var currentVersion: String = ""
+    private var latestVersion: String = "Fetching..."
+    private var buildDateString: String = ""
+    private var branchAndShaString: String = ""
+    private var expirationHeaderString: String = ""
+    private var expirationDateString: String = ""
+    private var trioExpirationString: String = ""
+    private var versionStatusColor: UIColor = .secondaryLabel
+    
+    // Section + row modeling for the table view.
+    private enum Section: Int, CaseIterable {
+        case historyStats
+        case trioSettings
+        case dataCapture
+        case appSettings
+        case integrations
+        case systemLog
+        case appInfo
+    }
+    
+    private enum AppSettingsRow {
+        case alarms, general, graphs, infoDisplay, advanced
+    }
+    
+    private enum AppInfoRow {
+        case version, latestVersion, expiration, build, branch, trioExpiration
+    }
+    
+    private var appSettingsRows: [AppSettingsRow] {
+        hideNightscoutInfoRow
+        ? [.alarms, .general, .graphs, .advanced]
+        : [.alarms, .general, .graphs, .infoDisplay, .advanced]
+    }
+    
+    private var appInfoRows: [AppInfoRow] {
+        var rows: [AppInfoRow] = [.version, .latestVersion]
+        if !isMacApp() {
+            rows.append(.expiration)
+        }
+        rows.append(contentsOf: [.build, .branch])
+        if !isMacApp() {
+            rows.append(.trioExpiration)
+        }
+        return rows
+    }
 
     func showHideNSDetails() {
-        var isHidden = false
-        var isEnabled = true
-        if !IsNightscoutEnabled() {
-            isHidden = true
-            isEnabled = false
+        let isEnabled = IsNightscoutEnabled()
+        hideNightscoutInfoRow = !isEnabled
+        
+        // Enable/disable the Nightscout tab.
+        if let nightscoutTab = self.tabBarController?.tabBar.items?[3] {
+            nightscoutTab.isEnabled = isEnabled
         }
-
-        if let row1 = form.rowBy(tag: "informationDisplaySettings") as? ButtonRow {
-            row1.hidden = .function(["hide"],  {form in
-                return isHidden
-            })
-            row1.evaluateHidden()
-        }
-
-        if IsNightscoutEnabled() {
-            isEnabled = true
-        }
-
-        guard let nightscoutTab = self.tabBarController?.tabBar.items![3] else { return }
-        nightscoutTab.isEnabled = isEnabled
+        
+        // Update the settings list to hide/show the Nightscout info row.
+        tableView.reloadData()
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         title = "App & Data"
-        applyTheme()
+        
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
-
+        
+        // Prepare static app info values.
         let buildDetails = BuildDetails.default
-        let formattedBuildDate = dateTimeUtils.formattedDate(from: buildDetails.buildDate())
-        let branchAndSha = buildDetails.branchAndSha
-        let expiration = dateTimeUtils.formattedDate(from: buildDetails.calculateExpirationDate())
-        let expirationHeaderString = buildDetails.expirationHeaderString
+        buildDateString = dateTimeUtils.formattedDate(from: buildDetails.buildDate())
+        branchAndShaString = buildDetails.branchAndSha
+        expirationDateString = dateTimeUtils.formattedDate(from: buildDetails.calculateExpirationDate())
+        expirationHeaderString = buildDetails.expirationHeaderString
         let versionManager = AppVersionManager()
-        let version = versionManager.version()
-        let trioExpiration = ProfileManager.shared.trioExpirationFormatted ?? "Unknown"
-
-        form
-        +++ Section("Historik & statistik")
-        <<< ButtonRow() { [weak self] row in
-            row.title = "Statistik"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-
-                    // Build AggregatedStatsViewModel using the MainViewController from the tab bar if available
-                    let mainVC = self.resolveMainViewController()
-                    let viewModel = AggregatedStatsViewModel(mainViewController: mainVC)
-
-                    // SwiftUI root view
-                    let rootView = AggregatedStatsView(viewModel: viewModel, showsDoneButton: false)
-
-                    // Host in a UIKit controller that can be pushed on the navigation stack
-                    let hostingController = UIHostingController(rootView: rootView)
-                    hostingController.title = "Statistik"
-                    hostingController.hidesBottomBarWhenPushed = false
-
-                    // Respect forced dark mode if enabled
-                    if UserDefaultsRepository.forceDarkMode.value {
-                        hostingController.overrideUserInterfaceStyle = .dark
-                    }
-
-                    return hostingController
-                }),
-                onDismiss: nil
-            )
-        }
+        currentVersion = versionManager.version()
+        trioExpirationString = ProfileManager.shared.trioExpirationFormatted ?? "Unknown"
         
-        <<< ButtonRow() { row in
-            row.title = "Behandlingar"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let treatmentsVC = TreatmentsTableView()
-                    treatmentsVC.title = "Behandlingar"
-                    treatmentsVC.hidesBottomBarWhenPushed = false
-                    return treatmentsVC
-                }),
-                onDismiss: nil
-            )
-        }
-        /*
-        <<< ButtonRow() { row in
-            row.title = "Dextrohistorik"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let lowTreatVC = LowTreatmentsView()
-                    lowTreatVC.title = "Dextro"
-                    lowTreatVC.hidesBottomBarWhenPushed = false
-                    return lowTreatVC
-                }),
-                onDismiss: nil
-            )
-        }
-         */
+        // Configure table view.
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.backgroundColor = .clear
+        tableView.separatorStyle = .singleLine
+        view.addSubview(tableView)
         
-        <<< ButtonRow() { row in
-            row.title = "Fingerstick & dextro"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let bgCheckVC = BGCheckView()
-                    bgCheckVC.title = "Fingerstick"
-                    bgCheckVC.hidesBottomBarWhenPushed = false
-                    return bgCheckVC
-                }),
-                onDismiss: nil
-            )
-        }
+        NSLayoutConstraint.activate([
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
         
-        <<< ButtonRow() { row in
-            row.title = "Glukos & sensorfel"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let glucoseVC = GlucoseView()
-                    glucoseVC.title = "Glukos"
-                    glucoseVC.hidesBottomBarWhenPushed = false
-                    return glucoseVC
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() { row in
-            row.title = "Poddar"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let pumpHistoryVC = PumpHistoryViewController()
-                    pumpHistoryVC.title = "Poddar"
-                    pumpHistoryVC.hidesBottomBarWhenPushed = false
-                    return pumpHistoryVC
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() { row in
-            row.title = "Sensorer"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let sensorHistoryVC = SensorHistoryViewController()
-                    sensorHistoryVC.title = "Sensorer"
-                    sensorHistoryVC.hidesBottomBarWhenPushed = false
-                    return sensorHistoryVC
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        +++ Section("\nTrio inställningar och status")
-        <<< ButtonRow() {
-            $0.title = "Algoritminställningar & analys"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
-                    let trioView = TrioPreferencesView()
-                        .preferredColorScheme(isDark ? .dark : .light)
-                        .environment(\.colorScheme, isDark ? .dark : .light)
-
-                    let hostingController = UIHostingController(rootView: trioView)
-                    hostingController.title = "Trio algoritm & analys"
-
-                    hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
-                    hostingController.hidesBottomBarWhenPushed = false
-
-                    return hostingController
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() {
-            $0.title = "Hälsodata & profilinställningar"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
-                    let profileSchedulesView = ProfileSchedulesView(onDone: { [weak self] in
-                        self?.navigationController?.popViewController(animated: true)
-                    })
-                        .preferredColorScheme(isDark ? .dark : .light)
-                        .environment(\.colorScheme, isDark ? .dark : .light)
-
-                    let hostingController = UIHostingController(rootView: profileSchedulesView)
-                    hostingController.title = "Profil"
-
-                    hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
-                    hostingController.hidesBottomBarWhenPushed = false
-
-                    return hostingController
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() {
-            $0.title = "Oref realtidsstatus"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let isDark = UserDefaultsRepository.forceDarkMode.value || self.traitCollection.userInterfaceStyle == .dark
-                    let trioOrefView = TrioOrefView()
-                        .preferredColorScheme(isDark ? .dark : .light)
-                        .environment(\.colorScheme, isDark ? .dark : .light)
-
-                    let hostingController = UIHostingController(rootView: trioOrefView)
-
-                    hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
-                    hostingController.hidesBottomBarWhenPushed = false
-
-                    return hostingController
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() {
-            $0.title = "Inställningslogg"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let settingsLogVC = TrioSettingsLogView()
-                    settingsLogVC.title = "Inställningslogg"
-                    settingsLogVC.hidesBottomBarWhenPushed = false
-                    settingsLogVC.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : self.traitCollection.userInterfaceStyle
-                    return settingsLogVC
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() { row in
-            row.title = "Batterilogg"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let batteryVC = BatteryLogViewController()
-                    batteryVC.title = "Batterilogg"
-                    batteryVC.hidesBottomBarWhenPushed = false
-                    return batteryVC
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() { row in
-            row.title = "Omstartslogg"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let restartsVC = TrioRestartsView()
-                    restartsVC.title = "Omstartslogg"
-                    restartsVC.hidesBottomBarWhenPushed = false
-                    return restartsVC
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        +++ Section(header: "\nDatafångstinställningar", footer: "")
-        <<< SegmentedRow<String>("units") { row in
-            row.title = "Enhet"
-            row.options = ["mg/dL", "mmol/L"]
-            row.value = UserDefaultsRepository.units.value
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.units.value = value
-        }
-        <<< ButtonRow("nightscout") { [weak self] row in
-            row.title = "Nightscoutinställningar"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeNightscoutSettingsViewController()
-                }),
-                onDismiss: nil
-            )
-        }
-        <<< ButtonRow("dexcom") { [weak self] row in
-            row.title = "Dexcominställningar"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeDexcomSettingsViewController()
-                }),
-                onDismiss: nil
-            )
-        }
-
-        +++ Section("\nAppinställningar")
-        
-        <<< ButtonRow("alarmsSettings") {
-            $0.title = "Alarminställningar"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let alarmVC = ViewControllerManager.shared.alarmViewController else {
-                        fatalError("AlarmViewController should be pre-instantiated and available")
-                    }
-                    return alarmVC
-                }), onDismiss: nil)
-        }
-        
-        <<< ButtonRow() {
-            $0.title = "Allmänna inställningar"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let controller = GeneralSettingsViewController()
-                    controller.appStateController = self.appStateController
-                    return controller
-                }
-                                             ), onDismiss: nil)
-        }
-        <<< ButtonRow("graphSettings") {
-            $0.title = "Grafinställningar"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let controller = GraphSettingsViewController()
-                    controller.appStateController = self.appStateController
-                    return controller
-                }
-                                             ), onDismiss: nil)
-        }
-        <<< ButtonRow("informationDisplaySettings") { [weak self] row in
-            row.title = "Informationsinställningar"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeInfoDisplaySettingsViewController()
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() { [weak self] row in
-            row.title = "Avancerade inställningar"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeAdvancedSettingsViewController()
-                }),
-                onDismiss: nil
-            )
-        }
-
-        +++ Section("\nIntegrationer")
-        
-        <<< ButtonRow("backgroundRefreshSettings") { [weak self] row in
-            row.title = "Bakgrundsaktivitet"
-            row.presentationMode = .none
-            row.cellUpdate { cell, _ in
-                cell.textLabel?.textAlignment = .left
-                cell.textLabel?.textColor = .label
-                cell.accessoryType = .disclosureIndicator
-            }
-            row.onCellSelection { [weak self] _, _ in
-                self?.presentBackgroundRefreshSettings()
-            }
-        }
-        <<< ButtonRow("syncNewSensor") { [weak self] row in
-            row.title = "Sensorbyten synk"
-            row.presentationMode = .none
-            row.cellUpdate { cell, _ in
-                cell.textLabel?.textAlignment = .left
-                cell.textLabel?.textColor = .label
-                cell.accessoryType = .disclosureIndicator
-            }
-            row.onCellSelection { [weak self] _, _ in
-                self?.presentSyncNewSensorView()
-            }
-        }
-        
-        <<< ButtonRow("remoteSettings") { [weak self] row in
-            row.title = "Fjärrkontrollinställningar"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeRemoteSettingsViewController()
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        <<< ButtonRow() {
-            $0.title = "Kalendertrick"
-            $0.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    let controller = WatchSettingsViewController()
-                    controller.appStateController = self.appStateController
-                    return controller
-                }
-                                             ), onDismiss: nil)
-        }
-        <<< ButtonRow("contact") { [weak self] row in
-            row.title = "Kontakttrick"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeContactSettingsViewController()
-                }),
-                onDismiss: nil
-            )
-        }
-        
-        +++ Section("\nSystemlogg")
-        <<< ButtonRow("viewlog") { [weak self] row in
-            row.title = "Se dagens logg"
-            row.presentationMode = .show(
-                controllerProvider: .callback(builder: {
-                    guard let self = self else { return UIViewController() }
-                    return self.makeLogViewController()
-                }),
-                onDismiss: nil
-            )
-        }
-        <<< ButtonRow("shareLogs") {
-            $0.title = "Dela logg"
-            $0.cellSetup { cell, _ in
-                cell.accessibilityIdentifier = "ShareLogsButton"
-            }
-            $0.cellUpdate { cell, _ in
-                cell.textLabel?.textAlignment = .left
-            }
-            $0.onCellSelection { [weak self] _, _ in
-                self?.shareLogs()
-            }
-        }
-
-            +++ Section("\nAppinformation")
-            <<< LabelRow() {
-                $0.title = "Version"
-                $0.value = version
-                $0.tag = "currentVersionRow"
-            }
-            <<< LabelRow() {
-                $0.title = "Senaste version"
-                $0.value = "Fetching..."
-                $0.tag = "latestVersionRow"
-            }
-            <<< LabelRow() {
-                $0.title = expirationHeaderString
-                $0.value = expiration
-                $0.hidden = Condition(booleanLiteral: isMacApp())
-            }
-            <<< LabelRow() {
-                $0.title = "Bygge"
-                $0.value = formattedBuildDate
-            }
-            <<< LabelRow() {
-                $0.title = "Branch"
-                $0.value = branchAndSha
-            }
-            <<< LabelRow() {
-                $0.title = "Trio löper ut"
-                $0.value = trioExpiration
-                $0.tag = "trioExpirationRow"
-                $0.hidden = Condition(booleanLiteral: isMacApp())
-            }
-
         showHideNSDetails()
     }
 
@@ -486,14 +131,18 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         let versionManager = AppVersionManager()
         versionManager.checkForNewVersion { latestVersion, isNewer, isBlacklisted in
             DispatchQueue.main.async {
-                if let currentVersionRow = self.form.rowBy(tag: "currentVersionRow") as? LabelRow {
-                    currentVersionRow.cell.detailTextLabel?.textColor = self.getColor(isBlacklisted: isBlacklisted, isNewer: isNewer, isCurrent: latestVersion == versionManager.version())
-                    currentVersionRow.updateCell()
-                }
-
-                if let latestVersionRow = self.form.rowBy(tag: "latestVersionRow") as? LabelRow {
-                    latestVersionRow.value = latestVersion ?? "Unknown"
-                    latestVersionRow.updateCell()
+                self.versionStatusColor = self.getColor(
+                    isBlacklisted: isBlacklisted,
+                    isNewer: isNewer,
+                    isCurrent: latestVersion == versionManager.version()
+                )
+                self.latestVersion = latestVersion ?? "Unknown"
+                
+                // Reload only the Appinformation section.
+                if let sectionIndex = Section.allCases.firstIndex(of: .appInfo) {
+                    self.tableView.reloadSections(IndexSet(integer: sectionIndex), with: .none)
+                } else {
+                    self.tableView.reloadData()
                 }
             }
         }
@@ -509,6 +158,414 @@ class SettingsViewController: ThemedFormViewController, NightscoutSettingsViewMo
         } else {
             return .secondaryLabel
         }
+    }
+
+    // MARK: - UITableViewDataSource
+
+    func numberOfSections(in tableView: UITableView) -> Int {
+        Section.allCases.count
+    }
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        guard let sectionKind = Section(rawValue: section) else { return 0 }
+        switch sectionKind {
+        case .historyStats:
+            // Statistik, Behandlingar, Fingerstick & dextro, Glukos & sensorfel, Poddar, Sensorer
+            return 6
+        case .trioSettings:
+            // Algoritminställningar, Hälsodata & profil, Oref-status, Inställningslogg, Batterilogg, Omstartslogg
+            return 6
+        case .dataCapture:
+            // Enhet, Nightscoutinställningar, Dexcominställningar
+            return 3
+        case .appSettings:
+            return appSettingsRows.count
+        case .integrations:
+            // Bakgrundsaktivitet, Sensorbyten synk, Fjärrkontrollinställningar, Kalendertrick, Kontakttrick
+            return 5
+        case .systemLog:
+            // Se dagens logg, Dela logg
+            return 2
+        case .appInfo:
+            return appInfoRows.count
+        }
+    }
+
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        guard let sectionKind = Section(rawValue: section) else { return nil }
+        switch sectionKind {
+        case .historyStats:
+            return "Historik & statistik"
+        case .trioSettings:
+            return "\nTrio inställningar och status"
+        case .dataCapture:
+            return "\nDatafångstinställningar"
+        case .appSettings:
+            return "\nAppinställningar"
+        case .integrations:
+            return "\nIntegrationer"
+        case .systemLog:
+            return "\nSystemlogg"
+        case .appInfo:
+            return "\nAppinformation"
+        }
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let sectionKind = Section(rawValue: indexPath.section) else {
+            return UITableViewCell(style: .default, reuseIdentifier: "Cell")
+        }
+
+        switch sectionKind {
+        case .historyStats:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "HistoryCell") ?? UITableViewCell(style: .default, reuseIdentifier: "HistoryCell")
+            cell.accessoryType = .disclosureIndicator
+            switch indexPath.row {
+            case 0: cell.textLabel?.text = "Statistik"
+            case 1: cell.textLabel?.text = "Behandlingar"
+            case 2: cell.textLabel?.text = "Fingerstick & dextro"
+            case 3: cell.textLabel?.text = "Glukos & sensorfel"
+            case 4: cell.textLabel?.text = "Poddar"
+            case 5: cell.textLabel?.text = "Sensorer"
+            default: break
+            }
+            return cell
+
+        case .trioSettings:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "TrioCell") ?? UITableViewCell(style: .default, reuseIdentifier: "TrioCell")
+            cell.accessoryType = .disclosureIndicator
+            switch indexPath.row {
+            case 0: cell.textLabel?.text = "Algoritminställningar & analys"
+            case 1: cell.textLabel?.text = "Hälsodata & profilinställningar"
+            case 2: cell.textLabel?.text = "Oref realtidsstatus"
+            case 3: cell.textLabel?.text = "Inställningslogg"
+            case 4: cell.textLabel?.text = "Batterilogg"
+            case 5: cell.textLabel?.text = "Omstartslogg"
+            default: break
+            }
+            return cell
+
+        case .dataCapture:
+            if indexPath.row == 0 {
+                // Enhet with segmented control
+                let cell = tableView.dequeueReusableCell(withIdentifier: "UnitsCell") ?? UITableViewCell(style: .default, reuseIdentifier: "UnitsCell")
+                cell.textLabel?.text = "Enhet"
+                cell.selectionStyle = .none
+
+                let segmented = UISegmentedControl(items: ["mg/dL", "mmol/L"])
+                let currentUnits = UserDefaultsRepository.units.value
+                segmented.selectedSegmentIndex = (currentUnits == "mg/dL") ? 0 : 1
+                segmented.addTarget(self, action: #selector(unitsSegmentChanged(_:)), for: .valueChanged)
+                cell.accessoryView = segmented
+                return cell
+            } else {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "DataCaptureCell") ?? UITableViewCell(style: .default, reuseIdentifier: "DataCaptureCell")
+                cell.accessoryType = .disclosureIndicator
+                if indexPath.row == 1 {
+                    cell.textLabel?.text = "Nightscoutinställningar"
+                } else {
+                    cell.textLabel?.text = "Dexcominställningar"
+                }
+                return cell
+            }
+
+        case .appSettings:
+            let rowKind = appSettingsRows[indexPath.row]
+            let cell = tableView.dequeueReusableCell(withIdentifier: "AppSettingsCell") ?? UITableViewCell(style: .default, reuseIdentifier: "AppSettingsCell")
+            cell.accessoryType = .disclosureIndicator
+            switch rowKind {
+            case .alarms:
+                cell.textLabel?.text = "Alarminställningar"
+            case .general:
+                cell.textLabel?.text = "Allmänna inställningar"
+            case .graphs:
+                cell.textLabel?.text = "Grafinställningar"
+            case .infoDisplay:
+                cell.textLabel?.text = "Informationsinställningar"
+            case .advanced:
+                cell.textLabel?.text = "Avancerade inställningar"
+            }
+            return cell
+
+        case .integrations:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "IntegrationsCell") ?? UITableViewCell(style: .default, reuseIdentifier: "IntegrationsCell")
+            cell.accessoryType = .disclosureIndicator
+            switch indexPath.row {
+            case 0: cell.textLabel?.text = "Bakgrundsaktivitet"
+            case 1: cell.textLabel?.text = "Sensorbyten synk"
+            case 2: cell.textLabel?.text = "Fjärrkontrollinställningar"
+            case 3: cell.textLabel?.text = "Kalendertrick"
+            case 4: cell.textLabel?.text = "Kontakttrick"
+            default: break
+            }
+            return cell
+
+        case .systemLog:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "SystemLogCell") ?? UITableViewCell(style: .default, reuseIdentifier: "SystemLogCell")
+            if indexPath.row == 0 {
+                cell.textLabel?.text = "Se dagens logg"
+                cell.accessoryType = .disclosureIndicator
+            } else {
+                cell.textLabel?.text = "Dela logg"
+                cell.accessoryType = .none
+            }
+            return cell
+
+        case .appInfo:
+            let rowKind = appInfoRows[indexPath.row]
+            let cell = tableView.dequeueReusableCell(withIdentifier: "AppInfoCell") ?? UITableViewCell(style: .value1, reuseIdentifier: "AppInfoCell")
+            cell.selectionStyle = .none
+            cell.accessoryType = .none
+
+            switch rowKind {
+            case .version:
+                cell.textLabel?.text = "Version"
+                cell.detailTextLabel?.text = currentVersion
+                cell.detailTextLabel?.textColor = versionStatusColor
+            case .latestVersion:
+                cell.textLabel?.text = "Senaste version"
+                cell.detailTextLabel?.text = latestVersion
+                cell.detailTextLabel?.textColor = .secondaryLabel
+            case .expiration:
+                cell.textLabel?.text = expirationHeaderString
+                cell.detailTextLabel?.text = expirationDateString
+                cell.detailTextLabel?.textColor = .secondaryLabel
+            case .build:
+                cell.textLabel?.text = "Bygge"
+                cell.detailTextLabel?.text = buildDateString
+                cell.detailTextLabel?.textColor = .secondaryLabel
+            case .branch:
+                cell.textLabel?.text = "Branch"
+                cell.detailTextLabel?.text = branchAndShaString
+                cell.detailTextLabel?.textColor = .secondaryLabel
+            case .trioExpiration:
+                cell.textLabel?.text = "Trio löper ut"
+                cell.detailTextLabel?.text = trioExpirationString
+                cell.detailTextLabel?.textColor = .secondaryLabel
+            }
+            return cell
+        }
+    }
+
+    // MARK: - UITableViewDelegate
+
+    func tableView(_ tableView: UITableView,
+                   willDisplay cell: UITableViewCell,
+                   forRowAt indexPath: IndexPath) {
+        // Matcha kort-bakgrunden (inkl. bakom chevrons)
+            var background = UIBackgroundConfiguration.listGroupedCell()
+            background.backgroundColor = sectionBackgroundColor
+            cell.backgroundConfiguration = background
+    }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        guard let sectionKind = Section(rawValue: indexPath.section) else { return }
+
+        switch sectionKind {
+        case .historyStats:
+            switch indexPath.row {
+            case 0:
+                // Statistik
+                let mainVC = resolveMainViewController()
+                let viewModel = AggregatedStatsViewModel(mainViewController: mainVC)
+                let rootView = AggregatedStatsView(viewModel: viewModel, showsDoneButton: false)
+                let hostingController = UIHostingController(rootView: rootView)
+                hostingController.title = "Statistik"
+                hostingController.hidesBottomBarWhenPushed = false
+                if UserDefaultsRepository.forceDarkMode.value {
+                    hostingController.overrideUserInterfaceStyle = .dark
+                }
+                navigationController?.pushViewController(hostingController, animated: true)
+
+            case 1:
+                // Behandlingar
+                let treatmentsVC = TreatmentsTableView()
+                treatmentsVC.title = "Behandlingar"
+                treatmentsVC.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(treatmentsVC, animated: true)
+
+            case 2:
+                // Fingerstick & dextro
+                let bgCheckVC = BGCheckView()
+                bgCheckVC.title = "Fingerstick"
+                bgCheckVC.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(bgCheckVC, animated: true)
+
+            case 3:
+                // Glukos & sensorfel
+                let glucoseVC = GlucoseView()
+                glucoseVC.title = "Glukos"
+                glucoseVC.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(glucoseVC, animated: true)
+
+            case 4:
+                // Poddar
+                let pumpHistoryVC = PumpHistoryViewController()
+                pumpHistoryVC.title = "Poddar"
+                pumpHistoryVC.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(pumpHistoryVC, animated: true)
+
+            case 5:
+                // Sensorer
+                let sensorHistoryVC = SensorHistoryViewController()
+                sensorHistoryVC.title = "Sensorer"
+                sensorHistoryVC.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(sensorHistoryVC, animated: true)
+
+            default:
+                break
+            }
+
+        case .trioSettings:
+            switch indexPath.row {
+            case 0:
+                // Algoritminställningar & analys
+                let isDark = UserDefaultsRepository.forceDarkMode.value || traitCollection.userInterfaceStyle == .dark
+                let trioView = TrioPreferencesView()
+                    .preferredColorScheme(isDark ? .dark : .light)
+                    .environment(\.colorScheme, isDark ? .dark : .light)
+                let hostingController = UIHostingController(rootView: trioView)
+                hostingController.title = "Trio algoritm & analys"
+                hostingController.overrideUserInterfaceStyle = isDark ? .dark : traitCollection.userInterfaceStyle
+                hostingController.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(hostingController, animated: true)
+
+            case 1:
+                // Hälsodata & profilinställningar
+                let isDark = UserDefaultsRepository.forceDarkMode.value || traitCollection.userInterfaceStyle == .dark
+                let profileSchedulesView = ProfileSchedulesView(onDone: { [weak self] in
+                    self?.navigationController?.popViewController(animated: true)
+                })
+                    .preferredColorScheme(isDark ? .dark : .light)
+                    .environment(\.colorScheme, isDark ? .dark : .light)
+                let hostingController = UIHostingController(rootView: profileSchedulesView)
+                hostingController.title = "Profil"
+                hostingController.overrideUserInterfaceStyle = isDark ? .dark : traitCollection.userInterfaceStyle
+                hostingController.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(hostingController, animated: true)
+
+            case 2:
+                // Oref realtidsstatus
+                let isDark = UserDefaultsRepository.forceDarkMode.value || traitCollection.userInterfaceStyle == .dark
+                let trioOrefView = TrioOrefView()
+                    .preferredColorScheme(isDark ? .dark : .light)
+                    .environment(\.colorScheme, isDark ? .dark : .light)
+                let hostingController = UIHostingController(rootView: trioOrefView)
+                hostingController.overrideUserInterfaceStyle = isDark ? .dark : traitCollection.userInterfaceStyle
+                hostingController.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(hostingController, animated: true)
+
+            case 3:
+                // Inställningslogg
+                let settingsLogVC = TrioSettingsLogView()
+                settingsLogVC.title = "Inställningslogg"
+                settingsLogVC.hidesBottomBarWhenPushed = false
+                settingsLogVC.overrideUserInterfaceStyle = UserDefaultsRepository.forceDarkMode.value ? .dark : traitCollection.userInterfaceStyle
+                navigationController?.pushViewController(settingsLogVC, animated: true)
+
+            case 4:
+                // Batterilogg
+                let batteryVC = BatteryLogViewController()
+                batteryVC.title = "Batterilogg"
+                batteryVC.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(batteryVC, animated: true)
+
+            case 5:
+                // Omstartslogg
+                let restartsVC = TrioRestartsView()
+                restartsVC.title = "Omstartslogg"
+                restartsVC.hidesBottomBarWhenPushed = false
+                navigationController?.pushViewController(restartsVC, animated: true)
+
+            default:
+                break
+            }
+
+        case .dataCapture:
+            switch indexPath.row {
+            case 0:
+                // Units row has segmented control; no navigation.
+                break
+            case 1:
+                // Nightscoutinställningar
+                let controller = makeNightscoutSettingsViewController()
+                navigationController?.pushViewController(controller, animated: true)
+            case 2:
+                // Dexcominställningar
+                let controller = makeDexcomSettingsViewController()
+                navigationController?.pushViewController(controller, animated: true)
+            default:
+                break
+            }
+
+        case .appSettings:
+            let rowKind = appSettingsRows[indexPath.row]
+            switch rowKind {
+            case .alarms:
+                if let alarmVC = ViewControllerManager.shared.alarmViewController {
+                    navigationController?.pushViewController(alarmVC, animated: true)
+                }
+            case .general:
+                let controller = GeneralSettingsViewController()
+                controller.appStateController = appStateController
+                navigationController?.pushViewController(controller, animated: true)
+            case .graphs:
+                let controller = GraphSettingsViewController()
+                controller.appStateController = appStateController
+                navigationController?.pushViewController(controller, animated: true)
+            case .infoDisplay:
+                let controller = makeInfoDisplaySettingsViewController()
+                navigationController?.pushViewController(controller, animated: true)
+            case .advanced:
+                let controller = makeAdvancedSettingsViewController()
+                navigationController?.pushViewController(controller, animated: true)
+            }
+
+        case .integrations:
+            switch indexPath.row {
+            case 0:
+                // Bakgrundsaktivitet (modal)
+                presentBackgroundRefreshSettings()
+            case 1:
+                // Sensorbyten synk (modal)
+                presentSyncNewSensorView()
+            case 2:
+                // Fjärrkontrollinställningar
+                let controller = makeRemoteSettingsViewController()
+                navigationController?.pushViewController(controller, animated: true)
+            case 3:
+                // Kalendertrick
+                let controller = WatchSettingsViewController()
+                controller.appStateController = appStateController
+                navigationController?.pushViewController(controller, animated: true)
+            case 4:
+                // Kontakttrick
+                let controller = makeContactSettingsViewController()
+                navigationController?.pushViewController(controller, animated: true)
+            default:
+                break
+            }
+
+        case .systemLog:
+            if indexPath.row == 0 {
+                // Se dagens logg
+                let controller = makeLogViewController()
+                navigationController?.pushViewController(controller, animated: true)
+            } else {
+                // Dela logg
+                shareLogs()
+            }
+
+        case .appInfo:
+            // Static info-only rows; no navigation.
+            break
+        }
+    }
+
+    @objc private func unitsSegmentChanged(_ sender: UISegmentedControl) {
+        let value = sender.selectedSegmentIndex == 0 ? "mg/dL" : "mmol/L"
+        UserDefaultsRepository.units.value = value
     }
 
     func isMacApp() -> Bool {
