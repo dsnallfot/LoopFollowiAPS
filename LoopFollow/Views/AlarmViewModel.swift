@@ -108,6 +108,12 @@ class AlarmViewModel {
                 return getNotLoopingAlertRows()
             case "Lågt batteri":
                 return getLowBatteryAlertRows()
+            case "Sensorbyte":
+                return getSAgeAlertRows()
+            case "Pumpbyte":
+                return getCAgeAlertRows()
+            case "Reservoar":
+                return getReservoirAlertRows()
             default:
                 // Hantera andra larm här...
                 return []
@@ -954,6 +960,258 @@ class AlarmViewModel {
             return rows
         }
     }
+    
+    // MARK: - SAGE (Sensorbyte) Alert Logic
+    func getSAgeAlertRows() -> [AlarmRow] {
+        var rows: [AlarmRow] = []
+        let isActive = UserDefaultsRepository.alertSAGEActive.value
+
+        // 1. Active
+        rows.append(.toggle(title: "Aktiverat", isOn: isActive, id: "sage_active"))
+        guard isActive else { return rows }
+
+        // 2. Time (hours before sensor change)
+        rows.append(.valueStepper(
+            title: "Tid före byte",
+            value: Double(UserDefaultsRepository.alertSAGE.value),
+            min: 1,
+            max: 24,
+            step: 1,
+            unit: " h",
+            id: "sage_time"
+        ))
+
+        // 3. Snooze (hours)
+        rows.append(.valueStepper(
+            title: "Snooze (timmar)",
+            value: Double(UserDefaultsRepository.alertSAGESnooze.value),
+            min: 1,
+            max: 24,
+            step: 1,
+            unit: " h",
+            id: "sage_snooze"
+        ))
+
+        // 4. Sound
+        rows.append(.soundPicker(
+            title: "Larmljud",
+            currentSound: UserDefaultsRepository.alertSAGESound.value ?? "Default",
+            id: "sage_sound"
+        ))
+
+        // 5. Play Sound (dag/natt/alltid)
+        rows.append(.optionPicker(
+            title: "Spela larm",
+            currentOption: UserDefaultsRepository.alertSAGEAudible.value,
+            options: ["Alltid", "Nattetid", "Dagtid", "Aldrig"],
+            id: "sage_audible"
+        ))
+
+        // 6. Repeat Sound
+        rows.append(.optionPicker(
+            title: "Repetera larm",
+            currentOption: UserDefaultsRepository.alertSAGERepeat.value,
+            options: ["Aldrig", "Alltid", "Nattetid", "Dagtid"],
+            id: "sage_repeat"
+        ))
+
+        // 7. Pre-Snooze
+        rows.append(.optionPicker(
+            title: "För-Snooza",
+            currentOption: UserDefaultsRepository.alertSAGEAutosnooze.value,
+            options: ["Aldrig", "Nattetid", "Dagtid"],
+            id: "sage_autosnooze"
+        ))
+
+        // 8. Snoozad till
+        let storedSnoozedTime = UserDefaultsRepository.alertSAGESnoozedTime.value
+        let isSnoozed = UserDefaultsRepository.alertSAGEIsSnoozed.value
+        let snoozedTime = isSnoozed ? storedSnoozedTime : nil
+
+        rows.append(.dateValue(
+            title: "Snoozad till",
+            date: snoozedTime,
+            id: "sage_snoozed_time"
+        ))
+
+        if snoozedTime != nil {
+            rows.append(.toggle(
+                title: "Är snoozad",
+                isOn: isSnoozed,
+                id: "sage_is_snoozed"
+            ))
+        }
+
+        return rows
+    }
+
+    // MARK: - CAGE (Pumpbyte) Alert Logic
+    func getCAgeAlertRows() -> [AlarmRow] {
+        var rows: [AlarmRow] = []
+        let isActive = UserDefaultsRepository.alertCAGEActive.value
+
+        // 1. Active
+        rows.append(.toggle(title: "Aktiverat", isOn: isActive, id: "cage_active"))
+        guard isActive else { return rows }
+
+        // 2. Time (hours before canula/pump change)
+        rows.append(.valueStepper(
+            title: "Tid före byte",
+            value: Double(UserDefaultsRepository.alertCAGE.value),
+            min: 1,
+            max: 24,
+            step: 1,
+            unit: " h",
+            id: "cage_time"
+        ))
+
+        // 3. Snooze (hours)
+        rows.append(.valueStepper(
+            title: "Snooze (timmar)",
+            value: Double(UserDefaultsRepository.alertCAGESnooze.value),
+            min: 1,
+            max: 24,
+            step: 1,
+            unit: " h",
+            id: "cage_snooze"
+        ))
+
+        // 4. Sound
+        rows.append(.soundPicker(
+            title: "Larmljud",
+            currentSound: UserDefaultsRepository.alertCAGESound.value ?? "Default",
+            id: "cage_sound"
+        ))
+
+        // 5. Play Sound
+        rows.append(.optionPicker(
+            title: "Spela larm",
+            currentOption: UserDefaultsRepository.alertCAGEAudible.value,
+            options: ["Alltid", "Nattetid", "Dagtid", "Aldrig"],
+            id: "cage_audible"
+        ))
+
+        // 6. Repeat Sound
+        rows.append(.optionPicker(
+            title: "Repetera larm",
+            currentOption: UserDefaultsRepository.alertCAGERepeat.value,
+            options: ["Aldrig", "Alltid", "Nattetid", "Dagtid"],
+            id: "cage_repeat"
+        ))
+
+        // 7. Pre-Snooze
+        rows.append(.optionPicker(
+            title: "För-Snooza",
+            currentOption: UserDefaultsRepository.alertCAGEAutosnooze.value,
+            options: ["Aldrig", "Nattetid", "Dagtid"],
+            id: "cage_autosnooze"
+        ))
+
+        // 8. Snoozed Until
+        let storedSnoozedTime = UserDefaultsRepository.alertCAGESnoozedTime.value
+        let isSnoozed = UserDefaultsRepository.alertCAGEIsSnoozed.value
+        let snoozedTime = isSnoozed ? storedSnoozedTime : nil
+
+        rows.append(.dateValue(
+            title: "Snoozad till",
+            date: snoozedTime,
+            id: "cage_snoozed_time"
+        ))
+
+        if snoozedTime != nil {
+            rows.append(.toggle(
+                title: "Är snoozad",
+                isOn: isSnoozed,
+                id: "cage_is_snoozed"
+            ))
+        }
+
+        return rows
+    }
+
+    // MARK: - Pump / Reservoar Alert Logic
+    func getReservoirAlertRows() -> [AlarmRow] {
+        var rows: [AlarmRow] = []
+        let isActive = UserDefaultsRepository.alertPump.value
+
+        // 1. Active
+        rows.append(.toggle(title: "Aktiverat", isOn: isActive, id: "reservoir_active"))
+        guard isActive else { return rows }
+
+        // 2. Units Remaining
+        rows.append(.valueStepper(
+            title: "Enheter kvar",
+            value: Double(UserDefaultsRepository.alertPumpAt.value),
+            min: 1,
+            max: 49,
+            step: 1,
+            unit: " E",
+            id: "reservoir_units"
+        ))
+
+        // 3. Snooze Hours
+        rows.append(.valueStepper(
+            title: "Snooze (timmar)",
+            value: Double(UserDefaultsRepository.alertPumpSnoozeHours.value),
+            min: 1,
+            max: 24,
+            step: 1,
+            unit: " h",
+            id: "reservoir_snooze_hours"
+        ))
+
+        // 4. Sound
+        rows.append(.soundPicker(
+            title: "Larmljud",
+            currentSound: UserDefaultsRepository.alertPumpSound.value ?? "Default",
+            id: "reservoir_sound"
+        ))
+
+        // 5. Play Sound
+        rows.append(.optionPicker(
+            title: "Spela larm",
+            currentOption: UserDefaultsRepository.alertPumpAudible.value,
+            options: ["Alltid", "Nattetid", "Dagtid", "Aldrig"],
+            id: "reservoir_audible"
+        ))
+
+        // 6. Repeat Sound
+        rows.append(.optionPicker(
+            title: "Repetera larm",
+            currentOption: UserDefaultsRepository.alertPumpRepeat.value,
+            options: ["Aldrig", "Alltid", "Nattetid", "Dagtid"],
+            id: "reservoir_repeat"
+        ))
+
+        // 7. Pre-Snooze
+        rows.append(.optionPicker(
+            title: "För-Snooza",
+            currentOption: UserDefaultsRepository.alertPumpAutosnooze.value,
+            options: ["Aldrig", "Nattetid", "Dagtid"],
+            id: "reservoir_autosnooze"
+        ))
+
+        // 8. Snoozed Until
+        let storedSnoozedTime = UserDefaultsRepository.alertPumpSnoozedTime.value
+        let isSnoozed = UserDefaultsRepository.alertPumpIsSnoozed.value
+        let snoozedTime = isSnoozed ? storedSnoozedTime : nil
+
+        rows.append(.dateValue(
+            title: "Snoozad till",
+            date: snoozedTime,
+            id: "reservoir_snoozed_time"
+        ))
+
+        if snoozedTime != nil {
+            rows.append(.toggle(
+                title: "Är snoozad",
+                isOn: isSnoozed,
+                id: "reservoir_is_snoozed"
+            ))
+        }
+
+        return rows
+    }
 
     
     // MARK: - Night and General Settings Logic
@@ -1051,6 +1309,34 @@ class AlarmViewModel {
 
         case "low_battery_repeat":
             UserDefaultsRepository.alertBatteryRepeat.value = value
+            
+        case "sage_active":
+            UserDefaultsRepository.alertSAGEActive.value = value
+
+        case "sage_is_snoozed":
+            UserDefaultsRepository.alertSAGEIsSnoozed.value = value
+            if !value {
+                UserDefaultsRepository.alertSAGESnoozedTime.setNil(key: "alertSAGESnoozedTime")
+            }
+
+        case "cage_active":
+            UserDefaultsRepository.alertCAGEActive.value = value
+
+        case "cage_is_snoozed":
+            UserDefaultsRepository.alertCAGEIsSnoozed.value = value
+            if !value {
+                UserDefaultsRepository.alertCAGESnoozedTime.setNil(key: "alertCAGESnoozedTime")
+            }
+
+        case "reservoir_active":
+            UserDefaultsRepository.alertPump.value = value
+
+        case "reservoir_is_snoozed":
+            UserDefaultsRepository.alertPumpIsSnoozed.value = value
+            if !value {
+                UserDefaultsRepository.alertPumpSnoozedTime.setNil(key: "alertPumpSnoozedTime")
+            }
+            
         // --- Globala Inställningar ---
         case "alertSnoozeAllIsSnoozed":
             UserDefaultsRepository.alertSnoozeAllIsSnoozed.value = value
@@ -1223,6 +1509,25 @@ class AlarmViewModel {
                 UserDefaultsRepository.alertBatteryLevel.value = Int(value)
             case "low_battery_snooze_hours":
                 UserDefaultsRepository.alertBatterySnoozeHours.value = Int(value)
+                
+            case "sage_time":
+                UserDefaultsRepository.alertSAGE.value = Int(value)
+
+            case "sage_snooze":
+                UserDefaultsRepository.alertSAGESnooze.value = Int(value)
+
+            case "cage_time":
+                UserDefaultsRepository.alertCAGE.value = Int(value)
+
+            case "cage_snooze":
+                UserDefaultsRepository.alertCAGESnooze.value = Int(value)
+
+            case "reservoir_units":
+                UserDefaultsRepository.alertPumpAt.value = Int(value)
+
+            case "reservoir_snooze_hours":
+                UserDefaultsRepository.alertPumpSnoozeHours.value = Int(value)
+                
             default: break
             }
         }
@@ -1435,6 +1740,81 @@ class AlarmViewModel {
                     AlarmSound.setSoundFile(str: value)
                     AlarmSound.stop()
                     AlarmSound.playTest()
+                
+                // --- SAGE (Sensorbyte) ---
+                case "sage_sound":
+                    UserDefaultsRepository.alertSAGESound.value = value
+                    AlarmSound.setSoundFile(str: value)
+                    AlarmSound.stop()
+                    AlarmSound.playTest()
+
+                case "sage_audible":
+                    UserDefaultsRepository.alertSAGEAudible.value = value
+                    let sageAudible = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertSAGEDayTimeAudible.value = sageAudible.dayTime
+                    UserDefaultsRepository.alertSAGENightTimeAudible.value = sageAudible.nightTime
+
+                case "sage_repeat":
+                    UserDefaultsRepository.alertSAGERepeat.value = value
+                    let sageRepeat = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertSAGEDayTime.value = sageRepeat.dayTime
+                    UserDefaultsRepository.alertSAGENightTime.value = sageRepeat.nightTime
+
+                case "sage_autosnooze":
+                    UserDefaultsRepository.alertSAGEAutosnooze.value = value
+                    let sageAutosnooze = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertSAGEAutosnoozeDay.value = sageAutosnooze.dayTime
+                    UserDefaultsRepository.alertSAGEAutosnoozeNight.value = sageAutosnooze.nightTime
+
+                // --- CAGE (Pumpbyte) ---
+                case "cage_sound":
+                    UserDefaultsRepository.alertCAGESound.value = value
+                    AlarmSound.setSoundFile(str: value)
+                    AlarmSound.stop()
+                    AlarmSound.playTest()
+
+                case "cage_audible":
+                    UserDefaultsRepository.alertCAGEAudible.value = value
+                    let cageAudible = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertCAGEDayTimeAudible.value = cageAudible.dayTime
+                    UserDefaultsRepository.alertCAGENightTimeAudible.value = cageAudible.nightTime
+
+                case "cage_repeat":
+                    UserDefaultsRepository.alertCAGERepeat.value = value
+                    let cageRepeat = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertCAGEDayTime.value = cageRepeat.dayTime
+                    UserDefaultsRepository.alertCAGENightTime.value = cageRepeat.nightTime
+
+                case "cage_autosnooze":
+                    UserDefaultsRepository.alertCAGEAutosnooze.value = value
+                    let cageAutosnooze = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertCAGEAutosnoozeDay.value = cageAutosnooze.dayTime
+                    UserDefaultsRepository.alertCAGEAutosnoozeNight.value = cageAutosnooze.nightTime
+
+                // --- Pump / Reservoir ---
+                case "reservoir_sound":
+                    UserDefaultsRepository.alertPumpSound.value = value
+                    AlarmSound.setSoundFile(str: value)
+                    AlarmSound.stop()
+                    AlarmSound.playTest()
+
+                case "reservoir_audible":
+                    UserDefaultsRepository.alertPumpAudible.value = value
+                    let pumpAudible = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertPumpDayTimeAudible.value = pumpAudible.dayTime
+                    UserDefaultsRepository.alertPumpNightTimeAudible.value = pumpAudible.nightTime
+
+                case "reservoir_repeat":
+                    UserDefaultsRepository.alertPumpRepeat.value = value
+                    let pumpRepeat = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertPumpDayTime.value = pumpRepeat.dayTime
+                    UserDefaultsRepository.alertPumpNightTime.value = pumpRepeat.nightTime
+
+                case "reservoir_autosnooze":
+                    UserDefaultsRepository.alertPumpAutosnooze.value = value
+                    let pumpAutosnooze = timeBasedSettings(pickerValue: value)
+                    UserDefaultsRepository.alertPumpAutosnoozeDay.value = pumpAutosnooze.dayTime
+                    UserDefaultsRepository.alertPumpAutosnoozeNight.value = pumpAutosnooze.nightTime
 
             default: break
             }
@@ -1443,12 +1823,11 @@ class AlarmViewModel {
     // Hantera Datum-ändringar (Snoozed Until, Global Snooze/Mute, Nattinställningar)
             func updateDate(id: String, date: Date) {
                 switch id {
-                // --- Specifika larm (t.ex. Akut låg) ---
                 case "urgent_low_snoozed_time":
                     UserDefaultsRepository.alertUrgentLowSnoozedTime.value = date
                     UserDefaultsRepository.alertUrgentLowIsSnoozed.value = true
                     updateSnapshotData()
-                // --- Specifika larm (t.ex. Låg) ---
+
                 case "low_snoozed_time":
                     UserDefaultsRepository.alertLowSnoozedTime.value = date
                     UserDefaultsRepository.alertLowIsSnoozed.value = true
@@ -1482,6 +1861,21 @@ class AlarmViewModel {
                 case "fast_rise_snoozed_time":
                     UserDefaultsRepository.alertFastRiseSnoozedTime.value = date
                     UserDefaultsRepository.alertFastRiseIsSnoozed.value = true
+                    updateSnapshotData()
+                    
+                case "sage_snoozed_time":
+                    UserDefaultsRepository.alertSAGESnoozedTime.value = date
+                    UserDefaultsRepository.alertSAGEIsSnoozed.value = true
+                    updateSnapshotData()
+
+                case "cage_snoozed_time":
+                    UserDefaultsRepository.alertCAGESnoozedTime.value = date
+                    UserDefaultsRepository.alertCAGEIsSnoozed.value = true
+                    updateSnapshotData()
+
+                case "reservoir_snoozed_time":
+                    UserDefaultsRepository.alertPumpSnoozedTime.value = date
+                    UserDefaultsRepository.alertPumpIsSnoozed.value = true
                     updateSnapshotData()
                     
                 // --- Globala inställningar ---
