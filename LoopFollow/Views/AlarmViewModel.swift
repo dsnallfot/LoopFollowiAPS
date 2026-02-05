@@ -86,11 +86,15 @@ class AlarmViewModel {
             return rows
             
         case .specificAlarm(let name):
-            if name == "Låg" {
+            switch name {
+            case "Akut låg":
+                return getUrgentLowAlertRows()
+            case "Låg":
                 return getLowAlertRows()
+            default:
+                // Hantera andra larm här...
+                return []
             }
-            // Hantera andra larm här...
-            return []
             
         case .nightSettings:
                 return getNightSettingsRows()
@@ -201,6 +205,96 @@ class AlarmViewModel {
             
             return rows
         }
+
+        // MARK: - Urgent Low Alert Logic
+        func getUrgentLowAlertRows() -> [AlarmRow] {
+            var rows: [AlarmRow] = []
+            let units = UserDefaultsRepository.units.value ?? "mg/dL"
+            let isActive = UserDefaultsRepository.alertUrgentLowActive.value
+
+            // 1. Active Switch
+            rows.append(.toggle(title: "Aktiverat", isOn: isActive, id: "urgent_low_active"))
+            guard isActive else { return rows }
+
+            // 2. BG Level (Stepper)
+            let bgValue = Double(UserDefaultsRepository.alertUrgentLowBG.value)
+            rows.append(.valueStepper(
+                title: "Glukos",
+                value: bgValue,
+                min: 40,
+                max: 80,
+                step: (units == "mmol/L" ? 0.1 : 1.0),
+                unit: "",
+                id: "urgent_low_bg"
+            ))
+
+            // 3. Predictive Minutes
+            rows.append(.valueStepper(
+                title: "Prediktivt (min)",
+                value: Double(UserDefaultsRepository.alertUrgentLowPredictiveMinutes.value),
+                min: 0,
+                max: 60,
+                step: 5,
+                unit: "",
+                id: "urgent_low_predictive"
+            ))
+
+            // 4. Default Snooze
+            rows.append(.valueStepper(
+                title: "Standard-snooze (min)",
+                value: Double(UserDefaultsRepository.alertUrgentLowSnooze.value),
+                min: 5,
+                max: 15,
+                step: 5,
+                unit: "",
+                id: "urgent_low_snooze"
+            ))
+
+            // 5. Sound Selection
+            rows.append(.soundPicker(
+                title: "Ljud",
+                currentSound: UserDefaultsRepository.alertUrgentLowSound.value ?? "Default",
+                id: "urgent_low_sound"
+            ))
+
+            // 6. Play Sound (Always, At Night, etc.)
+            rows.append(.optionPicker(
+                title: "Spela larm",
+                currentOption: UserDefaultsRepository.alertUrgentLowAudible.value,
+                options: ["Alltid", "Nattetid", "Dagtid", "Aldrig"],
+                id: "urgent_low_audible"
+            ))
+
+            // 7. Repeat Sound
+            rows.append(.optionPicker(
+                title: "Repetera larm",
+                currentOption: UserDefaultsRepository.alertUrgentLowRepeat.value,
+                options: ["Aldrig", "Alltid", "Nattetid", "Dagtid"],
+                id: "urgent_low_repeat"
+            ))
+
+            // 8. Pre-Snooze (AutoSnooze)
+            rows.append(.optionPicker(
+                title: "För-Snooza",
+                currentOption: UserDefaultsRepository.alertUrgentLowAutosnooze.value,
+                options: ["Aldrig", "Nattetid", "Dagtid"],
+                id: "urgent_low_autosnooze"
+            ))
+
+            // 9. Snoozed Until (Date)
+            // Visar "Ej snoozad" om toggeln är av (även om det finns ett gammalt datum lagrat)
+            let storedSnoozedTime = UserDefaultsRepository.alertUrgentLowSnoozedTime.value
+            let isSnoozed = UserDefaultsRepository.alertUrgentLowIsSnoozed.value
+            let snoozedTime = isSnoozed ? storedSnoozedTime : nil
+
+            rows.append(.dateValue(title: "Snoozad till", date: snoozedTime, id: "urgent_low_snoozed_time"))
+
+            if snoozedTime != nil {
+                rows.append(.toggle(title: "Är snoozad", isOn: isSnoozed, id: "urgent_low_is_snoozed"))
+            }
+
+            return rows
+        }
     
     // MARK: - Night and General Settings Logic
     func getNightSettingsRows() -> [AlarmRow] {
@@ -293,6 +387,15 @@ class AlarmViewModel {
             if !value {
                 UserDefaultsRepository.alertLowSnoozedTime.setNil(key: "alertLowSnoozedTime")
             }
+
+        case "urgent_low_active":
+            UserDefaultsRepository.alertUrgentLowActive.value = value
+            
+        case "urgent_low_is_snoozed":
+            UserDefaultsRepository.alertUrgentLowIsSnoozed.value = value
+            if !value {
+                UserDefaultsRepository.alertUrgentLowSnoozedTime.setNil(key: "alertUrgentLowSnoozedTime")
+            }
             
         case "overrideSystemOutputVolume":
             UserDefaultsRepository.overrideSystemOutputVolume.value = value
@@ -332,6 +435,12 @@ class AlarmViewModel {
             case "forcedOutputVolume":
                 // Vi räknar tillbaka från 35.0 till 0.35 innan vi sparar i Repo
                 UserDefaultsRepository.forcedOutputVolume.value = Float(value / 100.0)
+            case "urgent_low_bg":
+                UserDefaultsRepository.alertUrgentLowBG.value = Float(value)
+            case "urgent_low_predictive":
+                UserDefaultsRepository.alertUrgentLowPredictiveMinutes.value = Int(value)
+            case "urgent_low_snooze":
+                UserDefaultsRepository.alertUrgentLowSnooze.value = Int(value)
             default: break
             }
         }
@@ -364,6 +473,30 @@ class AlarmViewModel {
                 let settings = timeBasedSettings(pickerValue: value)
                 UserDefaultsRepository.alertLowAutosnoozeDay.value = settings.dayTime
                 UserDefaultsRepository.alertLowAutosnoozeNight.value = settings.nightTime
+            
+            case "urgent_low_sound":
+                UserDefaultsRepository.alertUrgentLowSound.value = value
+                AlarmSound.setSoundFile(str: value)
+                AlarmSound.stop()
+                AlarmSound.playTest()
+            
+            case "urgent_low_audible":
+                UserDefaultsRepository.alertUrgentLowAudible.value = value
+                let settings = timeBasedSettings(pickerValue: value)
+                UserDefaultsRepository.alertUrgentLowDayTimeAudible.value = settings.dayTime
+                UserDefaultsRepository.alertUrgentLowNightTimeAudible.value = settings.nightTime
+            
+            case "urgent_low_repeat":
+                UserDefaultsRepository.alertUrgentLowRepeat.value = value
+                let settings = timeBasedSettings(pickerValue: value)
+                UserDefaultsRepository.alertUrgentLowDayTime.value = settings.dayTime
+                UserDefaultsRepository.alertUrgentLowNightTime.value = settings.nightTime
+            
+            case "urgent_low_autosnooze":
+                UserDefaultsRepository.alertUrgentLowAutosnooze.value = value
+                let settings = timeBasedSettings(pickerValue: value)
+                UserDefaultsRepository.alertUrgentLowAutosnoozeDay.value = settings.dayTime
+                UserDefaultsRepository.alertUrgentLowAutosnoozeNight.value = settings.nightTime
                 
             default: break
             }
@@ -372,6 +505,11 @@ class AlarmViewModel {
     // Hantera Datum-ändringar (Snoozed Until, Global Snooze/Mute, Nattinställningar)
             func updateDate(id: String, date: Date) {
                 switch id {
+                // --- Specifika larm (t.ex. Akut låg) ---
+                case "urgent_low_snoozed_time":
+                    UserDefaultsRepository.alertUrgentLowSnoozedTime.value = date
+                    UserDefaultsRepository.alertUrgentLowIsSnoozed.value = true
+                    updateSnapshotData()
                 // --- Specifika larm (t.ex. Låg) ---
                 case "low_snoozed_time":
                     UserDefaultsRepository.alertLowSnoozedTime.value = date
