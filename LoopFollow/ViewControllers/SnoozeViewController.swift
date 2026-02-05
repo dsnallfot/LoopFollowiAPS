@@ -590,7 +590,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         //let alarmVC = ModernAlarmViewController() //kommentera ut ovan guard let... och kommentera in denna rad När vi byggt klart nya alarmvyn
         
         // Always present modally as a sheet that takes the full screen height
-        let nav = UINavigationController(rootViewController: alarmVC)
+        let nav = UINavigationController(rootViewController: alarmVC as! UIViewController)
         self.present(nav, animated: true, completion: nil)
         
     }

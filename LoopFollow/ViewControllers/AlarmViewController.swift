@@ -206,6 +206,16 @@ class AlarmViewController: ThemedFormViewController, AlarmUIRefreshing {
         }
         return (dayTime, nightTime)
     }
+    
+    // 2-parameter variant used by legacy callers that don't care about the date value
+    func reloadSnoozeTime(key: String, setNil: Bool) {
+        reloadSnoozeTime(key: key, setNil: setNil, value: Date())
+    }
+
+    // 2-parameter variant used by legacy callers that don't care about the date value
+    func reloadMuteTime(key: String, setNil: Bool) {
+        reloadMuteTime(key: key, setNil: setNil, value: Date())
+    }
 
     func reloadSnoozeTime(key: String, setNil: Bool, value: Date = Date()) {
 
