@@ -154,14 +154,26 @@ class AlarmViewController: ThemedFormViewController {
         if pickerValue.contains("Always") {
             dayTime = true
             nightTime = true
+        } else if pickerValue.contains("Alltid") {
+            dayTime = true
+            nightTime = true
         } else if pickerValue.contains("Never") {
             dayTime = false
             nightTime = false
-        }else{
+        } else if pickerValue.contains("Aldrig") {
+            dayTime = false
+            nightTime = false
+        } else {
             if pickerValue.contains("night"){
                 nightTime = true
             }
+            if pickerValue.contains("Nattetid"){
+                nightTime = true
+            }
             if pickerValue.contains("day"){
+                dayTime = true
+            }
+            if pickerValue.contains("Dagtid"){
                 dayTime = true
             }
         }
@@ -175,11 +187,20 @@ class AlarmViewController: ThemedFormViewController {
         if pickerValue.contains("Never") {
             dayTime = true
             nightTime = true
-        }else{
+        } else if pickerValue.contains("Aldrig") {
+                dayTime = true
+                nightTime = true
+        } else {
             if pickerValue.contains("night"){
                 nightTime = true
             }
+            if pickerValue.contains("Nattetid"){
+                nightTime = true
+            }
             if pickerValue.contains("day"){
+                dayTime = true
+            }
+            if pickerValue.contains("Dagtid"){
                 dayTime = true
             }
         }
