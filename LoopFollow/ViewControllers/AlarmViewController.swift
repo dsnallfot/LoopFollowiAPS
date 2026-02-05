@@ -13,7 +13,7 @@
 import UIKit
 import Eureka
 
-class AlarmViewController: ThemedFormViewController {
+class AlarmViewController: ThemedFormViewController, AlarmUIRefreshing {
     var appStateController: AppStateController?
 
     var soundFiles: [String] = [

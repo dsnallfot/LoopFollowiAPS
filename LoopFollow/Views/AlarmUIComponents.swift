@@ -132,7 +132,7 @@ class SettingStepperCell: UITableViewCell {
         private func updateLabelText(for value: Double) {
             let unit = currentUnit ?? ""
             
-            if currentTitle.contains("Glukos") || currentTitle.contains("delta") {
+            if currentTitle.contains("Glukos") || currentTitle.contains("delta") || currentTitle.contains("Delta") || currentTitle.contains("BG") {
                 // Omräkning för mmol/L
                 let mmolValue = value / 18.0182
                 valueLabel.text = String(format: "%.1f%@", mmolValue, unit)

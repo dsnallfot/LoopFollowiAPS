@@ -1,6 +1,16 @@
 import UIKit
 import Combine
 
+/// Protocol used by external callers (SnoozeViewController, SAge, Alarms, intents, etc.)
+/// to trigger a UI refresh of alarm-related state (snooze/mute) without knowing about
+/// the underlying implementation (Eureka vs ModernAlarmViewController).
+protocol AlarmUIRefreshing: AnyObject {
+    func reloadSnoozeTime(key: String, setNil: Bool, value: Date)
+    func reloadIsSnoozed(key: String, value: Bool)
+    func reloadMuteTime(key: String, setNil: Bool, value: Date)
+    func reloadIsMuted(key: String, value: Bool)
+}
+
 class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
     
     // UI
@@ -415,5 +425,41 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
     func showDatePicker(title: String) {
         // Enkel implementation: ActionSheet med DatePicker inuti, eller en Custom VC
         // För "proffsig" look, pusha in en vy som heter "Snooze Settings"
+    }
+}
+
+// MARK: - Legacy AlarmUIRefreshing API
+// Dessa metoder anropas från andra delar av appen (SnoozeViewController, SAge, Alarms,
+// SnoozeMuteIntentHelper, SnoozeStatusView) via ViewControllerManager.shared.alarmViewController.
+// I den gamla Eureka-baserade AlarmViewController uppdaterades specifika rader via taggar;
+// i ModernAlarmViewController bygger vi istället om snapshoten baserat på UserDefaults.
+extension ModernAlarmViewController: AlarmUIRefreshing {
+
+    func reloadSnoozeTime(key: String, setNil: Bool, value: Date = Date()) {
+        DispatchQueue.main.async {
+            self.viewModel.updateSnapshotData()
+            self.applySnapshot(animatingDifferences: false)
+        }
+    }
+
+    func reloadIsSnoozed(key: String, value: Bool) {
+        DispatchQueue.main.async {
+            self.viewModel.updateSnapshotData()
+            self.applySnapshot(animatingDifferences: false)
+        }
+    }
+
+    func reloadMuteTime(key: String, setNil: Bool, value: Date = Date()) {
+        DispatchQueue.main.async {
+            self.viewModel.updateSnapshotData()
+            self.applySnapshot(animatingDifferences: false)
+        }
+    }
+
+    func reloadIsMuted(key: String, value: Bool) {
+        DispatchQueue.main.async {
+            self.viewModel.updateSnapshotData()
+            self.applySnapshot(animatingDifferences: false)
+        }
     }
 }

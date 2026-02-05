@@ -505,7 +505,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             case .alarms:
                 
                 let alarmVC = ModernAlarmViewController()
-                alarmVC.title = "Omstartslogg"
+                alarmVC.title = "Alarm"
                 alarmVC.hidesBottomBarWhenPushed = false
                 navigationController?.pushViewController(alarmVC, animated: true)
                  
