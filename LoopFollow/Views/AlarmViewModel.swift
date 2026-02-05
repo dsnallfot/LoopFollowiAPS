@@ -60,26 +60,29 @@ class AlarmViewModel {
             
         case .globalSettings:
             // Hämtar värden från UserDefaultsRepository för de globala sektionerna
-            let snoozeTime = UserDefaultsRepository.alertSnoozeAllTime.value
+            let storedSnoozeTime = UserDefaultsRepository.alertSnoozeAllTime.value
             let isSnoozed = UserDefaultsRepository.alertSnoozeAllIsSnoozed.value
-            
-            let muteTime = UserDefaultsRepository.alertMuteAllTime.value
+            // Om toggeln är av vill vi *inte* visa sista datumet, precis som i gamla Eureka-vyn
+            let snoozeTime = isSnoozed ? storedSnoozeTime : nil
+
+            let storedMuteTime = UserDefaultsRepository.alertMuteAllTime.value
             let isMuted = UserDefaultsRepository.alertMuteAllIsMuted.value
-            
+            let muteTime = isMuted ? storedMuteTime : nil
+
             var rows: [AlarmRow] = []
-            
+
             // Snooze All rader
             rows.append(.dateValue(title: "Snooza alla till", date: snoozeTime, id: "alertSnoozeAllTime"))
             if snoozeTime != nil {
                 rows.append(.toggle(title: "Alla larm snoozade", isOn: isSnoozed, id: "alertSnoozeAllIsSnoozed"))
             }
-            
+
             // Mute All rader
             rows.append(.dateValue(title: "Tysta alla till", date: muteTime, id: "alertMuteAllTime"))
             if muteTime != nil {
                 rows.append(.toggle(title: "Alla larm tystade", isOn: isMuted, id: "alertMuteAllIsMuted"))
             }
-            
+
             return rows
             
         case .specificAlarm(let name):
@@ -115,34 +118,34 @@ class AlarmViewModel {
             
             // 1. Active Switch
             rows.append(.toggle(title: "Aktiverat", isOn: isActive, id: "low_active"))
-                guard isActive else { return rows }
+            guard isActive else { return rows }
             
             // 2. BG Level (Stepper)
             let bgValue = Double(UserDefaultsRepository.alertLowBG.value)
-                rows.append(.valueStepper(
-                    title: "Glukos",
-                    value: bgValue,
-                    min: 40, max: 150, step: (units == "mmol/L" ? 0.1 : 1.0), // Stega 0.1 om mmol
-                    unit: "",
-                    id: "low_bg"
-                ))
+            rows.append(.valueStepper(
+                title: "Glukos",
+                value: bgValue,
+                min: 40, max: 150, step: (units == "mmol/L" ? 0.1 : 1.0), // Stega 0.1 om mmol
+                unit: "",
+                id: "low_bg"
+            ))
             
             // 3. Persistent For (Minutes)
             rows.append(.valueStepper(
-                    title: "Vänta med larm (min)",
-                    value: Double(UserDefaultsRepository.alertLowPersistent.value),
-                    min: 0, max: 240, step: 5, unit: "", id: "low_persistent"
-                ))
+                title: "Vänta med larm (min)",
+                value: Double(UserDefaultsRepository.alertLowPersistent.value),
+                min: 0, max: 240, step: 5, unit: "", id: "low_persistent"
+            ))
             
             // 4. Ignore Persistence (-Delta)
             let deltaValue = Double(UserDefaultsRepository.alertLowPersistenceMax.value)
-                rows.append(.valueStepper(
-                    title: "Direkt larm vid delta",
-                    value: deltaValue,
-                    min: 0, max: 20, step: 1,
-                    unit: "",
-                    id: "low_persistence_max"
-                ))
+            rows.append(.valueStepper(
+                title: "Direkt larm vid delta",
+                value: deltaValue,
+                min: 0, max: 20, step: 1,
+                unit: "",
+                id: "low_persistence_max"
+            ))
             
             // 5. Default Snooze Time
             rows.append(.valueStepper(
@@ -185,15 +188,18 @@ class AlarmViewModel {
             ))
             
             // 10. Snoozed Until (Date)
-            // Visar "Not Snoozed" om datumet är nil
-            let snoozedTime = UserDefaultsRepository.alertLowSnoozedTime.value
-                rows.append(.dateValue(title: "Snoozad till", date: snoozedTime, id: "low_snoozed_time"))
-                
-                if snoozedTime != nil {
-                    rows.append(.toggle(title: "Är snoozad", isOn: UserDefaultsRepository.alertLowIsSnoozed.value, id: "low_is_snoozed"))
-                }
-                
-                return rows
+            // Visar "Ej snoozad" om toggeln är av (även om det finns ett gammalt datum lagrat)
+            let storedSnoozedTime = UserDefaultsRepository.alertLowSnoozedTime.value
+            let isLowSnoozed = UserDefaultsRepository.alertLowIsSnoozed.value
+            let snoozedTime = isLowSnoozed ? storedSnoozedTime : nil
+            
+            rows.append(.dateValue(title: "Snoozad till", date: snoozedTime, id: "low_snoozed_time"))
+            
+            if snoozedTime != nil {
+                rows.append(.toggle(title: "Är snoozad", isOn: isLowSnoozed, id: "low_is_snoozed"))
+            }
+            
+            return rows
         }
     
     // MARK: - Night and General Settings Logic
