@@ -582,15 +582,16 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
 
+/*
         guard let alarmVC = ViewControllerManager.shared.alarmViewController else {
             LogManager.shared.log(category: .alarm, message: "AlarmViewController not available when tapping AlarmsButton")
             return
         }
-
-        //let alarmVC = ModernAlarmViewController() //kommentera ut ovan guard let... och kommentera in denna rad När vi byggt klart nya alarmvyn
+*/
+        let alarmVC = ModernAlarmViewController() //kommentera ut ovan guard let... och kommentera in denna rad När vi byggt klart nya alarmvyn
         
         // Always present modally as a sheet that takes the full screen height
-        let nav = UINavigationController(rootViewController: alarmVC as! UIViewController)
+        let nav = UINavigationController(rootViewController: alarmVC as UIViewController)
         self.present(nav, animated: true, completion: nil)
         
     }

@@ -93,6 +93,27 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
         // Initial load
         viewModel.updateSnapshotData()
         applySnapshot()
+        configureDoneButtonIfNeeded()
+    }
+
+    // MARK: - Modal Done Button
+    /// Shows a "Klar" (Done) button only when this VC is the root of a navigation controller
+    /// and is presented modally (e.g., from SnoozeViewController).
+    private func configureDoneButtonIfNeeded() {
+        // Only show Done when this VC is the root of a navigation controller AND that navigation controller is presented modally.
+        if navigationController?.viewControllers.first === self,
+           presentingViewController != nil {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(
+                title: "Klar",
+                style: .done,
+                target: self,
+                action: #selector(doneButtonTapped)
+            )
+        }
+    }
+
+    @objc private func doneButtonTapped() {
+        dismiss(animated: true, completion: nil)
     }
     
     private func setupTableView() {

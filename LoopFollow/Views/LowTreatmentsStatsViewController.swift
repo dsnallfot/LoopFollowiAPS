@@ -3,6 +3,7 @@
 import UIKit
 import Charts
 
+/*
 /// Loggvy för lågbehandlingar (Dextro), inspirerad av BGCheckView.
 final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITableViewDelegate {
 
@@ -614,7 +615,7 @@ final class LowTreatmentsView: ThemedViewController, UITableViewDataSource, UITa
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 44
     }
-}
+}*/
 
 // MARK: - Statistikvy
 
