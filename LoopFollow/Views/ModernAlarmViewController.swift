@@ -13,7 +13,7 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
     
     // Top Filter Bar (Istället för segments i celler, snyggare i header)
     private lazy var categorySegmentedControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["Hög/Låg", "Glukos", "Trio", "Teknik", "Övrigt"])
+        let sc = UISegmentedControl(items: ["Hög/Låg", "Trend", "Trio", "Teknik", "Övrigt"])
         sc.selectedSegmentIndex = 0
         sc.addTarget(self, action: #selector(categoryChanged), for: .valueChanged)
         return sc
@@ -110,7 +110,7 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
             stack.topAnchor.constraint(equalTo: headerContainer.topAnchor, constant: 10),
             stack.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor, constant: -16),
-            stack.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: -36)
+            stack.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: -26)
         ])
         
         // 5. Viktigt: Tvinga containern att beräkna sin höjd baserat på stackviewns innehåll
@@ -120,7 +120,7 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
         // Beräkna den exakta storleken som behövs
         let targetSize = CGSize(width: view.frame.width, height: UIView.layoutFittingCompressedSize.height)
         let size = headerContainer.systemLayoutSizeFitting(targetSize)
-        headerContainer.frame.size.height = size.height + 10
+        headerContainer.frame.size.height = size.height
         
         // Sätt containern som header
         tableView.tableHeaderView = headerContainer
@@ -141,7 +141,7 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
                     self.applySnapshot()
                 }
                 var background = UIBackgroundConfiguration.listGroupedCell()
-                background.backgroundColor = UIColor.gray.withAlphaComponent(0.1)
+                background.backgroundColor = UIColor.gray.withAlphaComponent(0.15)
                 cell.backgroundConfiguration = background
                 
                 return cell
@@ -152,7 +152,7 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
                     self?.viewModel.updateAlarmValue(id: id, value: newValue)
                 }
                 var background = UIBackgroundConfiguration.listGroupedCell()
-                background.backgroundColor = UIColor.gray.withAlphaComponent(0.1)
+                background.backgroundColor = UIColor.gray.withAlphaComponent(0.15)
                 cell.backgroundConfiguration = background
                 
                 return cell
@@ -161,7 +161,7 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
                 let cell = tableView.dequeueReusableCell(withIdentifier: "DefaultCell", for: indexPath)
 
                 var background = UIBackgroundConfiguration.listGroupedCell()
-                background.backgroundColor = UIColor.gray.withAlphaComponent(0.1)
+                background.backgroundColor = UIColor.gray.withAlphaComponent(0.15)
                 cell.backgroundConfiguration = background
 
                 cell.textLabel?.text = title
@@ -179,7 +179,7 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
                 let cell = tableView.dequeueReusableCell(withIdentifier: "DefaultCell", for: indexPath)
 
                 var background = UIBackgroundConfiguration.listGroupedCell()
-                background.backgroundColor = UIColor.gray.withAlphaComponent(0.1)
+                background.backgroundColor = UIColor.gray.withAlphaComponent(0.15)
                 cell.backgroundConfiguration = background
 
                 cell.textLabel?.text = title
@@ -197,7 +197,7 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
                 let cell = tableView.dequeueReusableCell(withIdentifier: "DefaultCell", for: indexPath)
 
                 var background = UIBackgroundConfiguration.listGroupedCell()
-                background.backgroundColor = UIColor.gray.withAlphaComponent(0.1)
+                background.backgroundColor = UIColor.gray.withAlphaComponent(0.15)
                 cell.backgroundConfiguration = background
 
                 cell.textLabel?.text = title
@@ -330,21 +330,55 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
     // MARK: - Section Headers & Footers
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        let sectionType = dataSource.snapshot().sectionIdentifiers[section]
+        let snapshot = dataSource.snapshot()
+        guard section >= 0 && section < snapshot.sectionIdentifiers.count else {
+            return nil
+        }
+        let sectionType = snapshot.sectionIdentifiers[section]
         switch sectionType {
         case .globalSettings:
-            return "Global Settings"
+            return "Snooza eller tysta alla larm"
         case .specificAlarm(let name):
-            return name
+            return "Alarminställningar för \(name)"
         case .nightSettings:
-            return "Nattinställningar"
+            return "Allmänna alarminställningar"
         default:
             return nil
         }
     }
 
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        // Reuse the existing logic to determine the title
+        guard let title = self.tableView(tableView, titleForHeaderInSection: section) else {
+            return nil
+        }
+
+        let label = UILabel()
+        label.text = title
+        label.font = UIFont.preferredFont(forTextStyle: .headline)
+        label.textColor = .secondaryLabel
+
+        let container = UIView()
+        container.backgroundColor = .clear
+        label.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -16),
+            label.topAnchor.constraint(equalTo: container.topAnchor, constant: 16),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4)
+        ])
+
+        return container
+    }
+
     func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
-        let sectionType = dataSource.snapshot().sectionIdentifiers[section]
+        let snapshot = dataSource.snapshot()
+        guard section >= 0 && section < snapshot.sectionIdentifiers.count else {
+            return nil
+        }
+        let sectionType = snapshot.sectionIdentifiers[section]
         if case .specificAlarm(let name) = sectionType, name == "Låg" {
             return "Alerts when BG drops below value. Persistent for minutes will allow the alert to be ignored..."
         }

@@ -1,7 +1,7 @@
 import UIKit
 import AVFoundation
 
-class SoundSelectionViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class SoundSelectionViewController: ThemedViewController, UITableViewDelegate, UITableViewDataSource {
 
     // MARK: - Public Properties
     var selectedSound: String?
@@ -128,8 +128,9 @@ class SoundSelectionViewController: UIViewController, UITableViewDelegate, UITab
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Välj Ljud" // Eller "Select Sound"
-        view.backgroundColor = .systemGroupedBackground
+        title = "Välj Larmljud" // Eller "Select Sound"
+        //view.backgroundColor = .systemGroupedBackground
+        updateBackgroundForCurrentMode()
         
         setupTableView()
         scrollToSelection()
@@ -154,6 +155,10 @@ class SoundSelectionViewController: UIViewController, UITableViewDelegate, UITab
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "SoundCell")
+
+        // Viktigt: låt gradienten från ThemedViewController synas igenom
+        tableView.backgroundColor = .clear
+        tableView.layer.backgroundColor = UIColor.clear.cgColor
     }
 
     private func scrollToSelection() {
@@ -189,6 +194,10 @@ class SoundSelectionViewController: UIViewController, UITableViewDelegate, UITab
             cell.textLabel?.textColor = .label
             cell.textLabel?.font = .preferredFont(forTextStyle: .body)
         }
+        
+        var background = UIBackgroundConfiguration.listGroupedCell()
+        background.backgroundColor = UIColor.gray.withAlphaComponent(0.15)
+        cell.backgroundConfiguration = background
         
         return cell
     }

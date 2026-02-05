@@ -503,16 +503,17 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             let rowKind = appSettingsRows[indexPath.row]
             switch rowKind {
             case .alarms:
-                /*
+                
                 let alarmVC = ModernAlarmViewController()
                 alarmVC.title = "Omstartslogg"
                 alarmVC.hidesBottomBarWhenPushed = false
                 navigationController?.pushViewController(alarmVC, animated: true)
-                 */
-                
+                 
+                /*
                 if let alarmVC = ViewControllerManager.shared.alarmViewController {
                     navigationController?.pushViewController(alarmVC, animated: true)
                 }
+                */
             case .general:
                 let controller = GeneralSettingsViewController()
                 controller.appStateController = appStateController
