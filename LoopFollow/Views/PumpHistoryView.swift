@@ -757,8 +757,8 @@ final class PumpSessionStatsViewController: ThemedTableViewController {
     @objc private func dismissSelf() { dismiss(animated: true) }
 
     private enum Section: Int, CaseIterable { case counts, avgs }
-    private enum CountRow: Int, CaseIterable { case header, all, lt1, h1to50, h50to70, gt70 }
-    private enum AvgRow: Int, CaseIterable { case header, all, allExclLt1, lt1, h1to50, h50to70, gt70 }
+    private enum CountRow: Int, CaseIterable { case all, lt1, h1to50, h50to70, gt70 }
+    private enum AvgRow: Int, CaseIterable { case all, allExclLt1, lt1, h1to50, h50to70, gt70 }
 
     override func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
 
@@ -767,6 +767,50 @@ final class PumpSessionStatsViewController: ThemedTableViewController {
         case .counts: return CountRow.allCases.count
         case .avgs:   return AvgRow.allCases.count
         }
+    }
+
+    override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        guard let sectionType = Section(rawValue: section) else { return nil }
+
+        let container = UIView()
+        container.backgroundColor = .clear
+
+        let leftLabel = UILabel()
+        let rightLabel = UILabel()
+        leftLabel.translatesAutoresizingMaskIntoConstraints = false
+        rightLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        leftLabel.font = UIFont.preferredFont(forTextStyle: .callout).withTraits(traits: .traitBold)
+        rightLabel.font = UIFont.preferredFont(forTextStyle: .callout).withTraits(traits: .traitBold)
+        leftLabel.textColor = .secondaryLabel
+        rightLabel.textColor = .secondaryLabel
+
+        leftLabel.text = "Sessionstid"
+        switch sectionType {
+        case .counts:
+            rightLabel.text = "Antal (Andel)"
+        case .avgs:
+            rightLabel.text = "Medelvärde"
+        }
+
+        container.addSubview(leftLabel)
+        container.addSubview(rightLabel)
+
+        NSLayoutConstraint.activate([
+            leftLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            leftLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            leftLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4),
+
+            rightLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            rightLabel.firstBaselineAnchor.constraint(equalTo: leftLabel.firstBaselineAnchor),
+            rightLabel.leadingAnchor.constraint(greaterThanOrEqualTo: leftLabel.trailingAnchor, constant: 8)
+        ])
+
+        return container
+    }
+
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 32
     }
 
     private func percent(_ count: Int) -> String {
@@ -786,7 +830,7 @@ final class PumpSessionStatsViewController: ThemedTableViewController {
         cell.backgroundView = nil
         if #available(iOS 14.0, *) {
             var bg = UIBackgroundConfiguration.clear()
-            bg.backgroundColor = .systemGray.withAlphaComponent(0.1)
+            bg.backgroundColor = .systemGray.withAlphaComponent(0.15)
             cell.backgroundConfiguration = bg
         }
         cell.textLabel?.backgroundColor = .clear
@@ -795,12 +839,6 @@ final class PumpSessionStatsViewController: ThemedTableViewController {
         case .counts:
             let row = CountRow(rawValue: indexPath.row)!
             switch row {
-            case .header:
-                cell.textLabel?.text = "Sessionstid"
-                cell.detailTextLabel?.text = "Antal (Andel)"
-                cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
-                cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
-                cell.detailTextLabel?.textColor = .label
             case .all:
                 cell.textLabel?.text = "Alla poddar"
                 cell.detailTextLabel?.text = "\(buckets.total) st (100%)"
@@ -829,12 +867,6 @@ final class PumpSessionStatsViewController: ThemedTableViewController {
         case .avgs:
             let row = AvgRow(rawValue: indexPath.row)!
             switch row {
-            case .header:
-                cell.textLabel?.text = "Sessionstid"
-                cell.detailTextLabel?.text = "Medelvärde"
-                cell.textLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
-                cell.detailTextLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
-                cell.detailTextLabel?.textColor = .label
             case .all:
                 cell.textLabel?.text = "Alla poddar"
                 cell.detailTextLabel?.text = avgText(count: buckets.total, totalHours: buckets.hrs_total)

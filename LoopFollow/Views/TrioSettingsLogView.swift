@@ -88,7 +88,7 @@ final class TrioSettingsLogView: ThemedViewController, UITableViewDataSource, UI
         }
         // Make search text field background partially translucent for blend
         if #available(iOS 13.0, *) {
-            searchBar.searchTextField.backgroundColor = UIColor.systemGray.withAlphaComponent(0.1)
+            searchBar.searchTextField.backgroundColor = UIColor.systemGray.withAlphaComponent(0.15)
         }
         installPinnedSearchBar()
         setupTableView()

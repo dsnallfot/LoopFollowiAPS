@@ -19,7 +19,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     // Background color used for section "cards", mirroring TrioOrefView list row background.
-    private let sectionBackgroundColor = UIColor.systemGray.withAlphaComponent(0.1)
+    private let sectionBackgroundColor = UIColor.systemGray.withAlphaComponent(0.15)
     
     // Controls whether the Nightscout-specific "Informationsinställningar" row is shown.
     private var hideNightscoutInfoRow = false

@@ -35,7 +35,7 @@ struct DexcomSettingsView: View {
 
                     Toggle("Endast adhoc hämtningar", isOn: $viewModel.adhocOnly)
                 }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
             .scrollContentBackground(.hidden)
             .background(Color.clear)

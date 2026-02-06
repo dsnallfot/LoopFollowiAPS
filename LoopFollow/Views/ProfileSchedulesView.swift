@@ -196,88 +196,88 @@ struct ProfileSchedulesView: View {
                 Section(header: sectionHeader(title: "🟪 Mål (mmol/L)", lastChanged: viewModel.lastChangedTargetProfile)) {
                     ForEach(viewModel.targetEntries) { entry in
                         scheduleRow(entry)
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                             .contentShape(Rectangle())
                             .onTapGesture { openSettingsLog(for: "Mål-profil") }
                     }
                 }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
 
             if selectedSection == .basal {
                 Section(header: sectionHeader(title: "🟪 Basal (E/h)", lastChanged: viewModel.lastChangedBasalProfile)) {
                     ForEach(viewModel.basalEntries) { entry in
                         scheduleRow(entry, isBold: entry.time == "Total daglig basal")
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                             .contentShape(Rectangle())
                     }
                 }
                 .onTapGesture { openSettingsLog(for: "Basalprofil") }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
 
                 Section(header: Text("🟦 Basal IOB (E aktiv/h)")) {
                     ForEach(viewModel.basalIOBEntries) { entry in
                         scheduleRow(entry, isBold: entry.time == "Medel basal IOB/h")
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                             .contentShape(Rectangle())
                     }
                 }
                 .onTapGesture { openSettingsLog(for: "Basalprofil") }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
 
             if selectedSection == .cr {
                 Section(header: sectionHeader(title: "🟪 Insulinkvoter (g/E)", lastChanged: viewModel.lastChangedCRProfile)) {
                     ForEach(viewModel.carbRatioEntries) { entry in
                         scheduleRow(entry)
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                             .contentShape(Rectangle())
                     }
                 }
                 .onTapGesture { openSettingsLog(for: "CR-profil") }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
 
             if selectedSection == .isf {
                 Section(header: sectionHeader(title: "🟪 Känslighet (mmol/L/E)", lastChanged: viewModel.lastChangedISFProfile)) {
                     ForEach(viewModel.isfEntries) { entry in
                         scheduleRow(entry)
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                             .contentShape(Rectangle())
                             .onTapGesture { openSettingsLog(for: "ISF-profil") }
                     }
                 }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
 
             if selectedSection == .csf {
                 Section(header: Text("🟪 Kh-känslighet (mmol/L/g)")) {
                     ForEach(viewModel.csfEntries) { entry in
                         scheduleRow(entry)
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                     }
                 }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
 
             if selectedSection == .cHr {
                 Section(header: Text("🟪 Minsta absorption Kh (g/h)")) {
                     ForEach(viewModel.minCarbsEntries) { entry in
                         scheduleRow(entry, isBold: entry.time == "Medelvärde")
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                     }
                 }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
 
             if selectedSection == .smb {
                 Section(header: Text("🟦 Maxgräns SMB / UAMSMB (E/SMB)")) {
                     ForEach(viewModel.smbEntries) { entry in
                         scheduleRow(entry)
-                            .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                     }
                 }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
         }
         .scrollContentBackground(.hidden)

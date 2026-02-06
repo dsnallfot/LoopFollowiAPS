@@ -18,7 +18,7 @@ class WatchSettingsViewController: ThemedViewController, UITableViewDataSource, 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     
     // Background color used for section "cards", mirroring other settings views.
-    private let sectionBackgroundColor = UIColor.systemGray.withAlphaComponent(0.1)
+    private let sectionBackgroundColor = UIColor.systemGray.withAlphaComponent(0.15)
     
     private struct CalendarInfo {
         let title: String

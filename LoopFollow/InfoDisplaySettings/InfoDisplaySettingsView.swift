@@ -26,7 +26,7 @@ struct InfoDisplaySettingsView: View {
                     )) {
                         Text("Dölj informationspanelen")
                     }
-                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                    .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                 }
 
                 Section(header: Text("Inställningar för informationspanel")) {
@@ -40,7 +40,7 @@ struct InfoDisplaySettingsView: View {
                             ))
                             .labelsHidden()
                         }
-                        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                        .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                     }
                     .onMove(perform: viewModel.move)
                 }

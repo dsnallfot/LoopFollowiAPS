@@ -52,7 +52,7 @@ private struct UISearchBarRepresentable: UIViewRepresentable {
         sb.returnKeyType = .done
         sb.enablesReturnKeyAutomatically = false
         if #available(iOS 13.0, *) {
-            sb.searchTextField.backgroundColor = UIColor.systemGray.withAlphaComponent(0.1)
+            sb.searchTextField.backgroundColor = UIColor.systemGray.withAlphaComponent(0.15)
         }
         return sb
     }
@@ -132,7 +132,7 @@ struct TrioPreferencesView: View {
                         }
                     }
                     .padding(.vertical, 2)
-                    .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                    .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                     .onTapGesture {
                         selectedPreferenceKeyForLog = PreferenceKeyItem(key: entry.key)
                     }

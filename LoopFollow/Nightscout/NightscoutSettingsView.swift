@@ -34,7 +34,7 @@ struct NightscoutSettingsView: View {
                     
                     Text(viewModel.nightscoutStatus)
                 }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
             .scrollContentBackground(.hidden)
             .background(Color.clear)
@@ -60,7 +60,7 @@ struct NightscoutSettingsView: View {
         } header: {
             Text("URL")
         }
-        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+        .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
     }
 
     private var tokenSection: some View {
@@ -72,7 +72,7 @@ struct NightscoutSettingsView: View {
         } header: {
             Text("Token")
         }
-        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+        .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
     }
 
     private var statusSection: some View {
@@ -81,7 +81,7 @@ struct NightscoutSettingsView: View {
         } header: {
             Text("Status")
         }
-        .listRowBackground(Color(UIColor.systemGray).opacity(0.1))
+        .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
     }
 }
 */
