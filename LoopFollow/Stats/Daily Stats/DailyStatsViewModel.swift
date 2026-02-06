@@ -37,6 +37,22 @@ final class DailyStatsViewModel: ObservableObject {
     @Published var selectedWeekdays: Set<Int>
     
     private let allWeekdaysSet: Set<Int> = Set(1...7)
+    
+    /// True när vi filtrerar på pumpbytesdagar i stället för veckodagar.
+    @Published var usePumpChangeDays: Bool = false
+
+    /// Mängd av alla kalenderdygn (startOfDay) där det finns ett pumpbyte.
+    private var pumpChangeDays: Set<Date> {
+        let calendar = Calendar.current
+        let entries = Storage.shared.pumpChangeHistory
+        guard !entries.isEmpty else { return [] }
+
+        let days = entries.map { entry -> Date in
+            let date = Date(timeIntervalSince1970: entry.date)
+            return calendar.startOfDay(for: date)
+        }
+        return Set(days)
+    }
 
         var mainViewController: MainViewController? {
             dataService.mainViewController
@@ -116,23 +132,39 @@ final class DailyStatsViewModel: ObservableObject {
         return rows
     }
 
-    /// Rader som ligger i scope och matchar den aktuella veckodagsfiltret.
+    /// Rader som ligger i scope och matchar det aktuella filtret.
+    /// Antingen veckodagar (default) eller specifika pumpbytesdagar.
     var filteredRowsForDisplay: [DailyStatRow] {
         let base = rowsWithSufficientGlucose
+        let calendar = Calendar.current
+
+        // 1) Pumpbytesfilter aktivt
+        if usePumpChangeDays {
+            let pumpDays = pumpChangeDays
+            // Om vi inte har några pumpbytesdagar alls → fall back till baslistan
+            guard !pumpDays.isEmpty else { return base }
+
+            return base.filter { row in
+                let day = calendar.startOfDay(for: row.date)
+                return pumpDays.contains(day)
+            }
+        }
+
+        // 2) Vanligt veckodagsfilter
         // Om alla veckodagar är valda → ingen extra filtrering
         guard selectedWeekdays != allWeekdaysSet else {
             return base
         }
-        let calendar = Calendar.current
+
         return base.filter { row in
             let weekday = calendar.component(.weekday, from: row.date)
             return selectedWeekdays.contains(weekday)
         }
     }
     
-    /// True om veckodagsfiltret är aktivt (dvs inte alla dagar är valda).
+    /// True om något filter är aktivt (veckodagar != alla eller pumpbytesdagar).
     var isWeekdayFilterActive: Bool {
-        selectedWeekdays != allWeekdaysSet
+        usePumpChangeDays || selectedWeekdays != allWeekdaysSet
     }
 
     private func rowHasAnyGlucoseCount(_ row: DailyStatRow) -> Bool {

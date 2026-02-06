@@ -62,8 +62,13 @@ struct DailyStatsView: View {
                         Button {
                             showWeekdayFilter = true
                         } label: {
-                            let weekdayCount = viewModel.selectedWeekdays.count
                             let (symbolName, symbolColor): (String, Color) = {
+                                if viewModel.usePumpChangeDays {
+                                    // Pumpbytesdagar-filter aktivt
+                                    return ("fuelpump", .blue)
+                                }
+
+                                let weekdayCount = viewModel.selectedWeekdays.count
                                 switch weekdayCount {
                                 case 7:
                                     // Alla dagar valda – standardkalender, neutral färg
@@ -146,6 +151,10 @@ struct DailyStatsView: View {
                             selectedWeekdays: Binding(
                                 get: { viewModel.selectedWeekdays },
                                 set: { viewModel.selectedWeekdays = $0 }
+                            ),
+                            usePumpChangeDays: Binding(
+                                get: { viewModel.usePumpChangeDays },
+                                set: { viewModel.usePumpChangeDays = $0 }
                             )
                         )
                         .navigationTitle("Välj veckodagar att visa")
@@ -1015,6 +1024,7 @@ struct NightscoutDayReportControllerRepresentable: UIViewControllerRepresentable
 private struct WeekdayFilterView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedWeekdays: Set<Int>
+    @Binding var usePumpChangeDays: Bool
     
     /// Mappar Calendar.weekday (1–7) till svenska kortnamn.
     private let weekdayOrder: [Int] = [2, 3, 4, 5, 6, 7, 1] // Mån–Sön i visningsordning
@@ -1033,15 +1043,23 @@ private struct WeekdayFilterView: View {
             ThemeBackground()
                 .ignoresSafeArea()
             
-            VStack(spacing: 24) {
+            VStack(alignment: .leading, spacing: 24) {
+                // Rad 1: veckodagar + "Alla"
                 HStack(spacing: 12) {
-                    // Alla-knapp först
                     let allWeekdaysSet: Set<Int> = Set(1...7)
-                    let allSelected = selectedWeekdays == allWeekdaysSet
-
+                    let allSelected = (selectedWeekdays == allWeekdaysSet) && !usePumpChangeDays
+                    
+                    // Alla-knapp
                     Button {
-                        // Toggla alla dagar på/av
-                        selectedWeekdays = allSelected ? [] : allWeekdaysSet
+                        if allSelected {
+                            // Avmarkera alla dagar
+                            selectedWeekdays = []
+                        } else {
+                            // Markera alla dagar
+                            selectedWeekdays = allWeekdaysSet
+                        }
+                        // Att välja veckodagar stänger av pumpbytesfiltret
+                        usePumpChangeDays = false
                     } label: {
                         Text("Alla")
                             .font(.caption)
@@ -1054,10 +1072,10 @@ private struct WeekdayFilterView: View {
                             .foregroundColor(.white)
                     }
                     .buttonStyle(.plain)
-
-                    // Sedan Mån–Sön
+                    
+                    // Mån–Sön
                     ForEach(weekdayOrder, id: \.self) { weekday in
-                        let isSelected = selectedWeekdays.contains(weekday)
+                        let isSelected = selectedWeekdays.contains(weekday) && !usePumpChangeDays
                         Button {
                             if isSelected {
                                 // Tillåt att alla kan avmarkeras om man vill se en tom lista.
@@ -1065,6 +1083,8 @@ private struct WeekdayFilterView: View {
                             } else {
                                 selectedWeekdays.insert(weekday)
                             }
+                            // Att manuellt pilla på veckodagar stänger av pumpbytesfiltret
+                            usePumpChangeDays = false
                         } label: {
                             Text(weekdayLabels[weekday] ?? "?")
                                 .font(.caption)
@@ -1079,6 +1099,35 @@ private struct WeekdayFilterView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                
+                // Rad 2: "Andra filter" + Pumpbytesdagar
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Andra filter")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Button(action: {
+                        // Aktivera pumpbytesdagar – rensa veckodagar
+                        usePumpChangeDays = true
+                        selectedWeekdays.removeAll()
+                    }) {
+                        HStack {
+                            Text("Pumpbytesdagar")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                            //Spacer()
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(
+                            Capsule()
+                                .fill(usePumpChangeDays ? Color.accentColor : Color.gray.opacity(0.4))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    Spacer()
+                }
+                
                 Spacer()
             }
             .padding()
