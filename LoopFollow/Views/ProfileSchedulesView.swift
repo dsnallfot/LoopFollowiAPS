@@ -1331,7 +1331,7 @@ private struct AddUserDataView: View {
                         }
                         
                         HStack {
-                            Text("HbA1C:")
+                            Text("HbA1C (Blodprov):")
                             Spacer()
                             TextField("Ange HbA1C", text: $hbA1cText)
                                 .keyboardType(.numberPad)
