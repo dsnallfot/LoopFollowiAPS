@@ -67,6 +67,10 @@ struct DailyStatsView: View {
                                     // Pumpbytesdagar-filter aktivt
                                     return ("fuelpump", .blue)
                                 }
+                                if viewModel.useSensorChangeDays {
+                                    // Sensorbytesdagar-filter aktivt
+                                    return ("sensor.tag.radiowaves.forward", .blue)
+                                }
 
                                 let weekdayCount = viewModel.selectedWeekdays.count
                                 switch weekdayCount {
@@ -84,7 +88,7 @@ struct DailyStatsView: View {
                                     return ("calendar", .primary)
                                 }
                             }()
-
+                            
                             Image(systemName: symbolName)
                                 .foregroundColor(symbolColor)
                         }
@@ -155,6 +159,10 @@ struct DailyStatsView: View {
                             usePumpChangeDays: Binding(
                                 get: { viewModel.usePumpChangeDays },
                                 set: { viewModel.usePumpChangeDays = $0 }
+                            ),
+                            useSensorChangeDays: Binding(
+                                get: { viewModel.useSensorChangeDays },
+                                set: { viewModel.useSensorChangeDays = $0 }
                             )
                         )
                         .navigationTitle("Välj veckodagar att visa")
@@ -1025,6 +1033,7 @@ private struct WeekdayFilterView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedWeekdays: Set<Int>
     @Binding var usePumpChangeDays: Bool
+    @Binding var useSensorChangeDays: Bool
     
     /// Mappar Calendar.weekday (1–7) till svenska kortnamn.
     private let weekdayOrder: [Int] = [2, 3, 4, 5, 6, 7, 1] // Mån–Sön i visningsordning
@@ -1060,6 +1069,7 @@ private struct WeekdayFilterView: View {
                         }
                         // Att välja veckodagar stänger av pumpbytesfiltret
                         usePumpChangeDays = false
+                        useSensorChangeDays = false
                     } label: {
                         Text("Alla")
                             .font(.caption)
@@ -1085,6 +1095,7 @@ private struct WeekdayFilterView: View {
                             }
                             // Att manuellt pilla på veckodagar stänger av pumpbytesfiltret
                             usePumpChangeDays = false
+                            useSensorChangeDays = false
                         } label: {
                             Text(weekdayLabels[weekday] ?? "?")
                                 .font(.caption)
@@ -1100,31 +1111,54 @@ private struct WeekdayFilterView: View {
                     }
                 }
                 
-                // Rad 2: "Andra filter" + Pumpbytesdagar
+                // Rad 2: "Andra filter" + Pumpbytesdagar + Sensorbytesdagar
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Andra filter")
                         .font(.headline)
                         .foregroundColor(.secondary)
                     
-                    Button(action: {
-                        // Aktivera pumpbytesdagar – rensa veckodagar
-                        usePumpChangeDays = true
-                        selectedWeekdays.removeAll()
-                    }) {
-                        HStack {
-                            Text("Pumpbytesdagar")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                            //Spacer()
+                    HStack(spacing: 8) {
+                        Button(action: {
+                            // Aktivera pumpbytesdagar – rensa veckodagar och slå av sensorfiltret
+                            usePumpChangeDays = true
+                            useSensorChangeDays = false
+                            selectedWeekdays.removeAll()
+                        }) {
+                            HStack {
+                                Text("Pumpbytesdagar")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(
+                                Capsule()
+                                    .fill(usePumpChangeDays ? Color.accentColor : Color.gray.opacity(0.4))
+                            )
                         }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background(
-                            Capsule()
-                                .fill(usePumpChangeDays ? Color.accentColor : Color.gray.opacity(0.4))
-                        )
+                        .buttonStyle(.plain)
+                        
+                        Button(action: {
+                            // Aktivera sensorbytesdagar – rensa veckodagar och slå av pumpfiltret
+                            useSensorChangeDays = true
+                            usePumpChangeDays = false
+                            selectedWeekdays.removeAll()
+                        }) {
+                            HStack {
+                                Text("Sensorbytesdagar")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(
+                                Capsule()
+                                    .fill(useSensorChangeDays ? Color.accentColor : Color.gray.opacity(0.4))
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    
                     Spacer()
                 }
                 
