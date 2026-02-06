@@ -54,6 +54,21 @@ class RemoteSettingsViewController: ThemedViewController, UITableViewDataSource,
         case maxBolus
     }
 
+    // MARK: - Visible Sections Helper
+    private var visibleSections: [Section] {
+        var sections: [Section] = [.method]
+        // Only show the shortcuts examples section for iOS Shortcuts
+        if selectedMethod == "iOS Genvägar" {
+            sections.append(.shortcutsExamples)
+        }
+        // Only show the Twilio section for SMS API
+        if selectedMethod == "SMS API" {
+            sections.append(.twilio)
+        }
+        sections.append(contentsOf: [.remoteConfig, .presets, .advanced, .guardrails])
+        return sections
+    }
+
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     
     private enum CellID {
@@ -184,33 +199,24 @@ class RemoteSettingsViewController: ThemedViewController, UITableViewDataSource,
     // MARK: - UITableViewDataSource
 
     func numberOfSections(in tableView: UITableView) -> Int {
-        return Section.allCases.count
+        return visibleSections.count
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection sectionIndex: Int) -> Int {
-        guard let section = Section(rawValue: sectionIndex) else { return 0 }
-
+        let section = visibleSections[sectionIndex]
         switch section {
         case .method:
             return 1
-
         case .shortcutsExamples:
-            // Only visible when iOS Genvägar is selected
-            return selectedMethod == "iOS Genvägar" ? shortcutsExampleRows.count : 0
-            
+            return shortcutsExampleRows.count
         case .twilio:
-            // Only visible when SMS API is selected
-            return selectedMethod == "SMS API" ? 4 : 0
-
+            return 4
         case .remoteConfig:
             return 2
-
         case .presets:
             return presetRows.count
-
         case .advanced:
             return advancedRows.count
-
         case .guardrails:
             return 3
         }
@@ -218,15 +224,14 @@ class RemoteSettingsViewController: ThemedViewController, UITableViewDataSource,
 
     func tableView(_ tableView: UITableView,
                    titleForHeaderInSection sectionIndex: Int) -> String? {
-        guard let section = Section(rawValue: sectionIndex) else { return nil }
-
+        let section = visibleSections[sectionIndex]
         switch section {
         case .method:
             return "Välj metod för fjärrkommandon"
         case .shortcutsExamples:
-            return selectedMethod == "iOS Genvägar" ? "iOS Genvägar • Exempel textsträngar" : nil
+            return "iOS Genvägsnamn • Exempelsträngar"
         case .twilio:
-            return selectedMethod == "SMS API" ? "Twilio Settings" : nil
+            return "Twilio Settings"
         case .remoteConfig:
             return "Fjärrkommandon avsändare"
         case .presets:
@@ -240,28 +245,20 @@ class RemoteSettingsViewController: ThemedViewController, UITableViewDataSource,
 
     func tableView(_ tableView: UITableView,
                    titleForFooterInSection sectionIndex: Int) -> String? {
-        guard let section = Section(rawValue: sectionIndex) else { return nil }
-
+        let section = visibleSections[sectionIndex]
         switch section {
         case .method:
             return nil
-
         case .shortcutsExamples:
-            guard selectedMethod == "iOS Genvägar" else { return nil }
             return "När iOS genvägar är vald som metod för fjärrkommandon, kommer alla registreringar om skapas att vidarebefordras som en textsträng när du klickar på 'Skicka måltid/Bolus/Override/Tillfälligt mål'-knapparna. Kommandot '\\n' i textsträngarna skapar radbrytningar för bättre läsbarhet i iMessage. (Textsträngarna kan användas som input i dina genvägar).\n\nDu måste skapa och anpassa dina egna iOS genvägar och använda de fördefinierade namnen listande ovan."
-
         case .twilio:
             return nil
-            
         case .remoteConfig:
             return "Fjärranvändarens namn kommer att visas i alla fjärrkommando-meddelanden som skickas till den mottagande telefonen.\n\nDen hemliga koden (max 10 tecken) ska vara unik, och exakt samma kod behöver anges i importfrågan som ställs vid installationen av den förkonfigurerade genvägen som används för att kunna utföra fjärrkommandon på den mottagande telefonen."
-
         case .presets:
-            return "Lägg till de förvalda actions som du villl kunna välja mellan i resp vys picker. Separera dem med komma + blanksteg.    Exempel: Override 1, Override 2, Override 3"
-
+            return "Lägg till de förvalda actions som du villl kunna välja mellan i resp vys picker. Separera dem med komma + blanksteg. Exempel: Override 1, Override 2, Override 3"
         case .advanced:
             return nil
-
         case .guardrails:
             return nil
         }
@@ -269,29 +266,20 @@ class RemoteSettingsViewController: ThemedViewController, UITableViewDataSource,
 
     func tableView(_ tableView: UITableView,
                    cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let section = Section(rawValue: indexPath.section) else {
-            return UITableViewCell()
-        }
-
+        let section = visibleSections[indexPath.section]
         switch section {
         case .method:
             return configureMethodCell(tableView, indexPath: indexPath)
-            
         case .shortcutsExamples:
             return configureShortcutsExampleCell(tableView, indexPath: indexPath)
-
         case .twilio:
             return configureTwilioCell(tableView, indexPath: indexPath)
-
         case .remoteConfig:
             return configureRemoteConfigCell(tableView, indexPath: indexPath)
-
         case .presets:
             return configurePresetCell(tableView, indexPath: indexPath)
-
         case .advanced:
             return configureAdvancedCell(tableView, indexPath: indexPath)
-
         case .guardrails:
             return configureGuardrailCell(tableView, indexPath: indexPath)
         }
@@ -661,7 +649,7 @@ class RemoteSettingsViewController: ThemedViewController, UITableViewDataSource,
     @objc private func showBolusCalcChanged(_ sender: UISwitch) {
         UserDefaultsRepository.hideBolusCalc.value = !sender.isOn
         // Only this section changes layout
-        if let sectionIndex = Section.allCases.firstIndex(of: .advanced) {
+        if let sectionIndex = visibleSections.firstIndex(of: .advanced) {
             tableView.reloadSections(IndexSet(integer: sectionIndex), with: .automatic)
         } else {
             tableView.reloadData()
@@ -684,7 +672,7 @@ class RemoteSettingsViewController: ThemedViewController, UITableViewDataSource,
             UserDefaultsRepository.maxBolus.value = sender.value
         }
 
-        if let sectionIndex = Section.allCases.firstIndex(of: .guardrails) {
+        if let sectionIndex = visibleSections.firstIndex(of: .guardrails) {
             tableView.reloadSections(IndexSet(integer: sectionIndex), with: .none)
         } else {
             tableView.reloadData()
