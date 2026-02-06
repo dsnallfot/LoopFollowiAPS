@@ -27,6 +27,17 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
     private let viewModel = AlarmViewModel()
     private var cancellables = Set<AnyCancellable>()
     
+    // Knapp för att visa en snabböversikt över aktiva larm
+    private lazy var activeAlarmsButton: UIBarButtonItem = {
+        let item = UIBarButtonItem(
+            image: UIImage(systemName: "switch.2"),
+            style: .plain,
+            target: self,
+            action: #selector(activeAlarmsButtonTapped)
+        )
+        return item
+    }()
+
     // Top Filter Bar (Istället för segments i celler, snyggare i header)
     private lazy var categorySegmentedControl: UISegmentedControl = {
         let sc = UISegmentedControl(items: ["Hög/Låg", "Trend", "Trio", "Teknik", "Övrigt"])
@@ -97,23 +108,41 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
     }
 
     // MARK: - Modal Done Button
-    /// Shows a "Klar" (Done) button only when this VC is the root of a navigation controller
-    /// and is presented modally (e.g., from SnoozeViewController).
+    /// Konfigurerar alltid switch.2-knappen och lägger till "Klar" när vyn är presenterad modalt.
     private func configureDoneButtonIfNeeded() {
-        // Only show Done when this VC is the root of a navigation controller AND that navigation controller is presented modally.
+        // Om denna VC är root i en navigation controller och är presenterad modalt
+        // ska vi visa både switch.2-knappen och en Klar-knapp.
         if navigationController?.viewControllers.first === self,
            presentingViewController != nil {
-            navigationItem.rightBarButtonItem = UIBarButtonItem(
+            let doneItem = UIBarButtonItem(
                 title: "Klar",
                 style: .done,
                 target: self,
                 action: #selector(doneButtonTapped)
             )
+            // switch.2 till vänster om Klar
+            navigationItem.rightBarButtonItems = [doneItem, activeAlarmsButton]
+        } else {
+            // I icke-modalt läge visar vi bara switch.2-knappen
+            navigationItem.rightBarButtonItems = [activeAlarmsButton]
         }
     }
 
     @objc private func doneButtonTapped() {
         dismiss(animated: true, completion: nil)
+    }
+
+    @objc private func activeAlarmsButtonTapped() {
+        let activeVC = ActiveAlarmsViewController()
+        activeVC.onDismiss = { [weak self] in
+            guard let self = self else { return }
+            // Rebuild snapshot based on any changes done in ActiveAlarmsViewController
+            self.viewModel.updateSnapshotData()
+            self.applySnapshot(animatingDifferences: false)
+        }
+        let nav = UINavigationController(rootViewController: activeVC)
+        nav.modalPresentationStyle = .automatic
+        present(nav, animated: true, completion: nil)
     }
     
     private func setupTableView() {
