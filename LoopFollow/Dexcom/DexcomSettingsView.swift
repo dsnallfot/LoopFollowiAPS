@@ -18,12 +18,12 @@ struct DexcomSettingsView: View {
                 .ignoresSafeArea()
 
             Form {
-                Section(header: Text("Dexcom")) {
-                    TextField("Användarnamn", text: $viewModel.userName)
+                Section(header: Text("Användaruppgifter")) {
+                    TextField("Ange användarnamn", text: $viewModel.userName)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
 
-                    TextField("Lösenord", text: $viewModel.password)
+                    TextField("Ange lösenord", text: $viewModel.password)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
 

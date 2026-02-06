@@ -18,8 +18,8 @@ struct NightscoutSettingsView: View {
                 .ignoresSafeArea()
             
             Form {
-                Section(header: Text("URL & Token")) {
-                    TextField("URL", text: $viewModel.nightscoutURL)
+                Section(header: Text("Webbadress & token")) {
+                    TextField("Ange URL", text: $viewModel.nightscoutURL)
                         .textContentType(.URL)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
@@ -27,7 +27,7 @@ struct NightscoutSettingsView: View {
                             viewModel.processURL(newValue)
                         }
                     
-                    TextField("Token", text: $viewModel.nightscoutToken)
+                    TextField("Ange token", text: $viewModel.nightscoutToken)
                         .textContentType(.password)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
