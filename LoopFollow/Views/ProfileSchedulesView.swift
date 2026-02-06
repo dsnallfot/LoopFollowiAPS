@@ -810,6 +810,7 @@ private struct UserDataStatsView: View {
         case hba1c = "HbA1c"
         case weight = "Vikt"
         case height = "Längd"
+        case bmi = "BMI"
         case tdd = "TDD"
         var id: String { rawValue }
     }
@@ -873,6 +874,17 @@ private struct UserDataStatsView: View {
         case .height:
             valueExtractor = { $0.heightCm }
             baseColor = .cyan
+            circleColorProvider = nil
+
+        case .bmi:
+            valueExtractor = { entry in
+                guard let weight = entry.weightKg,
+                      let heightCm = entry.heightCm,
+                      heightCm > 0 else { return nil }
+                let heightM = heightCm / 100.0
+                return weight / (heightM * heightM)
+            }
+            baseColor = .systemYellow
             circleColorProvider = nil
 
         case .tdd:
