@@ -181,7 +181,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
         case .appSettings:
             return appSettingsRows.count
         case .integrations:
-            // Bakgrundsaktivitet, Sensorbyten synk, Fjärrkontrollinställningar, Kalendertrick, Kontakttrick
+            // Bakgrundsaktivitet, Sensorbyten synk, Fjärrkommandon inställningar, Kalendertrick, Kontakttrick
             return 5
         case .systemLog:
             // Se dagens logg, Dela logg
@@ -293,7 +293,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             switch indexPath.row {
             case 0: cell.textLabel?.text = "Bakgrundsaktivitet"
             case 1: cell.textLabel?.text = "Sensorbyten synk"
-            case 2: cell.textLabel?.text = "Fjärrkontroll"
+            case 2: cell.textLabel?.text = "Fjärrkommandon"
             case 3: cell.textLabel?.text = "Kalendertrick"
             case 4: cell.textLabel?.text = "Kontakttrick"
             default: break
@@ -539,7 +539,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
                 // Sensorbyten synk (modal)
                 presentSyncNewSensorView()
             case 2:
-                // Fjärrkontrollinställningar
+                // Fjärrkommando inställningar
                 let controller = makeRemoteSettingsViewController()
                 navigationController?.pushViewController(controller, animated: true)
             case 3:
@@ -618,7 +618,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             .environment(\.colorScheme, isDark ? .dark : .light)
 
         let hostingController = UIHostingController(rootView: settingsView)
-        hostingController.title = "Fjärrkontrollinställningar"
+        hostingController.title = "Fjärrkommandon inställningar"
         hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
         hostingController.hidesBottomBarWhenPushed = false
         return hostingController

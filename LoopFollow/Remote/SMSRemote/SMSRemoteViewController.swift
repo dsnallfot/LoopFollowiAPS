@@ -107,12 +107,16 @@ class SMSRemoteViewController: ThemedViewController, RemoteSettingsDelegate {
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.impactOccurred()
         
-            let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
-            // Set self as the delegate
-            remoteSettingsViewController.delegate = self
-            self.present(remoteSettingsViewController, animated: true, completion: nil)
-        }
-    
+        let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
+        // Set self as the delegate
+        remoteSettingsViewController.delegate = self
+
+        // Embed in navigation controller so we get title + "Klar"
+        let nav = UINavigationController(rootViewController: remoteSettingsViewController)
+        nav.modalPresentationStyle = .pageSheet   // or .automatic if you prefer
+        present(nav, animated: true, completion: nil)
+    }
+
     @IBAction func methodButtonTapped(_ sender: Any) {
         // Light haptic for feedback
         let generator = UIImpactFeedbackGenerator(style: .light)
@@ -121,7 +125,10 @@ class SMSRemoteViewController: ThemedViewController, RemoteSettingsDelegate {
         let remoteSettingsViewController = storyboard!.instantiateViewController(withIdentifier: "remoteSettings") as! RemoteSettingsViewController
         // Set self as the delegate
         remoteSettingsViewController.delegate = self
-        self.present(remoteSettingsViewController, animated: true, completion: nil)
+
+        let nav = UINavigationController(rootViewController: remoteSettingsViewController)
+        nav.modalPresentationStyle = .pageSheet
+        present(nav, animated: true, completion: nil)
     }
     
     @IBAction func calendarButtonTapped(_ sender: Any) {

@@ -43,7 +43,7 @@ struct RemoteSettingsView: View {
                 // Remote Type Section
                 // Instructions for Remote Type options
                 Section {
-                    Picker("Fjärrkontroll typ", selection: $viewModel.remoteType) {
+                    Picker("Fjärrkommandon typ", selection: $viewModel.remoteType) {
                         Text("Ingen").tag(RemoteType.none)
                         Text("Nightscout").tag(RemoteType.nightscout)
                         if BuildDetails.default.branch?.lowercased() != "main" {

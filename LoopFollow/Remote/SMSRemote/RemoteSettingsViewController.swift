@@ -7,380 +7,725 @@
 //
 
 import UIKit
-import Eureka
 import EventKit
 import EventKitUI
 
-class RemoteSettingsViewController: ThemedFormViewController {
+
+class RemoteSettingsViewController: ThemedViewController, UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate {
     weak var delegate: RemoteSettingsDelegate?
     var appStateController: AppStateController?
-    
     var mealViewController: MealViewController?
+
+    private enum Section: Int, CaseIterable {
+        case method
+        case twilio
+        case shortcutsExamples
+        case remoteConfig
+        case presets
+        case advanced
+        case guardrails
+    }
+
+    private enum ShortcutsExampleRow {
+        case remoteMealBolus
+        case remoteMeal
+        case remoteBolus
+        case remoteOverride
+        case remoteTempTarget
+        case remoteCustomAction
+    }
+
+    private enum PresetRow {
+        case overrides
+        case tempTargets
+        case customActions
+    }
+
+    private enum AdvancedRow {
+        case showCustomActions
+        case showRemoteBolus
+        case showBolusCalc
+        case useDynCr
+    }
+
+    private enum GuardrailRow: Int {
+        case maxCarbs
+        case maxFatProtein
+        case maxBolus
+    }
+
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     
+    private enum CellID {
+        static let basic = "BasicCell"
+        static let subtitle = "SubtitleCell"
+        static let method = "MethodCell"
+        static let textField = "TextFieldCell"
+        static let guardrail = "GuardrailCell"
+    }
+    
+    private let cardBackgroundColor =
+        UIColor.gray.withAlphaComponent(0.15)
+
+    // Local state for segmented control (method)
+    private var selectedMethod: String = UserDefaultsRepository.method.value
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        // Check and apply user preference for dark mode
+
+        // Dark mode override if needed
         if UserDefaultsRepository.forceDarkMode.value {
             overrideUserInterfaceStyle = .dark
         }
-        applyTheme()
-        
-        // Build and configure advanced settings
-        buildAdvancedSettings()
-        
-        // Reload the form initially
-        reloadForm()
+        updateBackgroundForCurrentMode()
+
+        title = "Fjärrkommandon inställningar"
+        configureNavigationItems()
+        configureTableView()
     }
-    
+
     // This will catch both the "Klar" button dismissal and swipe-down dismissals.
-        override func viewWillDisappear(_ animated: Bool) {
-            super.viewWillDisappear(animated)
-            if self.isBeingDismissed || self.isMovingFromParent {
-                delegate?.remoteSettingsDidUpdateMethod()
-            }
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if self.isBeingDismissed || self.isMovingFromParent {
+            delegate?.remoteSettingsDidUpdateMethod()
         }
-    
-    func reloadForm() {
-        // Check if the switch for hiding Remote Bolus is enabled
-        let hideBolus = Condition.function([], { _ in
-            return UserDefaultsRepository.hideRemoteBolus.value
-        })
-
-        // Find the "RemoteMealBolus" row
-        if let remoteMealBolusRow = form.rowBy(tag: "RemoteMealBolus") as? TextRow {
-            remoteMealBolusRow.hidden = hideBolus
-            remoteMealBolusRow.evaluateHidden()
-        }
-        
-        // Find the "RemoteBolus" row
-        if let remoteMealBolusRow = form.rowBy(tag: "RemoteBolus") as? TextRow {
-            remoteMealBolusRow.hidden = hideBolus
-            remoteMealBolusRow.evaluateHidden()
-        }
-
-        // Find the "RemoteMeal" row
-        if let remoteMealRow = form.rowBy(tag: "RemoteMeal") as? TextRow {
-            remoteMealRow.hidden = Condition.function([], { _ in
-                return !UserDefaultsRepository.hideRemoteBolus.value
-            })
-            remoteMealRow.evaluateHidden()
-        }
-
-        // Check if the switch for hiding Custom Actions is enabled
-        let hideCustomActions = Condition.function([], { _ in
-            return UserDefaultsRepository.hideRemoteCustomActions.value
-        })
-
-        // Find the "customActions" row
-        if let customActionsRow = form.rowBy(tag: "CustomActions") {
-            customActionsRow.hidden = hideCustomActions
-            customActionsRow.evaluateHidden()
-        }
-
-        // Find the "RemoteCustomActions" row
-        if let remoteCustomActionsRow = form.rowBy(tag: "RemoteCustomActions") {
-            remoteCustomActionsRow.hidden = hideCustomActions
-            remoteCustomActionsRow.evaluateHidden()
-        }
-
-        // Reload the form to reflect the changes
-        tableView?.reloadData()
     }
 
-    
-    private func buildAdvancedSettings() {
-        // Define the section
-        let remoteCommandsSection = Section(header: "Twilio Settings", footer: "") {
-            $0.hidden = Condition.function(["method"], { form in
-                // Retrieve the value of the segmented row
-                guard let methodRow = form.rowBy(tag: "method") as? SegmentedRow<String>,
-                      let selectedOption = methodRow.value else {
-                    return true // Default to hiding if there's no selected value
-                }
-                // Return true to hide the section if "iOS Shortcuts" is selected
-                return selectedOption != "SMS API"
-            })
+    // MARK: - Setup
+
+    private func configureNavigationItems() {
+        let doneItem = UIBarButtonItem(
+            title: "Klar",
+            style: .done,
+            target: self,
+            action: #selector(doneTapped)
+        )
+        navigationItem.rightBarButtonItem = doneItem
+    }
+
+    @objc private func doneTapped() {
+        dismiss(animated: true, completion: nil)
+    }
+
+    private func configureTableView() {
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.backgroundColor = .clear
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.keyboardDismissMode = .onDrag
+
+        // Registrera celltyper
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: CellID.basic)
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: CellID.method)
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: CellID.textField)
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: CellID.guardrail)
+        // SubtitleCell skapar vi med rätt style i cellForRow (ingen registrering behövs)
+
+        view.addSubview(tableView)
+
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+
+    // MARK: - Helpers for dynamic rows
+
+    private var hideRemoteBolus: Bool {
+        return UserDefaultsRepository.hideRemoteBolus.value
+    }
+
+    private var hideRemoteCustomActions: Bool {
+        return UserDefaultsRepository.hideRemoteCustomActions.value
+    }
+
+    private var shortcutsExampleRows: [ShortcutsExampleRow] {
+        var rows: [ShortcutsExampleRow] = []
+
+        // Remote meal/bolus examples depend on hideRemoteBolus
+        if hideRemoteBolus {
+            rows.append(.remoteMeal)
+        } else {
+            rows.append(.remoteMealBolus)
+            rows.append(.remoteBolus)
         }
-        
-        // Add rows to the section
-        remoteCommandsSection
-        <<< TextRow("twilioSID"){ row in
-            row.title = "Twilio SID"
-            row.cell.textField.placeholder = "EnterSID"
-            if (UserDefaultsRepository.twilioSIDString.value != "") {
-                let maskedSecret = String(repeating: "*", count: UserDefaultsRepository.twilioSIDString.value.count)
-                row.value = maskedSecret
-            }
-        }.onChange { row in
-            UserDefaultsRepository.twilioSIDString.value = row.value ?? ""
+
+        rows.append(.remoteOverride)
+        rows.append(.remoteTempTarget)
+
+        if !hideRemoteCustomActions {
+            rows.append(.remoteCustomAction)
         }
-        <<< TextRow("twilioSecret"){ row in
-            row.title = "Twilio Secret"
-            row.cell.textField.placeholder = "EnterSecret"
-            if (UserDefaultsRepository.twilioSecretString.value != "") {
-                let maskedSecret = String(repeating: "*", count: UserDefaultsRepository.twilioSecretString.value.count)
-                row.value = maskedSecret
-            }
-        }.onChange { row in
-            UserDefaultsRepository.twilioSecretString.value = row.value ?? ""
+
+        return rows
+    }
+
+    private var presetRows: [PresetRow] {
+        var rows: [PresetRow] = [.overrides, .tempTargets]
+        if !hideRemoteCustomActions {
+            rows.append(.customActions)
+        }
+        return rows
+    }
+
+    private var advancedRows: [AdvancedRow] {
+        var rows: [AdvancedRow] = [.showCustomActions, .showRemoteBolus]
+        // Show "Show Bolus Calculations" only when Remote Bolus is visible
+        if !hideRemoteBolus {
+            rows.append(.showBolusCalc)
+        }
+        rows.append(.useDynCr)
+        return rows
+    }
+
+    // MARK: - UITableViewDataSource
+
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return Section.allCases.count
+    }
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection sectionIndex: Int) -> Int {
+        guard let section = Section(rawValue: sectionIndex) else { return 0 }
+
+        switch section {
+        case .method:
+            return 1
+
+        case .shortcutsExamples:
+            // Only visible when iOS Genvägar is selected
+            return selectedMethod == "iOS Genvägar" ? shortcutsExampleRows.count : 0
             
+        case .twilio:
+            // Only visible when SMS API is selected
+            return selectedMethod == "SMS API" ? 4 : 0
+
+        case .remoteConfig:
+            return 2
+
+        case .presets:
+            return presetRows.count
+
+        case .advanced:
+            return advancedRows.count
+
+        case .guardrails:
+            return 3
         }
-        <<< TextRow("twilioFromNumberString"){ row in
-            row.title = "Twilio from Number"
-            row.cell.textField.placeholder = "EnterFromNumber"
-            row.cell.textField.keyboardType = UIKeyboardType.phonePad
-            if (UserDefaultsRepository.twilioFromNumberString.value != "") {
-                row.value = UserDefaultsRepository.twilioFromNumberString.value
-            }
-        }.onChange { row in
-            UserDefaultsRepository.twilioFromNumberString.value =  row.value ?? ""
+    }
+
+    func tableView(_ tableView: UITableView,
+                   titleForHeaderInSection sectionIndex: Int) -> String? {
+        guard let section = Section(rawValue: sectionIndex) else { return nil }
+
+        switch section {
+        case .method:
+            return "Välj metod för fjärrkommandon"
+        case .shortcutsExamples:
+            return selectedMethod == "iOS Genvägar" ? "iOS Genvägar • Exempel textsträngar" : nil
+        case .twilio:
+            return selectedMethod == "SMS API" ? "Twilio Settings" : nil
+        case .remoteConfig:
+            return "Fjärrkommandon avsändare"
+        case .presets:
+            return "Fjärrkommandon förval"
+        case .advanced:
+            return "Avancerat (Omstart app krävs)"
+        case .guardrails:
+            return "Maxgränser och säkerhet"
         }
-        
-        <<< TextRow("twilioToNumberString"){ row in
-            row.title = "Twilio to Number"
-            row.cell.textField.placeholder = "EnterToNumber"
-            row.cell.textField.keyboardType = UIKeyboardType.phonePad
-            if (UserDefaultsRepository.twilioToNumberString.value != "") {
-                row.value = UserDefaultsRepository.twilioToNumberString.value
-            }
-        }.onChange { row in
-            UserDefaultsRepository.twilioToNumberString.value =  row.value ?? ""
-        }
-        
-        let shortcutsSection = Section(header: "iOS Shortcut names • Textstrings examples", footer: "When iOS Shortcuts are selected as Remote command method, the entries made will be forwarded as a text string when you press 'Send Remote Meal/Bolus/Override/Temp Target' buttons. The '\\n' commands in the text strings create line breaks for better readability in imessage. (The text strings can be used as input in your shortcuts).\n\nYou need to create and customize your own iOS shortcuts and use the pre defined names listed above.") {
-            $0.hidden = Condition.function(["method"], { form in
-                // Retrieve the value of the segmented row
-                guard let methodRow = form.rowBy(tag: "method") as? SegmentedRow<String>,
-                      let selectedOption = methodRow.value else {
-                    return true // Default to hiding if there's no selected value
-                }
-                // Return true to hide the section if "iOS Shortcuts" is selected
-                return selectedOption != "iOS Shortcuts"
-            })
-        }
-        
-        // Add rows to the section
-        shortcutsSection
-        
-        <<< TextRow("RemoteMealBolus"){ row in
-            row.title = ""
-            row.value = "Remote Meal • Remote Meal\\nCarbs: 25.5g\\nFat: 20g\\nProtein: 15g\\nNotes: Testmeal)\\nDatum: 2024-06-02T20:03:44.849Z\\nInsulin: 1.55U\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
-            row.cellSetup { cell, row in
-                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
-            }
-        }
-        
-        <<< TextRow("RemoteMeal"){ row in
-            row.title = ""
-            row.value = "Remote Meal • Remote Meal\\nCarbs: 25.5g\\nFat: 20g\\nProtein: 15g\\nNotes: Testmeal)\\nDatum: 2024-06-02T20:03:44.849Z\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
-            row.cellSetup { cell, row in
-                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
-            }
-        }
-        <<< TextRow("RemoteBolus"){ row in
-            row.title = ""
-            row.value = "Remote Bolus • Remote Bolus\\nInsulin: 0.75U\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
-            row.cellSetup { cell, row in
-                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
-            }
-        }
-        <<< TextRow("RemoteOverride"){ row in
-            row.title = ""
-            row.value = "Remote Override • Remote Override\\n🎉 Partytime\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
-            row.cellSetup { cell, row in
-                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
-            }
-        }
-        <<< TextRow("RemoteTempTarget"){ row in
-            row.title = ""
-            row.value = "Remote Temp Target • Remote Temp Target\\n🏃‍♂️ Exercise\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
-            row.cellSetup { cell, row in
-                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
-            }
-        }
-        
-        <<< TextRow("RemoteCustomAction"){ row in
-            row.title = ""
-            row.value = "Remote Custom Action • Remote Custom Action\\n🍿 Popcorn\\nEntered by: Dad\\nSecret Code: S3cr3tc0d3"
-            row.cellSetup { cell, row in
-                cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
-            }
-        }
-        
-        // Add the section to the form
-        form
-        +++ Section(header: "Select remote commands method", footer: "")
-        <<< SegmentedRow<String>("method") { row in
-            row.title = ""
-            row.options = ["iOS Shortcuts", "SMS API"]
-            row.value = UserDefaultsRepository.method.value
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.method.value = value
-        }
-        
-        +++ remoteCommandsSection
-        
-        +++ shortcutsSection
-        
-        +++ Section(header: "Remote configuration", footer: "The Caregiver name will be shown in all remote actions messages sent on the receiving phone.\n\nThe Secret Code (max 10 characters) should be something unique, and the exact same code later needs to be entered when asked for it in an import question, when setting up the preconfigured shortcut for enacting remote actions on the receiving phone")
-        
-        <<< NameRow("caregivername"){ row in
-            row.title = "Caregiver Name"
-            row.value = UserDefaultsRepository.caregiverName.value
-            row.cell.textField.placeholder = "Enter your name"
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.caregiverName.value = value
-        }
-        
-        <<< TextRow("secretcode"){ row in
-            row.title = "Secret Code"
-            row.value = UserDefaultsRepository.remoteSecretCode.value
-            row.cell.textField.placeholder = "Enter a secret code"
-        }.onChange { row in
-            guard let value = row.value else { return }
-            let truncatedValue = String(value.prefix(10)) // Limiting to 10 characters
-            row.value = truncatedValue
-            UserDefaultsRepository.remoteSecretCode.value = truncatedValue
-        }
-        
-        +++ Section(header: "Remote presets setup", footer: "Add the presets you would like to be able to choose from in respective views picker. Separate them by comma + blank space.  Example: Override 1, Override 2, Override 3")
-        
-        <<< TextRow("Overrides"){ row in
-            row.title = "Overrides:"
-            row.value = UserDefaultsRepository.overrideString.value
-            row.cell.textField.placeholder = "👻 Resistance, 🤧 Sick day, 🏃‍♂️ Exercise, 😴 Nightmode"
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.overrideString.value = value
-        }
-        
-        <<< TextRow("TempTargets"){ row in
-            row.title = "Temp Targets:"
-            row.value = UserDefaultsRepository.tempTargetsString.value
-            row.cell.textField.placeholder = "Exercise, Eating soon, Low treatment"
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.tempTargetsString.value = value
-        }
-        
-        <<< TextRow("CustomActions"){ row in
-            row.title = "Custom Actions:"
-            row.value = UserDefaultsRepository.customActionsString.value
-            row.cell.textField.placeholder = "Custom Command 1, Custom Command 2, Custom Command 3"
-        }.onChange { row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.customActionsString.value = value
-        }
-        
-        form +++ Section("Advanced functions (App Restart needed)")
-        <<< SwitchRow("hideRemoteCustom") { row in
-            row.title = "Show Custom Actions" //Inverted code to make switch on = show instead of hide
-            // Invert the value here for initial state
-            row.value = !UserDefaultsRepository.hideRemoteCustomActions.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            // Invert the value again when saving
-            UserDefaultsRepository.hideRemoteCustomActions.value = !value
+    }
+
+    func tableView(_ tableView: UITableView,
+                   titleForFooterInSection sectionIndex: Int) -> String? {
+        guard let section = Section(rawValue: sectionIndex) else { return nil }
+
+        switch section {
+        case .method:
+            return nil
+
+        case .shortcutsExamples:
+            guard selectedMethod == "iOS Genvägar" else { return nil }
+            return "När iOS genvägar är vald som metod för fjärrkommandon, kommer alla registreringar om skapas att vidarebefordras som en textsträng när du klickar på 'Skicka måltid/Bolus/Override/Tillfälligt mål'-knapparna. Kommandot '\\n' i textsträngarna skapar radbrytningar för bättre läsbarhet i iMessage. (Textsträngarna kan användas som input i dina genvägar).\n\nDu måste skapa och anpassa dina egna iOS genvägar och använda de fördefinierade namnen listande ovan."
+
+        case .twilio:
+            return nil
             
-            // Reload the form after the value changes
-            self?.reloadForm()
+        case .remoteConfig:
+            return "Fjärranvändarens namn kommer att visas i alla fjärrkommando-meddelanden som skickas till den mottagande telefonen.\n\nDen hemliga koden (max 10 tecken) ska vara unik, och exakt samma kod behöver anges i importfrågan som ställs vid installationen av den förkonfigurerade genvägen som används för att kunna utföra fjärrkommandon på den mottagande telefonen."
+
+        case .presets:
+            return "Lägg till de förvalda actions som du villl kunna välja mellan i resp vys picker. Separera dem med komma + blanksteg.    Exempel: Override 1, Override 2, Override 3"
+
+        case .advanced:
+            return nil
+
+        case .guardrails:
+            return nil
         }
-        
-        <<< SwitchRow("hideRemoteBolus") { row in
-            row.title = "Show Remote Bolus" //Inverted code to make switch on = show instead of hide
-            // Invert the value here for initial state
-            row.value = !UserDefaultsRepository.hideRemoteBolus.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            // Invert the value again when saving
-            UserDefaultsRepository.hideRemoteBolus.value = !value
+    }
+
+    func tableView(_ tableView: UITableView,
+                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let section = Section(rawValue: indexPath.section) else {
+            return UITableViewCell()
+        }
+
+        switch section {
+        case .method:
+            return configureMethodCell(tableView, indexPath: indexPath)
             
-            // Reload the form after the value changes
-            self?.reloadForm()
+        case .shortcutsExamples:
+            return configureShortcutsExampleCell(tableView, indexPath: indexPath)
+
+        case .twilio:
+            return configureTwilioCell(tableView, indexPath: indexPath)
+
+        case .remoteConfig:
+            return configureRemoteConfigCell(tableView, indexPath: indexPath)
+
+        case .presets:
+            return configurePresetCell(tableView, indexPath: indexPath)
+
+        case .advanced:
+            return configureAdvancedCell(tableView, indexPath: indexPath)
+
+        case .guardrails:
+            return configureGuardrailCell(tableView, indexPath: indexPath)
         }
-        
-        <<< SwitchRow("hideBolusCalc") { row in
-            row.title = "Show Bolus Calculations"
-            row.value = !UserDefaultsRepository.hideBolusCalc.value
-            row.hidden = Condition.function(["hideRemoteBolus"], { form in
-                return !((form.rowBy(tag: "hideRemoteBolus") as? SwitchRow)?.value ?? true)
-            })
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.hideBolusCalc.value = !value
-            self?.reloadForm()
+    }
+
+    // MARK: - Cell Configuration
+
+    private func configureMethodCell(_ tableView: UITableView,
+                                     indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: CellID.method, for: indexPath)
+        cell.selectionStyle = .none
+        cell.backgroundColor = .clear
+
+        // Rensa bara egna subviews (den här cellen används *bara* för segmented)
+        cell.contentView.subviews.forEach { $0.removeFromSuperview() }
+
+        let segmented = UISegmentedControl(items: ["iOS Genvägar", "SMS API"])
+        segmented.selectedSegmentIndex = (selectedMethod == "SMS API") ? 1 : 0
+        segmented.addTarget(self, action: #selector(methodChanged(_:)), for: .valueChanged)
+        segmented.translatesAutoresizingMaskIntoConstraints = false
+
+        cell.contentView.addSubview(segmented)
+
+        NSLayoutConstraint.activate([
+            segmented.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 8),
+            segmented.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -8),
+            segmented.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor),
+            segmented.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor)
+        ])
+
+        return cell
+    }
+
+    @objc private func methodChanged(_ sender: UISegmentedControl) {
+        let newValue = (sender.selectedSegmentIndex == 1) ? "SMS API" : "iOS Genvägar"
+        selectedMethod = newValue
+        UserDefaultsRepository.method.value = newValue
+        tableView.reloadData()
+    }
+
+    private func makeTextFieldCell(_ tableView: UITableView,
+                                   indexPath: IndexPath,
+                                   title: String,
+                                   placeholder: String?,
+                                   text: String?,
+                                   keyboardType: UIKeyboardType = .default,
+                                   tag: Int) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: CellID.textField, for: indexPath)
+        cell.selectionStyle = .none
+        cell.backgroundColor = cardBackgroundColor
+
+        // Den här celltypen är bara vår egen, så vi kan rensa alla subviews tryggt
+        cell.contentView.subviews.forEach { $0.removeFromSuperview() }
+
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = UIFont.preferredFont(forTextStyle: .body)
+        titleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+
+        let textField = UITextField()
+        textField.placeholder = placeholder
+        textField.text = text
+        textField.keyboardType = keyboardType
+        textField.textAlignment = .right
+        textField.delegate = self
+        textField.tag = tag
+        textField.translatesAutoresizingMaskIntoConstraints = false
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, textField])
+        stack.axis = .horizontal
+        stack.spacing = 8
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        cell.contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 8),
+            stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -8),
+
+            textField.widthAnchor.constraint(greaterThanOrEqualToConstant: 80)
+        ])
+
+        return cell
+    }
+
+    private func configureTwilioCell(_ tableView: UITableView,
+                                     indexPath: IndexPath) -> UITableViewCell {
+        switch indexPath.row {
+        case 0:
+            // Twilio SID
+            let value = UserDefaultsRepository.twilioSIDString.value
+            let display = value.isEmpty ? nil : String(repeating: "*", count: value.count)
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Twilio SID",
+                placeholder: "Ange SID",
+                text: display,
+                keyboardType: .default,
+                tag: 100
+            )
+
+        case 1:
+            // Twilio Secret
+            let value = UserDefaultsRepository.twilioSecretString.value
+            let display = value.isEmpty ? nil : String(repeating: "*", count: value.count)
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Twilio Secret",
+                placeholder: "Ange Secret",
+                text: display,
+                keyboardType: .default,
+                tag: 101
+            )
+
+        case 2:
+            // From number
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Twilio frånnummer",
+                placeholder: "Ange frånnummer",
+                text: UserDefaultsRepository.twilioFromNumberString.value,
+                keyboardType: .phonePad,
+                tag: 102
+            )
+
+        default:
+            // To number
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Twilio tillnummer",
+                placeholder: "Ang tillnummer",
+                text: UserDefaultsRepository.twilioToNumberString.value,
+                keyboardType: .phonePad,
+                tag: 103
+            )
         }
-        
-        <<< SwitchRow("useDynCrInBolusCalc"){ row in
-            row.title = "Use Dyn CR in Bolus Calc"
-            row.value = UserDefaultsRepository.useDynCrInBolusCalc.value
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.useDynCrInBolusCalc.value = value
+    }
+
+    private func configureShortcutsExampleCell(_ tableView: UITableView,
+                                               indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: CellID.subtitle)
+            ?? UITableViewCell(style: .subtitle, reuseIdentifier: CellID.subtitle)
+
+        cell.selectionStyle = .none
+        cell.backgroundColor = cardBackgroundColor
+        cell.textLabel?.font = UIFont.systemFont(ofSize: 10)
+        cell.textLabel?.numberOfLines = 0
+        cell.detailTextLabel?.text = nil
+
+        let row = shortcutsExampleRows[indexPath.row]
+
+        switch row {
+        case .remoteMealBolus:
+            cell.textLabel?.text = "Remote Meal • Remote Måltid\\nKolhydrater: 25.5g\\nFett: 20g\\nProtein: 15g\\nNotering: Testmåltid\\nDatum: 2024-06-02T20:03:44.849Z\\nInsulin: 1.55E\\nEntered by: Dad\\nSecret: S3cr3tc0d3\\nSkickades: 2024-06-02T20:03:45.149Z"
+        case .remoteMeal:
+            cell.textLabel?.text = "Remote Meal • Remote Måltid\\nKolhydrater: 25.5g\\nFett: 20g\\nProtein: 15g\\nNotes: Testmåltid\\nDatum: 2024-06-02T20:03:44.849Z\\nInlagt av: Pappa\\nSecret: S3cr3tc0d3\\nSkickades: 2024-06-02T20:03:45.149Z"
+        case .remoteBolus:
+            cell.textLabel?.text = "Remote Bolus • Remote Bolus\\nInsulin: 0.75U\\nInlagt av: Pappa\\nSecret: S3cr3tc0d3\\nSkickades: 2024-06-02T20:03:45.149Z"
+        case .remoteOverride:
+            cell.textLabel?.text = "Remote Override • Remote Override\\n🎉 Partytime\\nInlagt av: Pappa\\nSecret: S3cr3tc0d3\\nSkickades: 2024-06-02T20:03:45.149Z"
+        case .remoteTempTarget:
+            cell.textLabel?.text = "Remote Temp Target • Remote Tillfälligt mål\\n🏃‍♂️ Exercise\\nInlagt av: Pappa\\nSecret: S3cr3tc0d3\\nSkickades: 2024-06-02T20:03:45.149Z"
+        case .remoteCustomAction:
+            cell.textLabel?.text = "Remote Custom Action • Remote Custom Action\\n🍿 Popcorn\\nInlagt av: Pappa\\nSecret: S3cr3tc0d3\\nSkickades: 2024-06-02T20:03:45.149Z"
         }
-        
-        +++ Section(header: "Guardrails and security", footer: "")
-        
-        <<< StepperRow("maxCarbs") { row in
-            row.title = "Max Carbs (g)"
-            row.cell.stepper.stepValue = 5
-            row.cell.stepper.minimumValue = 0
-            row.cell.stepper.maximumValue = 200
-            row.value = Double(UserDefaultsRepository.maxCarbs.value)
-            row.displayValueFor = { value in
-                guard let value = value else { return nil }
-                return "\(Int(value))"
-            }
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            //UserDefaultsRepository.maxCarbs.value = Int(value)
-            UserDefaultsRepository.maxCarbs.value = Double(value)
+
+        return cell
+    }
+
+    private func configureRemoteConfigCell(_ tableView: UITableView,
+                                           indexPath: IndexPath) -> UITableViewCell {
+        switch indexPath.row {
+        case 0:
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Fjärranvändares namn",
+                placeholder: "Ange ditt namn",
+                text: UserDefaultsRepository.caregiverName.value,
+                keyboardType: .default,
+                tag: 200
+            )
+        default:
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Hemlig kod",
+                placeholder: "Ange en hemlig kod",
+                text: UserDefaultsRepository.remoteSecretCode.value,
+                keyboardType: .default,
+                tag: 201
+            )
         }
-        
-        <<< StepperRow("maxFatProtein") { row in
-            row.title = "Max Fat or Protein (g)"
-            row.cell.stepper.stepValue = 5
-            row.cell.stepper.minimumValue = 0
-            row.cell.stepper.maximumValue = 200
-            row.value = Double(UserDefaultsRepository.maxFatProtein.value)
-            row.displayValueFor = { value in
-                guard let value = value else { return nil }
-                return "\(Int(value))"
-            }
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            //UserDefaultsRepository.maxFatProtein.value = Int(value)
-            UserDefaultsRepository.maxFatProtein.value = Double(value)
+    }
+
+    private func configurePresetCell(_ tableView: UITableView,
+                                     indexPath: IndexPath) -> UITableViewCell {
+        let row = presetRows[indexPath.row]
+
+        switch row {
+        case .overrides:
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Overrides:",
+                placeholder: "👻 Resistance, 🤧 Sick day, 🏃‍♂️ Exercise, 😴 Nightmode",
+                text: UserDefaultsRepository.overrideString.value,
+                keyboardType: .default,
+                tag: 300
+            )
+        case .tempTargets:
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Tillfälliga mål:",
+                placeholder: "Exercise, Eating soon, Low treatment",
+                text: UserDefaultsRepository.tempTargetsString.value,
+                keyboardType: .default,
+                tag: 301
+            )
+        case .customActions:
+            return makeTextFieldCell(
+                tableView,
+                indexPath: indexPath,
+                title: "Förvalda actions:",
+                placeholder: "Custom Command 1, Custom Command 2, Custom Command 3",
+                text: UserDefaultsRepository.customActionsString.value,
+                keyboardType: .default,
+                tag: 302
+            )
         }
-        
-        <<< StepperRow("maxBolus") { row in
-            row.title = "Max Bolus (U)"
-            row.cell.stepper.stepValue = 0.1
-            row.cell.stepper.minimumValue = 0.1
-            row.cell.stepper.maximumValue = 50
-            row.value = Double(UserDefaultsRepository.maxBolus.value)
-            row.displayValueFor = { value in
-                guard let value = value else { return nil }
-                // Format the value with one fraction
-                return String(format: "%.1f", value)
-            }
-        }.onChange { [weak self] row in
-            guard let value = row.value else { return }
-            UserDefaultsRepository.maxBolus.value = Double(value)
+    }
+
+    private func configureAdvancedCell(_ tableView: UITableView,
+                                       indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: CellID.basic, for: indexPath)
+        cell.selectionStyle = .none
+        cell.backgroundColor = cardBackgroundColor
+        cell.accessoryView = nil
+        cell.accessoryType = .none
+
+        let row = advancedRows[indexPath.row]
+
+        switch row {
+        case .showCustomActions:
+            cell.textLabel?.text = "Visa förvalda actions"
+            let toggle = UISwitch()
+            toggle.isOn = !UserDefaultsRepository.hideRemoteCustomActions.value
+            toggle.addTarget(self, action: #selector(showCustomActionsChanged(_:)), for: .valueChanged)
+            cell.accessoryView = toggle
+
+        case .showRemoteBolus:
+            cell.textLabel?.text = "Visa remote bolus"
+            let toggle = UISwitch()
+            toggle.isOn = !UserDefaultsRepository.hideRemoteBolus.value
+            toggle.addTarget(self, action: #selector(showRemoteBolusChanged(_:)), for: .valueChanged)
+            cell.accessoryView = toggle
+
+        case .showBolusCalc:
+            cell.textLabel?.text = "Visa bolusberäkningar"
+            let toggle = UISwitch()
+            toggle.isOn = !UserDefaultsRepository.hideBolusCalc.value
+            toggle.addTarget(self, action: #selector(showBolusCalcChanged(_:)), for: .valueChanged)
+            cell.accessoryView = toggle
+
+        case .useDynCr:
+            cell.textLabel?.text = "Anv dyn CR i bolusberäkn."
+            let toggle = UISwitch()
+            toggle.isOn = UserDefaultsRepository.useDynCrInBolusCalc.value
+            toggle.addTarget(self, action: #selector(useDynCrChanged(_:)), for: .valueChanged)
+            cell.accessoryView = toggle
         }
-        
-        +++ ButtonRow() {
-            $0.title = "Klar"
-        }.onCellSelection { (row, arg) in
-            if let navigationController = self.navigationController {
-                navigationController.popViewController(animated: true)
-            } else {
-                // If there's no navigation controller, dismiss the current view controller
-                self.dismiss(animated: true, completion: nil)
-            }
+
+        return cell
+    }
+
+    private func configureGuardrailCell(_ tableView: UITableView,
+                                        indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: CellID.guardrail, for: indexPath)
+        cell.selectionStyle = .none
+        cell.backgroundColor = cardBackgroundColor
+
+        // Egen layout – rensa först
+        cell.contentView.subviews.forEach { $0.removeFromSuperview() }
+
+        let guardrail = GuardrailRow(rawValue: indexPath.row) ?? .maxCarbs
+
+        let titleLabel = UILabel()
+        titleLabel.font = UIFont.preferredFont(forTextStyle: .body)
+
+        let valueLabel = UILabel()
+        valueLabel.font = UIFont.preferredFont(forTextStyle: .body)
+        valueLabel.textColor = .secondaryLabel
+        valueLabel.textAlignment = .right
+        valueLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+
+        let stepper = UIStepper()
+        stepper.addTarget(self, action: #selector(guardrailStepperChanged(_:)), for: .valueChanged)
+        stepper.tag = guardrail.rawValue
+
+        switch guardrail {
+        case .maxCarbs:
+            titleLabel.text = "Max kolhydrater"
+            let value = UserDefaultsRepository.maxCarbs.value
+            valueLabel.text = "\(Int(value)) g"
+            stepper.minimumValue = 0
+            stepper.maximumValue = 200
+            stepper.stepValue = 5
+            stepper.value = value
+
+        case .maxFatProtein:
+            titleLabel.text = "Max fett/protein"
+            let value = UserDefaultsRepository.maxFatProtein.value
+            valueLabel.text = "\(Int(value)) g"
+            stepper.minimumValue = 0
+            stepper.maximumValue = 200
+            stepper.stepValue = 5
+            stepper.value = value
+
+        case .maxBolus:
+            titleLabel.text = "Max bolus"
+            let value = UserDefaultsRepository.maxBolus.value
+            valueLabel.text = String(format: "%.1f E", value)
+            stepper.minimumValue = 0.1
+            stepper.maximumValue = 50
+            stepper.stepValue = 0.1
+            stepper.value = value
+        }
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, valueLabel, stepper])
+        stack.axis = .horizontal
+        stack.spacing = 8
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        cell.contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 8),
+            stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -8)
+        ])
+
+        return cell
+    }
+
+    // MARK: - Switch / Stepper handlers
+
+    @objc private func showCustomActionsChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.hideRemoteCustomActions.value = !sender.isOn
+        tableView.reloadData()
+    }
+
+    @objc private func showRemoteBolusChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.hideRemoteBolus.value = !sender.isOn
+        tableView.reloadData()
+    }
+
+    @objc private func showBolusCalcChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.hideBolusCalc.value = !sender.isOn
+        // Only this section changes layout
+        if let sectionIndex = Section.allCases.firstIndex(of: .advanced) {
+            tableView.reloadSections(IndexSet(integer: sectionIndex), with: .automatic)
+        } else {
+            tableView.reloadData()
+        }
+    }
+
+    @objc private func useDynCrChanged(_ sender: UISwitch) {
+        UserDefaultsRepository.useDynCrInBolusCalc.value = sender.isOn
+    }
+
+    @objc private func guardrailStepperChanged(_ sender: UIStepper) {
+        guard let row = GuardrailRow(rawValue: sender.tag) else { return }
+
+        switch row {
+        case .maxCarbs:
+            UserDefaultsRepository.maxCarbs.value = sender.value
+        case .maxFatProtein:
+            UserDefaultsRepository.maxFatProtein.value = sender.value
+        case .maxBolus:
+            UserDefaultsRepository.maxBolus.value = sender.value
+        }
+
+        if let sectionIndex = Section.allCases.firstIndex(of: .guardrails) {
+            tableView.reloadSections(IndexSet(integer: sectionIndex), with: .none)
+        } else {
+            tableView.reloadData()
+        }
+    }
+
+    // MARK: - UITextFieldDelegate
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        let text = textField.text ?? ""
+
+        switch textField.tag {
+        // Twilio
+        case 100:
+            // Twilio SID – store raw value (mask is only display)
+            UserDefaultsRepository.twilioSIDString.value = text
+        case 101:
+            UserDefaultsRepository.twilioSecretString.value = text
+        case 102:
+            UserDefaultsRepository.twilioFromNumberString.value = text
+        case 103:
+            UserDefaultsRepository.twilioToNumberString.value = text
+
+        // Remote config
+        case 200:
+            UserDefaultsRepository.caregiverName.value = text
+        case 201:
+            let truncated = String(text.prefix(10))
+            textField.text = truncated
+            UserDefaultsRepository.remoteSecretCode.value = truncated
+
+        // Presets
+        case 300:
+            UserDefaultsRepository.overrideString.value = text
+        case 301:
+            UserDefaultsRepository.tempTargetsString.value = text
+        case 302:
+            UserDefaultsRepository.customActionsString.value = text
+
+        default:
+            break
         }
     }
 }
