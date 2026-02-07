@@ -165,7 +165,7 @@ struct DailyStatsView: View {
                                 set: { viewModel.useSensorChangeDays = $0 }
                             )
                         )
-                        .navigationTitle("Välj veckodagar att visa")
+                        .navigationTitle("Filtrera tabellen")
                         .navigationBarTitleDisplayMode(.inline)
                     }
                     .presentationDetents([.medium])
@@ -594,7 +594,7 @@ struct DailyStatsView: View {
     private var titrStreakBar: some View {
         // Sortera dagar i kronologisk ordning (äldst till nyast) för vänster-till-höger-läsning
         // och filtrera bort dagar utan TITR-data.
-        let filteredRows = viewModel.rowsWithSufficientGlucose
+        let filteredRows = viewModel.filteredRowsForDisplay
             .sorted { $0.date < $1.date }
             .filter { $0.tightRangePercent != nil }
 
@@ -626,7 +626,7 @@ struct DailyStatsView: View {
     private var tirStreakBar: some View {
         // Sortera dagar i kronologisk ordning (äldst till nyast) för vänster-till-höger-läsning
         // och filtrera bort dagar utan TITR-data.
-        let filteredRows = viewModel.rowsWithSufficientGlucose
+        let filteredRows = viewModel.filteredRowsForDisplay
             .sorted { $0.date < $1.date }
             .filter { $0.timeInRangePercent != nil }
 
@@ -1054,6 +1054,10 @@ private struct WeekdayFilterView: View {
             
             VStack(alignment: .leading, spacing: 24) {
                 // Rad 1: veckodagar + "Alla"
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Veckodagar")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
                 HStack(spacing: 12) {
                     let allWeekdaysSet: Set<Int> = Set(1...7)
                     let allSelected = (selectedWeekdays == allWeekdaysSet) && !usePumpChangeDays
@@ -1110,6 +1114,7 @@ private struct WeekdayFilterView: View {
                         .buttonStyle(.plain)
                     }
                 }
+            }
                 
                 // Rad 2: "Andra filter" + Pumpbytesdagar + Sensorbytesdagar
                 VStack(alignment: .leading, spacing: 8) {
