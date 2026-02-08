@@ -518,6 +518,7 @@ extension MainViewController {
             // 🦄 Show/hide unicorn for exactly 5.5 mmol/L
             self.updateUnicornVisibility(forBGDisplayString: bgDisplay)
             self.update67HandsVisibility(forBGDisplayString: bgDisplay)
+            self.updateTargetLogoVisibility(forBGDisplayString: bgDisplay)
             
             // Direction handling
             if let directionBG = entries[latestEntryIndex].direction {
@@ -756,6 +757,30 @@ extension MainViewController {
         let shouldShow = (bg == "6.7")
         UIView.animate(withDuration: 0.25) {
             self.hands67ImageView.alpha = shouldShow ? 0.4 : 0.0
+        }
+    }
+    /// Shows the target logo image behind BGView when BG is exactly at target mmol/L,
+    /// except when target is 5.5 or 6.7 (those are reserved for unicorn / 67-hands).
+    fileprivate func updateTargetLogoVisibility(forBGDisplayString bg: String) {
+        let targetMgdl = Double(UserDefaultsRepository.targetLine.value)
+        let targetMmolRaw = targetMgdl * GlucoseConversion.mgDlToMmolL
+
+        // Avrunda target till 1 decimal
+        let targetMmol = (targetMmolRaw * 10).rounded() / 10
+
+        // Specialvärden som aldrig ska visa target-loggan
+        if targetMmol == 5.5 || targetMmol == 6.7 {
+            UIView.animate(withDuration: 0.25) {
+                self.targetLogoImageView.alpha = 0.0
+            }
+            return
+        }
+
+        let bgValue = Double(bg)
+        let shouldShow = bgValue == targetMmol
+
+        UIView.animate(withDuration: 0.25) {
+            self.targetLogoImageView.alpha = shouldShow ? 0.25 : 0.0
         }
     }
 }

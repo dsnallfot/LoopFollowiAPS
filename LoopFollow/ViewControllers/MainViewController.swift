@@ -70,6 +70,16 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         return iv
     }()
     
+    // target logo overlay behind BGView contents
+    let targetLogoImageView: UIImageView = {
+        let iv2 = UIImageView()
+        iv2.translatesAutoresizingMaskIntoConstraints = false
+        iv2.image = UIImage(named: "target150")
+        iv2.contentMode = .scaleAspectFit
+        iv2.alpha = 0.0
+        return iv2
+    }()
+    
     var refreshControl: UIRefreshControl!
 
     let speechSynthesizer = AVSpeechSynthesizer()
@@ -436,6 +446,14 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             hands67ImageView.centerYAnchor.constraint(equalTo: BGView.centerYAnchor),
             hands67ImageView.widthAnchor.constraint(equalTo: BGView.widthAnchor, multiplier: 0.95),
             hands67ImageView.heightAnchor.constraint(equalTo: BGView.heightAnchor, multiplier: 0.95)
+        ])
+        // 🎯 Setup target logo overlay behind BGView content (deepest layer)
+        BGView.insertSubview(targetLogoImageView, at: 0)
+        NSLayoutConstraint.activate([
+            targetLogoImageView.centerXAnchor.constraint(equalTo: BGView.centerXAnchor),
+            targetLogoImageView.centerYAnchor.constraint(equalTo: BGView.centerYAnchor),
+            targetLogoImageView.widthAnchor.constraint(equalTo: BGView.widthAnchor, multiplier: 0.95),
+            targetLogoImageView.heightAnchor.constraint(equalTo: BGView.heightAnchor, multiplier: 0.95)
         ])
     }
     

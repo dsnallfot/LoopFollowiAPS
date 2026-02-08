@@ -56,6 +56,16 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         return iv
     }()
     
+    // 🎯 target logo overlay behind BGView contents (Snoozer)
+    private let targetLogoImageView: UIImageView = {
+        let iv2 = UIImageView()
+        iv2.translatesAutoresizingMaskIntoConstraints = false
+        iv2.image = UIImage(named: "target")
+        iv2.contentMode = .scaleAspectFit
+        iv2.alpha = 0.0
+        return iv2
+    }()
+    
     @IBOutlet weak var AlarmsButton: UIButton!
     
     @IBAction func SnoozeButton(_ sender: Any) {
@@ -129,6 +139,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         // 🦄 Show/hide unicorn for exactly 5.5 mmol/L
         updateUnicornVisibility(forBGDisplayString: bgValWithPeriod)
         update67HandsVisibility(forBGDisplayString: bgValWithPeriod)
+        updateTargetLogoVisibility(forBGDisplayString: bgValWithPeriod)
         DirectionLabel.text = directionVal
         DeltaLabel.text = deltaValWithPeriod
         MinAgoLabel.text = minAgoVal
@@ -575,6 +586,15 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             hands67ImageView.widthAnchor.constraint(equalTo: BGView.widthAnchor, multiplier: 0.95),
             hands67ImageView.heightAnchor.constraint(equalTo: BGView.heightAnchor, multiplier: 0.95)
         ])
+        
+        // 🎯 Setup target logo overlay behind BGView content
+        BGView.insertSubview(targetLogoImageView, at: 0)
+        NSLayoutConstraint.activate([
+            targetLogoImageView.centerXAnchor.constraint(equalTo: BGView.centerXAnchor),
+            targetLogoImageView.centerYAnchor.constraint(equalTo: BGView.centerYAnchor),
+            targetLogoImageView.widthAnchor.constraint(equalTo: BGView.widthAnchor, multiplier: 0.95),
+            targetLogoImageView.heightAnchor.constraint(equalTo: BGView.heightAnchor, multiplier: 0.95)
+        ])
     }
 
     @IBAction func alarmsButtonTapped(_ sender: Any) {
@@ -678,10 +698,36 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         }
     }
     
+    /// Shows the target logo image behind BGView when BG is exactly at target mmol/L,
+    /// except when target is 5.5 or 6.7 (those are reserved for unicorn / 67-hands).
+    fileprivate func updateTargetLogoVisibility(forBGDisplayString bg: String) {
+        let targetMgdl = Double(UserDefaultsRepository.targetLine.value)
+        let targetMmolRaw = targetMgdl * GlucoseConversion.mgDlToMmolL
+
+        // Avrunda target till 1 decimal
+        let targetMmol = (targetMmolRaw * 10).rounded() / 10
+
+        // Specialvärden som aldrig ska visa target-loggan
+        if targetMmol == 5.5 || targetMmol == 6.7 {
+            UIView.animate(withDuration: 0.25) {
+                self.targetLogoImageView.alpha = 0.0
+            }
+            return
+        }
+
+        let bgValue = Double(bg)
+        let shouldShow = bgValue == targetMmol
+
+        UIView.animate(withDuration: 0.25) {
+            self.targetLogoImageView.alpha = shouldShow ? 0.25 : 0.0
+        }
+    }
+    
     /// Public-facing helper to update all BG-related easter eggs from outside SnoozeViewController.
     func updateEasterEggs(bgDisplay: String) {
         updateUnicornVisibility(forBGDisplayString: bgDisplay)
         update67HandsVisibility(forBGDisplayString: bgDisplay)
+        updateTargetLogoVisibility(forBGDisplayString: bgDisplay)
     }
 
     deinit {
