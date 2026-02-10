@@ -217,7 +217,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     /// Determines which rows are shown when the filter button (line.3.horizontal.decrease.circle) is enabled.
     /// Includes:
     /// - all missing rows
-    /// - glucose rows that are "special" (🦄, 🆘, ⚠️)
+    /// - glucose rows that are "special" (🦄, 👐, 🎯, 🆘, ⚠️)
     private func shouldIncludeWhenFiltered(_ row: GlucoseRow) -> Bool {
         switch row {
         case .missing:
@@ -225,8 +225,18 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             return true
 
         case .glucose(let entry):
+            let targetMgdl = Double(UserDefaultsRepository.targetLine.value)
+            let targetMmolRaw = targetMgdl * GlucoseConversion.mgDlToMmolL
+
+            // Avrunda target till 1 decimal
+            let targetMmol = (targetMmolRaw * 10).rounded() / 10
+
             // 🦄 Unicorn = exactly 5.5 mmol/L (≈ 100 mg/dL)
             if abs(entry.mmol - 5.5) < 0.02 { return true }
+            // 👐 hands = exactly 6.7 mmol/L
+            if abs(entry.mmol - 6.7) < 0.02 { return true }
+            // 🎯 target = exactly target mmol/L
+            if abs(entry.mmol - targetMmol) < 0.02 { return true }
             // 🆘 Very low marker ~2.2 mmol/L
             if abs(entry.mmol - 2.2) < 0.04 { return true }
             // ⚠️ Very high marker ~22.2 mmol/L
@@ -246,7 +256,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
 
         let rows = dayRowsIncludingMissing
         if showOnlyMissingGlucose {
-            // Visa alla saknade rader + "intressanta" värden (🦄, 🆘, ⚠️)
+            // Visa alla saknade rader + "intressanta" värden (🦄, 👐, 🎯, 🆘, ⚠️)
             let hits = rows.filter { shouldIncludeWhenFiltered($0) }
 
             if hits.isEmpty {
@@ -1118,8 +1128,28 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         formatted = formatted.replacingOccurrences(of: ",", with: "\n•")
 
         // 3. Mer specifika ersättningar.
-        formatted = formatted.replacingOccurrences(of: "BG: 5.5", with: "Glukos: 5.5 🦄")
-        formatted = formatted.replacingOccurrences(of: "BG:", with: "Glukos:")
+
+        // Endast "BG: 5.5" som INTE har en bokstav direkt före "B"
+        if let regexBG55 = try? NSRegularExpression(pattern: "(?<![A-Za-z])BG: 5\\.5", options: []) {
+            let range = NSRange(location: 0, length: formatted.utf16.count)
+            formatted = regexBG55.stringByReplacingMatches(
+                in: formatted,
+                options: [],
+                range: range,
+                withTemplate: "Glukos: 5.5 🦄"
+            )
+        }
+
+        // Endast "BG:" som INTE har en bokstav direkt före "B"
+        if let regexBG = try? NSRegularExpression(pattern: "(?<![A-Za-z])BG:", options: []) {
+            let range = NSRange(location: 0, length: formatted.utf16.count)
+            formatted = regexBG.stringByReplacingMatches(
+                in: formatted,
+                options: [],
+                range: range,
+                withTemplate: "Glukos:"
+            )
+        }
         formatted = formatted.replacingOccurrences(of: "SMB INAKTIVERADE!", with: "SMB Inaktiverade 🚫")
         formatted = formatted.replacingOccurrences(of: "Mikrobolus:", with: "🔹 Mikrobolus:")
         formatted = formatted.replacingOccurrences(of: ". ;", with: "\n• ")
@@ -1176,10 +1206,18 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         switch row {
         case .glucose(let entry):
             let valueString = String(format: "%.1f mmol/L", entry.mmol)
+            let targetMgdl = Double(UserDefaultsRepository.targetLine.value)
+            let targetMmolRaw = targetMgdl * GlucoseConversion.mgDlToMmolL
 
-            // 🦄 Unicorn = exactly 5.5 mmol/L (≈ 100 mg/dL)
+            // Avrunda target till 1 decimal
+            let targetMmol = (targetMmolRaw * 10).rounded() / 10
+            
             if abs(entry.mmol - 5.5) < 0.02 {
                 cell.textLabel?.text = valueString + " 🦄"
+            } else if abs(entry.mmol - 6.7) < 0.02 {
+                cell.textLabel?.text = valueString + " 👐"
+            } else if abs(entry.mmol - targetMmol) < 0.02 {
+                cell.textLabel?.text = valueString + " 🎯"
             } else if abs(entry.mmol - 2.2) < 0.04 {
                 cell.textLabel?.text = valueString + " 🆘"
             } else if abs(entry.mmol - 22.2) < 0.04 {
