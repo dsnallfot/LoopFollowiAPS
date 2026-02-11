@@ -82,6 +82,73 @@ class AGPCalculator {
     }
 }
 
+class AGPDayByDayCalculator {
+    /// Builds up to 14 daily series for a “day-by-day” overlay.
+    /// Values are returned in mg/dL so we can reuse the fixed 0–360 mg/dL axis.
+    static func calculate(bgData: [ShareGlucoseData], in interval: DateInterval) -> [AGPDaySeries] {
+        guard !bgData.isEmpty else { return [] }
+
+        let calendar = Calendar.current
+
+        // Group readings by calendar day inside interval
+        var grouped: [Date: [ShareGlucoseData]] = [:]
+        for r in bgData {
+            let d = Date(timeIntervalSince1970: r.date)
+            guard d >= interval.start && d <= interval.end else { continue }
+            let dayStart = calendar.startOfDay(for: d)
+            grouped[dayStart, default: []].append(r)
+        }
+
+        let dayStarts = grouped.keys.sorted()
+        let cappedDays = Array(dayStarts.prefix(14))
+
+        var out: [AGPDaySeries] = []
+        out.reserveCapacity(cappedDays.count)
+
+        for dayStart in cappedDays {
+            guard let readings = grouped[dayStart], !readings.isEmpty else { continue }
+            // Calendar weekday: 1=Sunday ... 7=Saturday. Convert to ISO/SV: 1=Monday ... 7=Sunday.
+            let calendarWeekday = calendar.component(.weekday, from: dayStart)
+            let weekday = ((calendarWeekday + 5) % 7) + 1
+
+            var points: [AGPDayPoint] = []
+            points.reserveCapacity(readings.count)
+
+            for r in readings {
+                let d = Date(timeIntervalSince1970: r.date)
+                let comps = calendar.dateComponents([.hour, .minute], from: d)
+                let h = Double(comps.hour ?? 0)
+                let m = Double(comps.minute ?? 0)
+                let x = h + (m / 60.0)
+
+                // ShareGlucoseData.sgv is always mg/dL in our pipeline.
+                let yMgdl = Double(r.sgv)
+                points.append(AGPDayPoint(xHour: x, yMgdl: yMgdl))
+            }
+
+            // Sort by x, de-dupe by 5-min bucket
+            let sorted = points.sorted { $0.xHour < $1.xHour }
+            var deduped: [AGPDayPoint] = []
+            deduped.reserveCapacity(sorted.count)
+
+            var lastBucket: Int?
+            for p in sorted {
+                let bucket = Int((p.xHour * 60.0 / 5.0).rounded())
+                if lastBucket == bucket {
+                    deduped[deduped.count - 1] = p
+                } else {
+                    deduped.append(p)
+                    lastBucket = bucket
+                }
+            }
+
+            out.append(AGPDaySeries(dayStart: dayStart, weekday: weekday, points: deduped))
+        }
+
+        return out
+    }
+}
+
 class PercentileCalculator {
     static func percentile(_ sorted: [Double], p: Double) -> Double {
         guard !sorted.isEmpty else { return 0.0 }
