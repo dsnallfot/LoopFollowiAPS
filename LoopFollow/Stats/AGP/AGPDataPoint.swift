@@ -40,13 +40,13 @@ enum AGPWeekday: Int, CaseIterable {
 
     var shortSv: String {
         switch self {
-        case .monday: return "Må"
-        case .tuesday: return "Ti"
-        case .wednesday: return "On"
-        case .thursday: return "To"
-        case .friday: return "Fr"
-        case .saturday: return "Lö"
-        case .sunday: return "Sö"
+        case .monday: return "Mån"
+        case .tuesday: return "Tis"
+        case .wednesday: return "Ons"
+        case .thursday: return "Tor"
+        case .friday: return "Fre"
+        case .saturday: return "Lör"
+        case .sunday: return "Sön"
         }
     }
 
