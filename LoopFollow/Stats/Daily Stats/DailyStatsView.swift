@@ -545,23 +545,19 @@ struct DailyStatsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("TDD")
-                    .font(.callout)
                     .fontWeight(.semibold)
                     .foregroundColor(Color(UIColor.insulin).opacity(0.9))
                 Text("och")
-                    .font(.callout)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
                 Text("Kolhydrater")
-                    .font(.callout)
                     .fontWeight(.semibold)
                     .foregroundColor(Color(UIColor.carbs).opacity(0.9))
                 Text("per dag")
-                    .font(.callout)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
             }
-            .font(.callout)
+            .font(.subheadline)
             .fontWeight(.medium)
             DailyCarbsTDDBarChartView(rows: rows)
                 .frame(height: 180)
@@ -1024,17 +1020,27 @@ private struct DailyCarbsTDDBarChartView: UIViewRepresentable {
     let rows: [DailyStatRow]
 
     func makeUIView(context: Context) -> UIView {
-        let containerView = NonInteractiveContainerView()
+        // IMPORTANT: we need touch handling for highlight + marker.
+        // NonInteractiveContainerView blocks touches, so use a plain UIView.
+        let containerView = UIView()
         containerView.backgroundColor = .clear
+        containerView.isUserInteractionEnabled = true
 
         let chartView = BarChartView()
         chartView.backgroundColor = .clear
+        // Plot-area background (only inside the data/grid rect, not outside axes/labels)
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = UIColor.systemBackground.withAlphaComponent(0.5)
+        chartView.drawBordersEnabled = false
 
         chartView.rightAxis.enabled = true
         chartView.leftAxis.enabled = true
 
         chartView.chartDescription.enabled = false
         chartView.legend.enabled = false
+
+        chartView.isUserInteractionEnabled = true
+        chartView.drawMarkers = true
 
         // Disable zoom/scale
         chartView.pinchZoomEnabled = false
@@ -1205,6 +1211,9 @@ private struct DailyCarbsTDDBarChartView: UIViewRepresentable {
 
         chartView.xAxis.setLabelCount(min(7, n), force: false)
 
+        // Ensure marker knows which chart it belongs to
+        (chartView.marker as? MarkerView)?.chartView = chartView
+
         chartView.data = data
         chartView.notifyDataSetChanged()
         chartView.setNeedsDisplay()
@@ -1215,16 +1224,19 @@ private final class DailyBarsMarker: MarkerView {
     private let label = UILabel()
 
     init(font: UIFont) {
-        super.init(frame: CGRect(x: 0, y: 0, width: 80, height: 30))
+        super.init(frame: CGRect(x: 0, y: 0, width: 60, height: 30))
 
         label.font = font
         label.textAlignment = .center
         label.textColor = .white
-        label.backgroundColor = UIColor.black.withAlphaComponent(0.75)
-        label.layer.cornerRadius = 8
-        label.layer.masksToBounds = true
-
+        backgroundColor = UIColor.systemGray4.withAlphaComponent(0.8)
+        layer.cornerRadius = 6
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.label.cgColor
+        clipsToBounds = true
+        
         addSubview(label)
+
         label.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             label.topAnchor.constraint(equalTo: topAnchor),
@@ -1251,7 +1263,7 @@ private final class DailyBarsMarker: MarkerView {
     override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
         // Center above the touched bar
         let size = bounds.size
-        return CGPoint(x: -size.width / 2, y: -size.height - 8)
+        return CGPoint(x: -size.width / 2, y: -size.height + 12)
     }
 }
 
