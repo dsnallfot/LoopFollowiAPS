@@ -604,7 +604,7 @@ struct DailyStatsView: View {
                         }
                     }
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 10)
+                    .padding(.bottom, 2)
 
                     if showingTitrSummary {
                         titrStreakBar
