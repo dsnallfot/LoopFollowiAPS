@@ -61,10 +61,14 @@ class LogManager {
     ///   - isTempDebug: Indicates if this is a temporary more detailed debug log.
     ///   - limitIdentifier: Optional key to rate-limit similar log messages.
     ///   - limitInterval: Time interval (in seconds) to wait before logging the same type again.
-    func log(category: Category, message: String, isDebug: Bool = false, isTempDebug: Bool = false, limitIdentifier: String? = nil, limitInterval: TimeInterval = 300) {
-        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-        let logMessage = "[\(timestamp)] [\(category.rawValue)] \(message)"
-        
+    func log(
+        category: Category,
+        message: @autoclosure () -> String,
+        isDebug: Bool = false,
+        isTempDebug: Bool = false,
+        limitIdentifier: String? = nil,
+        limitInterval: TimeInterval = 300
+    ) {
         let debugEnabled = Storage.shared.debugLogLevel.value
         let tempDebugEnabled = Storage.shared.tempDebugLogLevel.value
 
@@ -74,44 +78,37 @@ class LogManager {
         // 3) Temp debug logs (isTempDebug=true): only shown when "Visa temporära debugloggar" is enabled
         let shouldLogThisMessage: Bool = {
             switch (isDebug, isTempDebug) {
-            case (true, true):
-                return debugEnabled || tempDebugEnabled
-            case (true, false):
-                return debugEnabled
-            case (false, true):
-                return tempDebugEnabled
-            case (false, false):
-                return true
+            case (true, true):   return debugEnabled || tempDebugEnabled
+            case (true, false):  return debugEnabled
+            case (false, true):  return tempDebugEnabled
+            case (false, false): return true
             }
         }()
-        
-        if shouldLogThisMessage {
-            consoleQueue.async {
-                print(logMessage)
-            }
-        }
-        
+
+        // EARLY RETURN: don't build strings, don't write, don't notify UI
+        guard shouldLogThisMessage else { return }
+
+        // Rate limit before formatting/building the log string
         if let key = limitIdentifier, !(debugEnabled || tempDebugEnabled) {
             let shouldLog: Bool = rateLimitQueue.sync {
                 if let lastLogged = lastLoggedTimestamps[key] {
-                    let interval = Date().timeIntervalSince(lastLogged)
-                    if interval < limitInterval {
+                    if Date().timeIntervalSince(lastLogged) < limitInterval {
                         return false
                     }
                 }
                 lastLoggedTimestamps[key] = Date()
                 return true
             }
-            if !shouldLog {
-                return
-            }
+            guard shouldLog else { return }
         }
-        
-        if shouldLogThisMessage {
-            let logFileURL = self.currentLogFileURL
-            self.append(logMessage + "\n", to: logFileURL)
-            logUpdateSubject.send() // Notify subscribers of the log update
-        }
+
+        // Build log string only when we actually log
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let logMessage = "[\(timestamp)] [\(category.rawValue)] \(message())"
+
+        let logFileURL = self.currentLogFileURL
+        self.append(logMessage + "\n", to: logFileURL)
+        logUpdateSubject.send()
     }
     
     func cleanupOldLogs() {
@@ -127,7 +124,7 @@ class LogManager {
                 }
             }
         } catch {
-            print("Failed to clean up old logs: \(error)")
+            //print("Failed to clean up old logs: \(error)")
         }
     }
 
@@ -146,19 +143,33 @@ class LogManager {
              return logFileURL(for: Date())
          }
 
+    private var persistentFileHandle: FileHandle?
+    private var persistentFileURL: URL?
+
     private func append(_ message: String, to fileURL: URL) {
         if !fileManager.fileExists(atPath: fileURL.path) {
             fileManager.createFile(atPath: fileURL.path, contents: nil, attributes: nil)
         }
 
-        if let fileHandle = try? FileHandle(forWritingTo: fileURL) {
-            defer { fileHandle.closeFile() }
-            fileHandle.seekToEndOfFile()
-            if let data = message.data(using: .utf8) {
-                fileHandle.write(data)
+        do {
+            // Reuse existing file handle if we are still writing to the same file
+            if persistentFileURL != fileURL {
+                try persistentFileHandle?.close()
+                persistentFileHandle = try FileHandle(forWritingTo: fileURL)
+                persistentFileURL = fileURL
             }
-        } else {
-            print("Failed to open log file at \(fileURL.path)")
+
+            guard let fileHandle = persistentFileHandle else { return }
+
+            try fileHandle.seekToEnd()
+
+            if let data = message.data(using: .utf8) {
+                try fileHandle.write(contentsOf: data)
+            }
+
+        } catch {
+            // Avoid print() to reduce unnecessary background logging
+            // You could optionally handle this silently or throttle error logging
         }
     }
 }

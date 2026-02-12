@@ -452,7 +452,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         let now = Date()
         let start = cal.date(byAdding: .day, value: -days, to: now)!
 
-        print("🔄 Backfilling \(days) days (NS-only glucose): \(start) → \(now)")
+        //print("🔄 Backfilling \(days) days (NS-only glucose): \(start) → \(now)")
 
         let sgvBatch = await NightscoutUtils.fetchSGVWindow(from: start, to: now)
         if !sgvBatch.isEmpty {
@@ -460,7 +460,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             GlucoseNSOnlyCache.purgeOldFiles()
         }
 
-        print("✅ NS-only glucose backfill completed.")
+        //print("✅ NS-only glucose backfill completed.")
     }
 
     /// Ensure that we have performed the large initial NS-only backfill once (90 days).

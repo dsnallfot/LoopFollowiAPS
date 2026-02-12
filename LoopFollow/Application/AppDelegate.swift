@@ -58,6 +58,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Ensure VolumeButtonHandler is initialized so it can receive alarm notifications
         _ = VolumeButtonHandler.shared
 
+        // Post a Nightscout Note about app restart, debounced
+        postLaunchNoteToNightscoutIfNeeded()
+
         return true
     }
 /* Revertat ändring i 2f66847 & 94ad3e9 pga sämre UX
@@ -170,6 +173,75 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         completionHandler()
     }
+    // MARK: - Nightscout launch note
+
+    private static let lastLaunchNotePostedKey = "LastLaunchNotePostedAt"
+
+    /// Posts a Nightscout treatment "Note" when LoopFollow starts.
+    /// Debounced to avoid spamming if the app is crash-looping or relaunched repeatedly.
+    private func postLaunchNoteToNightscoutIfNeeded() {
+        // Must have Nightscout configured and treatments download enabled
+        // Use IsNightscoutEnabled() if available, else check directly for URL and downloadTreatments
+        #if compiler(>=5.0)
+        // Try to use IsNightscoutEnabled if visible, else fallback
+        if ({ () -> Bool in
+            // Try to call IsNightscoutEnabled() if in scope
+            #if canImport(MainViewController)
+            return IsNightscoutEnabled()
+            #else
+            return !ObservableUserDefaults.shared.url.value.isEmpty
+            #endif
+        })() == false || !UserDefaultsRepository.downloadTreatments.value {
+            return
+        }
+        #else
+        guard !ObservableUserDefaults.shared.url.value.isEmpty, UserDefaultsRepository.downloadTreatments.value else { return }
+        #endif
+
+        // Debounce: Send only once per 10 minutes
+        let now = Date()
+        if let last = UserDefaults.standard.object(forKey: Self.lastLaunchNotePostedKey) as? Date {
+            if now.timeIntervalSince(last) < 10 * 60 { return }
+        }
+
+        // Build payload
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        let createdAt = iso.string(from: now) // includes Z
+
+        // enteredBy: use caregiverName if available, else fall back
+        let caregiver = UserDefaultsRepository.caregiverName.value.trimmingCharacters(in: .whitespacesAndNewlines)
+        let enteredBy = caregiver.isEmpty ? "LoopFollow" : "\(caregiver)"
+        let notesString = "Loop Follow omstart (\(enteredBy) )"
+
+        // Nightscout expects utcOffset in minutes
+        let utcOffsetMinutes = TimeZone.current.secondsFromGMT(for: now) / 60
+
+        let doc: [String: Any] = [
+            "notes": notesString,
+            "enteredBy": enteredBy,
+            "eventType": "Note",
+            "created_at": createdAt,
+            "utcOffset": utcOffsetMinutes
+        ]
+
+        // Wait a moment so user defaults / storage initialization has settled
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            Task {
+                do {
+                    _ = try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: doc)
+                    UserDefaults.standard.set(now, forKey: Self.lastLaunchNotePostedKey)
+                    LogManager.shared.log(category: .nightscout, message: "✅ Posted launch Note to Nightscout (enteredBy=\(enteredBy))", isDebug: true)
+                } catch {
+                    // Queue for retry on next TreatmentsTableView appearance (existing retry logic)
+                    NightscoutUtils.addPendingUploadDocument(doc)
+                    LogManager.shared.log(category: .nightscout, message: "⚠️ Failed to post launch Note, queued for retry: \(error)")
+                }
+            }
+        }
+    }
+
     struct AppUtility {
         static func lockOrientation(_ orientation: UIInterfaceOrientationMask) {
             if let delegate = UIApplication.shared.delegate as? AppDelegate {
