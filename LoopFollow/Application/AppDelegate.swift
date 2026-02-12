@@ -180,6 +180,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     /// Posts a Nightscout treatment "Note" when LoopFollow starts.
     /// Debounced to avoid spamming if the app is crash-looping or relaunched repeatedly.
     private func postLaunchNoteToNightscoutIfNeeded() {
+        // Only upload if user has enabled "Upload app start note" in settings
+        guard Storage.shared.uploadAppStartNote.value else { return }
         // Must have Nightscout configured and treatments download enabled
         // Use IsNightscoutEnabled() if available, else check directly for URL and downloadTreatments
         #if compiler(>=5.0)

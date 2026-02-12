@@ -74,6 +74,10 @@ struct AdvancedSettingsView: View {
                         themedRow {
                             Toggle("Visa temporära debugloggar", isOn: $viewModel.tempDebugLogLevel)
                         }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Toggle("Ladda upp appstart till NS", isOn: $viewModel.uploadAppStartNote)
+                        }
                     }
                     .themedCardBackground()
 
@@ -94,3 +98,5 @@ struct AdvancedSettingsView: View {
             .tint(Color(uiColor: .systemGreen))
     }
 }
+
+

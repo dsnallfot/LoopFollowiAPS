@@ -38,6 +38,8 @@ class Storage {
     var debugLogLevel = StorageValue<Bool>(key: "debugLogLevel", defaultValue: false)
     var tempDebugLogLevel = StorageValue<Bool>(key: "tempDebugLogLevel", defaultValue: false)
     
+    var uploadAppStartNote = StorageValue<Bool>(key: "uploadAppStartNote", defaultValue: false)
+    
     var sensorScheduleOffset = StorageValue<Double?>(key: "sensorScheduleOffset", defaultValue: nil)
 
     // Persist latest Bluetooth heartbeat so UI can show a value immediately after app restart
