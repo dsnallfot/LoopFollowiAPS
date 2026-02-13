@@ -14,6 +14,7 @@ class AGPViewModel: ObservableObject {
 
     @Published var displayMode: DisplayMode = .agp
     @Published var dayByDaySeries: [AGPDaySeries] = []
+    @Published var guardrailCrossings: AGPGuardrailCrossings = .empty
     @Published private(set) var currentInterval: DateInterval =
         DateInterval(start: Date().addingTimeInterval(-14 * 24 * 60 * 60), end: Date())
 
@@ -38,8 +39,10 @@ class AGPViewModel: ObservableObject {
 
         if canToggleDayByDay {
             dayByDaySeries = AGPDayByDayCalculator.calculate(bgData: bgData, in: interval)
+            guardrailCrossings = AGPDayByDayCalculator.calculateGuardrailCrossings(series: dayByDaySeries)
         } else {
             dayByDaySeries = []
+            guardrailCrossings = .empty
             if displayMode == .dayByDay {
                 displayMode = .agp
             }

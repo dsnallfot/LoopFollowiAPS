@@ -65,184 +65,187 @@ struct AggregatedStatsView: View {
     
     var body: some View {
         ZStack {
-                ThemeBackground()
-        if #available(iOS 16.0, *) {
-            VStack(spacing: 0) {
-                // Fixed segment picker header
-                VStack(spacing: 8) {
-                    Picker("Period", selection: $selectedPeriod) {
-                        Text("Idag").tag(0)
-                        Text("1 d").tag(1)
-                        Text("2 d").tag(2)
-                        Text("3 d").tag(3)
-                        Text("7 d").tag(7)
-                        Text("14 d").tag(14)
-                        Text("30 d").tag(30)
-                        Text("90 d").tag(90)
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
-                    .onChange(of: selectedPeriod) { newValue in
-                        UserDefaults.standard.set(newValue, forKey: "AggregatedStatsSelectedPeriod")
-                        resetDatesForSelectedPeriod()
-                        refreshIfNeeded(forceReload: (newValue == 0 || newValue == 1))
-                    }
-
-                    HStack {
-                        Text("Vald period:")
-                            .font(.subheadline)
-                            .fontWeight(.regular)
-                            .foregroundColor(Color.secondary)
-                        Spacer()
-
-                        // Begränsa valbara datum till 90 dagar bakåt t.o.m. idag
-                        let bounds = baseDateBounds()
-
-                        DatePicker(
-                            "",
-                            selection: $startDate,
-                            in: bounds.min...bounds.max,
-                            displayedComponents: .date
-                        )
-                        .datePickerStyle(.compact)
-                        .environment(\.locale, Locale(identifier: "sv_SE"))
-                        .labelsHidden()
-
-                        DatePicker(
-                            "",
-                            selection: $endDate,
-                            in: bounds.min...bounds.max,
-                            displayedComponents: .date
-                        )
-                        .datePickerStyle(.compact)
-                        .environment(\.locale, Locale(identifier: "sv_SE"))
-                        .labelsHidden()
-                    }
-                    .padding(.trailing)
-                    .padding(.leading, 28)
-                    .padding(.bottom, 6)
-                }
-                .background(Color.clear)
-                .zIndex(1)
-                .onChange(of: startDate) { newValue in
-                    handleStartDateChange(newValue)
-                }
-                .onChange(of: endDate) { newValue in
-                    handleEndDateChange(newValue)
-                }
-                
-                ScrollView {
-                    VStack(spacing: 20) {
-                        TIRView(viewModel: viewModel.tirStats)
-                            .padding(.horizontal)
-                            .padding(.top, 12)
-                        
-                        StatsGridView(
-                            simpleStats: viewModel.simpleStats,
-                            showGMI: $showGMI,
-                            showStdDev: $showStdDev,
-                            showAvgGlucose: $showAvgGlucose,
-                            showFPU: $showFPU,
-                            showSMB: $showSMB,
-                            showDextroAmount: $showDextroAmount,
-                            showProfileBasal: $showProfileBasal,
-                            showLowPercentage: $showLowPercentage,
-                            showAllTooltips: $showAllTooltips,
-                            tooltipResetToken: $tooltipResetToken,
-                            isTodayOnly: selectedPeriod == 0,
-                            isOneDayOnly: selectedPeriod < 2,
-                            showTrends: selectedPeriod != 90,
-                            periodLabel: periodLabel(for: selectedPeriod)
-                        )
+            ThemeBackground()
+            if #available(iOS 16.0, *) {
+                VStack(spacing: 0) {
+                    // Fixed segment picker header
+                    VStack(spacing: 8) {
+                        Picker("Period", selection: $selectedPeriod) {
+                            Text("Idag").tag(0)
+                            Text("1 d").tag(1)
+                            Text("2 d").tag(2)
+                            Text("3 d").tag(3)
+                            Text("7 d").tag(7)
+                            Text("14 d").tag(14)
+                            Text("30 d").tag(30)
+                            Text("90 d").tag(90)
+                        }
+                        .pickerStyle(.segmented)
                         .padding(.horizontal)
-                        
-                        AGPView(viewModel: viewModel.agpStats)
-                            .padding(.horizontal)
-                        
-                        GRIView(viewModel: viewModel.griStats)
-                            .padding(.horizontal)
-                    }
-                    .padding(.bottom)
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .navigationTitle("Statistik")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                
-                ToolbarItem(placement: .topBarLeading) {
-                    if isLoadingData {
-                        ProgressView()
-                    } else {
-                        Button(action: {
-                            refreshIfNeeded(forceReload: true, overrideThrottle: true)
-                        }) {
-                            Image(systemName: "arrow.clockwise")
+                        .padding(.top, 8)
+                        .padding(.bottom, 8)
+                        .onChange(of: selectedPeriod) { newValue in
+                            UserDefaults.standard.set(newValue, forKey: "AggregatedStatsSelectedPeriod")
+                            resetDatesForSelectedPeriod()
+                            refreshIfNeeded(forceReload: (newValue == 0 || newValue == 1))
                         }
-                    }
-                }
-                
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        showAllTooltips.toggle()
-                        if !showAllTooltips {
-                            tooltipResetToken += 1
+                        
+                        HStack {
+                            Text("Vald period:")
+                                .font(.subheadline)
+                                .fontWeight(.regular)
+                                .foregroundColor(Color.secondary)
+                            Spacer()
+                            
+                            // Begränsa valbara datum till 90 dagar bakåt t.o.m. idag
+                            let bounds = baseDateBounds()
+                            
+                            DatePicker(
+                                "",
+                                selection: $startDate,
+                                in: bounds.min...bounds.max,
+                                displayedComponents: .date
+                            )
+                            .datePickerStyle(.compact)
+                            .environment(\.locale, Locale(identifier: "sv_SE"))
+                            .labelsHidden()
+                            
+                            DatePicker(
+                                "",
+                                selection: $endDate,
+                                in: bounds.min...bounds.max,
+                                displayedComponents: .date
+                            )
+                            .datePickerStyle(.compact)
+                            .environment(\.locale, Locale(identifier: "sv_SE"))
+                            .labelsHidden()
                         }
-                    }) {
-                        Image(systemName: showAllTooltips ? "ellipsis.bubble.fill" : "ellipsis.bubble")
+                        .padding(.trailing)
+                        .padding(.leading, 28)
+                        .padding(.bottom, 6)
+                    }
+                    .background(Color.clear)
+                    .zIndex(1)
+                    .onChange(of: startDate) { newValue in
+                        handleStartDateChange(newValue)
+                    }
+                    .onChange(of: endDate) { newValue in
+                        handleEndDateChange(newValue)
+                    }
+                    
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            TIRView(viewModel: viewModel.tirStats)
+                                .padding(.horizontal)
+                                .padding(.top, 12)
+                            
+                            StatsGridView(
+                                simpleStats: viewModel.simpleStats,
+                                showGMI: $showGMI,
+                                showStdDev: $showStdDev,
+                                showAvgGlucose: $showAvgGlucose,
+                                showFPU: $showFPU,
+                                showSMB: $showSMB,
+                                showDextroAmount: $showDextroAmount,
+                                showProfileBasal: $showProfileBasal,
+                                showLowPercentage: $showLowPercentage,
+                                showAllTooltips: $showAllTooltips,
+                                tooltipResetToken: $tooltipResetToken,
+                                isTodayOnly: selectedPeriod == 0,
+                                isOneDayOnly: selectedPeriod < 2,
+                                showTrends: selectedPeriod != 90,
+                                periodLabel: periodLabel(for: selectedPeriod)
+                            )
+                            .padding(.horizontal)
+                            
+                            AGPView(viewModel: viewModel.agpStats)
+                                .padding(.horizontal)
+                            
+                            AGPGuardrailCrossingsModule(crossings: viewModel.agpStats.guardrailCrossings)
+                                .padding(.horizontal)
+                            
+                            GRIView(viewModel: viewModel.griStats)
+                                .padding(.horizontal)
+                        }
+                        .padding(.bottom)
+                        .frame(maxWidth: .infinity)
                     }
                 }
-                
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button {
-                        if showsDoneButton {
-                            // Modal variant: öppna som sheet
-                            showingDailyStats = true
+                .navigationTitle("Statistik")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    
+                    ToolbarItem(placement: .topBarLeading) {
+                        if isLoadingData {
+                            ProgressView()
                         } else {
-                            // Pushad från Settings: öppna via UINavigationController
-                            pushDailyStatsViaNavigation()
+                            Button(action: {
+                                refreshIfNeeded(forceReload: true, overrideThrottle: true)
+                            }) {
+                                Image(systemName: "arrow.clockwise")
+                            }
                         }
-                    } label: {
-                        Image(systemName: "tablecells")
                     }
-                }
-                
-                ToolbarSpacer(placement: .topBarTrailing)
-                
-                if showsDoneButton {
-                    ToolbarSpacer(placement: .topBarTrailing)
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(action: {
+                            showAllTooltips.toggle()
+                            if !showAllTooltips {
+                                tooltipResetToken += 1
+                            }
+                        }) {
+                            Image(systemName: showAllTooltips ? "ellipsis.bubble.fill" : "ellipsis.bubble")
+                        }
+                    }
                     
                     ToolbarItemGroup(placement: .topBarTrailing) {
-                        Button("Klar") {
-                            dismiss()
+                        Button {
+                            if showsDoneButton {
+                                // Modal variant: öppna som sheet
+                                showingDailyStats = true
+                            } else {
+                                // Pushad från Settings: öppna via UINavigationController
+                                pushDailyStatsViaNavigation()
+                            }
+                        } label: {
+                            Image(systemName: "tablecells")
+                        }
+                    }
+                    
+                    ToolbarSpacer(placement: .topBarTrailing)
+                    
+                    if showsDoneButton {
+                        ToolbarSpacer(placement: .topBarTrailing)
+                        
+                        ToolbarItemGroup(placement: .topBarTrailing) {
+                            Button("Klar") {
+                                dismiss()
+                            }
                         }
                     }
                 }
-            }
-            .onAppear {
-                refreshIfNeeded(forceReload: shouldForceReloadOnOpen)
-            }
-            .onChange(of: scenePhase) { newPhase in
-                guard newPhase == .active else { return }
-                if shouldForceReloadOnOpen {
-                    refreshIfNeeded(forceReload: true)
+                .onAppear {
+                    refreshIfNeeded(forceReload: shouldForceReloadOnOpen)
                 }
-            }
-            .sheet(isPresented: Binding(
-                get: { showingDailyStats && showsDoneButton },
-                set: { showingDailyStats = $0 }
-            )) {
-                NavigationStack {
-                    DailyStatsView(viewModel: dailyStatsVM, showsDoneButton: true)
+                .onChange(of: scenePhase) { newPhase in
+                    guard newPhase == .active else { return }
+                    if shouldForceReloadOnOpen {
+                        refreshIfNeeded(forceReload: true)
+                    }
                 }
+                .sheet(isPresented: Binding(
+                    get: { showingDailyStats && showsDoneButton },
+                    set: { showingDailyStats = $0 }
+                )) {
+                    NavigationStack {
+                        DailyStatsView(viewModel: dailyStatsVM, showsDoneButton: true)
+                    }
+                }
+            } else {
+                // Fallback on earlier versions
             }
-        } else {
-            // Fallback on earlier versions
         }
     }
-}
     private func baseDateBounds() -> (min: Date, max: Date) {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -1059,5 +1062,46 @@ struct StatsGridView: View {
 
         // eHbA1c i % (samma grund som din formatter använder innan ev mmol/mol-konvertering)
         //return (avgGlucoseMgdL + 46.7) / 28.7
+    }
+}
+
+struct AGPGuardrailCrossingsModule: View {
+    let crossings: AGPGuardrailCrossings
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Antal tillfällen under/över gränsvärden")
+                .font(.callout)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+
+            HStack(spacing: 0) {
+                cell(title: "< 3.1", value: "\(crossings.below56Count) ggr", color: Color.red.opacity(1.0))
+                cell(title: "< 3.9", value: "\(crossings.below70Count) ggr", color: Color.red.opacity(0.8))
+                cell(title: "> 13.9", value: "\(crossings.above250Count) ggr", color: Color.purple.opacity(0.8))
+                cell(title: "> 16.0", value: "\(crossings.above288Count) ggr", color: Color.purple.opacity(1.0))
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(.systemBackground.withAlphaComponent(0.5)))
+        .cornerRadius(15)
+    }
+
+    private func cell(title: String, value: String, color: Color) -> some View {
+        VStack(spacing: 6) {
+            Text(title)
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(color)
+
+            Text(value)
+                .font(.subheadline)
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
     }
 }
