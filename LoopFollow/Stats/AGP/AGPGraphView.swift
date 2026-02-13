@@ -113,15 +113,16 @@ struct AGPGraphView: UIViewRepresentable {
             return
         }
         let p5DataSet = LineChartDataSet(entries: sortedP5, label: "5th")
-        p5DataSet.colors = [NSUIColor.systemGray.withAlphaComponent(0.6)]
+        p5DataSet.colors = [NSUIColor.systemBlue.withAlphaComponent(0.7)]
         p5DataSet.lineWidth = 1.5
+        p5DataSet.lineDashLengths = [1, 1]
         p5DataSet.drawCirclesEnabled = false
         p5DataSet.drawValuesEnabled = false
         p5DataSet.drawFilledEnabled = false
         p5DataSet.mode = .cubicBezier
 
         let p25DataSet = LineChartDataSet(entries: sortedP25, label: "25th")
-        p25DataSet.colors = [NSUIColor.systemBlue.withAlphaComponent(0.7)]
+        p25DataSet.colors = [NSUIColor.systemBlue.withAlphaComponent(0.9)]
         p25DataSet.lineWidth = 1.5
         p25DataSet.drawCirclesEnabled = false
         p25DataSet.drawValuesEnabled = false
@@ -129,15 +130,15 @@ struct AGPGraphView: UIViewRepresentable {
         p25DataSet.mode = .cubicBezier
 
         let p50DataSet = LineChartDataSet(entries: sortedP50, label: "Median")
-        p50DataSet.colors = [NSUIColor.systemBlue]
-        p50DataSet.lineWidth = 3
+        p50DataSet.colors = [NSUIColor.label]
+        p50DataSet.lineWidth = 2
         p50DataSet.drawCirclesEnabled = false
         p50DataSet.drawValuesEnabled = false
         p50DataSet.drawFilledEnabled = false
         p50DataSet.mode = .cubicBezier
 
         let p75DataSet = LineChartDataSet(entries: sortedP75, label: "75th")
-        p75DataSet.colors = [NSUIColor.systemBlue.withAlphaComponent(0.7)]
+        p75DataSet.colors = [NSUIColor.systemBlue.withAlphaComponent(0.9)]
         p75DataSet.lineWidth = 1.5
         p75DataSet.drawCirclesEnabled = false
         p75DataSet.drawValuesEnabled = false
@@ -145,8 +146,9 @@ struct AGPGraphView: UIViewRepresentable {
         p75DataSet.mode = .cubicBezier
 
         let p95DataSet = LineChartDataSet(entries: sortedP95, label: "95th")
-        p95DataSet.colors = [NSUIColor.systemGray.withAlphaComponent(0.6)]
+        p95DataSet.colors = [NSUIColor.systemBlue.withAlphaComponent(0.7)]
         p95DataSet.lineWidth = 1.5
+        p95DataSet.lineDashLengths = [1, 1]
         p95DataSet.drawCirclesEnabled = false
         p95DataSet.drawValuesEnabled = false
         p95DataSet.drawFilledEnabled = false
@@ -163,14 +165,6 @@ struct AGPGraphView: UIViewRepresentable {
         let targetLow: Double = 70
         let targetHigh: Double = 140
         let targetTitHigh: Double = 180
-        /*if UserDefaultsRepository.units.value == "mg/dL" {
-            targetLow = defaultTargetLowMgdl
-            targetHigh = defaultTargetHighMgdl
-        } else {
-            // Convert mg/dL → mmol/L
-            targetLow = defaultTargetLowMgdl * GlucoseConversion.mgDlToMmolL
-            targetHigh = defaultTargetHighMgdl * GlucoseConversion.mgDlToMmolL
-        }*/
 
         var hourLines: [ChartDataEntry] = []
         for hour in 0 ... 24 {
@@ -188,6 +182,23 @@ struct AGPGraphView: UIViewRepresentable {
         hourLinesDataSet.drawCirclesEnabled = false
         hourLinesDataSet.drawValuesEnabled = false
         hourLinesDataSet.drawFilledEnabled = false
+        
+        // Horizontal mmol-ish support lines (0–360 mg/dL stepping by 36 mg/dL ≈ 2 mmol/L)
+        var mmolLineDataSets: [LineChartDataSet] = []
+        for y in stride(from: 0.0, through: 360.0, by: 36.0) {
+            let entries = [
+                ChartDataEntry(x: 0.0, y: y),
+                ChartDataEntry(x: 24.0, y: y)
+            ]
+            let ds = LineChartDataSet(entries: entries, label: "")
+            ds.colors = [NSUIColor.label.withAlphaComponent(0.15)]
+            ds.lineWidth = 0.5
+            ds.drawCirclesEnabled = false
+            ds.drawValuesEnabled = false
+            ds.drawFilledEnabled = false
+            ds.mode = .linear
+            mmolLineDataSets.append(ds)
+        }
 
         // Horizontal target lines
         let targetLowEntries = [
@@ -227,6 +238,9 @@ struct AGPGraphView: UIViewRepresentable {
 
         let data = LineChartData()
         data.append(hourLinesDataSet)
+        for ds in mmolLineDataSets {
+            data.append(ds)
+        }
         data.append(targetLowDataSet)
         data.append(targetHighDataSet)
         data.append(targetTitHighDataSet)

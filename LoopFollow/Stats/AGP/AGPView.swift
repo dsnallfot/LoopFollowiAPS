@@ -42,9 +42,9 @@ struct AGPView: View {
                             .clipped()
 
                         HStack(spacing: 16) {
-                            LegendItem(color: .gray.opacity(0.6), label: "5e-95e")
-                            LegendItem(color: .blue.opacity(0.7), label: "25e-75e")
-                            LegendItem(color: .blue, label: "Median")
+                            LegendItem(color: .blue.opacity(0.7), label: "5e-95e")
+                            LegendItem(color: .blue.opacity(0.9), label: "25e-75e")
+                            LegendItem(color: .primary, label: "Median")
                         }
                         .font(.caption2)
                     }

@@ -160,10 +160,12 @@ struct AggregatedStatsView: View {
                             
                             AGPView(viewModel: viewModel.agpStats)
                                 .padding(.horizontal)
-                            
-                            AGPGuardrailCrossingsModule(crossings: viewModel.agpStats.guardrailCrossings)
-                                .padding(.horizontal)
-                            
+
+                            if selectedPeriod != 30 && selectedPeriod != 90 {
+                                AGPGuardrailCrossingsModule(crossings: viewModel.agpStats.guardrailCrossings)
+                                    .padding(.horizontal)
+                            }
+
                             GRIView(viewModel: viewModel.griStats)
                                 .padding(.horizontal)
                         }
@@ -1076,10 +1078,10 @@ struct AGPGuardrailCrossingsModule: View {
                 .foregroundColor(.primary)
 
             HStack(spacing: 0) {
-                cell(title: "< 3.1", value: "\(crossings.below56Count) ggr", color: Color.red.opacity(1.0))
-                cell(title: "< 3.9", value: "\(crossings.below70Count) ggr", color: Color.red.opacity(0.8))
-                cell(title: "> 13.9", value: "\(crossings.above250Count) ggr", color: Color.purple.opacity(0.8))
-                cell(title: "> 16.0", value: "\(crossings.above288Count) ggr", color: Color.purple.opacity(1.0))
+                cell(title: " < 3.1  ", value: "\(crossings.below56Count) ggr", color: Color.red.opacity(1.0))
+                cell(title: " < 3.9  ", value: "\(crossings.below70Count) ggr", color: Color.orange.opacity(1.0))
+                cell(title: "> 13.9 ", value: "\(crossings.above250Count) ggr", color: Color.blue.opacity(1.0))
+                cell(title: "> 16.0 ", value: "\(crossings.above288Count) ggr", color: Color.purple.opacity(1.0))
             }
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
@@ -1092,12 +1094,13 @@ struct AGPGuardrailCrossingsModule: View {
     private func cell(title: String, value: String, color: Color) -> some View {
         VStack(spacing: 6) {
             Text(title)
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.subheadline)
+                .fontWeight(.regular)
                 .foregroundColor(color)
 
             Text(value)
-                .font(.subheadline)
+                .font(.headline)
+                .fontWeight(.semibold)
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
