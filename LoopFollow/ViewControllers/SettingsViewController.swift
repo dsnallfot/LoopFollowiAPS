@@ -590,7 +590,10 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
 
             var config = UIButton.Configuration.plain()
             config.title = currentUnits
-            config.image = UIImage(systemName: "chevron.up.chevron.down")
+            // Make the chevron ~60% of the current body font size
+            let basePointSize = UIFont.preferredFont(forTextStyle: .body).pointSize
+            let chevronConfig = UIImage.SymbolConfiguration(pointSize: basePointSize * 0.7, weight: .medium)
+            config.image = UIImage(systemName: "chevron.up.chevron.down", withConfiguration: chevronConfig)
             config.imagePlacement = .trailing
             config.imagePadding = 6
             config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
