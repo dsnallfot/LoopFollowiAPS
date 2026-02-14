@@ -952,7 +952,17 @@ extension SensorHistoryViewController: UIDocumentPickerDelegate {
 final class SensorSessionStatsViewController: ThemedTableViewController {
     private let buckets: SessionBuckets
     private let history: [SensorStartHistoryEntry]
-    private let chartView: ScatterChartView = {
+
+    private enum ChartMode: Int { case sessionTime = 0, sensorErrorsPerDay = 1 }
+
+    private let modeControl: UISegmentedControl = {
+        let sc = UISegmentedControl(items: ["Sessionstid", "Medel sensorfel per dag"])
+        sc.selectedSegmentIndex = ChartMode.sessionTime.rawValue
+        sc.translatesAutoresizingMaskIntoConstraints = false
+        return sc
+    }()
+
+    private let sessionChartView: ScatterChartView = {
         let v = ScatterChartView()
         v.legend.enabled = false
         v.chartDescription.enabled = false
@@ -968,6 +978,26 @@ final class SensorSessionStatsViewController: ThemedTableViewController {
         v.highlightPerDragEnabled = false
         v.drawMarkers = false
         v.maxVisibleCount = 1_000_000
+        return v
+    }()
+
+    private let sensorErrorChartView: BarChartView = {
+        let v = BarChartView()
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        v.doubleTapToZoomEnabled = false
+        v.pinchZoomEnabled = false
+        v.scaleXEnabled = false
+        v.scaleYEnabled = false
+        v.dragEnabled = false
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1_000_000
+        v.drawGridBackgroundEnabled = true
+        v.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
         return v
     }()
 
@@ -1003,30 +1033,51 @@ final class SensorSessionStatsViewController: ThemedTableViewController {
         )
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         setupChartHeader()
-        loadChartData()
+        modeControl.addTarget(self, action: #selector(modeChanged), for: .valueChanged)
+        applyModeUI(animated: false)
     }
 
     private func setupChartHeader() {
         let container = UIView()
         container.backgroundColor = .clear
         container.isOpaque = false
-        chartView.backgroundColor = .clear
-        container.addSubview(chartView)
-        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 260)
-        chartView.translatesAutoresizingMaskIntoConstraints = false
+
+        container.addSubview(modeControl)
+        container.addSubview(sessionChartView)
+        container.addSubview(sensorErrorChartView)
+
+        sessionChartView.backgroundColor = .clear
+        sensorErrorChartView.backgroundColor = .clear
+
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 300)
+
+        modeControl.translatesAutoresizingMaskIntoConstraints = false
+        sessionChartView.translatesAutoresizingMaskIntoConstraints = false
+        sensorErrorChartView.translatesAutoresizingMaskIntoConstraints = false
+
         NSLayoutConstraint.activate([
-            chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
-            chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            chartView.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
-            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+            modeControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            modeControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            modeControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+
+            sessionChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            sessionChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            sessionChartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 10),
+            sessionChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24),
+
+            sensorErrorChartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            sensorErrorChartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            sensorErrorChartView.topAnchor.constraint(equalTo: modeControl.bottomAnchor, constant: 10),
+            sensorErrorChartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
         ])
+
         tableView.tableHeaderView = container
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if let header = tableView.tableHeaderView {
-            let targetSize = CGSize(width: tableView.bounds.width, height: 260)
+            let targetSize = CGSize(width: tableView.bounds.width, height: 300)
             if header.frame.size != targetSize {
                 header.frame.size = targetSize
                 tableView.tableHeaderView = header
@@ -1047,7 +1098,7 @@ final class SensorSessionStatsViewController: ThemedTableViewController {
         return dates
     }
 
-    private func loadChartData() {
+    private func loadSessionTimeChartData() {
         guard history.count > 1 else { return }
         var histEntries: [ChartDataEntry] = []
         var histColors: [NSUIColor] = []
@@ -1093,17 +1144,17 @@ final class SensorSessionStatsViewController: ThemedTableViewController {
             dataSets.append(ongoingSet)
         }
 
-        chartView.data = ScatterChartData(dataSets: dataSets)
-        chartView.autoScaleMinMaxEnabled = false
-        chartView.notifyDataSetChanged()
+        sessionChartView.data = ScatterChartData(dataSets: dataSets)
+        sessionChartView.autoScaleMinMaxEnabled = false
+        sessionChartView.notifyDataSetChanged()
         
-        chartView.drawGridBackgroundEnabled = true
-        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
+        sessionChartView.drawGridBackgroundEnabled = true
+        sessionChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
 
         // X-axel = datumintervall för avslutade sessioners starttider (utan pågående)
         let oldestStart = Date(timeIntervalSince1970: history.last!.date)
         let newestEnd = Date(timeIntervalSince1970: history[0].date)
-        let xAxis = chartView.xAxis
+        let xAxis = sessionChartView.xAxis
         xAxis.axisMinimum = oldestStart.timeIntervalSince1970
         let rightPad: TimeInterval = 168 * 3600 // add seven days of padding so the last (blue) point isn't clipped
         xAxis.axisMaximum = newestEnd.timeIntervalSince1970 + rightPad
@@ -1121,7 +1172,7 @@ final class SensorSessionStatsViewController: ThemedTableViewController {
         //xAxis.avoidFirstLastClippingEnabled = true
 
         // Y-axel = sessionslängd i dagar (0–11) med diskreta heltalsetiketter
-        let yAxis = chartView.leftAxis
+        let yAxis = sessionChartView.leftAxis
         yAxis.axisMinimum = 0
         yAxis.axisMaximum = 11
         yAxis.granularity = 1
@@ -1146,9 +1197,71 @@ final class SensorSessionStatsViewController: ThemedTableViewController {
         yAxis.gridLineWidth = 0.5
         yAxis.gridLineDashLengths = [2, 2] // Dotted effect
 
-        chartView.rightAxis.enabled = false // Hide right Y-axis (already set, ensure stays off)
+        sessionChartView.rightAxis.enabled = false // Hide right Y-axis (already set, ensure stays off)
 
-        chartView.setNeedsDisplay()
+        sessionChartView.setNeedsDisplay()
+    }
+
+    private func loadSensorErrorPerDayChartData() {
+        let avgs = averageSensorErrorMinutesPerDayBuckets() // length 10, day 1...10
+
+        var entries: [BarChartDataEntry] = []
+        entries.reserveCapacity(10)
+        for day in 1...10 {
+            entries.append(BarChartDataEntry(x: Double(day), y: avgs[day - 1]))
+        }
+
+        let set = BarChartDataSet(entries: entries, label: "")
+        set.setColor(.systemRed)
+        set.drawValuesEnabled = false
+        set.highlightEnabled = false
+
+        let data = BarChartData(dataSet: set)
+        data.barWidth = 0.78 // lite smalare staplar för snyggare spacing
+        sensorErrorChartView.data = data
+        sensorErrorChartView.notifyDataSetChanged()
+
+        // 3) Extra space vänster/höger så första/sista stapeln inte klipps
+        sensorErrorChartView.setExtraOffsets(left: 8, top: 0, right: 8, bottom: 0)
+
+        let xAxis = sensorErrorChartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.axisMinimum = 0.5
+        xAxis.axisMaximum = 10.5
+        xAxis.granularity = 1
+        xAxis.granularityEnabled = true
+        // IMPORTANT: don't force label count; forcing makes Charts distribute labels evenly across the range
+        // (0.5...10.5) which lands them *between* integer bar centers.
+        xAxis.setLabelCount(10, force: false)
+
+        xAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
+            let iv = Int(round(value))
+            return (1...10).contains(iv) ? "\(iv)" : ""
+        })
+        xAxis.avoidFirstLastClippingEnabled = true
+
+        let yAxis = sensorErrorChartView.leftAxis
+        yAxis.axisMinimum = 0
+        let maxAvg = avgs.max() ?? 0
+        let maxCeil = max(1.0, ceil(maxAvg))
+        yAxis.axisMaximum = maxCeil
+        yAxis.granularityEnabled = true
+        yAxis.granularity = max(1.0, floor(maxCeil / 5.0))
+        yAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
+            "\(Int(round(value))) min"
+        })
+
+        let gridLineColor = NSUIColor.lightGray.withAlphaComponent(0.5)
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        sensorErrorChartView.rightAxis.enabled = false
+        sensorErrorChartView.fitBars = true
+        sensorErrorChartView.setNeedsDisplay()
     }
 
     @objc private func dismissSelf() { dismiss(animated: true) }
@@ -1298,6 +1411,104 @@ final class SensorSessionStatsViewController: ThemedTableViewController {
         }
         return cell
     }
+    
+    
+    @objc private func modeChanged() {
+        applyModeUI(animated: true)
+    }
+
+    private func applyModeUI(animated: Bool) {
+        let mode = ChartMode(rawValue: modeControl.selectedSegmentIndex) ?? .sessionTime
+
+        let updates = {
+            switch mode {
+            case .sessionTime:
+                self.title = "Sessionstid sensorer"
+                self.sessionChartView.isHidden = false
+                self.sensorErrorChartView.isHidden = true
+                self.loadSessionTimeChartData()
+            case .sensorErrorsPerDay:
+                self.title = "Medel sensorfel per dag"
+                self.sessionChartView.isHidden = true
+                self.sensorErrorChartView.isHidden = false
+                self.loadSensorErrorPerDayChartData()
+            }
+        }
+
+        if animated {
+            UIView.transition(with: self.tableView, duration: 0.20, options: [.transitionCrossDissolve, .beginFromCurrentState], animations: updates)
+        } else {
+            updates()
+        }
+    }
+
+    /// Parses persisted sensorErrors text and extracts day buckets in minutes.
+    /// Expected lines look like: "Dag 1:   12 min".
+    private func parsePerDayMinutes(from persistedMessage: String) -> [Int] {
+        // Fast path: only consider messages that contain the per-day section.
+        guard persistedMessage.localizedCaseInsensitiveContains("Sensorfel (tid per kalenderdag)") else { return [] }
+
+        var minutesByDay: [Int] = []
+
+        // Match: Dag <number>: <minutes> min
+        let pattern = #"Dag\s+(\d+)\s*:\s*(\d+)\s*min"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
+
+        let ns = persistedMessage as NSString
+        let matches = regex.matches(in: persistedMessage, options: [], range: NSRange(location: 0, length: ns.length))
+        if matches.isEmpty { return [] }
+
+        // Collect into a dictionary first so we can place by day index.
+        var tmp: [Int: Int] = [:]
+        for m in matches {
+            guard m.numberOfRanges >= 3 else { continue }
+            let dayStr = ns.substring(with: m.range(at: 1))
+            let minStr = ns.substring(with: m.range(at: 2))
+            if let day = Int(dayStr), let mins = Int(minStr) {
+                tmp[day] = mins
+            }
+        }
+
+        let maxDay = tmp.keys.max() ?? 0
+        if maxDay <= 0 { return [] }
+
+        minutesByDay = Array(repeating: 0, count: maxDay)
+        for (day, mins) in tmp {
+            if day >= 1 && day <= minutesByDay.count {
+                minutesByDay[day - 1] = mins
+            }
+        }
+        return minutesByDay
+    }
+
+    /// Builds 11 buckets (day 0...10) of average sensor error minutes across historical sensors.
+    /// Only includes sensors that have per-day minutes in their persisted `sensorErrors` text.
+    /// Builds 10 buckets (day 1...10) of average sensor error minutes across historical sensors.
+    /// Only includes sensors that have per-day minutes in their persisted `sensorErrors` text.
+    private func averageSensorErrorMinutesPerDayBuckets() -> [Double] {
+        let bucketCount = 10 // day 1...10
+        var sums = Array(repeating: 0.0, count: bucketCount)
+        var counts = Array(repeating: 0, count: bucketCount)
+
+        for entry in history {
+            guard let msg = entry.sensorErrors else { continue }
+            let perDay = parsePerDayMinutes(from: msg)
+            guard !perDay.isEmpty else { continue }
+
+            // perDay[0] => day 1, ... perDay[9] => day 10
+            for (idx, mins) in perDay.enumerated() {
+                guard idx < bucketCount else { continue }
+                sums[idx] += Double(max(0, mins))
+                counts[idx] += 1
+            }
+        }
+
+        return (0..<bucketCount).map { i in
+            guard counts[i] > 0 else { return 0.0 }
+            return sums[i] / Double(counts[i])
+        }
+    }
+
 }
 
 // MARK: - UISearchBarDelegate
@@ -1316,4 +1527,3 @@ extension SensorHistoryViewController {
         applyFilterAndReload()
     }
 }
-

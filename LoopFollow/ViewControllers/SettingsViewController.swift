@@ -247,16 +247,15 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
 
         case .dataCapture:
             if indexPath.row == 0 {
-                // Enhet with segmented control
+                // Enhet with dropdown menu button
                 let cell = tableView.dequeueReusableCell(withIdentifier: "UnitsCell") ?? UITableViewCell(style: .default, reuseIdentifier: "UnitsCell")
                 cell.textLabel?.text = "Glukosenhet"
                 cell.selectionStyle = .none
 
-                let segmented = UISegmentedControl(items: ["mg/dL", "mmol/L"])
                 let currentUnits = UserDefaultsRepository.units.value
-                segmented.selectedSegmentIndex = (currentUnits == "mg/dL") ? 0 : 1
-                segmented.addTarget(self, action: #selector(unitsSegmentChanged(_:)), for: .valueChanged)
-                cell.accessoryView = segmented
+                let button = makeUnitsMenuButton(currentUnits: currentUnits)
+                button.sizeToFit() // critical for accessoryView layout
+                cell.accessoryView = button
                 return cell
             } else {
                 let cell = tableView.dequeueReusableCell(withIdentifier: "DataCaptureCell") ?? UITableViewCell(style: .default, reuseIdentifier: "DataCaptureCell")
@@ -571,9 +570,46 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
         }
     }
 
-    @objc private func unitsSegmentChanged(_ sender: UISegmentedControl) {
-        let value = sender.selectedSegmentIndex == 0 ? "mg/dL" : "mmol/L"
+
+    private func makeUnitsMenuButton(currentUnits: String) -> UIButton {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = true
+        button.setContentHuggingPriority(.required, for: .horizontal)
+        button.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        let mg = UIAction(title: "mg/dL", state: currentUnits == "mg/dL" ? .on : .off) { [weak self] _ in
+            self?.setUnits("mg/dL")
+        }
+        let mmol = UIAction(title: "mmol/L", state: currentUnits == "mmol/L" ? .on : .off) { [weak self] _ in
+            self?.setUnits("mmol/L")
+        }
+
+        let menu = UIMenu(title: "Glukosenhet", options: [.displayInline, .singleSelection], children: [mg, mmol])
+        button.menu = menu
+        button.showsMenuAsPrimaryAction = true
+
+            var config = UIButton.Configuration.plain()
+            config.title = currentUnits
+            config.image = UIImage(systemName: "chevron.up.chevron.down")
+            config.imagePlacement = .trailing
+            config.imagePadding = 6
+            config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+            button.configuration = config
+
+        button.sizeToFit() // ensures accessory view has a frame
+        return button
+    }
+
+    private func setUnits(_ value: String) {
         UserDefaultsRepository.units.value = value
+
+        // Refresh only the units row so the button title updates
+        let unitsIndexPath = IndexPath(row: 0, section: Section.dataCapture.rawValue)
+        if tableView.indexPathsForVisibleRows?.contains(unitsIndexPath) == true {
+            tableView.reloadRows(at: [unitsIndexPath], with: .none)
+        } else {
+            tableView.reloadData()
+        }
     }
 
     func isMacApp() -> Bool {
