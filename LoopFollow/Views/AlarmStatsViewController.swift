@@ -437,7 +437,7 @@ final class AlarmStatsViewController: ThemedViewController {
             StatRow(title: "Medel larm per dag", value: "\(fmt1(avgPerDay)) st"),
             StatRow(title: "Högsta antal larm samma dag", value: "\(maxSameDay) st"),
             StatRow(title: "Medel larm nattid (22–06)", value: "\(fmt1(avgNightPerDay)) st"),
-            StatRow(title: "Längste streak utan larm", value: "\(fmt1(longestHours)) h")
+            StatRow(title: "Längsta streak utan larm", value: "\(fmt1(longestHours)) h")
         ]
     }
     
