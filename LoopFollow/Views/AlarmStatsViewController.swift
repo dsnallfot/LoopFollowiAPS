@@ -408,19 +408,19 @@ final class AlarmStatsViewController: ThemedViewController {
         let lowSet = ScatterChartDataSet(entries: lowEntries, label: "Låga larm")
         lowSet.drawValuesEnabled = false
         lowSet.setScatterShape(.circle)
-        lowSet.setColor(.systemRed)
+        lowSet.setColor(.systemRed.withAlphaComponent(0.8))
         lowSet.scatterShapeSize = 5
 
         let highSet = ScatterChartDataSet(entries: highEntries, label: "Höga larm")
         highSet.drawValuesEnabled = false
         highSet.setScatterShape(.circle)
-        highSet.setColor(.systemPurple)
+        highSet.setColor(.systemBlue.withAlphaComponent(0.8))
         highSet.scatterShapeSize = 5
 
         let otherSet = ScatterChartDataSet(entries: otherEntries, label: "Övriga larm")
         otherSet.drawValuesEnabled = false
         otherSet.setScatterShape(.circle)
-        otherSet.setColor(.systemGray)
+        otherSet.setColor(.systemGray.withAlphaComponent(0.8))
         otherSet.scatterShapeSize = 5
 
         scatterChartView.data = ScatterChartData(dataSets: [lowSet, highSet, otherSet])
