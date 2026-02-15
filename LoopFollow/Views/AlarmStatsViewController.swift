@@ -175,6 +175,7 @@ final class AlarmStatsViewController: ThemedViewController {
         barChartView.doubleTapToZoomEnabled = false
         barChartView.scaleXEnabled = false
         barChartView.scaleYEnabled = false
+        barChartView.highlightPerTapEnabled = false
 
 
         // Needed for gridBackgroundColor to actually render
@@ -186,9 +187,20 @@ final class AlarmStatsViewController: ThemedViewController {
         barChartView.xAxis.drawGridLinesEnabled = true
         barChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
         barChartView.xAxis.granularity = 1
+        
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        barChartView.xAxis.gridColor = gridLineColor
+        barChartView.xAxis.gridLineWidth = 0.5
+        barChartView.xAxis.gridLineDashLengths = [2, 2]
 
         barChartView.leftAxis.axisMinimum = 0
         barChartView.leftAxis.drawGridLinesEnabled = true
+        
+        barChartView.leftAxis.gridColor = gridLineColor
+        barChartView.leftAxis.gridLineWidth = 0.5
+        barChartView.leftAxis.gridLineDashLengths = [2, 2]
+        
+        
 
         // Scatter chart (time-of-day)
         scatterChartView.chartDescription.enabled = false
@@ -199,6 +211,7 @@ final class AlarmStatsViewController: ThemedViewController {
         scatterChartView.doubleTapToZoomEnabled = false
         scatterChartView.scaleXEnabled = false
         scatterChartView.scaleYEnabled = false
+        scatterChartView.highlightPerTapEnabled = false
 
         // Needed for gridBackgroundColor to actually render
         scatterChartView.drawGridBackgroundEnabled = true
@@ -209,11 +222,43 @@ final class AlarmStatsViewController: ThemedViewController {
         scatterChartView.xAxis.drawGridLinesEnabled = true
         scatterChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
         scatterChartView.xAxis.granularity = 1
+        
+        scatterChartView.xAxis.gridColor = gridLineColor
+        scatterChartView.xAxis.gridLineWidth = 0.5
+        scatterChartView.xAxis.gridLineDashLengths = [2, 2]
 
         scatterChartView.leftAxis.axisMinimum = 0
         scatterChartView.leftAxis.axisMaximum = 24
-        scatterChartView.leftAxis.granularity = 2
         scatterChartView.leftAxis.drawGridLinesEnabled = true
+        
+        
+        // Dashad grid för varje timme, men endast labels vid 00/06/12/18/24
+        scatterChartView.leftAxis.granularity = 1
+        scatterChartView.leftAxis.granularityEnabled = true
+        scatterChartView.leftAxis.setLabelCount(25, force: false)
+        scatterChartView.leftAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let v = Int(value.rounded())
+            guard [0, 6, 12, 18, 24].contains(v) else { return "" }
+            return String(format: "%02d:00", v)
+        }
+        
+        scatterChartView.leftAxis.gridColor = gridLineColor
+        scatterChartView.leftAxis.gridLineWidth = 0.5
+        scatterChartView.leftAxis.gridLineDashLengths = [2, 2]
+
+        // Rensa tidigare limit-lines
+        scatterChartView.leftAxis.removeAllLimitLines()
+
+        // Solida huvudlinjer vid 00/06/12/18/24
+        let majorLineColor = UIColor.lightGray.withAlphaComponent(0.65)
+        for hour in [0.0, 6.0, 12.0, 18.0, 24.0] {
+            let ll = ChartLimitLine(limit: hour)
+            ll.lineWidth = 0.8
+            ll.lineColor = majorLineColor
+            ll.lineDashLengths = []
+            ll.label = ""
+            scatterChartView.leftAxis.addLimitLine(ll)
+        }
     }
 
     // MARK: - Data
@@ -338,8 +383,8 @@ final class AlarmStatsViewController: ThemedViewController {
 
         let set = BarChartDataSet(entries: entries)
         set.drawValuesEnabled = false
-        set.setColor(.label)
-        set.barBorderColor = .systemGray
+        set.setColor(.systemGray)
+        set.barBorderColor = .label
         set.barBorderWidth = 0.5
 
         let data = BarChartData(dataSet: set)
