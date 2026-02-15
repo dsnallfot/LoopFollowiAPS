@@ -57,6 +57,7 @@
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
 		655B23052EDE2A420092DBDE /* AddManualPumpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */; };
 		655B23072EDE2A640092DBDE /* PumpHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23062EDE2A610092DBDE /* PumpHistoryView.swift */; };
+		655DF7982F41EFB30085EC78 /* AlarmStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655DF7972F41EFB00085EC78 /* AlarmStatsViewController.swift */; };
 		656EA4E32F27A5D10075771C /* EnteredByView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 656EA4E22F27A5BF0075771C /* EnteredByView.swift */; };
 		6574FFFA2ED8689E00DEF7D0 /* StatsTrendCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */; };
 		6577653B2ED9C96C001D1AC7 /* DailyStatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */; };
@@ -399,6 +400,7 @@
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
 		655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddManualPumpView.swift; sourceTree = "<group>"; };
 		655B23062EDE2A610092DBDE /* PumpHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PumpHistoryView.swift; sourceTree = "<group>"; };
+		655DF7972F41EFB00085EC78 /* AlarmStatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmStatsViewController.swift; sourceTree = "<group>"; };
 		656EA4E22F27A5BF0075771C /* EnteredByView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnteredByView.swift; sourceTree = "<group>"; };
 		6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsTrendCalculator.swift; sourceTree = "<group>"; };
 		6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStatsViewModel.swift; sourceTree = "<group>"; };
@@ -716,6 +718,7 @@
 				657BB13B2F3605D5009E2667 /* ActiveAlarmsViewController.swift */,
 				655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */,
 				6540EF952D7DD4C5008BC98D /* AddManualSensorNoteView.swift */,
+				655DF7972F41EFB00085EC78 /* AlarmStatsViewController.swift */,
 				6537566C2F10224E0061AF34 /* BatteryLogView.swift */,
 				653096992EE1996100117528 /* BGCheckView.swift */,
 				656EA4E22F27A5BF0075771C /* EnteredByView.swift */,
@@ -1707,6 +1710,7 @@
 				65B3E5CF2D3FFB3000622194 /* CustomActionViewController.swift in Sources */,
 				65B3E5D02D3FFB3000622194 /* RemoteSettingsViewController.swift in Sources */,
 				650543F62EE1B35700C38C06 /* LowTreatmentsStatsViewController.swift in Sources */,
+				655DF7982F41EFB30085EC78 /* AlarmStatsViewController.swift in Sources */,
 				65B3E5D12D3FFB3000622194 /* SMSRemoteViewController.swift in Sources */,
 				65B3E5D22D3FFB3000622194 /* OverrideViewController.swift in Sources */,
 				65B3E5D32D3FFB3000622194 /* MealViewController.swift in Sources */,

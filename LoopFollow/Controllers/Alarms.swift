@@ -708,6 +708,13 @@ extension MainViewController {
         
         LogManager.shared.log(category: .alarm, message: "Alarm triggered: \(AlarmSound.whichAlarm)")
         
+        // Persist alarm trigger so we can visualize frequency and types later
+        Storage.shared.appendAlarmHistory(
+            alarmLabel: AlarmSound.whichAlarm,
+            message: "Alarm triggered: \(AlarmSound.whichAlarm)",
+            date: Date().timeIntervalSince1970
+        )
+        
         var audioDuringCall = true
         if !UserDefaultsRepository.alertAudioDuringPhone.value && isOnPhoneCall() { audioDuringCall = false }
         

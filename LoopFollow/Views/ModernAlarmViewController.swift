@@ -37,6 +37,16 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
         )
         return item
     }()
+    
+    private lazy var alarmStatsButton: UIBarButtonItem = {
+        let item = UIBarButtonItem(
+        image: UIImage(systemName: "chart.bar.xaxis.ascending"),
+        style: .plain,
+        target: self,
+        action: #selector(didTapAlarmStats)
+        )
+        return item
+    }()
 
     // Top Filter Bar (Istället för segments i celler, snyggare i header)
     private lazy var categorySegmentedControl: UISegmentedControl = {
@@ -121,10 +131,10 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
                 action: #selector(doneButtonTapped)
             )
             // switch.2 till vänster om Klar
-            navigationItem.rightBarButtonItems = [doneItem, activeAlarmsButton]
+            navigationItem.rightBarButtonItems = [doneItem, activeAlarmsButton, alarmStatsButton]
         } else {
             // I icke-modalt läge visar vi bara switch.2-knappen
-            navigationItem.rightBarButtonItems = [activeAlarmsButton]
+            navigationItem.rightBarButtonItems = [activeAlarmsButton, alarmStatsButton]
         }
     }
 
@@ -143,6 +153,20 @@ class ModernAlarmViewController: ThemedViewController, UITableViewDelegate {
         let nav = UINavigationController(rootViewController: activeVC)
         nav.modalPresentationStyle = .automatic
         present(nav, animated: true, completion: nil)
+    }
+    
+    @objc private func didTapAlarmStats() {
+        let alarmstatsVC = AlarmStatsViewController()
+        alarmstatsVC.onDismiss = { [weak self] in
+            guard let self = self else { return }
+            // Rebuild snapshot based on any changes done in ActiveAlarmsViewController
+            self.viewModel.updateSnapshotData()
+            self.applySnapshot(animatingDifferences: false)
+        }
+        let vc = AlarmStatsViewController()
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .automatic
+        present(nav, animated: true)
     }
     
     private func setupTableView() {

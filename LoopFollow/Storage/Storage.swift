@@ -120,6 +120,21 @@ struct PumpChangeHistoryEntry: Codable, Equatable {
     }
 }
 
+struct AlarmHistoryEntry: Codable, Equatable {
+    /// Unix timestamp (seconds since 1970) for when the alarm was triggered.
+    var date: TimeInterval
+
+    /// Human readable message (e.g. "Alarm triggered: ⚠️ Akut lågt!")
+    var message: String
+
+    /// Optional raw alarm label (e.g. AlarmSound.whichAlarm)
+    var alarmLabel: String?
+
+    static func == (lhs: AlarmHistoryEntry, rhs: AlarmHistoryEntry) -> Bool {
+        return lhs.date == rhs.date && lhs.message == rhs.message && lhs.alarmLabel == rhs.alarmLabel
+    }
+}
+
 struct UserProfileEntry: Codable, Equatable {
     var name: String
     var birthDate: Date?
@@ -217,6 +232,49 @@ extension Storage {
                 )
             }
         }
+    }
+    
+    // MARK: - Alarm history (for visualization / analytics)
+
+    var alarmHistory: [AlarmHistoryEntry] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "alarmHistory") else {
+                return []
+            }
+            do {
+                return try JSONDecoder().decode([AlarmHistoryEntry].self, from: storedData)
+            } catch {
+                LogManager.shared.log(category: .alarm, message: "Failed to decode alarmHistory, resetting to empty array: \(error)")
+                UserDefaults.standard.removeObject(forKey: "alarmHistory")
+                return []
+            }
+        }
+        set {
+            do {
+                let encoded = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encoded, forKey: "alarmHistory")
+            } catch {
+                LogManager.shared.log(category: .alarm, message: "Failed to encode alarmHistory: \(error)")
+            }
+        }
+    }
+
+    /// Appends an alarm history entry and keeps the history bounded.
+    func appendAlarmHistory(
+        alarmLabel: String?,
+        message: String,
+        date: TimeInterval = Date().timeIntervalSince1970,
+        maxEntries: Int = 2000
+    ) {
+        var history = alarmHistory
+        history.append(AlarmHistoryEntry(date: date, message: message, alarmLabel: alarmLabel))
+
+        // Keep only the newest N entries
+        if history.count > maxEntries {
+            history = Array(history.suffix(maxEntries))
+        }
+
+        alarmHistory = history
     }
     
     // MARK: - Dexcom sensorfel outage cache (for reklamationer)
