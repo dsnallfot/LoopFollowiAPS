@@ -22,8 +22,8 @@ final class AlarmStatsViewController: ThemedViewController {
     }()
     
     private let alarmFilterControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["Glukoslarm", "Övriga", "Alla"])
-        sc.selectedSegmentIndex = 2 // default: Alla
+        let sc = UISegmentedControl(items: ["Glukoslarm", "Övriga larm", "Alla larm"])
+        sc.selectedSegmentIndex = 0 // default: Glukoslarm
         return sc
     }()
 
