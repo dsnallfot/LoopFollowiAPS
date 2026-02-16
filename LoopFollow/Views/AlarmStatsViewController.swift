@@ -8,7 +8,7 @@
 import UIKit
 import Charts
 
-final class AlarmStatsViewController: ThemedViewController {
+final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
     
     /// Called when the view controller is dismissed, so the caller can refresh its UI
     var onDismiss: (() -> Void)?
@@ -176,6 +176,7 @@ final class AlarmStatsViewController: ThemedViewController {
 
     private func setupCharts() {
         // Bar chart (counts/day)
+        barChartView.delegate = self
         barChartView.chartDescription.enabled = false
         barChartView.legend.enabled = false
         barChartView.rightAxis.enabled = false
@@ -184,8 +185,7 @@ final class AlarmStatsViewController: ThemedViewController {
         barChartView.doubleTapToZoomEnabled = false
         barChartView.scaleXEnabled = false
         barChartView.scaleYEnabled = false
-        barChartView.highlightPerTapEnabled = false
-
+        barChartView.highlightPerTapEnabled = true
 
         // Needed for gridBackgroundColor to actually render
         barChartView.drawGridBackgroundEnabled = true
@@ -209,8 +209,8 @@ final class AlarmStatsViewController: ThemedViewController {
         barChartView.leftAxis.gridLineWidth = 0.5
         barChartView.leftAxis.gridLineDashLengths = [2, 2]
 
-
         // Night line chart (night alarms per day)
+        nightLineChartView.delegate = self
         nightLineChartView.chartDescription.enabled = false
         nightLineChartView.legend.enabled = false
         nightLineChartView.rightAxis.enabled = false
@@ -219,7 +219,7 @@ final class AlarmStatsViewController: ThemedViewController {
         nightLineChartView.doubleTapToZoomEnabled = false
         nightLineChartView.scaleXEnabled = false
         nightLineChartView.scaleYEnabled = false
-        nightLineChartView.highlightPerTapEnabled = false
+        nightLineChartView.highlightPerTapEnabled = true
 
         // Needed for gridBackgroundColor to actually render
         nightLineChartView.drawGridBackgroundEnabled = true
@@ -242,6 +242,7 @@ final class AlarmStatsViewController: ThemedViewController {
         nightLineChartView.leftAxis.gridLineDashLengths = [2, 2]
 
         // Scatter chart (time-of-day)
+        scatterChartView.delegate = self
         scatterChartView.chartDescription.enabled = false
         scatterChartView.legend.enabled = true
         scatterChartView.rightAxis.enabled = false
@@ -250,7 +251,7 @@ final class AlarmStatsViewController: ThemedViewController {
         scatterChartView.doubleTapToZoomEnabled = false
         scatterChartView.scaleXEnabled = false
         scatterChartView.scaleYEnabled = false
-        scatterChartView.highlightPerTapEnabled = false
+        scatterChartView.highlightPerTapEnabled = true
 
         // Needed for gridBackgroundColor to actually render
         scatterChartView.drawGridBackgroundEnabled = true
@@ -269,7 +270,6 @@ final class AlarmStatsViewController: ThemedViewController {
         scatterChartView.leftAxis.axisMinimum = 0
         scatterChartView.leftAxis.axisMaximum = 24
         scatterChartView.leftAxis.drawGridLinesEnabled = true
-        
         
         // Dashad grid för varje timme, men endast labels vid 00/06/12/18/24
         scatterChartView.leftAxis.granularity = 1
@@ -313,6 +313,11 @@ final class AlarmStatsViewController: ThemedViewController {
 
     private func reloadAll() {
         updateVisibleChart()
+
+        // Clear current highlights on all charts when reloading
+        barChartView.highlightValues(nil)
+        nightLineChartView.highlightValues(nil)
+        scatterChartView.highlightValues(nil)
 
         let days = selectedDays()
         let now = Date()
@@ -602,7 +607,8 @@ final class AlarmStatsViewController: ThemedViewController {
         case all = 2
     }
 
-    private enum AlarmKind: String, CaseIterable {
+    fileprivate enum AlarmKind: String, CaseIterable {
+
         // Glukoslarm
         case urgentLow, urgentLowSoon, low, high, urgentHigh, fastDrop, fastRise, alertTemporaryBG
 
@@ -691,6 +697,34 @@ final class AlarmStatsViewController: ThemedViewController {
         case .all: return true
         }
     }
+    
+    // MARK: - Chart selection → daily modal
+
+    private func presentDailyModal(for dayIndex: Int) {
+        let days = selectedDays()
+        guard dayIndex >= 0 && dayIndex < days else { return }
+
+        let now = Date()
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: now)
+        guard let startDate = calendar.date(byAdding: .day, value: -(days - 1), to: startOfToday) else { return }
+        guard let day = calendar.date(byAdding: .day, value: dayIndex, to: startDate) else { return }
+
+        let vc = DailyBGAndAlertsViewController(day: day)
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .pageSheet
+        present(nav, animated: true, completion: nil)
+    }
+
+    func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+        // All three charts use x = dayIndex
+        let dayIndex = Int(round(entry.x))
+        presentDailyModal(for: dayIndex)
+    }
+
+    func chartValueNothingSelected(_ chartView: ChartViewBase) {
+        // no-op
+    }
 }
 
 extension AlarmStatsViewController: UITableViewDataSource, UITableViewDelegate {
@@ -759,5 +793,389 @@ private final class AlarmDateAxisFormatter: AxisValueFormatter {
         guard i >= 0 else { return "" }
         guard let d = calendar.date(byAdding: .day, value: i, to: startDate) else { return "" }
         return df.string(from: d)
+    }
+}
+
+
+// MARK: - Daily BG + Alerts modal
+
+private final class DailyBGAndAlertsViewController: ThemedViewController, ChartViewDelegate {
+
+    private let day: Date
+
+    // Use CombinedChartView so we can render BG as a line and alarms as scatter dots
+    private let chartView = CombinedChartView()
+
+    // BG cache for nearest-point lookup when plotting alarms
+    private var bgPoints: [(date: Date, mmol: Double)] = []
+
+    init(day: Date) {
+        self.day = day
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Title: "Dygnsvy: Måndag 16/2"
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "EEEE d/M"
+        let dateString = df.string(from: Calendar.current.startOfDay(for: day)).capitalized
+        title = "Dygnsvy: \(dateString)"
+        updateBackgroundForCurrentMode()
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .done,
+            target: self,
+            action: #selector(doneTapped)
+        )
+
+        setupChart()
+        layoutUI()
+        reload()
+    }
+
+    @objc private func doneTapped() {
+        dismiss(animated: true, completion: nil)
+    }
+
+    private func layoutUI() {
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(chartView)
+
+        NSLayoutConstraint.activate([
+            chartView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            chartView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
+            chartView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
+            chartView.heightAnchor.constraint(equalToConstant: 350),
+            chartView.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12)
+        ])
+    }
+
+    private func setupChart() {
+        chartView.delegate = self
+        chartView.chartDescription.enabled = false
+        chartView.legend.enabled = true
+        chartView.rightAxis.enabled = false
+        chartView.pinchZoomEnabled = false
+        chartView.doubleTapToZoomEnabled = false
+        chartView.dragEnabled = false
+        chartView.highlightPerTapEnabled = false
+        chartView.scaleXEnabled = false
+        chartView.scaleYEnabled = false
+
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
+        chartView.drawBordersEnabled = false
+        
+        chartView.extraBottomOffset = 8
+
+        // Legend (only show alarm dots)
+        chartView.legend.verticalAlignment = .bottom
+        chartView.legend.horizontalAlignment = .center
+        chartView.legend.orientation = .horizontal
+        chartView.legend.drawInside = false
+        chartView.legend.font = .preferredFont(forTextStyle: .caption2)
+        chartView.legend.textColor = .secondaryLabel
+        chartView.legend.yOffset = 6
+        chartView.legend.direction = .leftToRight
+        chartView.legend.xOffset = 0
+        chartView.legend.formSize = 10
+        chartView.legend.wordWrapEnabled = true
+
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+
+        // Y axis: 0–24 mmol, granularity 2
+        let y = chartView.leftAxis
+        y.axisMinimum = 0
+        y.axisMaximum = 24
+        y.granularity = 2
+        y.granularityEnabled = true
+        y.labelCount = 13
+        y.drawGridLinesEnabled = true
+        y.gridColor = gridLineColor
+        y.gridLineWidth = 0.5
+        y.gridLineDashLengths = [2, 2]
+
+        // Threshold lines (low/high) like MealAnalysisView
+        y.removeAllLimitLines()
+        let lowMmol = Double(UserDefaultsRepository.lowLine.value) / 18.0182
+        let highMmol = Double(UserDefaultsRepository.highLine.value) / 18.0182
+
+        let thresholds: [(limit: Double, color: UIColor)] = [
+            (lowMmol, UIColor.red.withAlphaComponent(0.8)),
+            (highMmol, UIColor.purple.withAlphaComponent(1.0))
+        ]
+
+        for (limit, color) in thresholds {
+            let ll = ChartLimitLine(limit: limit)
+            ll.lineColor = color
+            ll.lineDashLengths = [1, 1]
+            ll.lineWidth = 2
+            ll.valueTextColor = color
+            y.addLimitLine(ll)
+        }
+
+        // Draw limit lines behind the data so the BG line stays on top
+        y.drawLimitLinesBehindDataEnabled = true
+
+        // X axis: 00:00–24:00, granularity 3h
+        let x = chartView.xAxis
+        x.labelPosition = .bottom
+        x.axisMinimum = 0
+        x.axisMaximum = 24
+        x.granularity = 3
+        x.granularityEnabled = true
+        x.labelCount = 9
+        x.drawGridLinesEnabled = true
+        x.gridColor = gridLineColor
+        x.gridLineWidth = 0.5
+        x.gridLineDashLengths = [2, 2]
+        x.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            let v = Int(round(value))
+            // keep within [0,24]
+            let clamped = min(max(v, 0), 24)
+            return String(format: "%02d:00", clamped)
+        }
+
+        // Ensure we always show the full day range even if today is partial
+        chartView.setVisibleXRangeMinimum(24)
+        chartView.setVisibleXRangeMaximum(24)
+        // Extra right padding so 24:00 is not clipped
+        chartView.extraRightOffset = 16
+        x.avoidFirstLastClippingEnabled = false
+    }
+
+    private func reload() {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: day)
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
+
+        let now = Date()
+        let isToday = calendar.isDateInToday(startOfDay)
+        let effectiveEnd = isToday ? min(endOfDay, now) : endOfDay
+
+        fetchBG(from: startOfDay, to: effectiveEnd) { [weak self] bg in
+            guard let self = self else { return }
+
+            self.bgPoints = bg
+
+            // Build BG line entries (x = hours since startOfDay)
+            let bgEntries: [ChartDataEntry] = bg.map {
+                ChartDataEntry(
+                    x: $0.date.timeIntervalSince(startOfDay) / 3600.0,
+                    y: $0.mmol
+                )
+            }
+
+            // Split into segments on gaps > 9 min (same idea as MealAnalysisView)
+            let segmentGap: TimeInterval = 9 * 60
+            var segments: [[ChartDataEntry]] = []
+            var current: [ChartDataEntry] = []
+            var lastX: Double? = nil
+
+            for e in bgEntries {
+                if let last = lastX, (e.x - last) * 3600.0 > segmentGap {
+                    if !current.isEmpty { segments.append(current) }
+                    current = []
+                }
+                current.append(e)
+                lastX = e.x
+            }
+            if !current.isEmpty { segments.append(current) }
+
+            let lineDataSets: [LineChartDataSet] = segments.map { seg in
+                let ds = LineChartDataSet(entries: seg, label: "") // no legend entry (legend is custom anyway)
+                ds.drawValuesEnabled = false
+                ds.drawCirclesEnabled = false
+                ds.lineWidth = 1.5
+                ds.mode = .linear
+                ds.highlightEnabled = false
+                ds.colors = seg.map { self.setBGColorForMmol($0.y) }
+
+                // Hide from legend completely
+                ds.form = .none
+                ds.drawIconsEnabled = false
+
+                return ds
+            }
+
+            // Alarms for the day
+            let alarms = Storage.shared.alarmHistory
+            let dayStartTS = startOfDay.timeIntervalSince1970
+            let dayEndTS = endOfDay.timeIntervalSince1970
+
+            var lowAlarmDots: [ChartDataEntry] = []
+            var highAlarmDots: [ChartDataEntry] = []
+            var otherAlarmDots: [ChartDataEntry] = []
+
+            for a in alarms where a.date >= dayStartTS && a.date < dayEndTS {
+                let alarmDate = Date(timeIntervalSince1970: a.date)
+                let kind = AlarmStatsViewController.AlarmKind.from(alarmLabel: a.alarmLabel)
+
+                // x: time-of-day in hours
+                let xh = alarmDate.timeIntervalSince(startOfDay) / 3600.0
+
+                // y: nearest BG mmol at ~same time (skip if we have no BG)
+                guard let yMmol = self.nearestBGValue(to: alarmDate) else { continue }
+
+                if let kind {
+                    if kind.isGlucose {
+                        if kind.isLowGlucose {
+                            lowAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                        } else if kind.isHighGlucose {
+                            highAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                        } else {
+                            otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                        }
+                    } else {
+                        otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                    }
+                } else {
+                    otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                }
+            }
+
+            let lowSet = ScatterChartDataSet(entries: lowAlarmDots, label: "Låga larm")
+            lowSet.drawValuesEnabled = false
+            lowSet.setScatterShape(.circle)
+            lowSet.setColor(.systemRed.withAlphaComponent(0.85))
+            lowSet.scatterShapeSize = 8
+            lowSet.highlightEnabled = false
+
+            let highSet = ScatterChartDataSet(entries: highAlarmDots, label: "Höga larm")
+            highSet.drawValuesEnabled = false
+            highSet.setScatterShape(.circle)
+            highSet.setColor(.systemBlue.withAlphaComponent(0.85))
+            highSet.scatterShapeSize = 8
+            highSet.highlightEnabled = false
+
+            let otherSet = ScatterChartDataSet(entries: otherAlarmDots, label: "Övriga larm")
+            otherSet.drawValuesEnabled = false
+            otherSet.setScatterShape(.circle)
+            otherSet.setColor(.systemGray.withAlphaComponent(0.85))
+            otherSet.scatterShapeSize = 8
+            otherSet.highlightEnabled = false
+
+            // Custom legend so BG segments never affect alignment
+            let lowEntry = LegendEntry(label: "Låga larm")
+            lowEntry.form = .circle
+            lowEntry.formSize = 10
+            lowEntry.formColor = NSUIColor.systemRed.withAlphaComponent(0.85)
+
+            let highEntry = LegendEntry(label: "Höga larm")
+            highEntry.form = .circle
+            highEntry.formSize = 10
+            highEntry.formColor = NSUIColor.systemBlue.withAlphaComponent(0.85)
+
+            let otherEntry = LegendEntry(label: "Övriga larm")
+            otherEntry.form = .circle
+            otherEntry.formSize = 10
+            otherEntry.formColor = NSUIColor.systemGray.withAlphaComponent(0.85)
+
+            self.chartView.legend.setCustom(entries: [lowEntry, highEntry, otherEntry])
+
+            let combined = CombinedChartData()
+            combined.lineData = LineChartData(dataSets: lineDataSets)
+            combined.scatterData = ScatterChartData(dataSets: [lowSet, highSet, otherSet])
+
+            DispatchQueue.main.async {
+                self.chartView.data = combined
+                self.chartView.notifyDataSetChanged()
+                self.chartView.setNeedsDisplay()
+            }
+        }
+    }
+
+    // MARK: - BG fetch
+
+    private func fetchBG(from start: Date, to end: Date, completion: @escaping ([(date: Date, mmol: Double)]) -> Void) {
+        // Reuse the same source as MealAnalysisView: BGProvider.fetch
+        // (It returns SGVs in mg/dL; we convert to mmol/L)
+        BGProvider.fetch { sgv in
+            let factor = 18.0182
+            let pts: [(date: Date, mmol: Double)] = sgv
+                .map { (date: Date(timeIntervalSince1970: $0.date), mmol: Double($0.sgv) / factor) }
+                .filter { $0.date >= start && $0.date <= end }
+                .sorted { $0.date < $1.date }
+            completion(pts)
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Same hue interpolation as in MealAnalysisView / Graphs, thresholds converted once into mmol/L.
+    private func setBGColorForMmol(_ mmolValue: Double) -> NSUIColor {
+        let minMgdl    = Double(UserDefaultsRepository.alertUrgentLowBG.value)
+        let targetMgdl = Double(UserDefaultsRepository.targetLine.value)
+        let maxMgdl    = Double(UserDefaultsRepository.alertUrgentHighBG.value)
+
+        let factor = 18.0182
+        let minMmol    = minMgdl / factor
+        let targetMmol = targetMgdl / factor
+        let maxMmol    = maxMgdl / factor
+
+        let redHue: CGFloat    = 0.0 / 360.0
+        let greenHue: CGFloat  = 120.0 / 360.0
+        let purpleHue: CGFloat = 270.0 / 360.0
+
+        let hue: CGFloat
+        if mmolValue <= minMmol {
+            hue = redHue
+        } else if mmolValue >= maxMmol {
+            hue = purpleHue
+        } else if mmolValue <= targetMmol {
+            let ratio = CGFloat((mmolValue - minMmol) / (targetMmol - minMmol))
+            hue = redHue + ratio * (greenHue - redHue)
+        } else {
+            let ratio = CGFloat((mmolValue - targetMmol) / (maxMmol - targetMmol))
+            hue = greenHue + ratio * (purpleHue - greenHue)
+        }
+
+        return UIColor(hue: hue, saturation: 0.9, brightness: 0.9, alpha: 1.0)
+    }
+
+    private func nearestBGValue(to date: Date) -> Double? {
+        guard !bgPoints.isEmpty else { return nil }
+
+        // Binary search for insertion index
+        let t = date.timeIntervalSince1970
+        var lo = 0
+        var hi = bgPoints.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if bgPoints[mid].date.timeIntervalSince1970 < t {
+                lo = mid + 1
+            } else {
+                hi = mid
+            }
+        }
+
+        // Candidates: lo and lo-1
+        var bestIdx: Int? = nil
+        var bestDelta: TimeInterval = .greatestFiniteMagnitude
+
+        if lo < bgPoints.count {
+            let d = abs(bgPoints[lo].date.timeIntervalSince(date))
+            bestIdx = lo
+            bestDelta = d
+        }
+        if lo > 0 {
+            let d = abs(bgPoints[lo - 1].date.timeIntervalSince(date))
+            if d < bestDelta {
+                bestIdx = lo - 1
+                bestDelta = d
+            }
+        }
+
+        // Require a reasonably close match (<= 10 minutes), otherwise skip
+        if bestDelta > 10 * 60 { return nil }
+        return bestIdx.map { bgPoints[$0].mmol }
     }
 }
