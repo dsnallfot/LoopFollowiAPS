@@ -873,14 +873,16 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
         chartView.pinchZoomEnabled = false
         chartView.doubleTapToZoomEnabled = false
         chartView.dragEnabled = false
-        chartView.highlightPerTapEnabled = false
+        chartView.highlightPerTapEnabled = true
         chartView.scaleXEnabled = false
         chartView.scaleYEnabled = false
 
         chartView.drawGridBackgroundEnabled = true
         chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
         chartView.drawBordersEnabled = false
-        
+        // Prevent marker (and any drawing) from spilling outside the chart's view bounds
+        chartView.clipsToBounds = true
+        chartView.layer.masksToBounds = true
         chartView.extraBottomOffset = 8
 
         // Legend (only show alarm dots)
@@ -895,6 +897,9 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
         chartView.legend.xOffset = 0
         chartView.legend.formSize = 10
         chartView.legend.wordWrapEnabled = true
+
+        // Marker for alarm dots
+        chartView.marker = AlarmDotMarker()
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
 
@@ -1032,20 +1037,23 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
                 // y: nearest BG mmol at ~same time (skip if we have no BG)
                 guard let yMmol = self.nearestBGValue(to: alarmDate) else { continue }
 
+                let title = kind?.title ?? (a.alarmLabel?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? (a.alarmLabel ?? "Okänt larm") : "Okänt larm")
+                let payload = AlarmDotPayload(title: title, date: alarmDate)
+
                 if let kind {
                     if kind.isGlucose {
                         if kind.isLowGlucose {
-                            lowAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                            lowAlarmDots.append(ChartDataEntry(x: xh, y: yMmol, data: payload))
                         } else if kind.isHighGlucose {
-                            highAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                            highAlarmDots.append(ChartDataEntry(x: xh, y: yMmol, data: payload))
                         } else {
-                            otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                            otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol, data: payload))
                         }
                     } else {
-                        otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                        otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol, data: payload))
                     }
                 } else {
-                    otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol))
+                    otherAlarmDots.append(ChartDataEntry(x: xh, y: yMmol, data: payload))
                 }
             }
 
@@ -1054,21 +1062,24 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
             lowSet.setScatterShape(.circle)
             lowSet.setColor(.systemRed.withAlphaComponent(0.85))
             lowSet.scatterShapeSize = 8
-            lowSet.highlightEnabled = false
+            lowSet.highlightEnabled = true
+            lowSet.setDrawHighlightIndicators(false)
 
             let highSet = ScatterChartDataSet(entries: highAlarmDots, label: "Höga larm")
             highSet.drawValuesEnabled = false
             highSet.setScatterShape(.circle)
             highSet.setColor(.systemBlue.withAlphaComponent(0.85))
             highSet.scatterShapeSize = 8
-            highSet.highlightEnabled = false
+            highSet.highlightEnabled = true
+            highSet.setDrawHighlightIndicators(false)
 
             let otherSet = ScatterChartDataSet(entries: otherAlarmDots, label: "Övriga larm")
             otherSet.drawValuesEnabled = false
             otherSet.setScatterShape(.circle)
             otherSet.setColor(.systemGray.withAlphaComponent(0.85))
             otherSet.scatterShapeSize = 8
-            otherSet.highlightEnabled = false
+            otherSet.highlightEnabled = true
+            otherSet.setDrawHighlightIndicators(false)
 
             // Custom legend so BG segments never affect alignment
             let lowEntry = LegendEntry(label: "Låga larm")
@@ -1097,6 +1108,136 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
                 self.chartView.notifyDataSetChanged()
                 self.chartView.setNeedsDisplay()
             }
+        }
+    }
+
+    private struct AlarmDotPayload {
+        let title: String
+        let date: Date
+    }
+
+    private final class AlarmDotMarker: MarkerView {
+
+        private let padding = UIEdgeInsets(top: 6, left: 8, bottom: 6, right: 8)
+        private let cornerRadius: CGFloat = 10
+        private let bgColor = UIColor.secondarySystemBackground.withAlphaComponent(0.95)
+        private let textColor = UIColor.label
+        private let borderColor = UIColor.white.withAlphaComponent(0.9)
+        private let borderWidth: CGFloat = 1
+        private let font = UIFont.preferredFont(forTextStyle: .caption1)
+
+        private var text: String = ""
+        private var textSize: CGSize = .zero
+        private var lastHourX: Double?
+
+        private lazy var timeFormatter: DateFormatter = {
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "sv_SE")
+            df.dateFormat = "HH:mm"
+            return df
+        }()
+
+        override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
+            lastHourX = entry.x
+            if let payload = entry.data as? AlarmDotPayload {
+                let t = timeFormatter.string(from: payload.date)
+                text = "\(t)  \(payload.title)"
+            } else {
+                text = ""
+            }
+
+            let maxWidth: CGFloat = 260
+            let constraint = CGSize(width: maxWidth, height: .greatestFiniteMagnitude)
+            let rect = (text as NSString).boundingRect(
+                with: constraint,
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                attributes: [.font: font],
+                context: nil
+            )
+            textSize = CGSize(width: ceil(rect.width), height: ceil(rect.height))
+            layoutSubviews()
+        }
+
+        override func draw(context: CGContext, point: CGPoint) {
+            guard !text.isEmpty else { return }
+
+            context.saveGState()
+            // Ensure we never draw outside the chart view
+            if let chart = chartView {
+                context.clip(to: chart.bounds)
+            }
+
+            let size = self.size
+            // Default: centered above point
+            var x = point.x - size.width / 2
+
+            // Time-based nudge so early/late points don't clip horizontally
+            if let hx = lastHourX {
+                if hx >= 18 {
+                    // late in day → place bubble to the left of the point
+                    x = point.x - size.width + 10
+                } else if hx <= 6 {
+                    // early in day → place bubble to the right of the point
+                    x = point.x - 10
+                }
+            }
+            var y = point.y - size.height - 10
+
+            // Keep marker within the chart's content rect, but also within the chart's view bounds
+            // (prevents clipping near 00:00 / 24:00 and prevents drawing outside the superview)
+            if let chart = chartView {
+                // Prefer the plot/content area (excludes axes/labels)
+                let content = chart.viewPortHandler.contentRect.insetBy(dx: 4, dy: 4)
+
+                if x < content.minX { x = content.minX }
+                if x + size.width > content.maxX { x = content.maxX - size.width }
+
+                // If marker would go above the content area, flip it below the point
+                if y < content.minY { y = point.y + 10 }
+
+                // Also ensure the marker does not run below content area
+                if y + size.height > content.maxY {
+                    y = content.maxY - size.height
+                }
+
+                // Hard clamp to the chart's own bounds (chartView is not clipped by default)
+                let bounds = chart.bounds.insetBy(dx: 4, dy: 4)
+                if x < bounds.minX { x = bounds.minX }
+                if x + size.width > bounds.maxX { x = bounds.maxX - size.width }
+                if y < bounds.minY { y = bounds.minY }
+                if y + size.height > bounds.maxY { y = bounds.maxY - size.height }
+            }
+
+            let rect = CGRect(origin: CGPoint(x: x, y: y), size: size)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
+
+            // Fill
+            context.setFillColor(bgColor.cgColor)
+            context.addPath(path.cgPath)
+            context.fillPath()
+
+            // Border
+            context.setStrokeColor(borderColor.cgColor)
+            context.setLineWidth(borderWidth)
+            context.addPath(path.cgPath)
+            context.strokePath()
+
+            // Text
+            let textRect = rect.inset(by: padding)
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: textColor
+            ]
+            (text as NSString).draw(in: textRect, withAttributes: attrs)
+
+            context.restoreGState()
+        }
+
+        var size: CGSize {
+            CGSize(
+                width: textSize.width + padding.left + padding.right,
+                height: textSize.height + padding.top + padding.bottom
+            )
         }
     }
 
