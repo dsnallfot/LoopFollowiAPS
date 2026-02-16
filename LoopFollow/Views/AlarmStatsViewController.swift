@@ -28,12 +28,13 @@ final class AlarmStatsViewController: ThemedViewController {
     }()
 
     private let chartModeControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["Antal", "Tid"])
+        let sc = UISegmentedControl(items: ["Antal", "Natt 22-06", "Tid"])
         sc.selectedSegmentIndex = 0
         return sc
     }()
 
     private let barChartView = BarChartView()
+    private let nightLineChartView = LineChartView()
     private let scatterChartView = ScatterChartView()
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
@@ -103,6 +104,7 @@ final class AlarmStatsViewController: ThemedViewController {
 
         // Charts
         barChartView.translatesAutoresizingMaskIntoConstraints = false
+        nightLineChartView.translatesAutoresizingMaskIntoConstraints = false
         scatterChartView.translatesAutoresizingMaskIntoConstraints = false
 
         // Table
@@ -122,6 +124,7 @@ final class AlarmStatsViewController: ThemedViewController {
 
         contentStack.addArrangedSubview(controlsStack)
         contentStack.addArrangedSubview(barChartView)
+        contentStack.addArrangedSubview(nightLineChartView)
         contentStack.addArrangedSubview(scatterChartView)
         contentStack.addArrangedSubview(tableView)
 
@@ -147,6 +150,7 @@ final class AlarmStatsViewController: ThemedViewController {
         // Fixed chart heights
         NSLayoutConstraint.activate([
             barChartView.heightAnchor.constraint(equalToConstant: 260),
+            nightLineChartView.heightAnchor.constraint(equalToConstant: 260),
             scatterChartView.heightAnchor.constraint(equalToConstant: 260)
         ])
 
@@ -158,9 +162,14 @@ final class AlarmStatsViewController: ThemedViewController {
     }
 
     private func updateVisibleChart() {
-        let showCount = (chartModeControl.selectedSegmentIndex == 0)
-        barChartView.isHidden = !showCount
-        scatterChartView.isHidden = showCount
+        let idx = chartModeControl.selectedSegmentIndex
+        let showTotal = (idx == 0)
+        let showNight = (idx == 1)
+        let showTime = (idx == 2)
+
+        barChartView.isHidden = !showTotal
+        nightLineChartView.isHidden = !showNight
+        scatterChartView.isHidden = !showTime
     }
 
     // MARK: - Charts
@@ -199,8 +208,38 @@ final class AlarmStatsViewController: ThemedViewController {
         barChartView.leftAxis.gridColor = gridLineColor
         barChartView.leftAxis.gridLineWidth = 0.5
         barChartView.leftAxis.gridLineDashLengths = [2, 2]
-        
-        
+
+
+        // Night line chart (night alarms per day)
+        nightLineChartView.chartDescription.enabled = false
+        nightLineChartView.legend.enabled = false
+        nightLineChartView.rightAxis.enabled = false
+        nightLineChartView.dragEnabled = false
+        nightLineChartView.pinchZoomEnabled = false
+        nightLineChartView.doubleTapToZoomEnabled = false
+        nightLineChartView.scaleXEnabled = false
+        nightLineChartView.scaleYEnabled = false
+        nightLineChartView.highlightPerTapEnabled = false
+
+        // Needed for gridBackgroundColor to actually render
+        nightLineChartView.drawGridBackgroundEnabled = true
+        nightLineChartView.backgroundColor = .clear
+        nightLineChartView.drawBordersEnabled = false
+
+        nightLineChartView.xAxis.labelPosition = .bottom
+        nightLineChartView.xAxis.drawGridLinesEnabled = true
+        nightLineChartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
+        nightLineChartView.xAxis.granularity = 1
+
+        nightLineChartView.xAxis.gridColor = gridLineColor
+        nightLineChartView.xAxis.gridLineWidth = 0.5
+        nightLineChartView.xAxis.gridLineDashLengths = [2, 2]
+
+        nightLineChartView.leftAxis.axisMinimum = 0
+        nightLineChartView.leftAxis.drawGridLinesEnabled = true
+        nightLineChartView.leftAxis.gridColor = gridLineColor
+        nightLineChartView.leftAxis.gridLineWidth = 0.5
+        nightLineChartView.leftAxis.gridLineDashLengths = [2, 2]
 
         // Scatter chart (time-of-day)
         scatterChartView.chartDescription.enabled = false
@@ -293,6 +332,7 @@ final class AlarmStatsViewController: ThemedViewController {
         let group = selectedAlarmGroup()
 
         var counts: [Int] = Array(repeating: 0, count: days)
+        var nightCounts: [Int] = Array(repeating: 0, count: days)
 
         // Scatter: tre serier
         var lowEntries: [ChartDataEntry] = []
@@ -324,7 +364,15 @@ final class AlarmStatsViewController: ThemedViewController {
 
             // Scatter time-of-day
             let comps = calendar.dateComponents([.hour, .minute], from: alarmDate)
-            let timeOfDay = Double(comps.hour ?? 0) + Double(comps.minute ?? 0) / 60.0
+            let hour = comps.hour ?? 0
+            let timeOfDay = Double(hour) + Double(comps.minute ?? 0) / 60.0
+
+            // Night count (22:00–06:00) uses the same group filter, but additionally filters by hour
+            if includeInGroup {
+                if hour >= 22 || hour < 6 {
+                    nightCounts[dayIndex] += 1
+                }
+            }
 
             if let kind {
                 if kind.isGlucose {
@@ -353,6 +401,7 @@ final class AlarmStatsViewController: ThemedViewController {
 
         // Charts
         updateBarChart(counts: counts, startDate: startDate, days: days)
+        updateNightLineChart(counts: nightCounts, startDate: startDate, days: days)
         updateScatterChart(lowEntries: lowEntries, highEntries: highEntries, otherEntries: otherEntries, startDate: startDate, days: days)
 
         // Stats ska matcha gruppen (annars blir totalsiffrorna förvirrande)
@@ -437,6 +486,60 @@ final class AlarmStatsViewController: ThemedViewController {
 
         scatterChartView.notifyDataSetChanged()
         scatterChartView.setNeedsDisplay()
+    }
+    
+    private func updateNightLineChart(counts: [Int], startDate: Date, days: Int) {
+        var entries: [ChartDataEntry] = []
+        entries.reserveCapacity(counts.count)
+
+        var circleColors: [NSUIColor] = []
+        circleColors.reserveCapacity(counts.count)
+
+        var maxY: Double = 0
+
+        for (i, c) in counts.enumerated() {
+            let y = Double(c)
+            if y > maxY { maxY = y }
+            entries.append(ChartDataEntry(x: Double(i), y: y))
+
+            // Color rules:
+            // < 1 => green, 1..<3 => orange, >= 3 => red
+            if c < 1 {
+                circleColors.append(NSUIColor.systemGreen)
+            } else if c < 3 {
+                circleColors.append(NSUIColor.systemOrange)
+            } else {
+                circleColors.append(NSUIColor.systemRed)
+            }
+        }
+
+        let set = LineChartDataSet(entries: entries, label: "")
+        set.drawValuesEnabled = false
+        set.drawCirclesEnabled = true
+        set.circleRadius = 5
+        set.circleHoleRadius = 0
+        set.circleColors = circleColors
+
+        set.lineWidth = 1
+        set.setColor(.systemGray)
+        set.drawFilledEnabled = false
+        set.mode = .linear
+        set.highlightEnabled = false
+
+        nightLineChartView.data = LineChartData(dataSet: set)
+
+        nightLineChartView.xAxis.valueFormatter = AlarmDateAxisFormatter(startDate: startDate)
+        nightLineChartView.xAxis.labelCount = min(days, 7)
+
+        // Dynamic y-axis like the bar chart
+        nightLineChartView.leftAxis.axisMinimum = 0
+        let paddedMax = max(3.0, ceil(maxY + 1.0))
+        nightLineChartView.leftAxis.axisMaximum = paddedMax
+        nightLineChartView.leftAxis.granularity = 1
+        nightLineChartView.leftAxis.granularityEnabled = true
+
+        nightLineChartView.notifyDataSetChanged()
+        nightLineChartView.setNeedsDisplay()
     }
 
     private func buildStats(days: Int, startDate: Date, now: Date, alarms: [AlarmHistoryEntry], counts: [Int]) -> [StatRow] {
