@@ -464,18 +464,24 @@ final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
         lowSet.setScatterShape(.circle)
         lowSet.setColor(.systemRed.withAlphaComponent(0.8))
         lowSet.scatterShapeSize = 5
+        lowSet.setDrawHighlightIndicators(false)
+        lowSet.highlightEnabled = true
 
         let highSet = ScatterChartDataSet(entries: highEntries, label: "Höga larm")
         highSet.drawValuesEnabled = false
         highSet.setScatterShape(.circle)
         highSet.setColor(.systemBlue.withAlphaComponent(0.8))
         highSet.scatterShapeSize = 5
+        highSet.setDrawHighlightIndicators(false)
+        highSet.highlightEnabled = true
 
         let otherSet = ScatterChartDataSet(entries: otherEntries, label: "Övriga larm")
         otherSet.drawValuesEnabled = false
         otherSet.setScatterShape(.circle)
         otherSet.setColor(.systemGray.withAlphaComponent(0.8))
         otherSet.scatterShapeSize = 5
+        otherSet.setDrawHighlightIndicators(false)
+        otherSet.highlightEnabled = true
 
         scatterChartView.data = ScatterChartData(dataSets: [lowSet, highSet, otherSet])
 
@@ -529,7 +535,8 @@ final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
         set.setColor(.systemGray)
         set.drawFilledEnabled = false
         set.mode = .linear
-        set.highlightEnabled = false
+        set.highlightEnabled = true
+        set.setDrawHighlightIndicators(false)
 
         nightLineChartView.data = LineChartData(dataSet: set)
 
@@ -1096,15 +1103,45 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
     // MARK: - BG fetch
 
     private func fetchBG(from start: Date, to end: Date, completion: @escaping ([(date: Date, mmol: Double)]) -> Void) {
-        // Reuse the same source as MealAnalysisView: BGProvider.fetch
-        // (It returns SGVs in mg/dL; we convert to mmol/L)
-        BGProvider.fetch { sgv in
-            let factor = 18.0182
-            let pts: [(date: Date, mmol: Double)] = sgv
+        let factor = 18.0182
+        let cal = Calendar.current
+
+        // Use a ±12h buffer like MealAnalysisView to avoid clipping near midnight
+        let bufferedStart = cal.date(byAdding: .hour, value: -12, to: start) ?? start
+        let bufferedEnd   = cal.date(byAdding: .hour, value: 12, to: end) ?? end
+
+        // 1) Get the "realtime" window (often limited, e.g. ~48h)
+        BGProvider.fetch { realtime in
+            let realtimePts: [(date: Date, mmol: Double)] = realtime
                 .map { (date: Date(timeIntervalSince1970: $0.date), mmol: Double($0.sgv) / factor) }
-                .filter { $0.date >= start && $0.date <= end }
-                .sorted { $0.date < $1.date }
-            completion(pts)
+
+            // 2) Load older data via cache, then merge + clamp
+            Task { [weak self] in
+                guard self != nil else { return }
+
+                let (sgvPoints, _) = await NightscoutCache.loadWindow(from: bufferedStart, to: bufferedEnd)
+
+                let cachedPts: [(date: Date, mmol: Double)] = sgvPoints.map { point in
+                    (date: Date(timeIntervalSince1970: point.date), mmol: Double(point.sgv) / factor)
+                }
+
+                // Merge by exact timestamp (prefer realtime if it exists for the same timestamp)
+                var merged: [TimeInterval: (date: Date, mmol: Double)] = [:]
+                for p in cachedPts {
+                    merged[p.date.timeIntervalSince1970] = p
+                }
+                for p in realtimePts {
+                    merged[p.date.timeIntervalSince1970] = p
+                }
+
+                let out = merged.values
+                    .filter { $0.date >= start && $0.date <= end }
+                    .sorted { $0.date < $1.date }
+
+                await MainActor.run {
+                    completion(out)
+                }
+            }
         }
     }
 
