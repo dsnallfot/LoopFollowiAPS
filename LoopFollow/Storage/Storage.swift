@@ -264,7 +264,7 @@ extension Storage {
         alarmLabel: String?,
         message: String,
         date: TimeInterval = Date().timeIntervalSince1970,
-        maxEntries: Int = 2000
+        maxEntries: Int = 9000
     ) {
         var history = alarmHistory
         history.append(AlarmHistoryEntry(date: date, message: message, alarmLabel: alarmLabel))

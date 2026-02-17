@@ -6,7 +6,7 @@ import Foundation
 
 // Enkel persistent cache för statistikdata (bolus, SMB, kolhydrater, basal).
 // Lagrar upp till 90 dagar och används för att minska Nightscout-förfrågningar.
-private class StatsCacheManager {
+final class StatsCacheManager {
     static let shared = StatsCacheManager()
     private init() {}
 
@@ -230,6 +230,62 @@ private class StatsCacheManager {
             )
         } catch {
             LogManager.shared.log(category: .analysis, message: "StatsCacheManager - failed to save cache: \(error.localizedDescription)", isDebug: true)
+        }
+    }
+    
+    /// Export a month-scoped StatsCache.json to the given destination URL.
+    /// Filters the existing StatsCache.json down to the provided interval.
+    /// Best-effort only: if no cache exists or decoding fails, nothing is written.
+    func exportMonthStatsCache(interval: DateInterval, destinationURL: URL) {
+        // Read existing StatsCache.json
+        let data: Data
+        do {
+            data = try Data(contentsOf: cacheURL)
+        } catch {
+            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - exportMonthStatsCache: no source cache to export", isDebug: true)
+            return
+        }
+
+        let decoder = JSONDecoder()
+        let existing: Cache
+        do {
+            existing = try decoder.decode(Cache.self, from: data)
+        } catch {
+            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - exportMonthStatsCache: decode failed (\(error.localizedDescription))", isDebug: true)
+            return
+        }
+
+        let start = interval.start.timeIntervalSince1970
+        let end = interval.end.timeIntervalSince1970
+
+        func inRange(_ t: Double) -> Bool { t >= start && t < end }
+
+        let monthCache = Cache(
+            lastUpdated: Date(),
+            bg: existing.bg.filter { inRange($0.date) },
+            bgChecks: existing.bgChecks.filter { inRange($0.date) },
+            bolus: existing.bolus.filter { inRange($0.date) },
+            smb: existing.smb.filter { inRange($0.date) },
+            carbs: existing.carbs.filter { inRange($0.date) },
+            basal: existing.basal.filter { inRange($0.date) }
+        )
+
+        do {
+            let dir = destinationURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted]
+            let out = try encoder.encode(monthCache)
+            try out.write(to: destinationURL, options: [.atomic])
+
+            LogManager.shared.log(
+                category: .analysis,
+                message: "StatsCacheManager - exportMonthStatsCache: wrote month cache (bg=\(monthCache.bg.count), bolus=\(monthCache.bolus.count), smb=\(monthCache.smb.count), carbs=\(monthCache.carbs.count), basal=\(monthCache.basal.count))",
+                isDebug: true
+            )
+        } catch {
+            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - exportMonthStatsCache: write failed (\(error.localizedDescription))", isDebug: true)
         }
     }
 

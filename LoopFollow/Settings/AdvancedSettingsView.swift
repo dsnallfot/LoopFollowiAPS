@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 @available(iOS 16.0, *)
 struct AdvancedSettingsView: View {
@@ -78,6 +79,39 @@ struct AdvancedSettingsView: View {
                         themedRow {
                             Toggle("Ladda upp appstart till NS", isOn: $viewModel.uploadAppStartNote)
                         }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Button {
+                                viewModel.archivePreviousMonth()
+                            } label: {
+                                Text("Arkivera fg månads data")
+                            }
+                            
+                        }
+                        if !viewModel.lastArchiveDebugMessage.isEmpty {
+                            Divider().opacity(0.35)
+                            themedRow {
+                                Text(viewModel.lastArchiveDebugMessage)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Button {
+                                viewModel.exportArchiveZipAndShare()
+                            } label: {
+                                Text("Exportera Arkiv (zip)…")
+                            }
+                        }
+                        if !viewModel.lastArchiveExportMessage.isEmpty {
+                            Divider().opacity(0.35)
+                            themedRow {
+                                Text(viewModel.lastArchiveExportMessage)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                     .themedCardBackground()
 
@@ -86,6 +120,11 @@ struct AdvancedSettingsView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 24)
+            }
+        }
+        .sheet(isPresented: $viewModel.isPresentingArchiveShareSheet) {
+            if let url = viewModel.archiveShareURL {
+                ActivityView(activityItems: [url])
             }
         }
     }
@@ -98,5 +137,4 @@ struct AdvancedSettingsView: View {
             .tint(Color(uiColor: .systemGreen))
     }
 }
-
 

@@ -3,11 +3,11 @@
 //  LoopFollow
 //
 //  Created by Daniel Snällfot on 2025-04-26.
-
 //
 
 import Foundation
 import Compression
+import ZIPFoundation
 
 // MARK: - Minimal JSON structs you already know from Nightscout
 // • Add/remove fields as you need; only timestamp + value are mandatory.
@@ -385,7 +385,7 @@ final class BatteryCache {
         return f
     }()
 
-    private static var dir: URL = {
+    static var dir: URL = {
         let d = FileManager.default
             .urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("BatteryCache", isDirectory: true)
@@ -636,4 +636,211 @@ final class GlucoseNSOnlyCache {
         let data = try JSONEncoder().encode(payload)
         try data.write(to: fileURL(for: date), options: .atomic)
     }
+}
+
+// MARK: - Monthly archive (store historical data for all time)
+
+/// Copies the previous month's cached day-files into a permanent archive folder.
+///
+/// Archive layout:
+///   Application Support/LoopFollow/Arkiv/YYYY-MM/
+///     BatteryCache/2025-11-18.json
+///     NightscoutCache/2025-11-18.json
+///     NightscoutGlucoseCache/2025-11-18.json
+///     StatsCache.json
+///     _archiveComplete.json
+final class ArchiveManager {
+    
+    private static func isoTimestampForFilename(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        return f.string(from: date)
+    }
+
+    private static let fm = FileManager.default
+
+    /// Base folder for the archive (Application Support is persistent and backed up).
+    /// We intentionally avoid Caches because iOS may purge it.
+    static var archiveRootDir: URL {
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        // Keep a stable folder name even if the app name changes.
+        let root = appSupport.appendingPathComponent("LoopFollow", isDirectory: true)
+        return root.appendingPathComponent("Arkiv", isDirectory: true)
+    }
+    
+    /// Local exports folder for ZIP snapshots (still inside sandbox).
+    private static var archiveExportsDir: URL {
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let root = appSupport.appendingPathComponent("LoopFollow", isDirectory: true)
+        return root.appendingPathComponent("ArkivExports", isDirectory: true)
+    }
+
+    static func createArchiveZipSnapshot() async throws -> URL {
+
+        try fm.createDirectory(at: archiveExportsDir, withIntermediateDirectories: true)
+
+        let timestamp = isoTimestampForFilename(Date())
+        let zipURL = archiveExportsDir
+            .appendingPathComponent("LoopFollow-Arkiv-\(timestamp)")
+            .appendingPathExtension("zip")
+
+        if fm.fileExists(atPath: zipURL.path) {
+            try? fm.removeItem(at: zipURL)
+        }
+
+        // ZIPFoundation extends FileManager with zipItem/unzipItem.
+        // shouldKeepParent=true keeps the top-level "Arkiv" folder inside the zip.
+        try fm.zipItem(at: archiveRootDir, to: zipURL, shouldKeepParent: true)
+
+        LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - created archive zip: \(zipURL.lastPathComponent)")
+        print("📦 ArchiveManager - created archive zip: \(zipURL.lastPathComponent)")
+
+        return zipURL
+    }
+
+    /// Ensures the previous month exists in the archive. If it has not been archived yet,
+    /// copy the previous month’s per-day cache json files + write a month-scoped StatsCache.json.
+    static func archivePreviousMonthIfNeeded() async {
+        LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - start archivePreviousMonthIfNeeded")
+        print("📦 ArchiveManager - start archivePreviousMonthIfNeeded")
+        let cal = Calendar.current
+        let now = Date()
+
+        // Interval for previous calendar month: [startPrevMonth, startThisMonth)
+        guard let startThisMonth = cal.date(from: cal.dateComponents([.year, .month], from: now)) else { return }
+        guard let startPrevMonth = cal.date(byAdding: .month, value: -1, to: startThisMonth) else { return }
+
+        let interval = DateInterval(start: startPrevMonth, end: startThisMonth)
+        let monthFolderName = Self.monthFolderName(for: startPrevMonth)
+        let destMonthDir = archiveRootDir.appendingPathComponent(monthFolderName, isDirectory: true)
+        
+        LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - target month folder: \(monthFolderName)")
+        print("📦 ArchiveManager - target month folder: \(monthFolderName)")
+
+        // If we already have a completion marker, assume this month is archived.
+        let markerURL = destMonthDir.appendingPathComponent("_archiveComplete.json")
+        if fm.fileExists(atPath: markerURL.path) {
+            LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - already archived (marker exists) for \(monthFolderName)")
+            print("📦 ArchiveManager - already archived for \(monthFolderName)")
+            return
+        }
+
+        do {
+            try fm.createDirectory(at: destMonthDir, withIntermediateDirectories: true)
+            try fm.createDirectory(at: destMonthDir.appendingPathComponent("BatteryCache", isDirectory: true), withIntermediateDirectories: true)
+            try fm.createDirectory(at: destMonthDir.appendingPathComponent("NightscoutCache", isDirectory: true), withIntermediateDirectories: true)
+            try fm.createDirectory(at: destMonthDir.appendingPathComponent("NightscoutGlucoseCache", isDirectory: true), withIntermediateDirectories: true)
+        } catch {
+            LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - failed creating month directories: \(error)")
+            return
+        }
+
+        // Copy per-day cache files for the previous month
+        copyDayFiles(
+            fromDir: BatteryCache.dir,
+            toDir: destMonthDir.appendingPathComponent("BatteryCache", isDirectory: true),
+            within: interval
+        )
+
+        copyDayFiles(
+            fromDir: NightscoutCache.dir,
+            toDir: destMonthDir.appendingPathComponent("NightscoutCache", isDirectory: true),
+            within: interval
+        )
+
+        copyDayFiles(
+            fromDir: GlucoseNSOnlyCache.dir,
+            toDir: destMonthDir.appendingPathComponent("NightscoutGlucoseCache", isDirectory: true),
+            within: interval
+        )
+
+        // Export month-scoped StatsCache.json (best-effort)
+        StatsCacheManager.shared.exportMonthStatsCache(
+            interval: interval,
+            destinationURL: destMonthDir.appendingPathComponent("StatsCache.json")
+        )
+
+        // Write completion marker
+        let marker = ArchiveCompletionMarker(
+            archivedMonth: monthFolderName,
+            intervalStart: interval.start,
+            intervalEnd: interval.end,
+            archivedAt: Date()
+        )
+
+        do {
+            let data = try JSONEncoder().encode(marker)
+            try data.write(to: markerURL, options: [.atomic])
+        } catch {
+            // Best effort only.
+        }
+
+        LogManager.shared.log(
+            category: .taskScheduler,
+            message: "ArchiveManager - archived previous month: \(monthFolderName)",
+            isDebug: true
+        )
+    }
+
+    // MARK: - Helpers
+
+    private struct ArchiveCompletionMarker: Codable {
+        let archivedMonth: String
+        let intervalStart: Date
+        let intervalEnd: Date
+        let archivedAt: Date
+    }
+
+    private static func monthFolderName(for dateInMonth: Date) -> String {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.year, .month], from: dateInMonth)
+        let y = comps.year ?? 0
+        let m = comps.month ?? 0
+        return String(format: "%04d-%02d", y, m)
+    }
+
+    /// Copies all YYYY-MM-DD.json files in `fromDir` that fall within the given interval.
+    /// Best-effort: overwrites existing destination files.
+    private static func copyDayFiles(fromDir: URL, toDir: URL, within interval: DateInterval) {
+        do {
+            try fm.createDirectory(at: toDir, withIntermediateDirectories: true)
+
+            let urls = (try? fm.contentsOfDirectory(at: fromDir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
+            for src in urls {
+                guard src.pathExtension.lowercased() == "json" else { continue }
+
+                let dayName = src.deletingPathExtension().lastPathComponent
+                guard let day = isoDayFormatter.date(from: dayName) else { continue }
+
+                if day >= interval.start && day < interval.end {
+                    let dest = toDir.appendingPathComponent(src.lastPathComponent)
+                    copyReplaceFile(from: src, to: dest)
+                }
+            }
+        } catch {
+            // Best-effort only.
+        }
+    }
+
+    private static func copyReplaceFile(from src: URL, to dest: URL) {
+        do {
+            if fm.fileExists(atPath: dest.path) {
+                try fm.removeItem(at: dest)
+            }
+            // Data roundtrip is robust & avoids cross-volume copy quirks.
+            let data = try Data(contentsOf: src)
+            try data.write(to: dest, options: [.atomic])
+        } catch {
+            // Best-effort only.
+        }
+    }
+
+    private static let isoDayFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withFullDate]
+        return f
+    }()
+    
 }

@@ -59,6 +59,11 @@ class AdvancedSettingsViewModel: ObservableObject {
             Storage.shared.uploadAppStartNote.value = uploadAppStartNote
         }
     }
+    @Published var lastArchiveDebugMessage: String = ""
+    @Published var lastArchiveExportMessage: String = ""
+    @Published var archiveShareURL: URL? = nil
+    @Published var isPresentingArchiveShareSheet: Bool = false
+    
     init() {
         self.downloadTreatments = UserDefaultsRepository.downloadTreatments.value
         self.downloadPrediction = UserDefaultsRepository.downloadPrediction.value
@@ -70,5 +75,46 @@ class AdvancedSettingsViewModel: ObservableObject {
         self.debugLogLevel = Storage.shared.debugLogLevel.value
         self.tempDebugLogLevel = Storage.shared.tempDebugLogLevel.value
         self.uploadAppStartNote = Storage.shared.uploadAppStartNote.value
+    }
+
+    /// Manually triggers archiving of the previous month’s cached data.
+    @MainActor
+    func archivePreviousMonth() {
+        // Bevis direkt
+        print("✅ AdvancedSettings - manual archive button tapped")
+        LogManager.shared.log(category: .taskScheduler, message: "AdvancedSettings - manual archive button tapped")
+
+        lastArchiveDebugMessage = "Startar arkivering…"
+
+        Task {
+            await ArchiveManager.archivePreviousMonthIfNeeded()
+            await MainActor.run {
+                self.lastArchiveDebugMessage = "Arkivering klar (eller redan gjord)."
+            }
+        }
+    }
+    
+    /// Creates a ZIP of the entire Arkiv folder and opens the share sheet so the user can save to Files/iCloud.
+    @MainActor
+    func exportArchiveZipAndShare() {
+        print("✅ AdvancedSettings - export archive zip tapped")
+        LogManager.shared.log(category: .taskScheduler, message: "AdvancedSettings - export archive zip tapped")
+
+        lastArchiveExportMessage = "Skapar zip…"
+
+        Task {
+            do {
+                let url = try await ArchiveManager.createArchiveZipSnapshot()
+                await MainActor.run {
+                    self.archiveShareURL = url
+                    self.isPresentingArchiveShareSheet = true
+                    self.lastArchiveExportMessage = "Zip skapad. Välj var du vill spara den…"
+                }
+            } catch {
+                await MainActor.run {
+                    self.lastArchiveExportMessage = "Misslyckades skapa zip: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }

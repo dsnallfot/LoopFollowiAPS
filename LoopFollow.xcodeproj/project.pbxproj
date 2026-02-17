@@ -58,6 +58,7 @@
 		655B23052EDE2A420092DBDE /* AddManualPumpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */; };
 		655B23072EDE2A640092DBDE /* PumpHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23062EDE2A610092DBDE /* PumpHistoryView.swift */; };
 		655DF7982F41EFB30085EC78 /* AlarmStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655DF7972F41EFB00085EC78 /* AlarmStatsViewController.swift */; };
+		655DF79B2F44CDBB0085EC78 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 655DF79A2F44CDBB0085EC78 /* ZIPFoundation */; };
 		656EA4E32F27A5D10075771C /* EnteredByView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 656EA4E22F27A5BF0075771C /* EnteredByView.swift */; };
 		6574FFFA2ED8689E00DEF7D0 /* StatsTrendCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6574FFF92ED8689700DEF7D0 /* StatsTrendCalculator.swift */; };
 		6577653B2ED9C96C001D1AC7 /* DailyStatsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6577653A2ED9C966001D1AC7 /* DailyStatsViewModel.swift */; };
@@ -706,6 +707,7 @@
 				FCFEEC9E2486E68E00402A7F /* WebKit.framework in Frameworks */,
 				3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */,
 				DD48781C2C7DAF140048F05C /* SwiftJWT in Frameworks */,
+				655DF79B2F44CDBB0085EC78 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1429,6 +1431,7 @@
 			name = LoopFollow;
 			packageProductDependencies = (
 				DD48781B2C7DAF140048F05C /* SwiftJWT */,
+				655DF79A2F44CDBB0085EC78 /* ZIPFoundation */,
 			);
 			productName = LoopFollow;
 			productReference = FC9788142485969B00A7906C /* Loop Follow.app */;
@@ -1460,6 +1463,7 @@
 			mainGroup = FC97880B2485969B00A7906C;
 			packageReferences = (
 				DD48781A2C7DAF140048F05C /* XCRemoteSwiftPackageReference "Swift-JWT" */,
+				655DF7992F44CDBB0085EC78 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 			);
 			productRefGroup = FC9788152485969B00A7906C /* Products */;
 			projectDirPath = "";
@@ -2095,6 +2099,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		655DF7992F44CDBB0085EC78 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.20;
+			};
+		};
 		DD48781A2C7DAF140048F05C /* XCRemoteSwiftPackageReference "Swift-JWT" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Kitura/Swift-JWT.git";
@@ -2106,6 +2118,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		655DF79A2F44CDBB0085EC78 /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 655DF7992F44CDBB0085EC78 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
 		DD48781B2C7DAF140048F05C /* SwiftJWT */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = DD48781A2C7DAF140048F05C /* XCRemoteSwiftPackageReference "Swift-JWT" */;

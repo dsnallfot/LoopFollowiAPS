@@ -21,6 +21,7 @@ extension MainViewController {
         scheduleCacheTask()
         scheduleStatsPrefetchTask()
         scheduleNSOnlyGlucosePrefetchTask()
+        scheduleMonthlyArchiveTask()
     }
 
     /// Schedules a nightly stats prefetch using StatsDataService.
@@ -103,6 +104,53 @@ extension MainViewController {
                 self?.nsOnlyGlucosePrefetchAction()
             }
         }
+    
+    /// Schedules a monthly archive task on the 1st day of each month (shortly after midnight).
+    /// Copies the previous month’s cache day-files into Application Support under Arkiv/YYYY-MM,
+    /// and also writes a month-scoped StatsCache.json.
+    func scheduleMonthlyArchiveTask() {
+        let calendar = Calendar.current
+        let now = Date()
+
+        // First day of current month at 00:10 local time
+        var comps = calendar.dateComponents([.year, .month], from: now)
+        comps.day = 1
+        comps.hour = 0
+        comps.minute = 10
+        comps.second = 0
+
+        let firstDayThisMonth0010 = calendar.date(from: comps) ?? now
+        let nextRun: Date
+
+        if firstDayThisMonth0010 <= now {
+            // If we've already passed the trigger time this month, schedule next month.
+            nextRun = calendar.date(byAdding: .month, value: 1, to: firstDayThisMonth0010) ?? now
+        } else {
+            nextRun = firstDayThisMonth0010
+        }
+
+        TaskScheduler.shared.scheduleTask(id: .monthlyArchive, nextRun: nextRun) { [weak self] in
+            guard let self = self else { return }
+
+            LogManager.shared.log(
+                category: .taskScheduler,
+                message: "MonthlyArchive task running: archiving previous month caches"
+            )
+
+            Task {
+                await ArchiveManager.archivePreviousMonthIfNeeded()
+
+                LogManager.shared.log(
+                    category: .taskScheduler,
+                    message: "MonthlyArchive task completed, scheduling next run"
+                )
+
+                DispatchQueue.main.async {
+                    self.scheduleMonthlyArchiveTask()
+                }
+            }
+        }
+    }
 
         /// Nightly refresh of Trio→NS glucose cache
         /// Fetches the last N days to fill late uploads & gaps.

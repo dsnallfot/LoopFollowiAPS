@@ -24,6 +24,7 @@ enum TaskID: CaseIterable {
     case cacheFill
     case statsPrefetch
     case nsOnlyGlucosePrefetch
+    case monthlyArchive
 }
 
 struct ScheduledTask {
