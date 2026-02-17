@@ -83,7 +83,7 @@ struct AdvancedSettingsView: View {
                     }
                     .themedCardBackground()
                     
-                    Text("Arkivera/Exportera data")
+                    Text("Manuell arkivering/export")
                         .font(.headline)
                         .foregroundStyle(.secondary)
                         .padding(.top, 6)
@@ -91,7 +91,7 @@ struct AdvancedSettingsView: View {
                     VStack(spacing: 0) {
                         themedRow {
                             HStack {
-                                Text("Föregående månad")
+                                Text("Spara fg månad")
                                 Spacer()
                             Button {
                                 viewModel.archivePreviousMonth()
@@ -113,12 +113,12 @@ struct AdvancedSettingsView: View {
                         Divider().opacity(0.35)
                         themedRow {
                             HStack {
-                                Text("Skapa zip hela arkivet")
+                                Text("Skapa zip för hela arkivet")
                                 Spacer()
                             Button {
                                 viewModel.exportArchiveZipAndShare()
                             } label: {
-                                Text("Exportera")
+                                Text("Export")
                             }
                             .buttonStyle(.glassProminent)
                         }
@@ -126,12 +126,12 @@ struct AdvancedSettingsView: View {
                         Divider().opacity(0.35)
                         themedRow {
                             HStack {
-                                Text("Skapa zip fg månad")
+                                Text("Skapa zip för fg månad")
                                 Spacer()
                                 Button {
                                     viewModel.exportLatestArchivedMonthZipAndShare()
                                 } label: {
-                                    Text("Exportera")
+                                    Text("Export")
                                 }
                                 .buttonStyle(.glassProminent)
                             }
@@ -155,7 +155,9 @@ struct AdvancedSettingsView: View {
                 .padding(.bottom, 24)
             }
         }
-        .sheet(isPresented: $viewModel.isPresentingArchiveShareSheet) {
+        .sheet(isPresented: $viewModel.isPresentingArchiveShareSheet, onDismiss: {
+            viewModel.handleArchiveShareSheetDismissed()
+        }) {
             if let url = viewModel.archiveShareURL {
                 ActivityView(activityItems: [url])
             }

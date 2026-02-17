@@ -143,4 +143,14 @@ class AdvancedSettingsViewModel: ObservableObject {
             }
         }
     }
+    
+    /// Called when the share sheet is dismissed. Cleans up temporary ZIPs in ArkivExports.
+    @MainActor
+    func handleArchiveShareSheetDismissed() {
+        // Best-effort cleanup: keep the latest 3 export ZIPs as a safety net.
+        ArchiveManager.cleanupArchiveExports(keepingLatest: 3)
+
+        // Optional: clear the share URL reference.
+        archiveShareURL = nil
+    }
 }

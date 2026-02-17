@@ -665,16 +665,42 @@ final class ArchiveManager {
     /// We intentionally avoid Caches because iOS may purge it.
     static var archiveRootDir: URL {
         let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        // Keep a stable folder name even if the app name changes.
-        let root = appSupport.appendingPathComponent("LoopFollow", isDirectory: true)
-        return root.appendingPathComponent("Arkiv", isDirectory: true)
+
+        // New location (no redundant LoopFollow folder):
+        // Application Support/Arkiv
+        let newDir = appSupport.appendingPathComponent("Arkiv", isDirectory: true)
+
+        // Old location (used previously): Application Support/LoopFollow/Arkiv
+        let oldDir = appSupport
+            .appendingPathComponent("LoopFollow", isDirectory: true)
+            .appendingPathComponent("Arkiv", isDirectory: true)
+
+        migrateIfNeeded(from: oldDir, to: newDir)
+        return newDir
+    }
+    
+    /// User-visible ZIP archive folder (Files app: On My iPhone → LoopFollow → Ziparkiv)
+    /// Note: The app's Documents directory is already exposed as the "LoopFollow" folder in Files.
+    private static var documentsZipArchiveDir: URL {
+        let docs = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return docs.appendingPathComponent("Ziparkiv", isDirectory: true)
     }
     
     /// Local exports folder for ZIP snapshots (still inside sandbox).
     private static var archiveExportsDir: URL {
         let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let root = appSupport.appendingPathComponent("LoopFollow", isDirectory: true)
-        return root.appendingPathComponent("ArkivExports", isDirectory: true)
+
+        // New location (no redundant LoopFollow folder):
+        // Application Support/ArkivExports
+        let newDir = appSupport.appendingPathComponent("ArkivExports", isDirectory: true)
+
+        // Old location (used previously): Application Support/LoopFollow/ArkivExports
+        let oldDir = appSupport
+            .appendingPathComponent("LoopFollow", isDirectory: true)
+            .appendingPathComponent("ArkivExports", isDirectory: true)
+
+        migrateIfNeeded(from: oldDir, to: newDir)
+        return newDir
     }
 
     static func createArchiveZipSnapshot() async throws -> URL {
@@ -696,6 +722,9 @@ final class ArchiveManager {
 
         LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - created archive zip: \(zipURL.lastPathComponent)")
         print("📦 ArchiveManager - created archive zip: \(zipURL.lastPathComponent)")
+        
+        // Avoid unbounded growth in ArkivExports.
+        cleanupArchiveExports(keepingLatest: 3)
 
         return zipURL
     }
@@ -728,7 +757,10 @@ final class ArchiveManager {
 
         LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - created monthly zip: \(zipURL.lastPathComponent)")
         print("📦 ArchiveManager - created monthly zip: \(zipURL.lastPathComponent)")
-
+        
+        // Avoid unbounded growth in ArkivExports.
+        cleanupArchiveExports(keepingLatest: 3)
+        
         return zipURL
     }
 
@@ -757,6 +789,9 @@ final class ArchiveManager {
         if fm.fileExists(atPath: markerURL.path) {
             LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - already archived (marker exists) for \(monthFolderName)")
             print("📦 ArchiveManager - already archived for \(monthFolderName)")
+            
+            // Still ensure a user-visible ZIP exists in Documents.
+            exportMonthlyZipToDocuments(monthFolderName: monthFolderName)
             return
         }
 
@@ -809,6 +844,9 @@ final class ArchiveManager {
         } catch {
             // Best effort only.
         }
+
+        // Create/overwrite a user-visible ZIP snapshot for the archived month.
+        exportMonthlyZipToDocuments(monthFolderName: monthFolderName)
 
         LogManager.shared.log(
             category: .taskScheduler,
@@ -900,6 +938,104 @@ final class ArchiveManager {
             try data.write(to: dest, options: [.atomic])
         } catch {
             // Best-effort only.
+        }
+    }
+    
+    /// Deletes old ZIP files in ArkivExports to avoid unbounded growth.
+    /// Keeps the newest `keepingLatest` files by modification date.
+    static func cleanupArchiveExports(keepingLatest: Int = 3) {
+        guard keepingLatest >= 0 else { return }
+
+        do {
+            let urls = try fm.contentsOfDirectory(
+                at: archiveExportsDir,
+                includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            )
+
+            let zipFiles: [(url: URL, mtime: Date)] = urls.compactMap { url in
+                guard url.pathExtension.lowercased() == "zip" else { return nil }
+                let rv = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey])
+                guard (rv?.isRegularFile ?? true) else { return nil }
+                return (url, rv?.contentModificationDate ?? Date.distantPast)
+            }
+
+            let sorted = zipFiles.sorted { $0.mtime > $1.mtime } // newest first
+            let keepSet = Set(sorted.prefix(keepingLatest).map { $0.url.path })
+
+            for item in sorted where !keepSet.contains(item.url.path) {
+                try? fm.removeItem(at: item.url)
+            }
+
+            LogManager.shared.log(
+                category: .taskScheduler,
+                message: "ArchiveManager - cleanupArchiveExports complete (kept \(keepingLatest))",
+                isDebug: true
+            )
+            print("📦 ArchiveManager - cleanupArchiveExports complete (kept \(keepingLatest))")
+
+        } catch {
+            LogManager.shared.log(
+                category: .taskScheduler,
+                message: "ArchiveManager - cleanupArchiveExports failed: \(error)",
+                isDebug: true
+            )
+            print("📦 ArchiveManager - cleanupArchiveExports failed: \(error)")
+        }
+    }
+    
+    /// Ensures a month-scoped ZIP exists in the user-visible Documents folder.
+    /// Output: Documents/LoopFollow/Ziparkiv/LoopFollow-Arkiv-YYYY-MM.zip
+    /// Best-effort: overwrites existing file so the export stays in sync.
+    private static func exportMonthlyZipToDocuments(monthFolderName: String) {
+        do {
+            try fm.createDirectory(at: documentsZipArchiveDir, withIntermediateDirectories: true)
+
+            let sourceMonthDir = archiveRootDir.appendingPathComponent(monthFolderName, isDirectory: true)
+            guard fm.fileExists(atPath: sourceMonthDir.path) else {
+                LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - monthly zip export skipped (month folder missing): \(monthFolderName)")
+                return
+            }
+
+            let destZipURL = documentsZipArchiveDir
+                .appendingPathComponent("LoopFollow-Arkiv-\(monthFolderName)")
+                .appendingPathExtension("zip")
+
+            if fm.fileExists(atPath: destZipURL.path) {
+                try? fm.removeItem(at: destZipURL)
+            }
+
+            // ZIPFoundation extends FileManager with zipItem/unzipItem.
+            // shouldKeepParent=true keeps the top-level "YYYY-MM" folder inside the zip.
+            try fm.zipItem(at: sourceMonthDir, to: destZipURL, shouldKeepParent: true)
+
+            LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - exported monthly zip to Documents: \(destZipURL.lastPathComponent)")
+            print("📦 ArchiveManager - exported monthly zip to Documents: \(destZipURL.lastPathComponent)")
+        } catch {
+            LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - monthly zip export to Documents failed: \(error)")
+            print("📦 ArchiveManager - monthly zip export to Documents failed: \(error)")
+        }
+    }
+    
+    /// One-time migration helper. If the old directory exists and the new directory does not,
+    /// move the old directory into the new location.
+    private static func migrateIfNeeded(from oldDir: URL, to newDir: URL) {
+        // Only migrate if old exists and new doesn't.
+        guard fm.fileExists(atPath: oldDir.path) else { return }
+        guard !fm.fileExists(atPath: newDir.path) else { return }
+
+        do {
+            // Ensure parent exists
+            try fm.createDirectory(at: newDir.deletingLastPathComponent(), withIntermediateDirectories: true)
+
+            try fm.moveItem(at: oldDir, to: newDir)
+
+            LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - migrated folder: \(oldDir.path) → \(newDir.path)")
+            print("📦 ArchiveManager - migrated folder: \(oldDir.path) → \(newDir.path)")
+        } catch {
+            // Best-effort only. If move fails, we leave old in place.
+            LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - migration failed: \(error)", isDebug: true)
+            print("📦 ArchiveManager - migration failed: \(error)")
         }
     }
 
