@@ -117,4 +117,30 @@ class AdvancedSettingsViewModel: ObservableObject {
             }
         }
     }
+    
+    /// Creates a ZIP of the latest archived month folder (Arkiv/YYYY-MM) and opens the share sheet.
+    @MainActor
+    func exportLatestArchivedMonthZipAndShare() {
+        print("✅ AdvancedSettings - export latest month zip tapped")
+        LogManager.shared.log(category: .taskScheduler, message: "AdvancedSettings - export latest month zip tapped")
+
+        lastArchiveExportMessage = "Skapar zip för senaste månad…"
+
+        Task {
+            do {
+                let month = try ArchiveManager.latestArchivedMonthFolderName()
+                let url = try await ArchiveManager.createMonthlyArchiveZipSnapshot(monthFolderName: month)
+
+                await MainActor.run {
+                    self.archiveShareURL = url
+                    self.isPresentingArchiveShareSheet = true
+                    self.lastArchiveExportMessage = "Zip skapad för \(month). Välj var du vill spara den…"
+                }
+            } catch {
+                await MainActor.run {
+                    self.lastArchiveExportMessage = "Misslyckades skapa zip för senaste månad: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
 }

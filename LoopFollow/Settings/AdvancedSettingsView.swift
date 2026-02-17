@@ -9,11 +9,12 @@
 import SwiftUI
 import UIKit
 
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct AdvancedSettingsView: View {
     @ObservedObject var viewModel: AdvancedSettingsViewModel
     @Environment(\.presentationMode) var presentationMode
 
+    @available(iOS 26.0, *)
     var body: some View {
         ZStack {
             ThemeBackground()
@@ -79,13 +80,26 @@ struct AdvancedSettingsView: View {
                         themedRow {
                             Toggle("Ladda upp appstart till NS", isOn: $viewModel.uploadAppStartNote)
                         }
-                        Divider().opacity(0.35)
+                    }
+                    .themedCardBackground()
+                    
+                    Text("Arkivera/Exportera data")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 6)
+                    
+                    VStack(spacing: 0) {
                         themedRow {
+                            HStack {
+                                Text("Föregående månad")
+                                Spacer()
                             Button {
                                 viewModel.archivePreviousMonth()
                             } label: {
-                                Text("Arkivera fg månads data")
+                                Text("Arkivera")
                             }
+                            .buttonStyle(.glassProminent)
+                        }
                             
                         }
                         if !viewModel.lastArchiveDebugMessage.isEmpty {
@@ -98,11 +112,30 @@ struct AdvancedSettingsView: View {
                         }
                         Divider().opacity(0.35)
                         themedRow {
+                            HStack {
+                                Text("Skapa zip hela arkivet")
+                                Spacer()
                             Button {
                                 viewModel.exportArchiveZipAndShare()
                             } label: {
-                                Text("Exportera Arkiv (zip)…")
+                                Text("Exportera")
                             }
+                            .buttonStyle(.glassProminent)
+                        }
+                        }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            HStack {
+                                Text("Skapa zip fg månad")
+                                Spacer()
+                                Button {
+                                    viewModel.exportLatestArchivedMonthZipAndShare()
+                                } label: {
+                                    Text("Exportera")
+                                }
+                                .buttonStyle(.glassProminent)
+                            }
+
                         }
                         if !viewModel.lastArchiveExportMessage.isEmpty {
                             Divider().opacity(0.35)

@@ -699,6 +699,39 @@ final class ArchiveManager {
 
         return zipURL
     }
+    
+    /// Creates a zip for a single archived month folder: Arkiv/YYYY-MM
+    /// Output filename: LoopFollow-Arkiv-YYYY-MM.zip (overwritten if it already exists)
+    static func createMonthlyArchiveZipSnapshot(monthFolderName: String) async throws -> URL {
+        try fm.createDirectory(at: archiveExportsDir, withIntermediateDirectories: true)
+
+        let sourceMonthDir = archiveRootDir.appendingPathComponent(monthFolderName, isDirectory: true)
+        guard fm.fileExists(atPath: sourceMonthDir.path) else {
+            throw NSError(
+                domain: "ArchiveManager",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Month folder does not exist: \(monthFolderName)"]
+            )
+        }
+
+        let zipURL = archiveExportsDir
+            .appendingPathComponent("LoopFollow-Arkiv-\(monthFolderName)")
+            .appendingPathExtension("zip")
+
+        if fm.fileExists(atPath: zipURL.path) {
+            try? fm.removeItem(at: zipURL)
+        }
+
+        // ZIPFoundation extends FileManager with zipItem/unzipItem.
+        // shouldKeepParent=true keeps the top-level "YYYY-MM" folder inside the zip.
+        try fm.zipItem(at: sourceMonthDir, to: zipURL, shouldKeepParent: true)
+
+        LogManager.shared.log(category: .taskScheduler, message: "ArchiveManager - created monthly zip: \(zipURL.lastPathComponent)")
+        print("📦 ArchiveManager - created monthly zip: \(zipURL.lastPathComponent)")
+
+        return zipURL
+    }
+
 
     /// Ensures the previous month exists in the archive. If it has not been archived yet,
     /// copy the previous month’s per-day cache json files + write a month-scoped StatsCache.json.
@@ -799,6 +832,39 @@ final class ArchiveManager {
         let y = comps.year ?? 0
         let m = comps.month ?? 0
         return String(format: "%04d-%02d", y, m)
+    }
+    
+    /// Returns the newest archived month folder name (YYYY-MM) under Arkiv.
+    /// Throws if no month folders exist yet.
+    static func latestArchivedMonthFolderName() throws -> String {
+        let urls = (try? fm.contentsOfDirectory(
+            at: archiveRootDir,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )) ?? []
+
+        let monthNames: [String] = urls.compactMap { url in
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else { return nil }
+
+            let name = url.lastPathComponent
+            guard !name.hasPrefix("_") else { return nil }     // skip marker files etc
+            guard name.count == 7 else { return nil }          // "YYYY-MM"
+            // Quick sanity: "YYYY-MM" with hyphen at pos 5
+            let chars = Array(name)
+            guard chars.count == 7, chars[4] == "-" else { return nil }
+            return name
+        }
+
+        let sorted = monthNames.sorted() // lexicographic works for YYYY-MM
+        guard let latest = sorted.last else {
+            throw NSError(
+                domain: "ArchiveManager",
+                code: 3,
+                userInfo: [NSLocalizedDescriptionKey: "Inga arkiverade månader hittades ännu."]
+            )
+        }
+        return latest
     }
 
     /// Copies all YYYY-MM-DD.json files in `fromDir` that fall within the given interval.
