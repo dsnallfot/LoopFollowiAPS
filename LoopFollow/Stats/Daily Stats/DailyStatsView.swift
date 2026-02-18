@@ -546,30 +546,38 @@ struct DailyStatsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 if showRealCRandTitrChart {
-                    Text("TITR")
+                    Text(showingTitrSummary ? "TITR" : "TIR")
                         .fontWeight(.semibold)
+                        .font(.subheadline)
                         .foregroundColor(Color.green.opacity(0.85))
                     Text("och")
                         .fontWeight(.medium)
+                        .font(.subheadline)
                         .foregroundColor(.primary)
                     Text("Verklig insulinkvot")
                         .fontWeight(.semibold)
+                        .font(.subheadline)
                         .foregroundColor(Color(.systemTeal).opacity(0.9))
                     Text("per dag")
                         .fontWeight(.medium)
+                        .font(.subheadline)
                         .foregroundColor(.primary)
                 } else {
                     Text("TDD")
                         .fontWeight(.semibold)
+                        .font(.subheadline)
                         .foregroundColor(Color(UIColor.insulin).opacity(0.9))
                     Text("och")
                         .fontWeight(.medium)
+                        .font(.subheadline)
                         .foregroundColor(.primary)
                     Text("Kolhydrater")
                         .fontWeight(.semibold)
+                        .font(.subheadline)
                         .foregroundColor(Color(UIColor.carbs).opacity(0.9))
                     Text("per dag")
                         .fontWeight(.medium)
+                        .font(.subheadline)
                         .foregroundColor(.primary)
                 }
 
@@ -577,9 +585,9 @@ struct DailyStatsView: View {
 
                 Image(systemName: "chevron.up.chevron.down")
                     .foregroundColor(.secondary)
+                    .fontWeight(.regular)
+                    .font(.system(size: 14))
             }
-            .font(.subheadline)
-            .fontWeight(.medium)
             .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -588,7 +596,7 @@ struct DailyStatsView: View {
             }
 
             if showRealCRandTitrChart {
-                RealCRandTITRChartView(rows: rows)
+                RealCRandTITRChartView(rows: rows, showingTitrSummary: showingTitrSummary)
                     .frame(height: 180)
                     .clipped()
             } else {
@@ -1263,6 +1271,7 @@ private struct DailyCarbsTDDBarChartView: UIViewRepresentable {
 @available(iOS 26.0, *)
 private struct RealCRandTITRChartView: UIViewRepresentable {
     let rows: [DailyStatRow]
+    let showingTitrSummary: Bool
 
     func makeUIView(context: Context) -> UIView {
         let containerView = UIView()
@@ -1302,10 +1311,12 @@ private struct RealCRandTITRChartView: UIViewRepresentable {
         xAxis.granularityEnabled = true
         xAxis.granularity = 1
 
-        // Left axis: TITR 0–100
+        // Left axis: TITR/TIR 0–100
         let leftAxis = chartView.leftAxis
         leftAxis.drawAxisLineEnabled = false
-        leftAxis.drawGridLinesEnabled = false
+        leftAxis.drawGridLinesEnabled = true
+        leftAxis.gridLineWidth = 0.5
+        leftAxis.gridColor = NSUIColor.label.withAlphaComponent(0.12)
         leftAxis.axisMinimum = 0
         leftAxis.axisMaximum = 100
         leftAxis.granularityEnabled = true
@@ -1388,10 +1399,11 @@ private struct RealCRandTITRChartView: UIViewRepresentable {
             return Set(unique)
         }()
 
-        // TITR (%) on left axis
-        let titrEntries: [ChartDataEntry] = sorted.enumerated().compactMap { idx, row in
-            guard let titr = row.tightRangePercent else { return nil }
-            return ChartDataEntry(x: Double(idx), y: titr)
+        // TITR/TIR (%) on left axis
+        let leftPercentEntries: [ChartDataEntry] = sorted.enumerated().compactMap { idx, row in
+            let percent = showingTitrSummary ? row.tightRangePercent : row.timeInRangePercent
+            guard let percent else { return nil }
+            return ChartDataEntry(x: Double(idx), y: percent)
         }
 
         // Real CR on right axis: carbs / (tdd - profileBasal), rounded to 1 decimal
@@ -1417,17 +1429,20 @@ private struct RealCRandTITRChartView: UIViewRepresentable {
         chartView.rightAxis.labelCount = 5
 
         // Data sets styling
-        let titrSet = LineChartDataSet(entries: titrEntries, label: "TITR")
+        let titrSet = LineChartDataSet(entries: leftPercentEntries, label: (showingTitrSummary ? "TITR" : "TIR"))
         titrSet.axisDependency = .left
         titrSet.colors = [NSUIColor.systemGreen]
         titrSet.lineWidth = 1.5
         titrSet.drawCirclesEnabled = true
         titrSet.circleRadius = 5
 
-        // Conditional TITR point colors: green if >= 50%, red if < 50%
-        let titrCircleColors: [NSUIColor] = titrEntries.map { entry in
-            (entry.y >= 50.0) ? NSUIColor.systemGreen : NSUIColor.systemRed
-        }
+        // Conditional TITR/TIR point colors:
+            // TITR -> green if >= 50%
+            // TIR  -> green if >= 70%
+            let threshold: Double = showingTitrSummary ? 50.0 : 70.0
+            let titrCircleColors: [NSUIColor] = leftPercentEntries.map { entry in
+                (entry.y >= threshold) ? NSUIColor.systemGreen : NSUIColor.systemRed
+            }
         titrSet.circleColors = titrCircleColors
 
         titrSet.drawValuesEnabled = false
@@ -1495,10 +1510,10 @@ private final class RealCRXAxisFormatter: AxisValueFormatter {
 
 private final class RealCRLeftAxisFormatter: AxisValueFormatter {
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
-        // Show 0, 20, 40, 60, 80 (hide 100)
+        // Show 0, 20, 40, 60, 80, 100
         let rounded = Int(value.rounded())
-        if rounded >= 100 { return "" }
         if rounded % 20 != 0 { return "" }
+        if rounded < 0 || rounded > 100 { return "" }
         return "\(rounded)"
     }
 }
