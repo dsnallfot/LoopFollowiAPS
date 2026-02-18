@@ -303,7 +303,7 @@ struct DailyStatsView: View {
 
                         dailyBarsSection(rows: filteredRowsForHighlight)
                             .padding(.horizontal, 15)
-                            .padding(.top, 12)
+                            .padding(.top, 15)
                             .padding(.bottom, 12)
                     }
                 }
