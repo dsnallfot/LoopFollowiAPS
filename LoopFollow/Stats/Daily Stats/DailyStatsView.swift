@@ -303,7 +303,7 @@ struct DailyStatsView: View {
 
                         dailyBarsSection(rows: filteredRowsForHighlight)
                             .padding(.horizontal, 15)
-                            .padding(.top, 10)
+                            .padding(.top, 12)
                             .padding(.bottom, 12)
                     }
                 }
@@ -616,11 +616,15 @@ struct DailyStatsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             // Rad 1: “Du nådde ditt mål på XX% tid i ...”
                             HStack(spacing: 0) {
-                                Text("Du nådde ditt mål på ")
+                                Text("Du nådde målet ")
                                 Text(showingTitrSummary ? titrThresholdPercentString : tirThresholdPercentString)
                                     .fontWeight(.bold)
                                     .foregroundColor(Color.green.opacity(0.8))
                                 Text(showingTitrSummary ? " tid i tight målområde" : " tid i målområde ")
+                                Spacer(minLength: 0)
+
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .foregroundColor(.secondary)
                             }
 
                             // Rad 2: intervallet i grått
