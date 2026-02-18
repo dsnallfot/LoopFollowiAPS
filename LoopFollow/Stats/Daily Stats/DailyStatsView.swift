@@ -557,7 +557,7 @@ struct DailyStatsView: View {
                     Text("Verklig insulinkvot")
                         .fontWeight(.semibold)
                         .font(.subheadline)
-                        .foregroundColor(Color(.systemTeal).opacity(0.9))
+                        .foregroundColor(Color(.mint).opacity(0.9))
                     Text("per dag")
                         .fontWeight(.medium)
                         .font(.subheadline)
@@ -1456,11 +1456,11 @@ private struct RealCRandTITRChartView: UIViewRepresentable {
 
         let crSet = LineChartDataSet(entries: crEntries, label: "CR")
         crSet.axisDependency = .right
-        crSet.colors = [NSUIColor.systemTeal]
+        crSet.colors = [NSUIColor.systemMint]
         crSet.lineWidth = 1.5
         crSet.drawCirclesEnabled = true
         crSet.circleRadius = 5
-        crSet.circleColors = [NSUIColor.systemTeal]
+        crSet.circleColors = [NSUIColor.systemMint]
         crSet.drawValuesEnabled = false
         crSet.mode = .linear
         crSet.highlightEnabled = true
