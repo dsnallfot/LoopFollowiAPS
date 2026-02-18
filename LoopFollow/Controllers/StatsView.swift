@@ -59,6 +59,12 @@ extension MainViewController {
             let neededMinutes = targetMinutes - inRangeMinutesSoFar
 
             if neededMinutes <= 0 {
+                // Trigger Clippy (once per day) the first time we hit today's TIR goal,
+                // but only if user has opted in.
+                if UserDefaultsRepository.allowClippy.value {
+                    self.triggerClippyDailyTargetReachedIfNeeded(now: now)
+                }
+
                 // Show surplus as plus time + checkmark (e.g. +02:15 ⭐️)
                 return "+\(minutesToHHMM(abs(neededMinutes))) ⭐️"
             }

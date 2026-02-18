@@ -151,6 +151,9 @@ class UserDefaultsRepository {
     static let showDetails = UserDefaultsValue<Bool>(key: "showDetails", default: true)
     static let useDynCr = UserDefaultsValue<Bool>(key: "useDynCr", default: false)
     
+    // Clippy
+    static let allowClippy = UserDefaultsValue<Bool>(key: "allowClippy", default: false)
+    
     
     // Watch Calendar Settings
     static let calendarIdentifier = UserDefaultsValue<String>(key: "calendarIdentifier", default: "")

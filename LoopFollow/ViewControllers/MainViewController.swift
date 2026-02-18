@@ -48,6 +48,59 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     @IBOutlet weak var statsHeadline: UILabel!
     @IBOutlet weak var BGView: UIStackView!
     var refreshScrollView: UIScrollView!
+
+    // MARK: - Easter egg (Clippy)
+    // Toggle this from elsewhere in the app to show/hide the Clippy overlay.
+    // For UI testing you can set this to true.
+    var showClippy: Bool = false {
+        didSet {
+            // Update UI if the view is already loaded
+            if isViewLoaded {
+                updateClippyVisibility(animated: true)
+            }
+        }
+    }
+
+    /// Used to decide which message Clippy should show.
+    /// We'll add more cases later; for now we only have the daily-target-reached scenario.
+    var clippyInfoDailyTargetReached: Bool = false
+    
+    private var allowClippyObserver: NSObjectProtocol?
+
+    private var clippyImageView: UIImageView?
+
+    private static let clippyDailyTargetReachedDayKey = "clippyDailyTargetReachedDayKey" // yyyy-MM-dd
+
+    private func todayKeyString(_ date: Date = Date()) -> String {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.year, .month, .day], from: date)
+        let y = comps.year ?? 0
+        let m = comps.month ?? 0
+        let d = comps.day ?? 0
+        return String(format: "%04d-%02d-%02d", y, m, d)
+    }
+
+    /// Triggers the daily-target-reached Clippy *once per day*.
+    /// Resets automatically when the calendar day changes.
+    func triggerClippyDailyTargetReachedIfNeeded(now: Date = Date()) {
+        guard UserDefaultsRepository.allowClippy.value else { return }
+        let todayKey = todayKeyString(now)
+        let lastTriggeredDay = UserDefaults.standard.string(forKey: Self.clippyDailyTargetReachedDayKey)
+
+        // New day -> clear state so Clippy can be triggered again.
+        if lastTriggeredDay != todayKey {
+            clippyInfoDailyTargetReached = false
+        }
+
+        // Only trigger once per day.
+        guard lastTriggeredDay != todayKey else { return }
+
+        // Mark triggered for today
+        UserDefaults.standard.set(todayKey, forKey: Self.clippyDailyTargetReachedDayKey)
+
+        clippyInfoDailyTargetReached = true
+        showClippy = true
+    }
     
     // 🦄 Unicorn overlay behind BGView contents
     let unicornLabel: UILabel = {
@@ -455,6 +508,27 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             targetLogoImageView.widthAnchor.constraint(equalTo: BGView.widthAnchor, multiplier: 0.95),
             targetLogoImageView.heightAnchor.constraint(equalTo: BGView.heightAnchor, multiplier: 0.95)
         ])
+
+        // 🧷 Setup Clippy overlay (Easter egg)
+        setupClippyOverlayIfNeeded()
+        // For initial UI testing you can temporarily flip this to true.
+        //showClippy = true
+        
+        allowClippyObserver = NotificationCenter.default.addObserver(
+            forName: .allowClippyChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let self else { return }
+            let enabled = (note.userInfo?["enabled"] as? Bool) ?? true
+
+            if !enabled {
+                // Stäng ner Clippy direkt om användaren optat ut
+                self.clippyInfoDailyTargetReached = false
+                self.showClippy = false
+                self.updateClippyVisibility(animated: true)
+            }
+        }
     }
     
     deinit {
@@ -462,6 +536,9 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name("RefreshTreatmentsCacheForDay"), object: nil)
         NotificationCenter.default.removeObserver(self, name: .bluetoothHeartbeatUpdated, object: nil)
         NotificationCenter.default.removeObserver(self, name: .taskSchedulerNoTasks, object: nil)
+        if let token = allowClippyObserver {
+                NotificationCenter.default.removeObserver(token)
+            }
     }
     /// Updates the Bluetooth ping info display in the info table.
     @objc private func updateBluetoothHeartbeatInfo() {
@@ -797,6 +874,124 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alert, animated: true, completion: nil)
     }
+
+    // MARK: - Clippy overlay
+
+    private func setupClippyOverlayIfNeeded() {
+        // Avoid duplicating if viewDidLoad is called again (shouldn't, but safe)
+        if clippyImageView != nil { return }
+
+        let iv = UIImageView(image: UIImage(named: "clippy"))
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        iv.contentMode = .scaleAspectFit
+        iv.isUserInteractionEnabled = true
+        iv.alpha = 0.0
+
+        // Optional: a tiny shadow so it pops a bit
+        iv.layer.shadowColor = UIColor.black.cgColor
+        iv.layer.shadowOpacity = 0.25
+        iv.layer.shadowRadius = 6
+        iv.layer.shadowOffset = CGSize(width: 0, height: 3)
+
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleClippyTap))
+        iv.addGestureRecognizer(tap)
+
+        view.addSubview(iv)
+        clippyImageView = iv
+
+        // Align against safe area bottom + trailing
+        NSLayoutConstraint.activate([
+            iv.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: 8),
+            iv.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -5),
+            iv.widthAnchor.constraint(equalToConstant: 210),
+            iv.heightAnchor.constraint(equalToConstant: 125)
+        ])
+
+        // Apply initial state
+        updateClippyVisibility(animated: false)
+    }
+
+    private func updateClippyVisibility(animated: Bool) {
+        guard let iv = clippyImageView else { return }
+
+        if showClippy {
+            // Prepare a subtle “Windows-y” bounce in
+            // Only reset starting transform when we're currently hidden
+            if iv.alpha == 0 {
+                iv.transform = CGAffineTransform(translationX: 0, y: 10).scaledBy(x: 0.98, y: 0.98)
+            }
+
+            let changes = {
+                iv.alpha = 1.0
+                iv.transform = .identity
+            }
+
+            if animated {
+                UIView.animate(
+                    withDuration: 0.55,
+                    delay: 0,
+                    usingSpringWithDamping: 0.82,
+                    initialSpringVelocity: 0.6,
+                    options: [.allowUserInteraction, .beginFromCurrentState],
+                    animations: changes,
+                    completion: nil
+                )
+            } else {
+                changes()
+            }
+        } else {
+            let changes = {
+                iv.alpha = 0.0
+                // Tiny settle-out so it doesn’t feel abrupt
+                iv.transform = CGAffineTransform(scaleX: 0.99, y: 0.99)
+            }
+
+            if animated {
+                UIView.animate(
+                    withDuration: 0.20,
+                    delay: 0,
+                    options: [.allowUserInteraction, .beginFromCurrentState],
+                    animations: changes,
+                    completion: { _ in
+                        // Reset to identity so next show starts clean
+                        iv.transform = .identity
+                    }
+                )
+            } else {
+                changes()
+                iv.transform = .identity
+            }
+        }
+    }
+
+    @objc private func handleClippyTap() {
+        // Show a simple placeholder alert
+        let message: String
+        if clippyInfoDailyTargetReached {
+            message = "Woohoo! Du nådde ditt dagliga mål på 12h inom målområde!! ⭐️"
+        } else {
+            message = "Här kommer snart ngt intressant att visas"
+        }
+
+        let alert = UIAlertController(
+            title: "Info från Clippy!",
+            message: message,
+            preferredStyle: .alert
+        )
+
+        // Avbryt: just close, keep Clippy visible
+        alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: nil))
+
+        // Uppfattat!: close and hide Clippy, and clear info flag
+        alert.addAction(UIAlertAction(title: "Uppfattat!", style: .default, handler: { [weak self] _ in
+            guard let self = self else { return }
+            self.clippyInfoDailyTargetReached = false
+            self.showClippy = false
+            self.updateClippyVisibility(animated: true)
+        }))
+
+        present(alert, animated: true, completion: nil)
+    }
     /*
     private func setupSwipeUpToStatus() {
         let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUpToStatsView(_:)))
@@ -1118,6 +1313,21 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     
     @objc override func viewDidAppear(_ animated: Bool) {
         showHideNSDetails()
+        setupClippyOverlayIfNeeded()
+
+        // If Clippy should be shown, trigger the spring animation AFTER the view is on-screen.
+        // (Animations started during viewDidLoad often won't be visible.)
+        if showClippy {
+            // Ensure we start from hidden state so the bounce-in actually happens
+            clippyImageView?.alpha = 0.0
+            clippyImageView?.transform = .identity
+
+            DispatchQueue.main.async { [weak self] in
+                self?.updateClippyVisibility(animated: true)
+            }
+        } else {
+            updateClippyVisibility(animated: false)
+        }
     }
     
     func stringFromTimeInterval(interval: TimeInterval) -> String {

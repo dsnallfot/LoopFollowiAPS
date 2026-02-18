@@ -59,6 +59,10 @@ struct AdvancedSettingsView: View {
                                 Text("BG fördröjning (sek): \(viewModel.bgUpdateDelay)")
                             }
                         }
+                        Divider().opacity(0.35)
+                        themedRow {
+                            Toggle("Tillåt Clippy-info", isOn: $viewModel.allowClippy)
+                        }
                     }
                     .themedCardBackground()
 

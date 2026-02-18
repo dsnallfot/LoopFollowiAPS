@@ -44,6 +44,17 @@ class AdvancedSettingsViewModel: ObservableObject {
             UserDefaultsRepository.bgUpdateDelay.value = bgUpdateDelay
         }
     }
+    @Published var allowClippy: Bool {
+        didSet {
+            UserDefaultsRepository.allowClippy.value = allowClippy
+
+            NotificationCenter.default.post(
+                name: .allowClippyChanged,
+                object: nil,
+                userInfo: ["enabled": allowClippy]
+            )
+        }
+    }
     @Published var debugLogLevel: Bool {
         didSet {
             Storage.shared.debugLogLevel.value = debugLogLevel
@@ -72,6 +83,7 @@ class AdvancedSettingsViewModel: ObservableObject {
         self.graphCarbs = UserDefaultsRepository.graphCarbs.value
         self.graphOtherTreatments = UserDefaultsRepository.graphOtherTreatments.value
         self.bgUpdateDelay = UserDefaultsRepository.bgUpdateDelay.value
+        self.allowClippy = UserDefaultsRepository.allowClippy.value
         self.debugLogLevel = Storage.shared.debugLogLevel.value
         self.tempDebugLogLevel = Storage.shared.tempDebugLogLevel.value
         self.uploadAppStartNote = Storage.shared.uploadAppStartNote.value
@@ -153,4 +165,8 @@ class AdvancedSettingsViewModel: ObservableObject {
         // Optional: clear the share URL reference.
         archiveShareURL = nil
     }
+}
+
+extension Notification.Name {
+    static let allowClippyChanged = Notification.Name("allowClippyChanged")
 }
