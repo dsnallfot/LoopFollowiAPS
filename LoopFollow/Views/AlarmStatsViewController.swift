@@ -327,7 +327,11 @@ final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
         guard let startDate = calendar.date(byAdding: .day, value: -(days - 1), to: startOfToday) else { return }
 
         let raw = Storage.shared.alarmHistory
-        let windowStart = startDate.timeIntervalSince1970
+
+        // Extend window 2 hours backwards so we can include 22:00–24:00 kvällen innan första dagen,
+        // för nattlinjen som visas mot första x-axel-datumet.
+        let extendedStartDate = calendar.date(byAdding: .hour, value: -2, to: startDate) ?? startDate
+        let windowStart = extendedStartDate.timeIntervalSince1970
         let windowEnd = now.timeIntervalSince1970
 
         let alarmsInWindow = raw
@@ -350,34 +354,53 @@ final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
 
         for alarm in alarmsInWindow {
             let alarmDate = Date(timeIntervalSince1970: alarm.date)
-            let dayIndex = calendar.dateComponents([.day], from: startDate, to: calendar.startOfDay(for: alarmDate)).day ?? 0
-            guard dayIndex >= 0 && dayIndex < days else { continue }
+            let alarmDayStart = calendar.startOfDay(for: alarmDate)
 
             let kind = AlarmKind.from(alarmLabel: alarm.alarmLabel)
-
             if let kind { perKind[kind, default: 0] += 1 }
 
-            // Bar = filtrerad grupp
+            // Filtrering per vald grupp
             let includeInGroup: Bool = {
                 if let kind { return groupAllows(kind, group: group) }
                 return group == .all
             }()
 
+            // --- Nattlogik ---
+            // Natten "mot" x-axel-datumet = 22:00 dagen innan → 06:00 samma dag.
+            // Dvs:
+            //  - Larm mellan 00:00–06:00 räknas på sin kalenderdag.
+            //  - Larm mellan 22:00–24:00 räknas på nästkommande kalenderdag.
+            let comps = calendar.dateComponents([.hour, .minute], from: alarmDate)
+            let hour = comps.hour ?? 0
+            let minute = comps.minute ?? 0
+
+            if includeInGroup && (hour >= 22 || hour < 6) {
+                let bucketDayStart: Date
+                if hour >= 22 {
+                    // kväll → natt mot dagen efter
+                    bucketDayStart = calendar.date(byAdding: .day, value: 1, to: alarmDayStart) ?? alarmDayStart
+                } else {
+                    // 00–05 → natt mot samma dag
+                    bucketDayStart = alarmDayStart
+                }
+
+                let nightIndex = calendar.dateComponents([.day], from: startDate, to: bucketDayStart).day ?? 0
+                if nightIndex >= 0 && nightIndex < days {
+                    nightCounts[nightIndex] += 1
+                }
+            }
+
+            // --- Dagindex för övriga grafer/statistik (bar + scatter) ---
+            let dayIndex = calendar.dateComponents([.day], from: startDate, to: alarmDayStart).day ?? 0
+            guard dayIndex >= 0 && dayIndex < days else { continue }
+
+            // Bar = filtrerad grupp, per kalenderdag
             if includeInGroup {
                 counts[dayIndex] += 1
             }
 
-            // Scatter time-of-day
-            let comps = calendar.dateComponents([.hour, .minute], from: alarmDate)
-            let hour = comps.hour ?? 0
-            let timeOfDay = Double(hour) + Double(comps.minute ?? 0) / 60.0
-
-            // Night count (22:00–06:00) uses the same group filter, but additionally filters by hour
-            if includeInGroup {
-                if hour >= 22 || hour < 6 {
-                    nightCounts[dayIndex] += 1
-                }
-            }
+            // Scatter time-of-day (per kalenderdag, som tidigare)
+            let timeOfDay = Double(hour) + Double(minute) / 60.0
 
             if let kind {
                 if kind.isGlucose {
@@ -707,7 +730,7 @@ final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
     
     // MARK: - Chart selection → daily modal
 
-    private func presentDailyModal(for dayIndex: Int) {
+    private func presentDailyModal(for dayIndex: Int, mode: DailyBGViewMode) {
         let days = selectedDays()
         guard dayIndex >= 0 && dayIndex < days else { return }
 
@@ -717,7 +740,7 @@ final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
         guard let startDate = calendar.date(byAdding: .day, value: -(days - 1), to: startOfToday) else { return }
         guard let day = calendar.date(byAdding: .day, value: dayIndex, to: startDate) else { return }
 
-        let vc = DailyBGAndAlertsViewController(day: day)
+        let vc = DailyBGAndAlertsViewController(day: day, mode: mode)
         let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .pageSheet
         present(nav, animated: true, completion: nil)
@@ -726,7 +749,15 @@ final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
     func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
         // All three charts use x = dayIndex
         let dayIndex = Int(round(entry.x))
-        presentDailyModal(for: dayIndex)
+
+        let mode: DailyBGViewMode
+        if chartView === nightLineChartView {
+            mode = .night      // Nattvy 22:00 dagen innan → 06:00 aktuell dag
+        } else {
+            mode = .day        // Dygnsvy 00–24
+        }
+
+        presentDailyModal(for: dayIndex, mode: mode)
     }
 
     func chartValueNothingSelected(_ chartView: ChartViewBase) {
@@ -803,12 +834,17 @@ private final class AlarmDateAxisFormatter: AxisValueFormatter {
     }
 }
 
+fileprivate enum DailyBGViewMode {
+    case day
+    case night
+}
 
 // MARK: - Daily BG + Alerts modal
 
 private final class DailyBGAndAlertsViewController: ThemedViewController, ChartViewDelegate {
-
+    
     private let day: Date
+    private let mode: DailyBGViewMode
 
     // Use CombinedChartView so we can render BG as a line and alarms as scatter dots
     private let chartView = CombinedChartView()
@@ -816,8 +852,9 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
     // BG cache for nearest-point lookup when plotting alarms
     private var bgPoints: [(date: Date, mmol: Double)] = []
 
-    init(day: Date) {
+    init(day: Date, mode: DailyBGViewMode) {
         self.day = day
+        self.mode = mode
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -828,12 +865,19 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Title: "Dygnsvy: Måndag 16/2"
+        // Title: "Dygnsvy: Måndag 16/2" eller "Nattvy: Måndag 16/2"
         let df = DateFormatter()
         df.locale = Locale(identifier: "sv_SE")
         df.dateFormat = "EEEE d/M"
         let dateString = df.string(from: Calendar.current.startOfDay(for: day)).capitalized
-        title = "Dygnsvy: \(dateString)"
+
+        switch mode {
+        case .day:
+            title = "Dygnsvy: \(dateString)"
+        case .night:
+            title = "Nattvy: \(dateString)"
+        }
+
         updateBackgroundForCurrentMode()
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
@@ -899,7 +943,12 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
         chartView.legend.wordWrapEnabled = true
 
         // Marker for alarm dots
-        chartView.marker = AlarmDotMarker()
+        switch mode {
+        case .day:
+            chartView.marker = AlarmDotMarker()
+        case .night:
+            chartView.marker = AlarmDotMarkerNight()
+        }
 
         let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
 
@@ -967,23 +1016,89 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
     private func reload() {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: day)
-        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
-
         let now = Date()
-        let isToday = calendar.isDateInToday(startOfDay)
-        let effectiveEnd = isToday ? min(endOfDay, now) : endOfDay
 
-        fetchBG(from: startOfDay, to: effectiveEnd) { [weak self] bg in
+        // Bestäm tidsfönster beroende på vytyp
+        let dataStart: Date
+        let dataEnd: Date
+
+        switch mode {
+        case .day:
+            // Hela dygnet 00–24 (men klipp mot "nu" om det är idag)
+            guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
+            let isToday = calendar.isDateInToday(startOfDay)
+            let effectiveEnd = isToday ? min(endOfDay, now) : endOfDay
+            dataStart = startOfDay
+            dataEnd = effectiveEnd
+
+        case .night:
+            // Natten mot dagen: 22:00 kvällen innan → 06:00 aktuell dag
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: startOfDay) else { return }
+            let nightStart = calendar.date(bySettingHour: 22, minute: 0, second: 0, of: previousDay)
+                ?? previousDay.addingTimeInterval(22 * 3600)
+            let rawNightEnd = calendar.date(bySettingHour: 6, minute: 0, second: 0, of: startOfDay)
+                ?? startOfDay.addingTimeInterval(6 * 3600)
+            let isToday = calendar.isDateInToday(startOfDay)
+            let nightEnd = isToday ? min(rawNightEnd, now) : rawNightEnd
+            dataStart = nightStart
+            dataEnd = nightEnd
+        }
+
+        // Konfigurera x-axeln beroende på vytyp
+        let xAxis = chartView.xAxis
+        switch mode {
+        case .day:
+            xAxis.axisMinimum = 0
+            xAxis.axisMaximum = 24
+            xAxis.granularity = 3
+            xAxis.granularityEnabled = true
+            xAxis.labelCount = 9
+            xAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+                let v = Int(round(value))
+                let clamped = min(max(v, 0), 24)
+                return String(format: "%02d:00", clamped)
+            }
+            chartView.setVisibleXRangeMinimum(24)
+            chartView.setVisibleXRangeMaximum(24)
+        case .night:
+            // Intern x-skala: 0–8 h, men etiketter 22:00–06:00
+            xAxis.axisMinimum = 0
+            xAxis.axisMaximum = 8
+            xAxis.granularity = 1
+            xAxis.granularityEnabled = true
+            xAxis.labelCount = 9
+            xAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+                let v = Int(round(value))
+                let clamped = min(max(v, 0), 8)
+                let hour = (22 + clamped) % 24
+                return String(format: "%02d:00", hour)
+            }
+            chartView.setVisibleXRangeMinimum(8)
+            chartView.setVisibleXRangeMaximum(8)
+        }
+
+        fetchBG(from: dataStart, to: dataEnd) { [weak self] bg in
             guard let self = self else { return }
 
             self.bgPoints = bg
 
-            // Build BG line entries (x = hours since startOfDay)
-            let bgEntries: [ChartDataEntry] = bg.map {
-                ChartDataEntry(
-                    x: $0.date.timeIntervalSince(startOfDay) / 3600.0,
-                    y: $0.mmol
-                )
+            // Build BG line entries
+            //  - Dygnsvy: x = klockslag 0–24
+            //  - Nattvy: x = timmar sedan dataStart (22:00 kvällen innan), 0–8
+            let bgEntries: [ChartDataEntry] = bg.map { point in
+                let comps = calendar.dateComponents([.hour, .minute], from: point.date)
+                let hour = Double(comps.hour ?? 0)
+                let minute = Double(comps.minute ?? 0)
+
+                let x: Double
+                switch self.mode {
+                case .day:
+                    x = hour + minute / 60.0
+                case .night:
+                    x = point.date.timeIntervalSince(dataStart) / 3600.0
+                }
+
+                return ChartDataEntry(x: x, y: point.mmol)
             }
 
             // Split into segments on gaps > 9 min (same idea as MealAnalysisView)
@@ -1018,26 +1133,39 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
                 return ds
             }
 
-            // Alarms for the day
+            // Alarms inom samma tidsfönster som BG
             let alarms = Storage.shared.alarmHistory
-            let dayStartTS = startOfDay.timeIntervalSince1970
-            let dayEndTS = endOfDay.timeIntervalSince1970
+            let alarmStartTS = dataStart.timeIntervalSince1970
+            let alarmEndTS = dataEnd.timeIntervalSince1970
 
             var lowAlarmDots: [ChartDataEntry] = []
             var highAlarmDots: [ChartDataEntry] = []
             var otherAlarmDots: [ChartDataEntry] = []
 
-            for a in alarms where a.date >= dayStartTS && a.date < dayEndTS {
+            for a in alarms where a.date >= alarmStartTS && a.date < alarmEndTS {
                 let alarmDate = Date(timeIntervalSince1970: a.date)
                 let kind = AlarmStatsViewController.AlarmKind.from(alarmLabel: a.alarmLabel)
 
-                // x: time-of-day in hours
-                let xh = alarmDate.timeIntervalSince(startOfDay) / 3600.0
+                // x: tidsskala beroende på vytyp
+                let comps = calendar.dateComponents([.hour, .minute], from: alarmDate)
+                let hour = Double(comps.hour ?? 0)
+                let minute = Double(comps.minute ?? 0)
+
+                let xh: Double
+                switch self.mode {
+                case .day:
+                    xh = hour + minute / 60.0
+                case .night:
+                    xh = alarmDate.timeIntervalSince(dataStart) / 3600.0
+                }
 
                 // y: nearest BG mmol at ~same time (skip if we have no BG)
                 guard let yMmol = self.nearestBGValue(to: alarmDate) else { continue }
 
-                let title = kind?.title ?? (a.alarmLabel?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? (a.alarmLabel ?? "Okänt larm") : "Okänt larm")
+                let title = kind?.title
+                    ?? (a.alarmLabel?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+                        ? (a.alarmLabel ?? "Okänt larm")
+                        : "Okänt larm")
                 let payload = AlarmDotPayload(title: title, date: alarmDate)
 
                 if let kind {
@@ -1177,6 +1305,131 @@ private final class DailyBGAndAlertsViewController: ThemedViewController, ChartV
                     // late in day → place bubble to the left of the point
                     x = point.x - size.width + 10
                 } else if hx <= 6 {
+                    // early in day → place bubble to the right of the point
+                    x = point.x - 10
+                }
+            }
+            var y = point.y - size.height - 10
+
+            // Keep marker within the chart's content rect, but also within the chart's view bounds
+            // (prevents clipping near 00:00 / 24:00 and prevents drawing outside the superview)
+            if let chart = chartView {
+                // Prefer the plot/content area (excludes axes/labels)
+                let content = chart.viewPortHandler.contentRect.insetBy(dx: 4, dy: 4)
+
+                if x < content.minX { x = content.minX }
+                if x + size.width > content.maxX { x = content.maxX - size.width }
+
+                // If marker would go above the content area, flip it below the point
+                if y < content.minY { y = point.y + 10 }
+
+                // Also ensure the marker does not run below content area
+                if y + size.height > content.maxY {
+                    y = content.maxY - size.height
+                }
+
+                // Hard clamp to the chart's own bounds (chartView is not clipped by default)
+                let bounds = chart.bounds.insetBy(dx: 4, dy: 4)
+                if x < bounds.minX { x = bounds.minX }
+                if x + size.width > bounds.maxX { x = bounds.maxX - size.width }
+                if y < bounds.minY { y = bounds.minY }
+                if y + size.height > bounds.maxY { y = bounds.maxY - size.height }
+            }
+
+            let rect = CGRect(origin: CGPoint(x: x, y: y), size: size)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
+
+            // Fill
+            context.setFillColor(bgColor.cgColor)
+            context.addPath(path.cgPath)
+            context.fillPath()
+
+            // Border
+            context.setStrokeColor(borderColor.cgColor)
+            context.setLineWidth(borderWidth)
+            context.addPath(path.cgPath)
+            context.strokePath()
+
+            // Text
+            let textRect = rect.inset(by: padding)
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: textColor
+            ]
+            (text as NSString).draw(in: textRect, withAttributes: attrs)
+
+            context.restoreGState()
+        }
+
+        var size: CGSize {
+            CGSize(
+                width: textSize.width + padding.left + padding.right,
+                height: textSize.height + padding.top + padding.bottom
+            )
+        }
+    }
+    
+    private final class AlarmDotMarkerNight: MarkerView {
+
+        private let padding = UIEdgeInsets(top: 6, left: 8, bottom: 6, right: 8)
+        private let cornerRadius: CGFloat = 10
+        private let bgColor = UIColor.secondarySystemBackground.withAlphaComponent(0.95)
+        private let textColor = UIColor.label
+        private let borderColor = UIColor.white.withAlphaComponent(0.9)
+        private let borderWidth: CGFloat = 1
+        private let font = UIFont.preferredFont(forTextStyle: .caption1)
+
+        private var text: String = ""
+        private var textSize: CGSize = .zero
+        private var lastHourX: Double?
+
+        private lazy var timeFormatter: DateFormatter = {
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "sv_SE")
+            df.dateFormat = "HH:mm"
+            return df
+        }()
+
+        override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
+            lastHourX = entry.x
+            if let payload = entry.data as? AlarmDotPayload {
+                let t = timeFormatter.string(from: payload.date)
+                text = "\(t)  \(payload.title)"
+            } else {
+                text = ""
+            }
+
+            let maxWidth: CGFloat = 260
+            let constraint = CGSize(width: maxWidth, height: .greatestFiniteMagnitude)
+            let rect = (text as NSString).boundingRect(
+                with: constraint,
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                attributes: [.font: font],
+                context: nil
+            )
+            textSize = CGSize(width: ceil(rect.width), height: ceil(rect.height))
+            layoutSubviews()
+        }
+
+        override func draw(context: CGContext, point: CGPoint) {
+            guard !text.isEmpty else { return }
+
+            context.saveGState()
+            // Ensure we never draw outside the chart view
+            if let chart = chartView {
+                context.clip(to: chart.bounds)
+            }
+
+            let size = self.size
+            // Default: centered above point
+            var x = point.x - size.width / 2
+
+            // Time-based nudge so early/late points don't clip horizontally
+            if let hx = lastHourX {
+                if hx >= 4 {
+                    // late in day → place bubble to the left of the point
+                    x = point.x - size.width + 10
+                } else {
                     // early in day → place bubble to the right of the point
                     x = point.x - 10
                 }
