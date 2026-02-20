@@ -103,7 +103,7 @@ extension MainViewController {
         LogManager.shared.log(
             category: .taskScheduler,
             message: "CacheBG fetch started for day \(start)",
-            isDebug: true, isTempDebug: true
+            isDebug: true, isTempDebug: false
         )
 
         var params: [String: String] = [:]

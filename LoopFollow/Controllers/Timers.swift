@@ -52,9 +52,12 @@ extension MainViewController {
                                            repeats: false)
     }
     
-    @objc func alarmPlayingTimerDidEnd(_ timer:Timer) {
-        if AlarmSound.isPlaying {
-            stopAlarmAtNextReading()
-        }
+    @objc func alarmPlayingTimerDidEnd(_ timer: Timer) {
+        // Oavsett om ljudet fortfarande spelar eller inte vill vi:
+        // - nollställa whichAlarm
+        // - uppdatera Snooze-vyn
+        // - gömma Snooze-knapp + AlertLabel
+        // - och bara stoppa ljudet om det faktiskt spelar
+        stopAlarmAtNextReading()
     }
 }

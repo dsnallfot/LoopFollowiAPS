@@ -800,7 +800,7 @@ class StatsDataService {
             category: .analysis,
             message: "getBGData(in:) – interval start=\(interval.start), end=\(interval.end), raw=\(filtered.count), deduped=\(deduped.count)",
             isDebug: true,
-            isTempDebug: true
+            isTempDebug: false
         )
 
         // 3) Lägg i cache
@@ -837,7 +837,7 @@ class StatsDataService {
             category: .analysis,
             message: "getBGCheckDates(in:) – interval start=\(interval.start), end=\(interval.end)",
             isDebug: true,
-            isTempDebug: true
+            isTempDebug: false
         )
         return mainVC.statsBGCheckData.filter { $0 >= start && $0 <= end }
     }
@@ -850,7 +850,7 @@ class StatsDataService {
             category: .analysis,
             message: "getBolusData(in:) – interval start=\(interval.start), end=\(interval.end)",
             isDebug: true,
-            isTempDebug: true
+            isTempDebug: false
         )
         return mainVC.statsBolusData.filter { $0.date >= start && $0.date <= end }
     }
@@ -863,7 +863,7 @@ class StatsDataService {
             category: .analysis,
             message: "getSMBData(in:) – interval start=\(interval.start), end=\(interval.end)",
             isDebug: true,
-            isTempDebug: true
+            isTempDebug: false
         )
         return mainVC.statsSMBData.filter { $0.date >= start && $0.date <= end }
     }
@@ -876,7 +876,7 @@ class StatsDataService {
             category: .analysis,
             message: "getCarbData(in:) – interval start=\(interval.start), end=\(interval.end)",
             isDebug: true,
-            isTempDebug: true
+            isTempDebug: false
         )
         return mainVC.statsCarbData.filter { $0.date >= start && $0.date <= end }
     }
@@ -896,7 +896,7 @@ class StatsDataService {
                 category: .analysis,
                 message: "getDailyDeliveredBasal(in:) – cache hit for interval start=\(interval.start), end=\(interval.end)",
                 isDebug: true,
-                isTempDebug: true
+                isTempDebug: false
             )
             return cached
         }
@@ -973,7 +973,7 @@ class StatsDataService {
             category: .analysis,
             message: "StatsBasalEngine - total days=\(results.count), summedBasal=\(totalBasal)",
             isDebug: true,
-            isTempDebug: true
+            isTempDebug: false
         )
         return results
     }
@@ -1061,7 +1061,7 @@ class StatsDataService {
             category: .analysis,
             message: "StatsBasalEngine - getDailyDeliveredBasal called. isTodayOnly=\(isTodayOnly), daysToAnalyze=\(daysToAnalyze)",
             isDebug: true,
-            isTempDebug: true
+            isTempDebug: false
         )
 
         let calendar = Calendar.current

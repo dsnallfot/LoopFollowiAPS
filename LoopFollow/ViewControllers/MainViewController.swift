@@ -623,7 +623,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         if IsNightscoutEnabled(), UserDefaultsRepository.downloadTreatments.value {
             LogManager.shared.log(
                 category: .taskScheduler,
-                message: "Manual refresh: forcing WebLoadNSTreatments()", isDebug: true, isTempDebug: true
+                message: "Manual refresh: forcing WebLoadNSTreatments()", isDebug: true, isTempDebug: false
             )
             WebLoadNSTreatments()
         }
@@ -1665,7 +1665,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             category: .taskScheduler,
             message: "[TaskScheduler] No tasks reported, calling scheduleAllTasks()",
             isDebug: true,
-            isTempDebug: true
+            isTempDebug: false
         )
         scheduleAllTasks()
     }

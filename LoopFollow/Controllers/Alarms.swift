@@ -755,83 +755,9 @@ extension MainViewController {
         if timerLength < 10 { timerLength = 290}
         startAlarmPlayingTimer(time: timerLength)
     }
-    
-    /*
-    func triggerOneTimeAlarm(sound: String, overrideVolume: Bool, numLoops: Int, audio: Bool = true, latestIOB: String, latestCOB: String) {
-        
-        var audioDuringCall = true
-        if !UserDefaultsRepository.alertAudioDuringPhone.value && isOnPhoneCall() { audioDuringCall = false }
-        
-        guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
-        snoozer.updateDisplayWhenTriggered(
-            bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
-            directionVal: latestDirectionString,
-            deltaVal: latestDeltaString,
-            minAgoVal: latestMinAgoString,
-            alertLabelVal: AlarmSound.whichAlarm,
-            latestIOB: latestIOB,
-            latestCOB: latestCOB
-        )
-        
-        if audio && !UserDefaultsRepository.alertMuteAllIsMuted.value && audioDuringCall {
-            AlarmSound.setSoundFile(str: sound)
-            // Daniel: Delay playing the alarm sound by 2 seconds to synchronize with the notification
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                AlarmSound.play(overrideVolume: overrideVolume, numLoops: numLoops)
-                self.startAlarmPlayingTimer()
-            }
-        }
-    }
-    
-    func triggerAlarm(sound: String, snooozedBGReadingTime: TimeInterval?, overrideVolume: Bool, numLoops: Int, snoozeTime: Int = 0, snoozeIncrement: Int = 5, audio: Bool = true, latestIOB: String, latestCOB: String) {
-        
-        var audioDuringCall = true
-        if !UserDefaultsRepository.alertAudioDuringPhone.value && isOnPhoneCall() { audioDuringCall = false }
-        
-        guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
-        snoozer.updateDisplayWhenTriggered(
-            bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
-            directionVal: latestDirectionString,
-            deltaVal: latestDeltaString,
-            minAgoVal: latestMinAgoString,
-            alertLabelVal: AlarmSound.whichAlarm,
-            latestIOB: latestIOB,
-            latestCOB: latestCOB
-        )
-        snoozer.SnoozeButton.isHidden = false
-        snoozer.AlertLabel.isHidden = false
-        snoozer.clockLabel.isHidden = true
-        snoozer.debugTextView.isHidden = true
-        snoozer.snoozeForMinuteLabel.text = String(snoozeTime)
-        snoozer.snoozeForMinuteStepper.value = Double(snoozeTime)
-        snoozer.snoozeForMinuteStepper.stepValue = Double(snoozeIncrement)
-        if snoozeTime != 0 {
-            snoozer.snoozeForMinuteStepper.isHidden = false
-            snoozer.snoozeForMinuteLabel.isHidden = false
-        }
-        
-        tabBarController?.selectedIndex = 2
-        if let snoozedBGReadingTime = snooozedBGReadingTime {
-            UserDefaultsRepository.snoozedBGReadingTime.value = snoozedBGReadingTime
-        }
-        
-        if audio && !UserDefaultsRepository.alertMuteAllIsMuted.value && audioDuringCall {
-            AlarmSound.setSoundFile(str: sound)
-            // Daniel: Delay playing the alarm sound by 2 seconds to sync with the notification
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                AlarmSound.play(overrideVolume: overrideVolume, numLoops: numLoops)
-            }
-        }
-        
-        let bgSeconds = bgData.last!.date
-        let now = Date().timeIntervalSince1970
-        let secondsAgo = now - bgSeconds
-        var timerLength = 290 - secondsAgo
-        if timerLength < 10 { timerLength = 290 }
-        startAlarmPlayingTimer(time: timerLength)
-    }
-    */
+
     func stopAlarmAtNextReading(){
+        LogManager.shared.log(category: .alarm, message: "Alarms reset and snooze button hidden until triggered again", isTempDebug: true)
         
         AlarmSound.whichAlarm = "none"
         guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
@@ -848,6 +774,9 @@ extension MainViewController {
         )
         snoozer.SnoozeButton.isHidden = true
         snoozer.AlertLabel.isHidden = true
+        snoozer.clockLabel.isHidden = false
+        snoozer.snoozeForMinuteStepper.isHidden = true
+        snoozer.snoozeForMinuteLabel.isHidden = true
         if AlarmSound.isPlaying {
             AlarmSound.stop()
         }

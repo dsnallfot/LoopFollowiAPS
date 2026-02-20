@@ -12,7 +12,7 @@ extension MainViewController {
     func scheduleTreatmentsTask(initialDelay: TimeInterval = 5) {
         LogManager.shared.log(
             category: .taskScheduler,
-            message: "scheduleTreatmentsTask(initialDelay=\(initialDelay))", isDebug: true, isTempDebug: true
+            message: "scheduleTreatmentsTask(initialDelay=\(initialDelay))", isDebug: true, isTempDebug: false
         )
         let firstRun = Date().addingTimeInterval(initialDelay)
         TaskScheduler.shared.scheduleTask(id: .treatments, nextRun: firstRun) { [weak self] in
@@ -26,7 +26,7 @@ extension MainViewController {
         guard IsNightscoutEnabled(), UserDefaultsRepository.downloadTreatments.value else {
             LogManager.shared.log(
                 category: .taskScheduler,
-                message: "treatmentsTaskAction(): NS disabled or downloadTreatments=false, rescheduling in 60s", isDebug: true, isTempDebug: true
+                message: "treatmentsTaskAction(): NS disabled or downloadTreatments=false, rescheduling in 60s", isDebug: true, isTempDebug: false
             )
             TaskScheduler.shared.rescheduleTask(id: .treatments, to: Date().addingTimeInterval(60))
             return
