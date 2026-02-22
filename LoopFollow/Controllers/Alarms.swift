@@ -705,55 +705,71 @@ extension MainViewController {
     }
     
     func triggerAlarm(sound: String, snooozedBGReadingTime: TimeInterval?, overrideVolume: Bool, numLoops: Int, snoozeTime: Int = 0, snoozeIncrement: Int = 5, audio: Bool = true, latestIOB: String, latestCOB: String) {
+        // Small delay to allow latestDirectionString / latestDeltaString
+        // to settle (e.g. Dex -> Nightscout update race)
+        let delay: TimeInterval = 2.0
         
-        LogManager.shared.log(category: .alarm, message: "Alarm triggered: \(AlarmSound.whichAlarm)")
-        
-        // Persist alarm trigger so we can visualize frequency and types later
-        Storage.shared.appendAlarmHistory(
-            alarmLabel: AlarmSound.whichAlarm,
-            message: "Alarm triggered: \(AlarmSound.whichAlarm)",
-            date: Date().timeIntervalSince1970
-        )
-        
-        var audioDuringCall = true
-        if !UserDefaultsRepository.alertAudioDuringPhone.value && isOnPhoneCall() { audioDuringCall = false }
-        
-        guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
-        snoozer.updateDisplayWhenTriggered(
-            bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
-            directionVal: latestDirectionString,
-            deltaVal: latestDeltaString,
-            minAgoVal: latestMinAgoString,
-            alertLabelVal: AlarmSound.whichAlarm,
-            latestIOB: latestIOB,
-            latestCOB: latestCOB
-        )
-        snoozer.SnoozeButton.isHidden = false
-        snoozer.AlertLabel.isHidden = false
-        snoozer.clockLabel.isHidden = true
-        snoozer.debugTextView.isHidden = true
-        snoozer.snoozeForMinuteLabel.text = String(snoozeTime)
-        snoozer.snoozeForMinuteStepper.value = Double(snoozeTime)
-        snoozer.snoozeForMinuteStepper.stepValue = Double(snoozeIncrement)
-        if snoozeTime != 0 {
-            snoozer.snoozeForMinuteStepper.isHidden = false
-            snoozer.snoozeForMinuteLabel.isHidden = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self else { return }
+            
+            LogManager.shared.log(category: .alarm, message: "Alarm triggered: \(AlarmSound.whichAlarm)")
+            
+            // Persist alarm trigger so we can visualize frequency and types later
+            Storage.shared.appendAlarmHistory(
+                alarmLabel: AlarmSound.whichAlarm,
+                message: "Alarm triggered: \(AlarmSound.whichAlarm)",
+                date: Date().timeIntervalSince1970
+            )
+            
+            var audioDuringCall = true
+            if !UserDefaultsRepository.alertAudioDuringPhone.value && self.isOnPhoneCall() {
+                audioDuringCall = false
+            }
+            
+            guard let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController else { return }
+            
+            snoozer.updateDisplayWhenTriggered(
+                bgVal: Localizer.toDisplayUnits(String(self.bgData[self.bgData.count - 1].sgv)),
+                directionVal: self.latestDirectionString,
+                deltaVal: self.latestDeltaString,
+                minAgoVal: self.latestMinAgoString,
+                alertLabelVal: AlarmSound.whichAlarm,
+                latestIOB: latestIOB,
+                latestCOB: latestCOB
+            )
+            
+            snoozer.SnoozeButton.isHidden = false
+            snoozer.AlertLabel.isHidden = false
+            snoozer.clockLabel.isHidden = true
+            snoozer.debugTextView.isHidden = true
+            snoozer.snoozeForMinuteLabel.text = String(snoozeTime)
+            snoozer.snoozeForMinuteStepper.value = Double(snoozeTime)
+            snoozer.snoozeForMinuteStepper.stepValue = Double(snoozeIncrement)
+            
+            if snoozeTime != 0 {
+                snoozer.snoozeForMinuteStepper.isHidden = false
+                snoozer.snoozeForMinuteLabel.isHidden = false
+            }
+            
+            self.tabBarController?.selectedIndex = 2
+            
+            if snooozedBGReadingTime != nil {
+                UserDefaultsRepository.snoozedBGReadingTime.value = snooozedBGReadingTime
+            }
+            
+            if audio && !UserDefaultsRepository.alertMuteAllIsMuted.value && audioDuringCall {
+                AlarmSound.setSoundFile(str: sound)
+                AlarmSound.play(overrideVolume: overrideVolume, numLoops: numLoops)
+            }
+            
+            let bgSeconds = self.bgData.last!.date
+            let now = Date().timeIntervalSince1970
+            let secondsAgo = now - bgSeconds
+            var timerLength = 290 - secondsAgo
+            if timerLength < 10 { timerLength = 290 }
+            
+            self.startAlarmPlayingTimer(time: timerLength)
         }
-        
-        tabBarController?.selectedIndex = 2
-        if snooozedBGReadingTime != nil {
-            UserDefaultsRepository.snoozedBGReadingTime.value = snooozedBGReadingTime
-        }
-        if audio && !UserDefaultsRepository.alertMuteAllIsMuted.value && audioDuringCall {
-            AlarmSound.setSoundFile(str: sound)
-            AlarmSound.play(overrideVolume: overrideVolume, numLoops: numLoops)
-        }
-        let bgSeconds = bgData.last!.date
-        let now = Date().timeIntervalSince1970
-        let secondsAgo = now - bgSeconds
-        var timerLength = 290 - secondsAgo
-        if timerLength < 10 { timerLength = 290}
-        startAlarmPlayingTimer(time: timerLength)
     }
 
     func stopAlarmAtNextReading(){

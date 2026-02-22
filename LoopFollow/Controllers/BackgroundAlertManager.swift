@@ -96,22 +96,25 @@ class BackgroundAlertManager {
                 identifier: BackgroundAlertIdentifier.sixMin.rawValue,
                 timeInterval: BackgroundAlertDuration.sixMinutes.rawValue,
                 body: isBluetoothActive
-                ? "App inactive for 6 minutes. Verify Bluetooth connectivity."
-                : "App inactive for 6 minutes. Open to resume."
+                ? "App inaktiv i 6 minuter. Kontrollera bluetooth-anslutningen!"
+                : "App inaktiv i 6 minuter. Öppna för att aktivera igen.",
+                soundName: nil // även på natten vill vi ha default, kan ändras om du vill
             ),
             BackgroundAlert(
                 identifier: BackgroundAlertIdentifier.twelveMin.rawValue,
                 timeInterval: BackgroundAlertDuration.twelveMinutes.rawValue,
                 body: isBluetoothActive
-                ? "App inactive for 12 minutes. Verify Bluetooth connectivity."
-                : "App inactive for 12 minutes. Open to resume."
+                ? "App inaktiv i 12 minuter. Kontrollera bluetooth-anslutningen!"
+                : "App inaktiv i 12 minuter. Öppna för att aktivera igen.",
+                soundName: "Sci-Fi_Computer_Console_Alarm.caf" // NATT-ljud
             ),
             BackgroundAlert(
                 identifier: BackgroundAlertIdentifier.eighteenMin.rawValue,
                 timeInterval: BackgroundAlertDuration.eighteenMinutes.rawValue,
                 body: isBluetoothActive
-                ? "App inactive for 18 minutes. Verify Bluetooth connectivity."
-                : "App inactive for 18 minutes. Open to resume."
+                ? "App inaktiv i 18 minuter. Kontrollera bluetooth-anslutningen!"
+                : "App inaktiv i 18 minuter. Öppna för att aktivera igen.",
+                soundName: "Emergency_Alarm_Carbon_Monoxide.caf" // mest aggressiva 😅
             )
         ]
 
@@ -124,7 +127,22 @@ class BackgroundAlertManager {
                 }
             }
 
-            let content = createNotificationContent(for: notificationTitlePrefix, body: alert.body)
+            // Bestäm om det här larmet kommer att gå under dag- eller nattid
+            let now = Date()
+            let fireDate = now.addingTimeInterval(alert.timeInterval)
+            let hour = Calendar.current.component(.hour, from: fireDate)
+            // Natt: 21:00–07:00, Dag: 07:00–21:00
+            let isNightTime = (hour < 7 || hour >= 21)
+
+            // På natten: använd det definierade ljudet (om något)
+            // På dagen: alltid default notisljud, oavsett soundName i structen
+            let effectiveSoundName: String? = isNightTime ? alert.soundName : nil
+
+            let content = createNotificationContent(
+                for: notificationTitlePrefix,
+                body: alert.body,
+                soundName: effectiveSoundName
+            )
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: alert.timeInterval, repeats: false)
             let request = UNNotificationRequest(identifier: alert.identifier, content: content, trigger: trigger)
 
@@ -145,11 +163,18 @@ class BackgroundAlertManager {
     ///   - title: The title of the notification.
     ///   - body: The body text of the notification.
     /// - Returns: Configured `UNMutableNotificationContent` object.
-    private func createNotificationContent(for title: String, body: String) -> UNMutableNotificationContent {
+    private func createNotificationContent(for title: String, body: String, soundName: String?) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = .defaultCritical
+
+        if let soundName = soundName {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(soundName))
+        } else {
+            content.sound = .default
+        }
+
+        content.interruptionLevel = .timeSensitive
         content.categoryIdentifier = "loopfollow.background.alert"
         return content
     }
@@ -174,4 +199,5 @@ struct BackgroundAlert {
     let identifier: String
     let timeInterval: TimeInterval
     let body: String
+    let soundName: String?
 }
