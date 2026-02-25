@@ -398,7 +398,7 @@ struct BackgroundRefreshSettingsView: View {
     }
 
     private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
             self.forceRefresh.toggle()
         }
     }

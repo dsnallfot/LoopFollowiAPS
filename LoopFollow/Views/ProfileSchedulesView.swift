@@ -532,6 +532,31 @@ private struct UserDataViewController: View {
         return df
     }()
 
+    // Helper to format date and append (Xår Yd) age if in past
+    private static func formattedDateWithAge(_ date: Date?) -> String {
+        guard let date else { return "ÅÅ-MM-DD" }
+
+        let base = shortDateFormatter.string(from: date)
+        let now = Date()
+        let calendar = Calendar.current
+
+        // If the date is in the future, just return the formatted date without age.
+        guard date <= now else {
+            return base
+        }
+
+        // First compute full years between date and now.
+        let yearComponents = calendar.dateComponents([.year], from: date, to: now)
+        let years = yearComponents.year ?? 0
+
+        // Then compute remaining days after subtracting those full years.
+        let dateAfterYears = calendar.date(byAdding: .year, value: years, to: date) ?? date
+        let dayComponents = calendar.dateComponents([.day], from: dateAfterYears, to: now)
+        let days = dayComponents.day ?? 0
+
+        return String(format: "%@ (%då %dd)", base, years, days)
+    }
+
     var body: some View {
         ZStack {
             //ThemeBackground()
@@ -541,7 +566,7 @@ private struct UserDataViewController: View {
                 // Header: profilbild + senaste profilinfo
                 let imageSide = UIScreen.main.bounds.width / 4
 
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: .top, spacing: 8) {
                     // Frame 1: Profilbild
                     PhotosPicker(selection: $selectedItem, matching: .images) {
                         ZStack {
@@ -588,7 +613,7 @@ private struct UserDataViewController: View {
                     Spacer()
 
                     // Frames 2 & 3: Rubriker + värden
-                    HStack(alignment: .top, spacing: 24) {
+                    HStack(alignment: .top, spacing: 12) {
                         // Frame 2: Rubriker
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Namn:")
@@ -603,8 +628,8 @@ private struct UserDataViewController: View {
                         // Frame 3: Värden (senaste profil eller placeholders)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(profile?.name ?? "För- Efternamn")
-                            Text(profile?.birthDate.map { Self.shortDateFormatter.string(from: $0) } ?? "ÅÅ-MM-DD")
-                            Text(profile?.t1dSince.map { Self.shortDateFormatter.string(from: $0) } ?? "ÅÅ-MM-DD")
+                            Text(Self.formattedDateWithAge(profile?.birthDate))
+                            Text(Self.formattedDateWithAge(profile?.t1dSince))
                             Text(profile?.heightCm.map { String(format: "%.1f cm", $0) } ?? "-- cm")
                             Text({
                                 if let weight = profile?.weightKg,
@@ -629,8 +654,8 @@ private struct UserDataViewController: View {
                     .frame(height: imageSide, alignment: .top)
                 }
                 .padding(.vertical, 16)
-                .padding(.leading, 36)
-                .padding(.trailing, 36)
+                .padding(.leading, 24)
+                .padding(.trailing, 16)
                 Divider()
 
                 // Sektion: tabell med historik

@@ -17,6 +17,13 @@ struct BLEDeviceSelectionView: View {
     // MARK: - Constants for BG delay thresholds
     let goodDelay = 90
     let okDelay = 180
+    
+    // Shared formatter for activation dates
+    private static let activationFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return df
+    }()
 
     // MARK: - Computed Property for Filtered Devices
     var filteredDevices: [BLEDevice] {
@@ -28,7 +35,10 @@ struct BLEDeviceSelectionView: View {
 
     // MARK: - Body
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let dexcomMode = Storage.shared.backgroundRefreshType.value == .dexcom
+        let suggestion = dexcomMode ? bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60) : nil
+
+        return VStack(alignment: .leading, spacing: 0) {
             if filteredDevices.isEmpty {
                 Text("Inga enheter funna ännu. De dyker upp här när de har identifierats.")
                     .foregroundColor(.secondary)
@@ -43,20 +53,16 @@ struct BLEDeviceSelectionView: View {
                             let deviceName = device.name ?? "Okänd"
                             let isHit: Bool = {
                                 // Only show hit-markers for Dexcom mode (5-min cycle alignment)
-                                guard Storage.shared.backgroundRefreshType.value == .dexcom,
+                                guard dexcomMode,
                                       BackgroundRefreshType.dexcom.matches(device),
-                                      let suggestion = bleManager.suggestedHeartbeatOffsetForNextSensor(optimalWindow: 40...60),
+                                      let suggestion,
                                       let d = bleManager.expectedSensorFetchOffsetSeconds(for: device)
                                 else { return false }
 
                                 // Exclude very old sensors (> manyDaysOld days) from being marked as hits
                                 if let sensorID = device.name,
                                    let activationStr = Storage.shared.latestActivationDate(for: sensorID) {
-                                    let formatter: DateFormatter = {
-                                        let df = DateFormatter()
-                                        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                                        return df
-                                    }()
+                                    let formatter = Self.activationFormatter
 
                                     if let activationDate = formatter.date(from: activationStr) {
                                         let ageDays = Calendar.current.dateComponents([.day], from: activationDate, to: Date()).day ?? 0
@@ -80,12 +86,7 @@ struct BLEDeviceSelectionView: View {
                             if let sensorID = device.name,
                                let activationDateStr = Storage.shared.latestActivationDate(for: sensorID) {
                                 Group {
-                                    // Create a date formatter using a closure so that let-statements are enclosed
-                                    let formatter: DateFormatter = {
-                                        let df = DateFormatter()
-                                        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                                        return df
-                                    }()
+                                    let formatter = Self.activationFormatter
 
                                     if let activationDate = formatter.date(from: activationDateStr) {
                                         // Compute threshold dates
@@ -111,7 +112,7 @@ struct BLEDeviceSelectionView: View {
                             }
 
                             // Expected BG Delay with color logic (for Dexcom devices only)
-                            if Storage.shared.backgroundRefreshType.value == .dexcom,
+                            if dexcomMode,
                                let offsetStr = BLEManager.shared.expectedSensorFetchOffsetString(for: device) {
                                 Group {
                                     // Expect offset string like "120 sek" – get the number portion.
