@@ -441,7 +441,14 @@ final class AlarmStatsViewController: ThemedViewController, ChartViewDelegate {
         statRows = buildStats(days: days, startDate: startDate, now: now, alarms: filteredForStats, counts: counts)
 
         // Section 2: alltid lista alla 17 cases
-        alarmCaseRows = AlarmKind.allCases.map { AlarmCaseRow(title: $0.title, count: perKind[$0, default: 0]) }
+        alarmCaseRows = AlarmKind.allCases
+            .map { AlarmCaseRow(title: $0.title, count: perKind[$0, default: 0]) }
+            .sorted { lhs, rhs in
+                if lhs.count == rhs.count {
+                    return lhs.title < rhs.title
+                }
+                return lhs.count > rhs.count
+            }
 
         tableView.reloadData()
 
@@ -778,7 +785,7 @@ extension AlarmStatsViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch section {
         case 0: return nil
-        default: return "Antal larm per typ"
+        default: return "Topplista typ av larm"
         }
     }
 
