@@ -130,16 +130,35 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     
     func updateDisplayWhenTriggered(bgVal: String, directionVal: String, deltaVal: String, minAgoVal: String, alertLabelVal: String, latestIOB: String, latestCOB: String) {
         loadViewIfNeeded()
-        
+
         // Replace commas with periods in bgVal and deltaVal
         let bgValWithPeriod = bgVal.replacingOccurrences(of: ",", with: ".")
         let deltaValWithPeriod = deltaVal.replacingOccurrences(of: ",", with: ".")
-        
-        BGLabel.text = bgValWithPeriod
+
+        // Normalize LOW/HIGH so Snoozer always shows "LÅG" / "HÖG"
+        // Callers may pass either mmol/L (e.g. 2.2 / 22.2) or mg/dL (e.g. 40 / 400) display strings.
+        let normalizedBGDisplay: String = {
+            // Fast path for exact strings
+            if bgValWithPeriod == "2.2" || bgValWithPeriod <= "40" {
+                return "LÅG"
+            }
+            if bgValWithPeriod == "22.2" || bgValWithPeriod >= "400" {
+                return "HÖG"
+            }
+
+            // Tolerant numeric check (guards against formatting like "2.20")
+            if let v = Double(bgValWithPeriod) {
+                if abs(v - 2.2) < 0.0001 || abs(v - 40.0) < 0.0001 { return "LÅG" }
+                if abs(v - 22.2) < 0.0001 || abs(v - 400.0) < 0.0001 { return "HÖG" }
+            }
+            return bgValWithPeriod
+        }()
+
+        BGLabel.text = normalizedBGDisplay
         // 🦄 Show/hide unicorn for exactly 5.5 mmol/L
-        updateUnicornVisibility(forBGDisplayString: bgValWithPeriod)
-        update67HandsVisibility(forBGDisplayString: bgValWithPeriod)
-        updateTargetLogoVisibility(forBGDisplayString: bgValWithPeriod)
+        updateUnicornVisibility(forBGDisplayString: normalizedBGDisplay)
+        update67HandsVisibility(forBGDisplayString: normalizedBGDisplay)
+        updateTargetLogoVisibility(forBGDisplayString: normalizedBGDisplay)
         DirectionLabel.text = directionVal
         DeltaLabel.text = deltaValWithPeriod
         MinAgoLabel.text = minAgoVal
