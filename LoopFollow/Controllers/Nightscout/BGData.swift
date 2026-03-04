@@ -498,16 +498,19 @@ extension MainViewController {
             var snoozerDelta = ""
             
             // Set BGText with the latest BG value
-            let bgValueToModify = latestBG
+            // NOTE: `latestBG` (sgv) is always mg/dL (from NS/Dex).
+            // We only convert for display via `Localizer.toDisplayUnits(...)`.
+            // Dexcom “LOW/HIGH” are represented as 40 / 400 mg/dL, regardless of display units.
+            let bgValueMgdl = latestBG
 
             let bgDisplay: String
-            if abs(Double(bgValueToModify) - 2.2) < 0.0001 {
+            if bgValueMgdl == 40 {
                 bgDisplay = "LÅG"
-            } else if abs(Double(bgValueToModify) - 22.2) < 0.0001 {
+            } else if bgValueMgdl == 400 {
                 bgDisplay = "HÖG"
             } else {
                 bgDisplay = Localizer
-                    .toDisplayUnits(String(bgValueToModify))
+                    .toDisplayUnits(String(latestBG))
                     .replacingOccurrences(of: ",", with: ".")
             }
             self.BGText.text = bgDisplay
