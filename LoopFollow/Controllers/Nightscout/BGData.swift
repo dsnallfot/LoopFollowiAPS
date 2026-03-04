@@ -504,9 +504,9 @@ extension MainViewController {
             let bgValueMgdl = latestBG
 
             let bgDisplay: String
-            if bgValueMgdl == 40 {
+            if bgValueMgdl <= 40 {
                 bgDisplay = "LÅG"
-            } else if bgValueMgdl == 400 {
+            } else if bgValueMgdl >= 400 {
                 bgDisplay = "HÖG"
             } else {
                 bgDisplay = Localizer
