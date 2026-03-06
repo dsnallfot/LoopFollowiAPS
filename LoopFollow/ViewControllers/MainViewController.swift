@@ -71,6 +71,8 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     private var allowClippyObserver: NSObjectProtocol?
 
     private var clippyImageView: UIImageView?
+    private var clippyIdleBounceTimer: Timer?
+    private var isClippyIdleBounceAnimating = false
 
     private static let clippyDailyTargetReachedDayKey = "clippyDailyTargetReachedDayKey" // yyyy-MM-dd
 
@@ -536,6 +538,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     }
     
     deinit {
+        stopClippyIdleBounceLoop()
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name("refresh"), object: nil)
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name("RefreshTreatmentsCacheForDay"), object: nil)
         NotificationCenter.default.removeObserver(self, name: .bluetoothHeartbeatUpdated, object: nil)
@@ -930,6 +933,10 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                 iv.transform = .identity
             }
 
+            let startIdleBounce = { [weak self] in
+                self?.startClippyIdleBounceLoop()
+            }
+
             if animated {
                 UIView.animate(
                     withDuration: 0.55,
@@ -938,12 +945,17 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                     initialSpringVelocity: 0.6,
                     options: [.allowUserInteraction, .beginFromCurrentState],
                     animations: changes,
-                    completion: nil
+                    completion: { _ in
+                        startIdleBounce()
+                    }
                 )
             } else {
                 changes()
+                startIdleBounce()
             }
         } else {
+            stopClippyIdleBounceLoop()
+
             let changes = {
                 iv.alpha = 0.0
                 // Tiny settle-out so it doesn’t feel abrupt
@@ -966,6 +978,64 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                 iv.transform = .identity
             }
         }
+    }
+    
+    private func startClippyIdleBounceLoop() {
+        guard showClippy, let iv = clippyImageView else { return }
+        guard clippyIdleBounceTimer == nil else { return }
+
+        // Ensure we start from a clean resting state
+        iv.layer.removeAllAnimations()
+        iv.transform = .identity
+        isClippyIdleBounceAnimating = false
+
+        clippyIdleBounceTimer = Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { [weak self] _ in
+            guard let self = self, self.showClippy, let iv = self.clippyImageView else {
+                self?.stopClippyIdleBounceLoop()
+                return
+            }
+
+            guard !self.isClippyIdleBounceAnimating else { return }
+            self.isClippyIdleBounceAnimating = true
+
+            UIView.animate(
+                withDuration: 0.55,
+                delay: 0,
+                usingSpringWithDamping: 0.88,
+                initialSpringVelocity: 0.25,
+                options: [.allowUserInteraction, .beginFromCurrentState],
+                animations: {
+                    iv.transform = CGAffineTransform(translationX: 0, y: -8)
+                },
+                completion: { _ in
+                    UIView.animate(
+                        withDuration: 0.75,
+                        delay: 0,
+                        usingSpringWithDamping: 0.92,
+                        initialSpringVelocity: 0.15,
+                        options: [.allowUserInteraction, .beginFromCurrentState],
+                        animations: {
+                            iv.transform = .identity
+                        },
+                        completion: { [weak self] _ in
+                            self?.isClippyIdleBounceAnimating = false
+                        }
+                    )
+                }
+            )
+        }
+
+        if let timer = clippyIdleBounceTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
+    }
+
+    private func stopClippyIdleBounceLoop() {
+        clippyIdleBounceTimer?.invalidate()
+        clippyIdleBounceTimer = nil
+        isClippyIdleBounceAnimating = false
+        clippyImageView?.layer.removeAllAnimations()
+        clippyImageView?.transform = .identity
     }
 
     @objc private func handleClippyTap() {
