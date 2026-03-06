@@ -64,6 +64,9 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     /// Used to decide which message Clippy should show.
     /// We'll add more cases later; for now we only have the daily-target-reached scenario.
     var clippyInfoDailyTargetReached: Bool = false
+
+    /// Timestamp for when the daily target was reached (used in the Clippy message)
+    var clippyDailyTargetReachedTime: Date?
     
     private var allowClippyObserver: NSObjectProtocol?
 
@@ -98,6 +101,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         // Mark triggered for today
         UserDefaults.standard.set(todayKey, forKey: Self.clippyDailyTargetReachedDayKey)
 
+        clippyDailyTargetReachedTime = now
         clippyInfoDailyTargetReached = true
         showClippy = true
     }
@@ -968,7 +972,14 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         // Show a simple placeholder alert
         let message: String
         if clippyInfoDailyTargetReached {
-            message = "Woohoo! Du nådde ditt dagliga mål på 12h inom målområde!! ⭐️"
+            if let ts = clippyDailyTargetReachedTime {
+                let df = DateFormatter()
+                df.dateFormat = "HH:mm"
+                let timeString = df.string(from: ts)
+                message = "Woohoo! Du nådde ditt dagliga mål på 12h inom målområde kl \(timeString)!! ⭐️"
+            } else {
+                message = "Woohoo! Du nådde ditt dagliga mål på 12h inom målområde!! ⭐️"
+            }
         } else {
             message = "Här kommer snart ngt intressant att visas"
         }
