@@ -139,10 +139,10 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         // Callers may pass either mmol/L (e.g. 2.2 / 22.2) or mg/dL (e.g. 40 / 400) display strings.
         let normalizedBGDisplay: String = {
             // Fast path for exact strings
-            if bgValWithPeriod == "2.2" || bgValWithPeriod <= "40" {
+            if bgValWithPeriod == "2.2" || bgValWithPeriod == "40" {
                 return "LÅG"
             }
-            if bgValWithPeriod == "22.2" || bgValWithPeriod >= "400" {
+            if bgValWithPeriod == "22.2" || bgValWithPeriod == "400" {
                 return "HÖG"
             }
 
