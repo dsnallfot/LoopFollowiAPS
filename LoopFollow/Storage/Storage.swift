@@ -135,6 +135,15 @@ struct AlarmHistoryEntry: Codable, Equatable {
     }
 }
 
+struct ClippyDailyTargetHistoryEntry: Codable, Equatable {
+    /// Unix timestamp (seconds since 1970) for when the daily target was reached.
+    var date: TimeInterval
+
+    static func == (lhs: ClippyDailyTargetHistoryEntry, rhs: ClippyDailyTargetHistoryEntry) -> Bool {
+        return lhs.date == rhs.date
+    }
+}
+
 struct UserProfileEntry: Codable, Equatable {
     var name: String
     var birthDate: Date?
@@ -232,6 +241,68 @@ extension Storage {
                 )
             }
         }
+    }
+    
+    // MARK: - Clippy daily target history (for visualization / analytics)
+
+    var clippyDailyTargetHistory: [ClippyDailyTargetHistoryEntry] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "clippyDailyTargetHistory") else {
+                return []
+            }
+            do {
+                return try JSONDecoder().decode([ClippyDailyTargetHistoryEntry].self, from: storedData)
+            } catch {
+                LogManager.shared.log(
+                    category: .general,
+                    message: "Failed to decode clippyDailyTargetHistory, resetting to empty array: \(error)"
+                )
+                UserDefaults.standard.removeObject(forKey: "clippyDailyTargetHistory")
+                return []
+            }
+        }
+        set {
+            do {
+                let encoded = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encoded, forKey: "clippyDailyTargetHistory")
+            } catch {
+                LogManager.shared.log(
+                    category: .general,
+                    message: "Failed to encode clippyDailyTargetHistory: \(error)"
+                )
+            }
+        }
+    }
+
+    /// Appends the first daily-target-reached timestamp for a calendar day
+    /// and keeps only the last 90 days.
+    func appendClippyDailyTargetHistory(date: Date = Date()) {
+        let calendar = Calendar.current
+        let cutoffDate = calendar.date(byAdding: .day, value: -90, to: date)
+            ?? date.addingTimeInterval(-(90 * 24 * 60 * 60))
+        let cutoffTimestamp = cutoffDate.timeIntervalSince1970
+        let newTimestamp = date.timeIntervalSince1970
+
+        // Behåll bara senaste 90 dagarna
+        var history = clippyDailyTargetHistory.filter { $0.date >= cutoffTimestamp }
+
+        // Spara bara första träffen per kalenderdag
+        let alreadyHasEntryForDay = history.contains { entry in
+            let entryDate = Date(timeIntervalSince1970: entry.date)
+            return calendar.isDate(entryDate, inSameDayAs: date)
+        }
+
+        guard !alreadyHasEntryForDay else {
+            clippyDailyTargetHistory = history.sorted { $0.date < $1.date }
+            return
+        }
+
+        history.append(ClippyDailyTargetHistoryEntry(date: newTimestamp))
+        history = history
+            .filter { $0.date >= cutoffTimestamp }
+            .sorted { $0.date < $1.date }
+
+        clippyDailyTargetHistory = history
     }
     
     // MARK: - Alarm history (for visualization / analytics)

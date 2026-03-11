@@ -104,6 +104,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         UserDefaults.standard.set(todayKey, forKey: Self.clippyDailyTargetReachedDayKey)
 
         clippyDailyTargetReachedTime = now
+        Storage.shared.appendClippyDailyTargetHistory(date: now)
         clippyInfoDailyTargetReached = true
         showClippy = true
     }
