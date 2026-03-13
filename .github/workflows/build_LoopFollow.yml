@@ -199,7 +199,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
         ruby-version: 3.3
-        
+
       # Install project dependencies
       - name: Install Project Dependencies
         run: bundle install
