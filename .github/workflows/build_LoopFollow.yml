@@ -195,11 +195,6 @@ jobs:
             exit 1
           fi
 
-      - name: Set up Ruby 3.3
-        uses: ruby/setup-ruby@v1
-        with:
-        ruby-version: 3.3
-
       # Install project dependencies
       - name: Install Project Dependencies
         run: bundle install
