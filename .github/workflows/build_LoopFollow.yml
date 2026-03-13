@@ -7,7 +7,7 @@ on:
     #   Later logic builds if there are updates or if it is the 2nd Sunday of the month
     - cron: "17 10 * * 0" # Sunday at UTC 10:17
 
-env:  
+env:
   GH_PAT: ${{ secrets.GH_PAT }}
   UPSTREAM_REPO: loopandlearn/LoopFollow
   UPSTREAM_BRANCH: ${{ github.ref_name }} # branch on upstream repository to sync from (replace with specific branch name if needed)
@@ -165,7 +165,7 @@ jobs:
   build:
     name: Build
     needs: [check_certs, check_status]
-    runs-on: macos-15
+    runs-on: macos-26
     permissions:
       contents: write
     if:
@@ -174,25 +174,8 @@ jobs:
         (vars.SCHEDULED_BUILD != 'false' && needs.check_status.outputs.IS_SECOND_IN_MONTH == 'true') ||
         (vars.SCHEDULED_SYNC != 'false' && needs.check_status.outputs.NEW_COMMITS == 'true' )
     steps:
-      - name: Setup Xcode 26.0 (stable)
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '26.0'
-
-      - name: Ensure iOS platform/runtime is installed
-        run: |
-          sudo xcodebuild -downloadPlatform iOS || true
-          sudo xcodebuild -downloadAllPlatforms || true
-
-      - name: Pin DEVELOPER_DIR for Fastlane and clear FASTLANE_XCODE_PATH
-        run: |
-          echo "DEVELOPER_DIR=$(xcode-select -p)" >> $GITHUB_ENV
-          echo "FASTLANE_XCODE_PATH=" >> $GITHUB_ENV
-
-      - name: Show Xcode and SDKs
-        run: |
-          xcodebuild -version
-          xcodebuild -showsdks
+      - name: Select Xcode version
+        run: "sudo xcode-select --switch /Applications/Xcode_26.2.app/Contents/Developer"
 
       - name: Checkout Repo for building
         uses: actions/checkout@v4
