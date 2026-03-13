@@ -49,7 +49,7 @@ platform :ios do
     increment_build_number(
       xcodeproj: "#{GITHUB_WORKSPACE}/LoopFollow.xcodeproj",
       build_number: current_build_number
-    )      
+    )
     
     match(
       type: "appstore",
@@ -66,7 +66,7 @@ platform :ios do
     update_code_signing_settings(
       path: "#{GITHUB_WORKSPACE}/LoopFollow.xcodeproj",
       profile_name: mapping["com.#{TEAMID}.LoopFollow"],
-      code_sign_identity: "Apple Distribution",
+      code_sign_identity: "iPhone Distribution",
       targets: ["LoopFollow"]
     )
 
@@ -125,6 +125,7 @@ platform :ios do
     end
 
     configure_bundle_id("LoopFollow", "com.#{TEAMID}.LoopFollow", [
+      Spaceship::ConnectAPI::BundleIdCapability::Type::PUSH_NOTIFICATIONS
     ])
     
   end
@@ -237,7 +238,7 @@ platform :ios do
   
     # Write result to new_certificate_needed.txt
     file_path = File.expand_path('new_certificate_needed.txt')
-    File.write(file_path, new_certificate_needed ? 'true' : 'false')  
+    File.write(file_path, new_certificate_needed ? 'true' : 'false')
   
     # Log the absolute path and contents of the new_certificate_needed.txt file
     puts ""
