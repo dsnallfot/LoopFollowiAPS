@@ -34,10 +34,18 @@ struct ProfileSchedulesView: View {
     @State private var isImportingUserCSV: Bool = false
     @State private var userCSVDocument: UserProfileCSVDocument = UserProfileCSVDocument(text: "")
     @State private var userCSVImportError: String?
+    
+    private static let sickDayDateFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyyy-MM-dd"
+        return df
+    }()
 
     enum Mode: String, CaseIterable {
         case user = "Hälsodata"
-        case profile = "Profilinställningar"
+        case sick = "Sjukdagar"
+        case profile = "Profilinställning"
     }
 
     enum SectionType: String, CaseIterable {
@@ -161,6 +169,55 @@ struct ProfileSchedulesView: View {
     private func openSettingsLog(for term: String) {
         selectedLogSearchItem = LogSearchItem(term: term)
     }
+    
+    private func presentSickDayAnalysis(for entry: SickDayHistoryEntry) {
+        let entryDate = Date(timeIntervalSince1970: entry.date)
+        let calendar = Calendar.current
+        let startDate = calendar.startOfDay(for: entryDate)
+        let endDate = calendar.date(byAdding: .day, value: 1, to: startDate)
+
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+            let tabBar = window.rootViewController as? UITabBarController,
+            let tabViewControllers = tabBar.viewControllers
+        else {
+            return
+        }
+
+        var mainVC: MainViewController?
+
+        for vc in tabViewControllers {
+            if let nav = vc as? UINavigationController {
+                if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = candidate
+                    break
+                }
+            } else if let candidate = vc as? MainViewController {
+                mainVC = candidate
+                break
+            }
+        }
+
+        guard let mainVC, let endDate else {
+            return
+        }
+
+        let events = mainVC.buildEventsForMealAnalysis()
+
+        let analysisVC = MealAnalysisView(
+            events: events,
+            initialStart: startDate,
+            initialEnd: endDate,
+            modalWithTimestamp: true,
+            modalTitleString: entry.notes,
+            preSelectedSegment: 6
+        )
+
+        let nav = UINavigationController(rootViewController: analysisVC)
+        nav.modalPresentationStyle = .formSheet
+        window.rootViewController?.present(nav, animated: true)
+    }
 
     @ViewBuilder
     private var modePickerView: some View {
@@ -173,6 +230,29 @@ struct ProfileSchedulesView: View {
         .padding(.top)
         .padding(.bottom, 6)
         .padding(.horizontal)
+    }
+    
+    @ViewBuilder
+    private var sickDayModeContent: some View {
+        List {
+            ForEach(viewModel.sickDayEntries, id: \.date) { entry in
+                HStack {
+                    Text(entry.notes)
+                        .font(.subheadline.monospacedDigit())
+                    Spacer()
+                    Text(Self.sickDayDateFormatter.string(from: Date(timeIntervalSince1970: entry.date)))
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundColor(.secondary)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    presentSickDayAnalysis(for: entry)
+                }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
     }
 
     @ViewBuilder
@@ -294,14 +374,21 @@ struct ProfileSchedulesView: View {
                 modePickerView
 
                 if selectedMode == .profile {
-                    profileModeContent
-                } else {
-                    UserDataViewController()
-                }
+                                    profileModeContent
+                                } else if selectedMode == .sick {
+                                    sickDayModeContent
+                                } else {
+                                    UserDataViewController()
+                                }
             }
         }
-        .navigationTitle(selectedMode == .user ? "Hälsodata" : "Profilinställningar")
+        .navigationTitle(selectedMode.rawValue)
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: selectedMode) { _, newMode in
+            if newMode == .sick {
+                viewModel.reloadSickDays()
+            }
+        }
         .sheet(item: $selectedLogSearchItem) { item in
             ZStack {
                 // Lägg till bakgrunden här för att fylla hela modalen
@@ -331,7 +418,7 @@ struct ProfileSchedulesView: View {
                         Image(systemName: "info")
                     }
                     .accessibilityLabel("Profil laddades ner:")
-                } else {
+                } else if selectedMode == .user {
                     HStack {
                         Button {
                             showAddUserData = true
@@ -340,9 +427,8 @@ struct ProfileSchedulesView: View {
                         }
                         .padding(.leading, 2)
                         .accessibilityLabel("Lägg till användardata")
-                        
+
                         Button {
-                            // Förbered CSV-dokument och trigga export
                             let csv = Storage.shared.exportUserProfilesCSV()
                             userCSVDocument = UserProfileCSVDocument(text: csv)
                             isExportingUserCSV = true
@@ -350,13 +436,12 @@ struct ProfileSchedulesView: View {
                             Image(systemName: "square.and.arrow.up")
                         }
                         .accessibilityLabel("Exportera användardata (CSV)")
-                        
+
                         Button {
                             isImportingUserCSV = true
                         } label: {
                             Image(systemName: "square.and.arrow.down")
                         }
-                        //.padding(.trailing, 6)
                         .accessibilityLabel("Importera användardata (CSV)")
                     }
                 }

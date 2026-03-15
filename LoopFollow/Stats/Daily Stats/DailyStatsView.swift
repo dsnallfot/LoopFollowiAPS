@@ -37,17 +37,17 @@ struct DailyStatsView: View {
         return (base / totalBaseColumnWidth) * availableWidth
     }
     
-    private var weekdayWidth: CGFloat { scaledColumnWidth(base: 26) }
-    private var dateWidth: CGFloat { scaledColumnWidth(base: 54) }
-    private var carbsWidth: CGFloat { scaledColumnWidth(base: 36) }
-    private var insulinWidth: CGFloat { scaledColumnWidth(base: 36) }
+    private var weekdayWidth: CGFloat { scaledColumnWidth(base: 25) }
+    private var dateWidth: CGFloat { scaledColumnWidth(base: 51) }
+    private var carbsWidth: CGFloat { scaledColumnWidth(base: 35) }
+    private var insulinWidth: CGFloat { scaledColumnWidth(base: 35) }
     private var meanWidth: CGFloat { scaledColumnWidth(base: 36) }
     private var lowWidth: CGFloat { scaledColumnWidth(base: 30) }
     private var titrWidth: CGFloat { scaledColumnWidth(base: 30) }
     private var tirWidth: CGFloat { scaledColumnWidth(base: 30) }
     private var stdWidth: CGFloat { scaledColumnWidth(base: 32) }
     private var profileWidth: CGFloat { scaledColumnWidth(base: 36) }
-    private var emptyWidth: CGFloat { scaledColumnWidth(base: 10) }
+    private var emojiWidth: CGFloat { scaledColumnWidth(base: 16) }
     
     private let columnSpacing: CGFloat = 1
     
@@ -72,6 +72,14 @@ struct DailyStatsView: View {
                                 if viewModel.useSensorChangeDays {
                                     // Sensorbytesdagar-filter aktivt
                                     return ("sensor.tag.radiowaves.forward", .blue)
+                                }
+                                if viewModel.useSickDays {
+                                    // Sjukdagar-filter aktivt
+                                    return ("medical.thermometer", .blue)
+                                }
+                                if viewModel.useNonSickDays {
+                                    // Ej sjukdagar-filter aktivt
+                                    return ("figure.taichi", .blue)
                                 }
 
                                 let weekdayCount = viewModel.selectedWeekdays.count
@@ -165,6 +173,14 @@ struct DailyStatsView: View {
                             useSensorChangeDays: Binding(
                                 get: { viewModel.useSensorChangeDays },
                                 set: { viewModel.useSensorChangeDays = $0 }
+                            ),
+                            useSickDays: Binding(
+                                get: { viewModel.useSickDays },
+                                set: { viewModel.useSickDays = $0 }
+                            ),
+                            useNonSickDays: Binding(
+                                get: { viewModel.useNonSickDays },
+                                set: { viewModel.useNonSickDays = $0 }
                             )
                         )
                         .navigationTitle("Filtrera tabellen")
@@ -262,7 +278,7 @@ struct DailyStatsView: View {
                                         tirCell(row.timeInRangePercent)
                                         stdDevCell(stdDev: row.stdDevMmol, mean: row.meanGlucoseMmol)
                                         numberCell(row.profileBasal, width: profileWidth)
-                                        emptyCell(row.emptyInfo, width: emptyWidth)
+                                        emojiCell(row.emojiDayInfo, width: emojiWidth)
                                     }
                                     .padding(.vertical, 8)
                                     .background({
@@ -792,29 +808,39 @@ struct DailyStatsView: View {
         Group {
             if let value = value {
                 Text(String(format: "%.\(decimals)f", value))
-                    .font(.system(size: 11).monospacedDigit())
+                    .font(.system(size: 10).monospacedDigit())
                     .foregroundColor(foregroundColor ?? .primary)
             } else {
                 Text("—")
-                    .font(.system(size: 11))
+                    .font(.system(size: 10))
                     .foregroundColor(.secondary)
             }
         }
         .frame(width: width, alignment: .trailing)
     }
     
-    private func emptyCell(
+    private func emojiCell(
         _ value: String?,
         width: CGFloat,
         decimals: Int = 0,
         foregroundColor: Color? = nil
     ) -> some View {
-        Group {
-            if value != nil {
-                Text("")
-            } else {
-                Text("")
+        let emoji: String = {
+            guard let value else { return "" }
+            let normalized = value.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+
+            if normalized.contains("magsjuka") {
+                return "🤢"
             }
+            if normalized.contains("forkyld") {
+                return "🤧"
+            }
+            return ""
+        }()
+
+        return Group {
+            Text(emoji)
+                .font(.system(size: 11))
         }
         .frame(width: width, alignment: .trailing)
     }
@@ -1698,7 +1724,9 @@ private struct WeekdayFilterView: View {
     @Binding var selectedWeekdays: Set<Int>
     @Binding var usePumpChangeDays: Bool
     @Binding var useSensorChangeDays: Bool
-    
+    @Binding var useSickDays: Bool
+    @Binding var useNonSickDays: Bool
+
     /// Mappar Calendar.weekday (1–7) till svenska kortnamn.
     private let weekdayOrder: [Int] = [2, 3, 4, 5, 6, 7, 1] // Mån–Sön i visningsordning
     private let weekdayLabels: [Int: String] = [
@@ -1710,88 +1738,104 @@ private struct WeekdayFilterView: View {
         6: "Fre",
         7: "Lör"
     ]
-    
+
+    private var allWeekdaysSet: Set<Int> { Set(1...7) }
+
+    private var anySpecialFilterActive: Bool {
+        usePumpChangeDays || useSensorChangeDays || useSickDays || useNonSickDays
+    }
+
     var body: some View {
         ZStack {
             ThemeBackground()
                 .ignoresSafeArea()
-            
+
             VStack(alignment: .leading, spacing: 24) {
                 // Rad 1: veckodagar + "Alla"
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Veckodagar")
                         .font(.headline)
                         .foregroundColor(.secondary)
-                HStack(spacing: 12) {
-                    let allWeekdaysSet: Set<Int> = Set(1...7)
-                    let allSelected = (selectedWeekdays == allWeekdaysSet) && !usePumpChangeDays
-                    
-                    // Alla-knapp
-                    Button {
-                        if allSelected {
-                            // Avmarkera alla dagar
-                            selectedWeekdays = []
-                        } else {
-                            // Markera alla dagar
-                            selectedWeekdays = allWeekdaysSet
-                        }
-                        // Att välja veckodagar stänger av pumpbytesfiltret
-                        usePumpChangeDays = false
-                        useSensorChangeDays = false
-                    } label: {
-                        Text("Alla")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .frame(width: 44, height: 32)
-                            .background(
-                                Capsule()
-                                    .fill(allSelected ? Color.accentColor : Color.gray.opacity(0.4))
-                            )
-                            .foregroundColor(.white)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    // Mån–Sön
-                    ForEach(weekdayOrder, id: \.self) { weekday in
-                        let isSelected = selectedWeekdays.contains(weekday) && !usePumpChangeDays
+
+                    HStack(spacing: 12) {
+                        let allSelected = (selectedWeekdays == allWeekdaysSet) && !anySpecialFilterActive
+
+                        // Alla-knapp
                         Button {
-                            if isSelected {
-                                // Tillåt att alla kan avmarkeras om man vill se en tom lista.
-                                selectedWeekdays.remove(weekday)
+                            if allSelected {
+                                // Avmarkera alla dagar
+                                selectedWeekdays = []
                             } else {
-                                selectedWeekdays.insert(weekday)
+                                // Markera alla dagar och slå av specialfilter
+                                selectedWeekdays = allWeekdaysSet
                             }
-                            // Att manuellt pilla på veckodagar stänger av pumpbytesfiltret
                             usePumpChangeDays = false
                             useSensorChangeDays = false
+                            useSickDays = false
+                            useNonSickDays = false
                         } label: {
-                            Text(weekdayLabels[weekday] ?? "?")
+                            Text("Alla")
                                 .font(.caption)
                                 .fontWeight(.semibold)
-                                .frame(width: 32, height: 32)
+                                .frame(width: 44, height: 32)
                                 .background(
-                                    Circle()
-                                        .fill(isSelected ? Color.accentColor : Color.gray.opacity(0.4))
+                                    Capsule()
+                                        .fill(allSelected ? Color.accentColor : Color.gray.opacity(0.4))
                                 )
                                 .foregroundColor(.white)
                         }
                         .buttonStyle(.plain)
+
+                        // Mån–Sön
+                        ForEach(weekdayOrder, id: \.self) { weekday in
+                            let isSelected = selectedWeekdays.contains(weekday) && !anySpecialFilterActive
+                            Button {
+                                if isSelected {
+                                    // Tillåt att alla kan avmarkeras om man vill se en tom lista.
+                                    selectedWeekdays.remove(weekday)
+                                } else {
+                                    selectedWeekdays.insert(weekday)
+                                }
+                                // Att manuellt pilla på veckodagar stänger av specialfilter
+                                usePumpChangeDays = false
+                                useSensorChangeDays = false
+                                useSickDays = false
+                                useNonSickDays = false
+                            } label: {
+                                Text(weekdayLabels[weekday] ?? "?")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .frame(width: 32, height: 32)
+                                    .background(
+                                        Circle()
+                                            .fill(isSelected ? Color.accentColor : Color.gray.opacity(0.4))
+                                    )
+                                    .foregroundColor(.white)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
-            }
-                
-                // Rad 2: "Andra filter" + Pumpbytesdagar + Sensorbytesdagar
+
+                // Rad 2: Andra filter
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Andra filter")
                         .font(.headline)
                         .foregroundColor(.secondary)
-                    
+
                     HStack(spacing: 8) {
                         Button(action: {
-                            // Aktivera pumpbytesdagar – rensa veckodagar och slå av sensorfiltret
-                            usePumpChangeDays = true
-                            useSensorChangeDays = false
-                            selectedWeekdays.removeAll()
+                            let newValue = !usePumpChangeDays
+                            usePumpChangeDays = newValue
+
+                            if newValue {
+                                useSensorChangeDays = false
+                                useSickDays = false
+                                useNonSickDays = false
+                                selectedWeekdays.removeAll()
+                            } else if !useSensorChangeDays && !useSickDays && !useNonSickDays {
+                                selectedWeekdays = allWeekdaysSet
+                            }
                         }) {
                             HStack {
                                 Text("Pumpbytesdagar")
@@ -1804,14 +1848,22 @@ private struct WeekdayFilterView: View {
                                 Capsule()
                                     .fill(usePumpChangeDays ? Color.accentColor : Color.gray.opacity(0.4))
                             )
+                            .foregroundColor(.white)
                         }
                         .buttonStyle(.plain)
-                        
+
                         Button(action: {
-                            // Aktivera sensorbytesdagar – rensa veckodagar och slå av pumpfiltret
-                            useSensorChangeDays = true
-                            usePumpChangeDays = false
-                            selectedWeekdays.removeAll()
+                            let newValue = !useSensorChangeDays
+                            useSensorChangeDays = newValue
+
+                            if newValue {
+                                usePumpChangeDays = false
+                                useSickDays = false
+                                useNonSickDays = false
+                                selectedWeekdays.removeAll()
+                            } else if !usePumpChangeDays && !useSickDays && !useNonSickDays {
+                                selectedWeekdays = allWeekdaysSet
+                            }
                         }) {
                             HStack {
                                 Text("Sensorbytesdagar")
@@ -1824,13 +1876,72 @@ private struct WeekdayFilterView: View {
                                 Capsule()
                                     .fill(useSensorChangeDays ? Color.accentColor : Color.gray.opacity(0.4))
                             )
+                            .foregroundColor(.white)
                         }
                         .buttonStyle(.plain)
                     }
-                    
+
+                    HStack(spacing: 8) {
+                        Button(action: {
+                            let newValue = !useSickDays
+                            useSickDays = newValue
+
+                            if newValue {
+                                usePumpChangeDays = false
+                                useSensorChangeDays = false
+                                useNonSickDays = false
+                                selectedWeekdays.removeAll()
+                            } else if !usePumpChangeDays && !useSensorChangeDays && !useNonSickDays {
+                                selectedWeekdays = allWeekdaysSet
+                            }
+                        }) {
+                            HStack {
+                                Text("Sjukdagar")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(
+                                Capsule()
+                                    .fill(useSickDays ? Color.accentColor : Color.gray.opacity(0.4))
+                            )
+                            .foregroundColor(.white)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: {
+                            let newValue = !useNonSickDays
+                            useNonSickDays = newValue
+
+                            if newValue {
+                                usePumpChangeDays = false
+                                useSensorChangeDays = false
+                                useSickDays = false
+                                selectedWeekdays.removeAll()
+                            } else if !usePumpChangeDays && !useSensorChangeDays && !useSickDays {
+                                selectedWeekdays = allWeekdaysSet
+                            }
+                        }) {
+                            HStack {
+                                Text("Ej sjukdagar")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(
+                                Capsule()
+                                    .fill(useNonSickDays ? Color.accentColor : Color.gray.opacity(0.4))
+                            )
+                            .foregroundColor(.white)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     Spacer()
                 }
-                
+
                 Spacer()
             }
             .padding()

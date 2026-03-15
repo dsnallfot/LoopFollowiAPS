@@ -8,6 +8,7 @@
 
 import Foundation
 import HealthKit
+import Combine
 
 struct ScheduleEntry: Identifiable {
     let id = UUID()
@@ -90,13 +91,17 @@ class ProfileSchedulesViewModel: ObservableObject {
     @Published var lastChangedCRProfile: Date?
     @Published var lastChangedISFProfile: Date?
     @Published var lastChangedTargetProfile: Date?
+    @Published var sickDayEntries: [SickDayHistoryEntry] = []
     
     private var minCarbImpact: Double = 8 // Default value, will be fetched
     private let lastChangedStore = ProfileSchedulesLastChangedStore.shared
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         fetchProfileData()
         scanCachedProfileNoteTreatments()
+        loadSickDayEntries()
+        observeSickDayUpdates()
     }
 
     func fetchProfileData() {
@@ -336,6 +341,23 @@ class ProfileSchedulesViewModel: ObservableObject {
             let hours = seconds / 3600
             return String(format: "%02d:00", hours)
         }
+    
+    func reloadSickDays() {
+        sickDayEntries = Storage.shared.sickDayHistory.sorted { $0.date > $1.date }
+    }
+
+    private func loadSickDayEntries() {
+        reloadSickDays()
+    }
+
+    private func observeSickDayUpdates() {
+        NotificationCenter.default.publisher(for: .sickDaysUpdated)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.reloadSickDays()
+            }
+            .store(in: &cancellables)
+    }
     
     private func normalize(_ s: String) -> String {
         return s

@@ -219,6 +219,53 @@ final class NightscoutCache {
 
         return normalized.sorted { $0.date < $1.date }
     }
+    
+    /// Returns the sick-day override note if this treatment represents
+    /// a known sickness override.
+    ///
+    /// We currently detect:
+    /// - eventType == "Exercise"
+    /// - notes containing "Förkyld" or "Magsjuka"
+    static func sickDayOverrideNote(from treatment: TreatmentJSON) -> String? {
+        guard treatment.eventType.caseInsensitiveCompare("Exercise") == .orderedSame else {
+            return nil
+        }
+
+        guard let notes = treatment.notes?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !notes.isEmpty else {
+            return nil
+        }
+
+        let normalized = notes.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+
+        if normalized.contains("forkyld") || normalized.contains("magsjuka") {
+            return notes
+        }
+
+        return nil
+    }
+
+    /// Rebuilds the sick-day cache entry for a given day from that day's cached treatments.
+    /// If no matching override exists anymore, any existing sick-day entry is removed.
+    static func refreshSickDayCache(for day: Date, treatments: [TreatmentJSON]) {
+        let latestMatchingNotes = treatments
+            .sorted { $0.created_at < $1.created_at }
+            .compactMap { sickDayOverrideNote(from: $0) }
+            .last
+
+        Storage.shared.setSickDayHistoryEntry(for: day, notes: latestMatchingNotes)
+    }
+
+    /// Returns the stored sick-day entry for a given date if one exists.
+    /// Useful for quickly marking sick days in charts or tables.
+    static func isSickDay(_ date: Date) -> SickDayHistoryEntry? {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: date)
+
+        return Storage.shared.sickDayHistory.first {
+            calendar.isDate(Date(timeIntervalSince1970: $0.date), inSameDayAs: dayStart)
+        }
+    }
 
     // MARK: private -----------------------------------------------------------
 
@@ -328,6 +375,7 @@ final class NightscoutCache {
                 }
 
                 try writeDay(date: day, sgv: payload.sgv, treatments: payload.treatments)
+                refreshSickDayCache(for: day, treatments: payload.treatments)
             } catch {
                 // Silently ignore errors
             }
@@ -349,10 +397,13 @@ final class NightscoutCache {
                 // Remove any previous treatment with the same _id
                 payload.treatments.removeAll { $0._id == tjson._id }
                 payload.treatments.append(tjson)
+                payload.treatments.sort { $0.created_at < $1.created_at }
             } else {
                 payload = DayPayload(sgv: [], treatments: [tjson])
             }
+
             try writeDay(date: day, sgv: payload.sgv, treatments: payload.treatments)
+            refreshSickDayCache(for: day, treatments: payload.treatments)
         } catch {
             // Silently ignore cache write errors; cache is best-effort only.
         }

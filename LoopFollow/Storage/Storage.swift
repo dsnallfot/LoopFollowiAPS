@@ -144,6 +144,23 @@ struct ClippyDailyTargetHistoryEntry: Codable, Equatable {
     }
 }
 
+struct SickDayHistoryEntry: Codable, Equatable {
+    /// Unix timestamp (seconds since 1970) for the local calendar day (startOfDay).
+    var date: TimeInterval
+
+    /// The latest matching sick-day override note for that day
+    /// e.g. "🤢 Magsjuka" or "🤧 Förkyld"
+    var notes: String
+
+    static func == (lhs: SickDayHistoryEntry, rhs: SickDayHistoryEntry) -> Bool {
+        return lhs.date == rhs.date && lhs.notes == rhs.notes
+    }
+}
+
+extension Notification.Name {
+    static let sickDaysUpdated = Notification.Name("sickDaysUpdated")
+}
+
 struct UserProfileEntry: Codable, Equatable {
     var name: String
     var birthDate: Date?
@@ -303,6 +320,69 @@ extension Storage {
             .sorted { $0.date < $1.date }
 
         clippyDailyTargetHistory = history
+    }
+    
+    // MARK: - Sick day history (for visualization / analytics)
+    
+    /// Persistent long-term history of sick days.
+    /// This history is intentionally kept independently of the 90-day Nightscout treatment cache,
+    /// so old sick-day markers remain available even after old treatment payloads are pruned.
+    var sickDayHistory: [SickDayHistoryEntry] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "sickDayHistory") else {
+                return []
+            }
+            do {
+                return try JSONDecoder().decode([SickDayHistoryEntry].self, from: storedData)
+            } catch {
+                LogManager.shared.log(
+                    category: .treatments,
+                    message: "Failed to decode sickDayHistory, resetting to empty array: \(error)"
+                )
+                UserDefaults.standard.removeObject(forKey: "sickDayHistory")
+                return []
+            }
+        }
+        set {
+            do {
+                let encoded = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encoded, forKey: "sickDayHistory")
+            } catch {
+                LogManager.shared.log(
+                    category: .treatments,
+                    message: "Failed to encode sickDayHistory: \(error)"
+                )
+            }
+        }
+    }
+
+    /// Upsert/remove one sick-day entry per calendar day.
+    /// Stores the day's local `startOfDay` timestamp.
+    func setSickDayHistoryEntry(for date: Date, notes: String?) {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: date)
+        let dayTimestamp = dayStart.timeIntervalSince1970
+
+        let oldHistory = sickDayHistory
+        var history = oldHistory
+
+        // Remove any existing entry for this calendar day
+        history.removeAll {
+            calendar.isDate(Date(timeIntervalSince1970: $0.date), inSameDayAs: dayStart)
+        }
+
+        // Re-add only if we still have a matching sickness override for the day
+        if let notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            history.append(SickDayHistoryEntry(date: dayTimestamp, notes: notes))
+        }
+
+        let sortedHistory = history.sorted { $0.date < $1.date }
+
+        // Post only when something actually changed
+        guard sortedHistory != oldHistory else { return }
+
+        sickDayHistory = sortedHistory
+        NotificationCenter.default.post(name: .sickDaysUpdated, object: nil)
     }
     
     // MARK: - Alarm history (for visualization / analytics)

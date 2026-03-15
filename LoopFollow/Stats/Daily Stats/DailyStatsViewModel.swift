@@ -23,7 +23,7 @@ struct DailyStatRow: Identifiable {
     let timeInRangePercent: Double?  // %
     let stdDevMmol: Double?          // mmol/L
     let profileBasal: Double?        // E (teoretisk profilbasal per 24h)
-    let emptyInfo: String?           // Trailing space
+    let emojiDayInfo: String?           // Trailing space
 
     /// Antal glukosvärden för dagen (används för att filtrera bort "halva" dagar ur statistiken)
     let glucoseCount: Int?
@@ -43,6 +43,12 @@ final class DailyStatsViewModel: ObservableObject {
     
     /// True när vi filtrerar på sensorbytesdagar i stället för veckodagar.
     @Published var useSensorChangeDays: Bool = false
+    
+    /// True när vi endast vill visa sjukdagar.
+    @Published var useSickDays: Bool = false
+
+    /// True när vi endast vill visa dagar som inte är sjukdagar.
+    @Published var useNonSickDays: Bool = false
 
     /// Mängd av alla kalenderdygn (startOfDay) där det finns ett pumpbyte.
     private var pumpChangeDays: Set<Date> {
@@ -61,6 +67,19 @@ final class DailyStatsViewModel: ObservableObject {
     private var sensorChangeDays: Set<Date> {
         let calendar = Calendar.current
         let entries = Storage.shared.sensorStartNotes
+        guard !entries.isEmpty else { return [] }
+
+        let days = entries.map { entry -> Date in
+            let date = Date(timeIntervalSince1970: entry.date)
+            return calendar.startOfDay(for: date)
+        }
+        return Set(days)
+    }
+    
+    /// Mängd av alla kalenderdygn (startOfDay) där det finns en registrerad sjukdag.
+    private var sickDays: Set<Date> {
+        let calendar = Calendar.current
+        let entries = Storage.shared.sickDayHistory
         guard !entries.isEmpty else { return [] }
 
         let days = entries.map { entry -> Date in
@@ -177,8 +196,28 @@ final class DailyStatsViewModel: ObservableObject {
                 return sensorDays.contains(day)
             }
         }
+        
+        // 3) Sjukdagsfilter aktivt
+        if useSickDays {
+            let sickDays = sickDays
+            guard !sickDays.isEmpty else { return [] }
 
-        // 3) Vanligt veckodagsfilter
+            return base.filter { row in
+                let day = calendar.startOfDay(for: row.date)
+                return sickDays.contains(day)
+            }
+        }
+
+        // 4) Ej sjukdagsfilter aktivt
+        if useNonSickDays {
+            let sickDays = sickDays
+            return base.filter { row in
+                let day = calendar.startOfDay(for: row.date)
+                return !sickDays.contains(day)
+            }
+        }
+
+        // 5) Vanligt veckodagsfilter
         // Om alla veckodagar är valda → ingen extra filtrering
         guard selectedWeekdays != allWeekdaysSet else {
             return base
@@ -192,7 +231,7 @@ final class DailyStatsViewModel: ObservableObject {
     
     /// True om något filter är aktivt (veckodagar != alla eller pumpbytesdagar).
     var isWeekdayFilterActive: Bool {
-        usePumpChangeDays || useSensorChangeDays || selectedWeekdays != allWeekdaysSet
+        usePumpChangeDays || useSensorChangeDays || useSickDays || useNonSickDays || selectedWeekdays != allWeekdaysSet
     }
 
     private func rowHasAnyGlucoseCount(_ row: DailyStatRow) -> Bool {
@@ -432,7 +471,7 @@ final class DailyStatsViewModel: ObservableObject {
                     basalProfile: dayBasalProfile
                 )
 
-                let emptyInfo = ""
+                let emojiDayInfo = NightscoutCache.isSickDay(dayStart)?.notes
 
                 // BG för dagen
                 let bgForDay = groupedBG[dayStart] ?? []
@@ -525,7 +564,7 @@ final class DailyStatsViewModel: ObservableObject {
                     timeInRangePercent: timeInRangePercent,
                     stdDevMmol: stdDevMmol,
                     profileBasal: profileBasalValueForDay,
-                    emptyInfo: emptyInfo,
+                    emojiDayInfo: emojiDayInfo,
                     glucoseCount: glucoseCountForDay
                 )
 
