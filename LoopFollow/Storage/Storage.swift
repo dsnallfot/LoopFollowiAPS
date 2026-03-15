@@ -385,6 +385,12 @@ extension Storage {
         NotificationCenter.default.post(name: .sickDaysUpdated, object: nil)
     }
     
+    /// Adds or replaces the stored sick-day entry for a specific calendar day.
+    /// Intended for manual entry from UI.
+    func addManualSickDay(for date: Date, notes: String) {
+        setSickDayHistoryEntry(for: date, notes: notes)
+    }
+    
     // MARK: - Alarm history (for visualization / analytics)
 
     var alarmHistory: [AlarmHistoryEntry] {

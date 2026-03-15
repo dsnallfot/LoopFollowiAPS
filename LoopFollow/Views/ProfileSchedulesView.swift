@@ -34,6 +34,9 @@ struct ProfileSchedulesView: View {
     @State private var isImportingUserCSV: Bool = false
     @State private var userCSVDocument: UserProfileCSVDocument = UserProfileCSVDocument(text: "")
     @State private var userCSVImportError: String?
+    @State private var showAddSickDay: Bool = false
+    @State private var showSickDayCalendar: Bool = false
+    @State private var sickDayToDelete: SickDayHistoryEntry?
     
     private static let sickDayDateFormatter: DateFormatter = {
         let df = DateFormatter()
@@ -248,6 +251,13 @@ struct ProfileSchedulesView: View {
                 .onTapGesture {
                     presentSickDayAnalysis(for: entry)
                 }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        sickDayToDelete = entry
+                    } label: {
+                        Label("Radera", systemImage: "trash")
+                    }
+                }
                 .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
         }
@@ -409,6 +419,17 @@ struct ProfileSchedulesView: View {
                 UserDataStatsView()
             }
         }
+        .sheet(isPresented: $showAddSickDay) {
+            NavigationStack {
+                AddSickDayView()
+            }
+            .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showSickDayCalendar) {
+            NavigationStack {
+                SickDayCalendarView(entries: viewModel.sickDayEntries)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if selectedMode == .profile {
@@ -444,6 +465,23 @@ struct ProfileSchedulesView: View {
                         }
                         .accessibilityLabel("Importera användardata (CSV)")
                     }
+                } else if selectedMode == .sick {
+                    HStack(spacing: 14) {
+                        Button {
+                            showAddSickDay = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel("Lägg till sjukdag")
+                        
+                        Button {
+                            showSickDayCalendar = true
+                        } label: {
+                            Image(systemName: "calendar")
+                        }
+                        .accessibilityLabel("Visa sjukdagshistorik som kalender")
+
+                    }
                 }
             }
             
@@ -471,6 +509,30 @@ struct ProfileSchedulesView: View {
             • CR-profil: \(fmt(viewModel.lastChangedCRProfile))
             • ISF-profil: \(fmt(viewModel.lastChangedISFProfile))
             """)
+        }
+        .alert("Radera sjukdag", isPresented: Binding(
+            get: { sickDayToDelete != nil },
+            set: { newValue in
+                if !newValue {
+                    sickDayToDelete = nil
+                }
+            }
+        )) {
+            Button("Radera", role: .destructive) {
+                if let entry = sickDayToDelete {
+                    viewModel.deleteSickDay(entry)
+                }
+                sickDayToDelete = nil
+            }
+            Button("Avbryt", role: .cancel) {
+                sickDayToDelete = nil
+            }
+        } message: {
+            if let entry = sickDayToDelete {
+                Text("Vill du verkligen radera sjukdagen \(Self.sickDayDateFormatter.string(from: Date(timeIntervalSince1970: entry.date))) med noteringen \"\(entry.notes)\"?")
+            } else {
+                Text("Vill du verkligen radera denna sjukdag?")
+            }
         }
         .fileExporter(
             isPresented: $isExportingUserCSV,
@@ -1172,6 +1234,82 @@ private struct UserDataStatsView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Klar") { dismiss() }
+            }
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct AddSickDayView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedDate: Date = Date()
+    @State private var selectedType: SickDayType = .forkyld
+
+    enum SickDayType: String, CaseIterable, Identifiable {
+        case forkyld = "🤧 Förkyld"
+        case magsjuka = "🤢 Magsjuka"
+        case sjuk = "🤒 Sjuk"
+
+        var id: String { rawValue }
+    }
+
+    var body: some View {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 20) {
+                DatePicker(
+                    "Datum",
+                    selection: $selectedDate,
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(SickDayType.allCases) { type in
+                        Button {
+                            selectedType = type
+                        } label: {
+                            HStack {
+                                Text(type.rawValue)
+                                    .font(.body.monospacedDigit())
+                                Spacer()
+                                if selectedType == type {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.accentColor)
+                                }
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(UIColor.systemGray).opacity(0.15))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                Spacer()
+            }
+            .padding()
+        }
+        .navigationTitle("Lägg till sjukdag")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Avbryt") {
+                    dismiss()
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Spara") {
+                    Storage.shared.addManualSickDay(for: selectedDate, notes: selectedType.rawValue)
+                    dismiss()
+                }
             }
         }
     }
@@ -1891,5 +2029,198 @@ struct UserProfileCSVDocument: FileDocument {
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         let data = text.data(using: .utf8) ?? Data()
         return .init(regularFileWithContents: data)
+    }
+}
+
+@available(iOS 16.0, *)
+private struct SickDayCalendarView: View {
+    @Environment(\.dismiss) private var dismiss
+    let entries: [SickDayHistoryEntry]
+
+    private let calendar: Calendar = {
+        var cal = Calendar(identifier: .gregorian)
+        cal.locale = Locale(identifier: "sv_SE")
+        cal.firstWeekday = 2 // Monday
+        return cal
+    }()
+
+    private let monthSymbols: [String] = [
+        "Januari", "Februari", "Mars",
+        "April", "Maj", "Juni",
+        "Juli", "Augusti", "September",
+        "Oktober", "November", "December"
+    ]
+
+    private let weekdayHeaders = ["M", "T", "O", "T", "F", "L", "S"]
+
+    private var sickDaySet: Set<Date> {
+        Set(entries.map { calendar.startOfDay(for: Date(timeIntervalSince1970: $0.date)) })
+    }
+
+    private var displayYears: [Int] {
+        let currentYear = calendar.component(.year, from: Date())
+        let sickYears = entries.map { entry in
+            calendar.component(.year, from: Date(timeIntervalSince1970: entry.date))
+        }
+        let earliestSickYear = sickYears.min() ?? currentYear
+        let earliestDisplayYear = min(earliestSickYear, currentYear - 1)
+        return Array(earliestDisplayYear...currentYear)
+    }
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ZStack {
+                ThemeBackground()
+                    .ignoresSafeArea()
+
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 24) {
+                        Color.clear
+                            .frame(height: 1)
+                            .id("calendarTopAnchor")
+
+                        ForEach(displayYears, id: \.self) { year in
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text(String(year))
+                                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal)
+
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: 3), spacing: 28) {
+                                    ForEach(1...12, id: \.self) { month in
+                                        SickDayMiniMonthView(
+                                            year: year,
+                                            month: month,
+                                            calendar: calendar,
+                                            monthName: monthSymbols[month - 1],
+                                            weekdayHeaders: weekdayHeaders,
+                                            sickDaySet: sickDaySet
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
+                    }
+                    .padding(.vertical)
+                }
+            }
+            .navigationTitle("Sjukdagshistorik")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Klar") {
+                        dismiss()
+                    }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ScrollSickDayCalendarToCurrentYear"))) { _ in
+                let currentYear = calendar.component(.year, from: Date())
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    proxy.scrollTo(currentYear, anchor: .top)
+                }
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: Notification.Name("ScrollSickDayCalendarToCurrentYear"), object: nil)
+            }
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct SickDayMiniMonthView: View {
+    let year: Int
+    let month: Int
+    let calendar: Calendar
+    let monthName: String
+    let weekdayHeaders: [String]
+    let sickDaySet: Set<Date>
+
+    private var monthDates: [Date?] {
+        guard let firstDay = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
+              let range = calendar.range(of: .day, in: .month, for: firstDay) else {
+            return []
+        }
+
+        let weekday = calendar.component(.weekday, from: firstDay)
+        let offset = (weekday - calendar.firstWeekday + 7) % 7
+
+        var result: [Date?] = Array(repeating: nil, count: offset)
+        for day in range {
+            if let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) {
+                result.append(date)
+            }
+        }
+        return result
+    }
+
+    private func isToday(_ date: Date) -> Bool {
+        calendar.isDateInToday(date)
+    }
+
+    private func isSickDay(_ date: Date) -> Bool {
+        sickDaySet.contains(calendar.startOfDay(for: date))
+    }
+
+    private func textColor(for date: Date) -> Color {
+        if isSickDay(date) {
+            return .white
+        }
+        if isToday(date) {
+            return .red
+        }
+        return .primary
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(monthName)
+                .font(.title3.weight(.semibold))
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 2), count: 7), spacing: 6) {
+                ForEach(Array(weekdayHeaders.enumerated()), id: \.offset) { _, day in
+                    Text(day)
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
+
+                ForEach(Array(monthDates.enumerated()), id: \.offset) { _, date in
+                    if let date {
+                        let dayNumber = calendar.component(.day, from: date)
+
+                        Text("\(dayNumber)")
+                            .font(.system(size: 9, weight: isToday(date) || isSickDay(date) ? .semibold : .regular, design: .rounded))
+                            .foregroundColor(textColor(for: date))
+                            .frame(maxWidth: .infinity, minHeight: 15)
+                            .background(
+                                Group {
+                                    if isSickDay(date) {
+                                        Circle()
+                                            .fill(Color.red)
+                                            .frame(width: 15, height: 15)
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white, lineWidth: isToday(date) ? 1 : 0)
+                                            )
+                                    } else if isToday(date) {
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: 1)
+                                            .frame(width: 15, height: 15)
+                                    } else {
+                                        Color.clear
+                                    }
+                                }
+                            )
+                    } else {
+                        Color.clear
+                            .frame(maxWidth: .infinity, minHeight: 15)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }

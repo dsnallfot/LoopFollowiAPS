@@ -345,6 +345,13 @@ class ProfileSchedulesViewModel: ObservableObject {
     func reloadSickDays() {
         sickDayEntries = Storage.shared.sickDayHistory.sorted { $0.date > $1.date }
     }
+    
+    func deleteSickDay(_ entry: SickDayHistoryEntry) {
+        var history = Storage.shared.sickDayHistory
+        history.removeAll { $0 == entry }
+        Storage.shared.sickDayHistory = history.sorted { $0.date < $1.date }
+        NotificationCenter.default.post(name: .sickDaysUpdated, object: nil)
+    }
 
     private func loadSickDayEntries() {
         reloadSickDays()

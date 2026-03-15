@@ -835,6 +835,14 @@ struct DailyStatsView: View {
             if normalized.contains("forkyld") {
                 return "🤧"
             }
+
+            let words = normalized
+                .components(separatedBy: CharacterSet.alphanumerics.inverted)
+                .filter { !$0.isEmpty }
+
+            if words.contains("sjuk") {
+                return "🤒"
+            }
             return ""
         }()
 
