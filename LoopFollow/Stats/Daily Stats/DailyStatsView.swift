@@ -37,8 +37,8 @@ struct DailyStatsView: View {
         return (base / totalBaseColumnWidth) * availableWidth
     }
     
-    private var weekdayWidth: CGFloat { scaledColumnWidth(base: 25) }
-    private var dateWidth: CGFloat { scaledColumnWidth(base: 51) }
+    private var weekdayWidth: CGFloat { scaledColumnWidth(base: 26) }
+    private var dateWidth: CGFloat { scaledColumnWidth(base: 54) }
     private var carbsWidth: CGFloat { scaledColumnWidth(base: 35) }
     private var insulinWidth: CGFloat { scaledColumnWidth(base: 35) }
     private var meanWidth: CGFloat { scaledColumnWidth(base: 36) }
@@ -46,8 +46,8 @@ struct DailyStatsView: View {
     private var titrWidth: CGFloat { scaledColumnWidth(base: 30) }
     private var tirWidth: CGFloat { scaledColumnWidth(base: 30) }
     private var stdWidth: CGFloat { scaledColumnWidth(base: 32) }
-    private var profileWidth: CGFloat { scaledColumnWidth(base: 36) }
-    private var emojiWidth: CGFloat { scaledColumnWidth(base: 16) }
+    private var profileWidth: CGFloat { scaledColumnWidth(base: 35) }
+    private var emojiWidth: CGFloat { scaledColumnWidth(base: 14) }
     
     private let columnSpacing: CGFloat = 1
     
