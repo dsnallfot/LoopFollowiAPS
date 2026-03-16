@@ -166,6 +166,12 @@ struct AggregatedStatsView: View {
                                     .padding(.horizontal)
                             }
 
+                            SickDayCountModule(
+                                count: viewModel.sickDayStats.count,
+                                percent: viewModel.sickDayStats.percent
+                            )
+                            .padding(.horizontal)
+
                             GRIView(viewModel: viewModel.griStats)
                                 .padding(.horizontal)
                         }
@@ -1106,5 +1112,43 @@ struct AGPGuardrailCrossingsModule: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
+    }
+}
+
+struct SickDayCountModule: View {
+    let count: Int
+    let percent: Double
+
+    private var dayText: String {
+        let dayText = count == 1 ? "1 dag" : "\(count) dagar"
+        return "\(dayText)"
+    }
+    private var percentText: String {
+        let percentText = String(format: "%.0f", percent)
+        return "\(percentText)% av alla dagar"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Antal sjukdagar under vald period")
+                .font(.callout)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+            HStack {
+                Text(dayText)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.red)
+                Spacer()
+                Text(percentText)
+                    .font(.headline)
+                    .fontWeight(.regular)
+                    .foregroundColor(.red)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(.systemBackground.withAlphaComponent(0.5)))
+        .cornerRadius(15)
     }
 }

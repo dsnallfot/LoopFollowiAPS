@@ -9,6 +9,52 @@ class AggregatedStatsViewModel: ObservableObject {
     var agpStats: AGPViewModel
     var griStats: GRIViewModel
     var tirStats: TIRViewModel
+    var sickDayStats: (count: Int, percent: Double) {
+        let calendar = Calendar.current
+        let entries = Storage.shared.sickDayHistory
+
+        let includedDays: Set<Date>
+
+        if dataService.isTodayOnly {
+            includedDays = [calendar.startOfDay(for: Date())]
+        } else if let custom = dataService.customInterval {
+            let startDay = calendar.startOfDay(for: custom.start)
+            let endExclusiveDay = calendar.startOfDay(for: custom.end)
+            let endInclusiveDay = calendar.date(byAdding: .day, value: -1, to: endExclusiveDay) ?? startDay
+
+            let dayCount = max((calendar.dateComponents([.day], from: startDay, to: endInclusiveDay).day ?? 0) + 1, 1)
+            includedDays = Set((0..<dayCount).compactMap {
+                calendar.date(byAdding: .day, value: $0, to: startDay)
+            })
+        } else {
+            let days = max(dataService.daysToAnalyze, 1)
+            let today = calendar.startOfDay(for: Date())
+
+            if days == 1 {
+                // "1 d" i din statistik slutar på igår
+                let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+                includedDays = [yesterday]
+            } else {
+                let endDay = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+                let startDay = calendar.date(byAdding: .day, value: -(days - 1), to: endDay) ?? endDay
+                includedDays = Set((0..<days).compactMap {
+                    calendar.date(byAdding: .day, value: $0, to: startDay)
+                })
+            }
+        }
+
+        guard !includedDays.isEmpty else { return (0, 0) }
+
+        let sickCount = entries.filter { entry in
+            let day = calendar.startOfDay(for: Date(timeIntervalSince1970: entry.date))
+            return includedDays.contains(day)
+        }.count
+
+        let totalDays = includedDays.count
+        let percent = totalDays > 0 ? (Double(sickCount) / Double(totalDays)) * 100.0 : 0.0
+
+        return (sickCount, percent)
+    }
 
     let dataService: StatsDataService
 

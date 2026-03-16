@@ -242,7 +242,7 @@ struct ProfileSchedulesView: View {
         .padding(.horizontal)
     }
     
-    private var groupedSickDayEntries: [(title: String, entries: [SickDayHistoryEntry])] {
+    private var groupedSickDayEntries: [(title: String, countText: String, entries: [SickDayHistoryEntry])] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: viewModel.sickDayEntries) { entry in
             let date = Date(timeIntervalSince1970: entry.date)
@@ -255,7 +255,9 @@ struct ProfileSchedulesView: View {
             .map { monthDate, entries in
                 let title = Self.sickDayMonthSectionFormatter.string(from: monthDate).capitalized
                 let sortedEntries = entries.sorted { $0.date > $1.date }
-                return (title: title, entries: sortedEntries)
+                let count = sortedEntries.count
+                let countText = count == 1 ? "1 dag" : "\(count) dagar"
+                return (title: title, countText: countText, entries: sortedEntries)
             }
     }
 
@@ -268,7 +270,15 @@ struct ProfileSchedulesView: View {
         if hasSickDayEntries {
             List {
                 ForEach(groupedSickDayEntries, id: \.title) { section in
-                    Section(header: Text(section.title)) {
+                    Section(
+                        header:
+                            HStack {
+                                Text(section.title)
+                                Spacer()
+                                Text(section.countText)
+                                    .foregroundColor(.secondary)
+                            }
+                    ) {
                         ForEach(section.entries, id: \.date) { entry in
                             HStack {
                                 Text(entry.notes)
