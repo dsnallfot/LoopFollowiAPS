@@ -45,6 +45,13 @@ struct ProfileSchedulesView: View {
         return df
     }()
 
+    private static let sickDayMonthSectionFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "MMMM yyyy"
+        return df
+    }()
+
     enum Mode: String, CaseIterable {
         case user = "Hälsodata"
         case sick = "Sjukdagar"
@@ -235,34 +242,67 @@ struct ProfileSchedulesView: View {
         .padding(.horizontal)
     }
     
+    private var groupedSickDayEntries: [(title: String, entries: [SickDayHistoryEntry])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: viewModel.sickDayEntries) { entry in
+            let date = Date(timeIntervalSince1970: entry.date)
+            let components = calendar.dateComponents([.year, .month], from: date)
+            return calendar.date(from: components) ?? calendar.startOfDay(for: date)
+        }
+
+        return grouped
+            .sorted { $0.key > $1.key }
+            .map { monthDate, entries in
+                let title = Self.sickDayMonthSectionFormatter.string(from: monthDate).capitalized
+                let sortedEntries = entries.sorted { $0.date > $1.date }
+                return (title: title, entries: sortedEntries)
+            }
+    }
+
+    private var hasSickDayEntries: Bool {
+        !viewModel.sickDayEntries.isEmpty
+    }
+
     @ViewBuilder
     private var sickDayModeContent: some View {
-        List {
-            ForEach(viewModel.sickDayEntries, id: \.date) { entry in
-                HStack {
-                    Text(entry.notes)
-                        .font(.subheadline.monospacedDigit())
-                    Spacer()
-                    Text(Self.sickDayDateFormatter.string(from: Date(timeIntervalSince1970: entry.date)))
-                        .font(.subheadline.monospacedDigit())
-                        .foregroundColor(.secondary)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    presentSickDayAnalysis(for: entry)
-                }
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        sickDayToDelete = entry
-                    } label: {
-                        Label("Radera", systemImage: "trash")
+        if hasSickDayEntries {
+            List {
+                ForEach(groupedSickDayEntries, id: \.title) { section in
+                    Section(header: Text(section.title)) {
+                        ForEach(section.entries, id: \.date) { entry in
+                            HStack {
+                                Text(entry.notes)
+                                    .font(.subheadline.monospacedDigit())
+                                Spacer()
+                                Text(Self.sickDayDateFormatter.string(from: Date(timeIntervalSince1970: entry.date)))
+                                    .font(.subheadline.monospacedDigit())
+                                    .foregroundColor(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                presentSickDayAnalysis(for: entry)
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    sickDayToDelete = entry
+                                } label: {
+                                    Label("Radera", systemImage: "trash")
+                                }
+                            }
+                            .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
+                        }
                     }
                 }
-                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+        } else {
+            ContentUnavailableView(
+                "Inga sjukdagar registrerade",
+                systemImage: "medical.thermometer",
+                description: Text("Automatiskt fångade eller manuellt tillagda sjukdagar kommer att visas här.")
+            )
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.clear)
     }
 
     @ViewBuilder
@@ -2037,6 +2077,14 @@ private struct SickDayCalendarView: View {
     @Environment(\.dismiss) private var dismiss
     let entries: [SickDayHistoryEntry]
 
+    private var sickDayEntriesByDay: [Date: SickDayHistoryEntry] {
+        Dictionary(
+            uniqueKeysWithValues: entries.map {
+                (calendar.startOfDay(for: Date(timeIntervalSince1970: $0.date)), $0)
+            }
+        )
+    }
+
     private let calendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
         cal.locale = Locale(identifier: "sv_SE")
@@ -2067,6 +2115,64 @@ private struct SickDayCalendarView: View {
         return Array(earliestDisplayYear...currentYear)
     }
 
+    private func presentSickDayAnalysis(for entry: SickDayHistoryEntry) {
+        let entryDate = Date(timeIntervalSince1970: entry.date)
+        let startDate = calendar.startOfDay(for: entryDate)
+        let endDate = calendar.date(byAdding: .day, value: 1, to: startDate)
+
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+            let tabBar = window.rootViewController as? UITabBarController,
+            let tabViewControllers = tabBar.viewControllers
+        else {
+            return
+        }
+
+        var mainVC: MainViewController?
+
+        for vc in tabViewControllers {
+            if let nav = vc as? UINavigationController {
+                if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = candidate
+                    break
+                }
+            } else if let candidate = vc as? MainViewController {
+                mainVC = candidate
+                break
+            }
+        }
+
+        guard let mainVC, let endDate else {
+            return
+        }
+
+        let events = mainVC.buildEventsForMealAnalysis()
+
+        let analysisVC = MealAnalysisView(
+            events: events,
+            initialStart: startDate,
+            initialEnd: endDate,
+            modalWithTimestamp: true,
+            modalTitleString: entry.notes,
+            preSelectedSegment: 6
+        )
+
+        let nav = UINavigationController(rootViewController: analysisVC)
+        nav.modalPresentationStyle = .formSheet
+
+        func topMostPresenter(from root: UIViewController) -> UIViewController {
+            var current = root
+            while let presented = current.presentedViewController {
+                current = presented
+            }
+            return current
+        }
+
+        let presenter = topMostPresenter(from: window.rootViewController ?? tabBar)
+        presenter.present(nav, animated: true)
+    }
+
     var body: some View {
         ScrollViewReader { proxy in
             ZStack {
@@ -2094,7 +2200,11 @@ private struct SickDayCalendarView: View {
                                             calendar: calendar,
                                             monthName: monthSymbols[month - 1],
                                             weekdayHeaders: weekdayHeaders,
-                                            sickDaySet: sickDaySet
+                                            sickDaySet: sickDaySet,
+                                            sickDayEntriesByDay: sickDayEntriesByDay,
+                                            onTapSickDay: { entry in
+                                                presentSickDayAnalysis(for: entry)
+                                            }
                                         )
                                     }
                                 }
@@ -2137,6 +2247,8 @@ private struct SickDayMiniMonthView: View {
     let monthName: String
     let weekdayHeaders: [String]
     let sickDaySet: Set<Date>
+    let sickDayEntriesByDay: [Date: SickDayHistoryEntry]
+    let onTapSickDay: (SickDayHistoryEntry) -> Void
 
     private var monthDates: [Date?] {
         guard let firstDay = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
@@ -2164,12 +2276,16 @@ private struct SickDayMiniMonthView: View {
         sickDaySet.contains(calendar.startOfDay(for: date))
     }
 
+    private func sickDayEntry(for date: Date) -> SickDayHistoryEntry? {
+        sickDayEntriesByDay[calendar.startOfDay(for: date)]
+    }
+
     private func textColor(for date: Date) -> Color {
         if isSickDay(date) {
             return .white
         }
         if isToday(date) {
-            return .red
+            return .blue
         }
         return .primary
     }
@@ -2214,6 +2330,12 @@ private struct SickDayMiniMonthView: View {
                                     }
                                 }
                             )
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if let entry = sickDayEntry(for: date) {
+                                    onTapSickDay(entry)
+                                }
+                            }
                     } else {
                         Color.clear
                             .frame(maxWidth: .infinity, minHeight: 15)
