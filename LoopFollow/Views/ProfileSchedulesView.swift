@@ -1316,6 +1316,7 @@ private struct AddSickDayView: View {
                     displayedComponents: [.date]
                 )
                 .datePickerStyle(.compact)
+                .environment(\.locale, Locale(identifier: "sv_SE"))
                 .labelsHidden()
 
                 VStack(alignment: .leading, spacing: 10) {
