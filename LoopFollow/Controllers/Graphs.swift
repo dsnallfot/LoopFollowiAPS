@@ -419,7 +419,7 @@ class TrainingSessionRenderer: LineChartRenderer {
 
         context.saveGState()
         context.setLineCap(.round)
-        context.setStrokeColor(UIColor.systemGreen.withAlphaComponent(0.5).cgColor)
+        context.setStrokeColor(UIColor.systemGreen.withAlphaComponent(0.65).cgColor)
         context.setLineWidth(10)
 
         for i in 0 ..< dataSet.entryCount {
@@ -1004,7 +1004,7 @@ extension MainViewController {
         let chartEntryTraining = [ChartDataEntry]()
         let lineTraining = LineChartDataSet(entries:chartEntryTraining, label: "")
         lineTraining.circleRadius = CGFloat(globalVariables.dotOther)
-        lineTraining.circleColors = [NSUIColor.systemGreen.withAlphaComponent(0.75)]
+        lineTraining.circleColors = [NSUIColor.systemGreen.withAlphaComponent(0.65)]
         lineTraining.drawCircleHoleEnabled = false
         lineTraining.setDrawHighlightIndicators(false)
         lineTraining.setColor(NSUIColor.systemGreen, alpha: 1.0)
@@ -2278,7 +2278,7 @@ extension MainViewController {
             )
 
             dotEntries.append(dotEntry)
-            dotColors.append(.systemGreen.withAlphaComponent(0.75))
+            dotColors.append(.systemGreen.withAlphaComponent(0.65))
         }
 
         let sessionEntries = makeTrainingSessionEntries(from: trainingGraphData)
@@ -2306,7 +2306,7 @@ extension MainViewController {
 
         // Synliga dots
         for _ in dotEntries {
-            let color = NSUIColor.systemGreen.withAlphaComponent(0.75)
+            let color = NSUIColor.systemGreen.withAlphaComponent(0.65)
             mainChart.addColor(color)
             mainChart.circleColors.append(color)
             smallChart.addColor(color)
@@ -2579,7 +2579,7 @@ extension MainViewController {
         var chartEntryTraining = [ChartDataEntry]()
         let lineTraining = LineChartDataSet(entries:chartEntryTraining, label: "")
         lineTraining.circleRadius = 2
-        lineTraining.circleColors = [NSUIColor.systemGreen.withAlphaComponent(0.75)]
+        lineTraining.circleColors = [NSUIColor.systemGreen.withAlphaComponent(0.65)]
         lineTraining.drawCircleHoleEnabled = false
         lineTraining.setDrawHighlightIndicators(false)
         lineTraining.setColor(NSUIColor.systemGreen, alpha: 1.0)
