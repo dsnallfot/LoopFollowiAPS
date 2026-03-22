@@ -38,7 +38,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     // How many days back the manual backfill refresh should fetch (used by reload button)
     private let backfillDays = 14
     // Initial Nightscout backfill window for NS-only cache used in GlucoseView
-    private let initialBackfillDays = 90
+    private let initialBackfillDays = 91
     // UserDefaults flag so we only run the large initial backfill once
     private let initialBackfillFlagKey = "GlucoseViewInitialNSBackfillDone"
 
@@ -74,7 +74,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
 
     // Sensor error rows (90 days)
     private var sensorErrorRows: [GlucoseRow] = []
-    private let sensorErrorLookbackDays: Int = 90
+    private let sensorErrorLookbackDays: Int = 91
     private let sensorErrorCacheRowsKey = "GlucoseViewSensorErrorCacheRows"
     private let sensorErrorCacheLastRefreshKey = "GlucoseViewSensorErrorCacheLastRefresh"
 
@@ -1387,7 +1387,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         let cal = Calendar.current
         let now = Date()
 
-        let hardFloor = cal.date(byAdding: .day, value: -sensorErrorLookbackDays, to: now) ?? now.addingTimeInterval(-90 * 86400)
+        let hardFloor = cal.date(byAdding: .day, value: -sensorErrorLookbackDays, to: now) ?? now.addingTimeInterval(-91 * 86400)
         let overlap: TimeInterval = 6 * 3600
 
         // Use shared Storage cache for incremental refresh.
@@ -1710,7 +1710,7 @@ final class GlucoseStatsViewController: ThemedTableViewController {
             let now = Date()
 
             // Up to 90 days (align with cache retention if smaller)
-            let daysBack = min(NightscoutCache.retentionDays, 90)
+            let daysBack = min(NightscoutCache.retentionDays, 91)
 
             guard let startDay = cal.date(byAdding: .day, value: -(daysBack - 1), to: cal.startOfDay(for: now)) else {
                 await MainActor.run {

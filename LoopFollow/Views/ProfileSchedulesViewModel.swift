@@ -16,6 +16,23 @@ struct ScheduleEntry: Identifiable {
     let value: String
 }
 
+struct TrainingSessionEntry: Identifiable, Equatable {
+    let id = UUID()
+    let trainingType: String
+    let startDate: Date
+    let endDate: Date?
+
+    var isOngoing: Bool {
+        endDate == nil
+    }
+
+    var durationMinutes: Int? {
+        guard let endDate else { return nil }
+        let seconds = max(0, endDate.timeIntervalSince(startDate))
+        return Int((seconds / 60.0).rounded())
+    }
+}
+
 final class ProfileSchedulesLastChangedStore {
     static let shared = ProfileSchedulesLastChangedStore()
 
@@ -92,6 +109,7 @@ class ProfileSchedulesViewModel: ObservableObject {
     @Published var lastChangedISFProfile: Date?
     @Published var lastChangedTargetProfile: Date?
     @Published var sickDayEntries: [SickDayHistoryEntry] = []
+    @Published var trainingSessions: [TrainingSessionEntry] = []
     
     private var minCarbImpact: Double = 8 // Default value, will be fetched
     private let lastChangedStore = ProfileSchedulesLastChangedStore.shared
@@ -101,6 +119,7 @@ class ProfileSchedulesViewModel: ObservableObject {
         fetchProfileData()
         scanCachedProfileNoteTreatments()
         loadSickDayEntries()
+        loadTrainingSessions()
         observeSickDayUpdates()
     }
 
@@ -346,6 +365,10 @@ class ProfileSchedulesViewModel: ObservableObject {
         sickDayEntries = Storage.shared.sickDayHistory.sorted { $0.date > $1.date }
     }
     
+    func reloadTrainingSessions() {
+        loadTrainingSessions()
+    }
+    
     func deleteSickDay(_ entry: SickDayHistoryEntry) {
         var history = Storage.shared.sickDayHistory
         history.removeAll { $0 == entry }
@@ -356,6 +379,62 @@ class ProfileSchedulesViewModel: ObservableObject {
     private func loadSickDayEntries() {
         reloadSickDays()
     }
+    
+    private func loadTrainingSessions() {
+        Task {
+            let now = Date()
+            let cal = Calendar.current
+            let start = cal.date(byAdding: .day, value: -NightscoutCache.retentionDays, to: now)
+                ?? now.addingTimeInterval(-91 * 24 * 60 * 60)
+
+            let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
+
+            let relevantNotes = treatments
+                .filter { $0.eventType == "Note" }
+                .filter { ($0.notes ?? "").lowercased().contains("meta quest spel") }
+                .sorted { $0.created_at < $1.created_at }
+
+            var sessions: [TrainingSessionEntry] = []
+            var currentMetaQuestStart: Date?
+
+            for treatment in relevantNotes {
+                guard let note = treatment.notes?.lowercased() else { continue }
+
+                if note.contains("meta quest spel startades") {
+                    currentMetaQuestStart = treatment.created_at
+                    continue
+                }
+
+                if note.contains("meta quest spel avslutades"), let startDate = currentMetaQuestStart {
+                    if treatment.created_at >= startDate {
+                        sessions.append(
+                            TrainingSessionEntry(
+                                trainingType: "Meta Quest",
+                                startDate: startDate,
+                                endDate: treatment.created_at
+                            )
+                        )
+                    }
+                    currentMetaQuestStart = nil
+                }
+            }
+
+            if let startDate = currentMetaQuestStart {
+                sessions.append(
+                    TrainingSessionEntry(
+                        trainingType: "Meta Quest",
+                        startDate: startDate,
+                        endDate: nil
+                    )
+                )
+            }
+
+            await MainActor.run {
+                self.trainingSessions = sessions.sorted { $0.startDate > $1.startDate }
+            }
+        }
+    }
+
 
     private func observeSickDayUpdates() {
         NotificationCenter.default.publisher(for: .sickDaysUpdated)
@@ -379,7 +458,7 @@ class ProfileSchedulesViewModel: ObservableObject {
             let now = Date()
             let cal = Calendar.current
             let start = cal.date(byAdding: .day, value: -NightscoutCache.retentionDays, to: now)
-                ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
+                ?? now.addingTimeInterval(-91 * 24 * 60 * 60)
 
             let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
 

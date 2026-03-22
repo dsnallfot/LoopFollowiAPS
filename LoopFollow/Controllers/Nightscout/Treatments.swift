@@ -130,6 +130,7 @@ extension MainViewController {
         var bgCheck: [[String:AnyObject]] = []
         var suspendPump: [[String:AnyObject]] = []
         var resumePump: [[String:AnyObject]] = []
+        var training: [[String:AnyObject]] = []
         var pumpSiteChange: [cageData] = []
         var cgmSensorStart: [sageData] = []
         var insulinCartridge: [iageData] = []
@@ -167,6 +168,9 @@ extension MainViewController {
                     } else if notesText.contains("PumpResume") {
                         // Tolka denna note som en Pump Resume, inte som vanlig note
                         resumePump.append(entry)
+                    } else if notesText.contains("Meta Quest") {
+                        // Tolka denna note som en Training, inte som vanlig note
+                        training.append(entry)
                     } else {
                         // Vanlig note/announcement
                         note.append(entry)
@@ -265,6 +269,13 @@ extension MainViewController {
         } else {
             if resumeGraphData.count > 0 {
                 clearOldResume()
+            }
+        }
+        if training.count > 0 {
+            processTraining(entries: training)
+        } else {
+            if trainingGraphData.count > 0 {
+                clearOldTraining()
             }
         }
         processSage(entries: cgmSensorStart)

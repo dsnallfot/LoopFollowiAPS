@@ -405,7 +405,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
+        let minDate = cal.date(byAdding: .day, value: -91, to: today) ?? today
         
         startDatePicker.minimumDate = minDate
         endDatePicker.minimumDate = minDate
@@ -462,7 +462,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         hasUserAdjustedDates = true
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
+        let minDate = cal.date(byAdding: .day, value: -91, to: today) ?? today
         
         // Klampa till [today-90d, today]
         startDatePicker.date = min(max(startDatePicker.date, minDate), today)
@@ -1440,7 +1440,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
         hasUserAdjustedDates = true
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
+        let minDate = cal.date(byAdding: .day, value: -91, to: today) ?? today
 
         // Räkna ut nya datum
         let newStart = cal.date(byAdding: .day, value: delta, to: startDatePicker.date) ?? startDatePicker.date
@@ -1494,7 +1494,7 @@ final class EnteredByView: ThemedViewController, UITableViewDataSource, UITableV
     private func updateChevronEnabledState() {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
-        let minDate = cal.date(byAdding: .day, value: -90, to: today) ?? today
+        let minDate = cal.date(byAdding: .day, value: -91, to: today) ?? today
 
         backButton.isEnabled = startDatePicker.date > minDate
         forwardButton.isEnabled = endDatePicker.date < today

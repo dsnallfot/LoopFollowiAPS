@@ -222,7 +222,7 @@ struct AnalyzeDeviationsView: View {
 
     private var dateRangeLast90Days: ClosedRange<Date> {
         let now = Date()
-        let start = Calendar.current.date(byAdding: .day, value: -90, to: now) ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
+        let start = Calendar.current.date(byAdding: .day, value: -91, to: now) ?? now.addingTimeInterval(-91 * 24 * 60 * 60)
         return start...now
     }
 

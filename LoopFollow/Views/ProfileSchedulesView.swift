@@ -30,6 +30,7 @@ struct ProfileSchedulesView: View {
     @State private var selectedMode: Mode = .user
     @State private var showAddUserData: Bool = false
     @State private var showStatsView: Bool = false
+    @State private var showTrainingStats: Bool = false
     @State private var isExportingUserCSV: Bool = false
     @State private var isImportingUserCSV: Bool = false
     @State private var userCSVDocument: UserProfileCSVDocument = UserProfileCSVDocument(text: "")
@@ -55,7 +56,8 @@ struct ProfileSchedulesView: View {
     enum Mode: String, CaseIterable {
         case user = "Hälsodata"
         case sick = "Sjukdagar"
-        case profile = "Profilinställning"
+        case training = "Träning"
+        case profile = "Profil"
     }
 
     enum SectionType: String, CaseIterable {
@@ -314,6 +316,11 @@ struct ProfileSchedulesView: View {
             )
         }
     }
+    
+    @ViewBuilder
+    private var trainingModeContent: some View {
+        TrainingSessionsView(sessions: viewModel.trainingSessions)
+    }
 
     @ViewBuilder
     private var profileModeContent: some View {
@@ -434,12 +441,14 @@ struct ProfileSchedulesView: View {
                 modePickerView
 
                 if selectedMode == .profile {
-                                    profileModeContent
-                                } else if selectedMode == .sick {
-                                    sickDayModeContent
-                                } else {
-                                    UserDataViewController()
-                                }
+                    profileModeContent
+                } else if selectedMode == .sick {
+                    sickDayModeContent
+                } else if selectedMode == .training {
+                    trainingModeContent
+                } else {
+                    UserDataViewController()
+                }
             }
         }
         .navigationTitle(selectedMode.rawValue)
@@ -447,6 +456,8 @@ struct ProfileSchedulesView: View {
         .onChange(of: selectedMode) { _, newMode in
             if newMode == .sick {
                 viewModel.reloadSickDays()
+            } else if newMode == .training {
+                viewModel.reloadTrainingSessions()
             }
         }
         .sheet(item: $selectedLogSearchItem) { item in
@@ -530,19 +541,20 @@ struct ProfileSchedulesView: View {
                             Image(systemName: "calendar")
                         }
                         .accessibilityLabel("Visa sjukdagshistorik som kalender")
-
                     }
-                }
-            }
-            
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                if selectedMode == .user {
+                } else if selectedMode == .training {
                     Button {
-                        showStatsView = true
+                        showTrainingStats = true
                     } label: {
                         Image(systemName: "chart.bar.xaxis.ascending")
                     }
+                    .accessibilityLabel("Visa träningsstatistik")
                 }
+            }
+        }
+        .sheet(isPresented: $showTrainingStats) {
+            NavigationStack {
+                TrainingStatsView(sessions: viewModel.trainingSessions)
             }
         }
         .alert(
@@ -681,6 +693,91 @@ struct ProfileSchedulesView: View {
                 .foregroundColor(.secondary)
             }
         }
+    }
+}
+
+private struct TrainingSessionRow: View {
+    let session: TrainingSessionEntry
+
+    private static let startFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyyy-MM-dd, HH:mm"
+        return df
+    }()
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(leftText)
+                .font(.subheadline.monospacedDigit())
+                .foregroundColor(.primary)
+
+            Spacer(minLength: 8)
+
+            Text(Self.startFormatter.string(from: session.startDate))
+                .font(.subheadline.monospacedDigit())
+                .foregroundColor(.secondary)
+        }
+        .contentShape(Rectangle())
+    }
+
+    private var leftText: String {
+        let durationText: String
+        if session.isOngoing {
+            durationText = "Pågår"
+        } else if let minutes = session.durationMinutes {
+            durationText = "\(minutes) min"
+        } else {
+            durationText = "Pågår"
+        }
+
+        return "\(session.trainingType) (\(durationText))"
+    }
+}
+
+@available(iOS 17.0, *)
+private struct TrainingSessionsView: View {
+    let sessions: [TrainingSessionEntry]
+
+    var body: some View {
+        Group {
+            if sessions.isEmpty {
+                ContentUnavailableView(
+                    "Inga träningssessioner registrerade",
+                    systemImage: "figure.run",
+                    description: Text("Registrerade träningssessioner från Nightscout-noteringar kommer att visas här.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.clear)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(sessions.enumerated()), id: \.element.id) { index, session in
+                            TrainingSessionRow(session: session)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 16)
+
+                            if index < sessions.count - 1 {
+                                Divider()
+                                    .padding(.leading, 18)
+                                    .padding(.trailing, 18)
+                            }
+                        }
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .fill(Color(UIColor.systemGray).opacity(0.15))
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 24)
+                }
+                .background(Color.clear)
+            }
+        }
+        .navigationTitle("Träningssessioner")
+        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.clear)
     }
 }
 
@@ -2355,5 +2452,220 @@ private struct SickDayMiniMonthView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+}
+
+
+@available(iOS 17.0, *)
+private struct TrainingStatsView: View {
+    @Environment(\.dismiss) private var dismiss
+    let sessions: [TrainingSessionEntry]
+
+    struct DayTotal: Identifiable {
+        let id = UUID()
+        let date: Date
+        let minutes: Double
+    }
+
+    private var totalsPerDay: [DayTotal] {
+        let calendar = Calendar.current
+        var dict: [Date: Double] = [:]
+        let now = Date()
+
+        for session in sessions {
+            let start = session.startDate
+            let end = session.endDate ?? now
+            let minutes = max(0, end.timeIntervalSince(start) / 60.0)
+
+            let day = calendar.startOfDay(for: start)
+            dict[day, default: 0] += minutes
+        }
+
+        return dict
+            .map { DayTotal(date: $0.key, minutes: $0.value) }
+            .sorted { $0.date < $1.date }
+    }
+
+    private var maxMinutes: Double {
+        max(totalsPerDay.map { $0.minutes }.max() ?? 60, 60)
+    }
+
+    private static let dayFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "sv_SE")
+        df.dateFormat = "yyyy-MM-dd"
+        return df
+    }()
+
+    var body: some View {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack {
+                if totalsPerDay.isEmpty {
+                    ContentUnavailableView(
+                        "Ingen träningsdata",
+                        systemImage: "chart.bar",
+                        description: Text("När träningssessioner registreras visas statistik här.")
+                    )
+                } else {
+                    TrainingStatsBarChartView(dayTotals: totalsPerDay)
+                        .frame(height: 320)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                }
+
+                Spacer()
+            }
+        }
+        .navigationTitle("Träningsstatistik")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Klar") {
+                    dismiss()
+                }
+            }
+        }
+    }
+}
+
+@available(iOS 17.0, *)
+private struct TrainingStatsBarChartView: UIViewRepresentable {
+    struct DayTotal {
+        let date: Date
+        let minutes: Double
+    }
+
+    let dayTotals: [TrainingStatsView.DayTotal]
+
+    func makeUIView(context: Context) -> UIView {
+        let containerView = UIView()
+        containerView.backgroundColor = .clear
+        containerView.isUserInteractionEnabled = true
+
+        let chartView = BarChartView()
+        chartView.backgroundColor = .clear
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = UIColor.systemBackground.withAlphaComponent(0.5)
+        chartView.drawBordersEnabled = false
+
+        chartView.chartDescription.enabled = false
+        chartView.legend.enabled = false
+
+        chartView.rightAxis.enabled = false
+        chartView.leftAxis.enabled = true
+
+        chartView.isUserInteractionEnabled = true
+        chartView.drawMarkers = false
+
+        chartView.pinchZoomEnabled = false
+        chartView.doubleTapToZoomEnabled = false
+        chartView.scaleXEnabled = false
+        chartView.scaleYEnabled = false
+        chartView.highlightPerTapEnabled = false
+        chartView.dragEnabled = false
+
+        let xAxis = chartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.drawAxisLineEnabled = false
+        xAxis.drawGridLinesEnabled = true
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridColor = NSUIColor.label.withAlphaComponent(0.15)
+        xAxis.granularityEnabled = true
+        xAxis.centerAxisLabelsEnabled = false
+        xAxis.labelTextColor = .secondaryLabel
+        xAxis.labelFont = .systemFont(ofSize: 10, weight: .medium)
+
+        let leftAxis = chartView.leftAxis
+        leftAxis.drawAxisLineEnabled = false
+        leftAxis.drawGridLinesEnabled = true
+        leftAxis.gridLineWidth = 0.5
+        leftAxis.gridColor = NSUIColor.label.withAlphaComponent(0.12)
+        leftAxis.axisMinimum = 0
+        leftAxis.labelTextColor = .secondaryLabel
+        leftAxis.labelFont = .systemFont(ofSize: 10, weight: .medium)
+        leftAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
+            String(format: "%.0f", value)
+        })
+
+        chartView.rightAxis.enabled = false
+
+        containerView.addSubview(chartView)
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            chartView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            chartView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            chartView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            chartView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+
+        return containerView
+    }
+
+    func updateUIView(_ containerView: UIView, context: Context) {
+        guard let chartView = containerView.subviews.first as? BarChartView else { return }
+
+        let sorted = dayTotals.sorted { $0.date < $1.date }
+        let count = sorted.count
+
+        guard count > 0 else {
+            chartView.data = nil
+            chartView.notifyDataSetChanged()
+            chartView.setNeedsDisplay()
+            return
+        }
+
+        let dateFormatter: DateFormatter = {
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "sv_SE")
+            df.dateFormat = "yyyy-MM-dd"
+            return df
+        }()
+
+        let labels = sorted.map { dateFormatter.string(from: $0.date) }
+
+        let entries: [BarChartDataEntry] = sorted.enumerated().map { idx, item in
+            BarChartDataEntry(x: Double(idx), y: item.minutes)
+        }
+
+        let maxValue = sorted.map { $0.minutes }.max() ?? 0
+        let axisMaximum = max(30, ceil(maxValue * 1.12 / 10.0) * 10.0)
+        chartView.leftAxis.axisMaximum = axisMaximum
+
+        let labelCount: Int
+        switch axisMaximum {
+        case 0...60:
+            labelCount = 6
+        case 60...180:
+            labelCount = 7
+        default:
+            labelCount = 8
+        }
+        chartView.leftAxis.setLabelCount(labelCount, force: false)
+
+        let dataSet = BarChartDataSet(entries: entries, label: "Träning")
+        dataSet.colors = [NSUIColor.systemGreen.withAlphaComponent(0.85)]
+        dataSet.drawValuesEnabled = false
+        dataSet.highlightEnabled = false
+
+        let data = BarChartData(dataSet: dataSet)
+        data.barWidth = 0.62
+
+        chartView.xAxis.axisMinimum = -0.5
+        chartView.xAxis.axisMaximum = Double(count) - 0.5
+        chartView.xAxis.granularity = 1.0
+        chartView.xAxis.labelCount = min(count, 7)
+        chartView.xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
+
+        if count > 7 {
+            chartView.xAxis.labelCount = 7
+            chartView.xAxis.forceLabelsEnabled = false
+        }
+
+        chartView.data = data
+        chartView.notifyDataSetChanged()
+        chartView.setNeedsDisplay()
     }
 }

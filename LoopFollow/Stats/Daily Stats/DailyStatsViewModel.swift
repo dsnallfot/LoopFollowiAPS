@@ -301,7 +301,7 @@ final class DailyStatsViewModel: ObservableObject {
 */
     private let daysBack: Int
 
-    init(dataService: StatsDataService, daysBack: Int = 90, todayTDDOverride: Double? = nil) {
+    init(dataService: StatsDataService, daysBack: Int = 91, todayTDDOverride: Double? = nil) {
         self.dataService = dataService
         self.todayTDDOverride = todayTDDOverride
         self.daysBack = daysBack

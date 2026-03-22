@@ -19,7 +19,7 @@ final class StatsProfileBasalEngine {
 
     /// Ladda om profilhistoriken från Nightscout.
     /// Används bara för statistik (t.ex. 90 dagar).
-    func refresh(daysBack: Int = 90, completion: @escaping (Error?) -> Void) {
+    func refresh(daysBack: Int = 91, completion: @escaping (Error?) -> Void) {
         NightscoutUtils.fetchBasalProfilesSince(daysBack: daysBack) { result in
             switch result {
             case .failure(let error):

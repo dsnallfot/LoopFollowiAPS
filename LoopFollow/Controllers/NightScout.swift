@@ -127,6 +127,12 @@ extension MainViewController {
         updateResumeGraph()
     }
     
+    func clearOldTraining()
+    {
+        trainingGraphData.removeAll()
+        updateTrainingGraph()
+    }
+    
     func clearOldSensor()
     {
         sensorStartGraphData.removeAll()

@@ -6,7 +6,7 @@ import Foundation
 class StatsDataFetcher {
     weak var mainViewController: MainViewController?
     
-    private let maxCachedDays: Double = 90
+    private let maxCachedDays: Double = 91
     private let reloadWindowDays: Double = 2   // “riktig” 48h‑refetch
 
     init(mainViewController: MainViewController?) {

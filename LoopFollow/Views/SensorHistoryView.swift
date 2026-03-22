@@ -396,7 +396,7 @@ class SensorHistoryViewController: ThemedViewController, UISearchBarDelegate, UI
             let now = Date()
 
             // Keep up to 90 days (same as GlucoseView sensorfel retention)
-            let hardFloor = cal.date(byAdding: .day, value: -(90 - 1), to: cal.startOfDay(for: now)) ?? cal.startOfDay(for: now)
+            let hardFloor = cal.date(byAdding: .day, value: -(91 - 1), to: cal.startOfDay(for: now)) ?? cal.startOfDay(for: now)
 
             // Incremental refresh from last refreshed, with overlap so prev/next BG span resolves.
             let overlap: TimeInterval = 12 * 3600

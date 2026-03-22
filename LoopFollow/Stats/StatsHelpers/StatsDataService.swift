@@ -65,7 +65,7 @@ final class StatsCacheManager {
             let cache = try decoder.decode(Cache.self, from: data)
 
             let now = Date()
-            let cutoff = now.addingTimeInterval(-90 * 24 * 60 * 60).timeIntervalSince1970
+            let cutoff = now.addingTimeInterval(-91 * 24 * 60 * 60).timeIntervalSince1970
 
             let bg = cache.bg
                 .filter { $0.date >= cutoff }
@@ -133,7 +133,7 @@ final class StatsCacheManager {
     ///    med ny snapshot varje gång, för att fånga raderade/ändrade events.
     func saveFrom(mainVC: MainViewController) {
         let now = Date()
-        let horizonCutoff = now.addingTimeInterval(-90 * 24 * 60 * 60).timeIntervalSince1970
+        let horizonCutoff = now.addingTimeInterval(-91 * 24 * 60 * 60).timeIntervalSince1970
         let recentCutoff = now.addingTimeInterval(-24 * 60 * 60).timeIntervalSince1970
 
         // 1) Bygg upp "nya" arrayer från MainViewController (begränsade till 90 dagar bakåt)
@@ -406,7 +406,7 @@ extension MainViewController {
 
     func stats_syncBGFromLive() {
         let now = Date().timeIntervalSince1970
-        let horizonDays: Double = 90          // ska matcha StatsDataFetcher.maxCachedDays
+        let horizonDays: Double = 91          // ska matcha StatsDataFetcher.maxCachedDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
 
         // 1. Trimma bort riktigt gammal historik (äldre än 90 dagar)
@@ -437,7 +437,7 @@ extension MainViewController {
 
     func stats_syncTreatmentsFromLive() {
         let now = Date().timeIntervalSince1970
-        let horizonDays: Double = 90          // ska matcha StatsDataFetcher.maxCachedDays
+        let horizonDays: Double = 91          // ska matcha StatsDataFetcher.maxCachedDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
 
         // MARK: Bolus
@@ -539,7 +539,7 @@ class StatsDataService {
     var isTodayOnly: Bool = false
     var isOneDayOnly: Bool = false
     private let dataFetcher: StatsDataFetcher
-    private let maxStatsDays: Int = 90
+    private let maxStatsDays: Int = 91
     // Om satt används detta intervall som analysfönster istället för rullande daysToAnalyze-baserat fönster.
     var customInterval: DateInterval?
 

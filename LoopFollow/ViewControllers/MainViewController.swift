@@ -197,6 +197,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     var bgCheckData: [ShareGlucoseData] = []
     var suspendGraphData: [DataStructs.timestampOnlyStruct] = []
     var resumeGraphData: [DataStructs.timestampOnlyStruct] = []
+    var trainingGraphData: [DataStructs.noteStruct] = []
     //var sensorStartGraphData: [DataStructs.timestampOnlyStruct] = []
     var sensorStartGraphData: [DataStructs.sensorStartStruct] = []
     var pumpChangeGraphData: [DataStructs.timestampOnlyStruct] = []

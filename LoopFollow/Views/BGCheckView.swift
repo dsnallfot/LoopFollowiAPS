@@ -239,7 +239,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         case .fingerstick:
             let calendar = Calendar.current
             let now = Date()
-            let daysBack = min(NightscoutCache.retentionDays, 90)
+            let daysBack = min(NightscoutCache.retentionDays, 91)
 
             // Startdatum = början av dagen (daysBack-1) dagar bakåt
             guard let startDay = calendar.date(byAdding: .day, value: -(daysBack - 1), to: calendar.startOfDay(for: now)) else {
@@ -310,7 +310,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
         case .dextro:
             let calendar = Calendar.current
             let now = Date()
-            let daysBack = min(NightscoutCache.retentionDays, 90)
+            let daysBack = min(NightscoutCache.retentionDays, 91)
 
             // Startdatum = början av dagen (daysBack-1) dagar bakåt
             guard let startDay = calendar.date(
@@ -587,7 +587,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
                 byAdding: .day,
                 value: -NightscoutCache.retentionDays,
                 to: now
-            ) ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
+            ) ?? now.addingTimeInterval(-91 * 24 * 60 * 60)
 
             // Antag att NightscoutCache.loadWindow(from:to:) returnerar (sgv, treatments)
             let (sgvs, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
@@ -705,7 +705,7 @@ final class BGCheckView: ThemedViewController, UITableViewDataSource, UITableVie
                 byAdding: .day,
                 value: -NightscoutCache.retentionDays,
                 to: now
-            ) ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
+            ) ?? now.addingTimeInterval(-91 * 24 * 60 * 60)
 
             // Antag att NightscoutCache.loadWindow(from:to:) returnerar (sgv, treatments)
             let (sgvs, treatments) = await NightscoutCache.loadWindow(from: start, to: now)

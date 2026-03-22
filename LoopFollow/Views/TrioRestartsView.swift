@@ -223,7 +223,7 @@ final class TrioRestartsView: ThemedViewController, UITableViewDataSource, UITab
                 byAdding: .day,
                 value: -NightscoutCache.retentionDays,
                 to: now
-            ) ?? now.addingTimeInterval(-90 * 24 * 60 * 60)
+            ) ?? now.addingTimeInterval(-91 * 24 * 60 * 60)
 
             let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
 

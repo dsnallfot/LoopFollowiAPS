@@ -69,6 +69,7 @@
 		657BB13C2F3605D9009E2667 /* ActiveAlarmsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657BB13B2F3605D5009E2667 /* ActiveAlarmsViewController.swift */; };
 		6582C4B72ED23B4F0047658C /* GlucoseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6582C4B62ED23B490047658C /* GlucoseView.swift */; };
 		659AC6832D7C594D0069FC7C /* TreatmentsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */; };
+		65AD37922F7022F300F942A8 /* Training.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65AD37912F7022F000F942A8 /* Training.swift */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
 		65B3E5CD2D3FFB3000622194 /* TempTargetviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5CA2D3FFB3000622194 /* TempTargetviewController.swift */; };
 		65B3E5CE2D3FFB3000622194 /* BolusViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C82D3FFB3000622194 /* BolusViewController.swift */; };
@@ -412,6 +413,7 @@
 		657BB13B2F3605D5009E2667 /* ActiveAlarmsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAlarmsViewController.swift; sourceTree = "<group>"; };
 		6582C4B62ED23B490047658C /* GlucoseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseView.swift; sourceTree = "<group>"; };
 		659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreatmentsTableView.swift; sourceTree = "<group>"; };
+		65AD37912F7022F000F942A8 /* Training.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Training.swift; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
 		65B3E5C62D3FFB3000622194 /* SMSRemoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSRemoteViewController.swift; sourceTree = "<group>"; };
 		65B3E5C72D3FFB3000622194 /* MealViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealViewController.swift; sourceTree = "<group>"; };
@@ -967,6 +969,7 @@
 		DD493AEA2ACF2761009A6922 /* Treatments */ = {
 			isa = PBXGroup;
 			children = (
+				65AD37912F7022F000F942A8 /* Training.swift */,
 				DD7E19872ACDA5DA00DBD158 /* Notes.swift */,
 				DD7E19832ACDA50C00DBD158 /* Overrides.swift */,
 				DD7E19852ACDA59700DBD158 /* BGCheck.swift */,
@@ -1805,6 +1808,7 @@
 				6539A4E72EF1BBF200913601 /* TrioRestartsView.swift in Sources */,
 				FC97881C2485969B00A7906C /* MainViewController.swift in Sources */,
 				DD6A935E2BFA6FA2003FFB8E /* DeviceStatusOpenAPS.swift in Sources */,
+				65AD37922F7022F300F942A8 /* Training.swift in Sources */,
 				DD493AD52ACF2109009A6922 /* ResumePump.swift in Sources */,
 				6530969A2EE1996300117528 /* BGCheckView.swift in Sources */,
 				DDCF979624C1443C002C9752 /* GeneralSettingsViewController.swift in Sources */,

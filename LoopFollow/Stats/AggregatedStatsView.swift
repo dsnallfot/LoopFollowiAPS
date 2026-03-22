@@ -58,7 +58,7 @@ struct AggregatedStatsView: View {
 
         _dailyStatsVM = StateObject(wrappedValue: DailyStatsViewModel(
             dataService: viewModel.dataService,
-            daysBack: 90,
+            daysBack: 91,
             todayTDDOverride: nil
         ))
     }
@@ -92,7 +92,7 @@ struct AggregatedStatsView: View {
                         
                         HStack {
                             Text("Vald period:")
-                                .font(.subheadline)
+                                .font(.footnote)
                                 .fontWeight(.regular)
                                 .foregroundColor(Color.secondary)
                             Spacer()
@@ -257,8 +257,8 @@ struct AggregatedStatsView: View {
     private func baseDateBounds() -> (min: Date, max: Date) {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        // 90-dagars fönster bakåt inkl idag
-        let minDate = calendar.date(byAdding: .day, value: -89, to: today) ?? today
+        // 90-dagars fönster bakåt plus idag
+        let minDate = calendar.date(byAdding: .day, value: -90, to: today) ?? today
         return (minDate, today)
     }
 
@@ -437,7 +437,7 @@ struct AggregatedStatsView: View {
     
     @StateObject private var dailyStatsVM = DailyStatsViewModel(
         dataService: .placeholder,
-        daysBack: 90,
+        daysBack: 91,
         todayTDDOverride: nil
     )
 

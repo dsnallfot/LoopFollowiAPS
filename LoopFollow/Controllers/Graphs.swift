@@ -32,6 +32,7 @@ enum GraphDataIndex: Int {
     case smb = 16
     case tempTarget = 17
     case pump = 18
+    case training = 19
 }
 
 extension GraphDataIndex {
@@ -56,6 +57,7 @@ extension GraphDataIndex {
         case .smb: return "SMB"
         case .tempTarget: return "Temp Target"
         case .pump: return "Pump Change"
+        case .training: return "Träning"
         }
     }
 }
@@ -65,6 +67,7 @@ class CompositeRenderer: LineChartRenderer {
     let triangleRenderer: TriangleRenderer
     let bgCheckRenderer: BGCheckRenderer
     let inRangeBandRenderer: InRangeBandRenderer
+    let trainingSessionRenderer: TrainingSessionRenderer
 
     init(
         dataProvider: LineChartDataProvider?,
@@ -72,7 +75,8 @@ class CompositeRenderer: LineChartRenderer {
         viewPortHandler: ViewPortHandler?,
         tempTargetDataSetIndex: Int,
         smbDataSetIndex: Int,
-        bgCheckDataSetIndex: Int
+        bgCheckDataSetIndex: Int,
+        trainingDataSetIndex: Int
     ) {
         // Säkerställ att Charts alltid får giltiga objekt
         let provider = dataProvider!
@@ -99,6 +103,13 @@ class CompositeRenderer: LineChartRenderer {
             viewPortHandler: viewPortHandler,
             bgCheckDataSetIndex: bgCheckDataSetIndex
         )
+        
+        self.trainingSessionRenderer = TrainingSessionRenderer(
+            dataProvider: provider,
+            animator: animator,
+            viewPortHandler: viewPortHandler,
+            trainingDataSetIndex: trainingDataSetIndex
+        )
 
         self.inRangeBandRenderer = InRangeBandRenderer(
             dataProvider: provider,
@@ -118,6 +129,7 @@ class CompositeRenderer: LineChartRenderer {
         inRangeBandRenderer.drawExtras(context: context)
         tempTargetRenderer.drawExtras(context: context)
         bgCheckRenderer.drawExtras(context: context)
+        trainingSessionRenderer.drawExtras(context: context)
         // Daniel: Do not draw those triangles for smbs // triangleRenderer.drawExtras(context: context)
     }
 }
@@ -207,6 +219,24 @@ class BGCheckLineChartDataEntry: ChartDataEntry {
 
     override func copy(with zone: NSZone? = nil) -> Any {
         BGCheckLineChartDataEntry(xStart: xStart, xEnd: xEnd, y: y, data: data)
+    }
+}
+
+class TrainingSessionChartDataEntry: ChartDataEntry {
+    var xStart: Double = 0.0
+    var xEnd: Double = 0.0
+
+    required init() { super.init() }
+
+    init(xStart: Double, xEnd: Double, y: Double, data: Any?) {
+        self.xStart = xStart
+        self.xEnd = xEnd
+        super.init(x: xStart, y: y)
+        self.data = data
+    }
+
+    override func copy(with zone: NSZone? = nil) -> Any {
+        TrainingSessionChartDataEntry(xStart: xStart, xEnd: xEnd, y: y, data: data)
     }
 }
 
@@ -369,12 +399,59 @@ class BGCheckRenderer: LineChartRenderer {
     }
 }
 
+class TrainingSessionRenderer: LineChartRenderer {
+    let trainingDataSetIndex: Int
+
+    init(dataProvider: LineChartDataProvider?, animator: Animator?, viewPortHandler: ViewPortHandler?, trainingDataSetIndex: Int) {
+        self.trainingDataSetIndex = trainingDataSetIndex
+        super.init(dataProvider: dataProvider!, animator: animator!, viewPortHandler: viewPortHandler!)
+    }
+
+    override func drawExtras(context: CGContext) {
+        super.drawExtras(context: context)
+
+        guard let dataProvider = dataProvider else { return }
+        guard (dataProvider.lineData?.dataSets.count ?? 0) > trainingDataSetIndex,
+              let dataSet = dataProvider.lineData?.dataSets[trainingDataSetIndex] as? LineChartDataSet else { return }
+
+        let trans = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
+        let phaseY = animator.phaseY
+
+        context.saveGState()
+        context.setLineCap(.round)
+        context.setStrokeColor(UIColor.systemGreen.withAlphaComponent(0.5).cgColor)
+        context.setLineWidth(10)
+
+        for i in 0 ..< dataSet.entryCount {
+            guard let entry = dataSet.entryForIndex(i) as? TrainingSessionChartDataEntry else { continue }
+
+            let yVal = entry.y * phaseY
+            let p1 = trans.pixelForValues(x: entry.xStart, y: yVal)
+            let p2 = trans.pixelForValues(x: entry.xEnd, y: yVal)
+
+            // Skip om helt utanför viewport
+            if (p1.x < viewPortHandler.contentLeft && p2.x < viewPortHandler.contentLeft) ||
+               (p1.x > viewPortHandler.contentRight && p2.x > viewPortHandler.contentRight) {
+                continue
+            }
+
+            context.beginPath()
+            context.move(to: p1)
+            context.addLine(to: p2)
+            context.strokePath()
+        }
+
+        context.restoreGState()
+    }
+}
+
 let ScaleXMax:Float = 150.0
 extension MainViewController {
     func updateChartRenderers() {
         let tempTargetDataIndex = GraphDataIndex.tempTarget.rawValue
         let smbDataIndex = GraphDataIndex.smb.rawValue
         let bgCheckDataIndex = GraphDataIndex.bgCheck.rawValue
+        let trainingDataIndex = GraphDataIndex.training.rawValue
 
         let compositeRenderer = CompositeRenderer(
             dataProvider: BGChart,
@@ -382,7 +459,8 @@ extension MainViewController {
             viewPortHandler: BGChart.viewPortHandler,
             tempTargetDataSetIndex: tempTargetDataIndex,
             smbDataSetIndex: smbDataIndex,
-            bgCheckDataSetIndex: bgCheckDataIndex
+            bgCheckDataSetIndex: bgCheckDataIndex,
+            trainingDataSetIndex: trainingDataIndex
         )
         BGChart.renderer = compositeRenderer
 
@@ -671,6 +749,65 @@ extension MainViewController {
         UserDefaultsRepository.chartScaleX.value = Float(scale)
     }
     
+    private func makeTrainingSessionEntries(from entries: [DataStructs.noteStruct]) -> [TrainingSessionChartDataEntry] {
+        guard !entries.isEmpty else { return [] }
+
+        let sortedEntries = entries.sorted { $0.date < $1.date }
+
+        let defaultSessionLength: Double = 6 * 60 * 60
+        let overlayY = sortedEntries.map { Double($0.sgv) }.min() ?? 18.0
+
+        var result: [TrainingSessionChartDataEntry] = []
+        var currentStart: DataStructs.noteStruct?
+
+        for entry in sortedEntries {
+            let note = entry.note.lowercased()
+
+            if note.contains("meta quest spel startades") {
+                currentStart = entry
+                continue
+            }
+
+            if note.contains("meta quest spel avslutades"),
+               let start = currentStart,
+               entry.date >= start.date {
+
+                result.append(
+                    TrainingSessionChartDataEntry(
+                        xStart: start.date,
+                        xEnd: entry.date,
+                        y: overlayY,
+                        data: formatPillTextExtraLine(
+                            line1: "Träning",
+                            line2: "Meta Quest-spelsession",
+                            time: start.date
+                        )
+                    )
+                )
+
+                currentStart = nil
+            }
+        }
+
+        // Pågående session: rita 6h framåt från senaste start
+        if let start = currentStart {
+            result.append(
+                TrainingSessionChartDataEntry(
+                    xStart: start.date,
+                    xEnd: start.date + defaultSessionLength,
+                    y: overlayY,
+                    data: formatPillTextExtraLine(
+                        line1: "Träning pågår",
+                        line2: "Meta Quest-spelsession",
+                        time: start.date
+                    )
+                )
+            )
+        }
+
+        return result
+    }
+    
 // Daniel: Test even mmol yaxis tick marks
     func createGraph(){
         // Create the BG Graph Data
@@ -862,6 +999,21 @@ extension MainViewController {
         lineResume.axisDependency = YAxis.AxisDependency.right
         lineResume.valueFormatter = ChartYDataValueFormatter()
         lineResume.drawValuesEnabled = false
+        
+        // Training
+        let chartEntryTraining = [ChartDataEntry]()
+        let lineTraining = LineChartDataSet(entries:chartEntryTraining, label: "")
+        lineTraining.circleRadius = CGFloat(globalVariables.dotOther)
+        lineTraining.circleColors = [NSUIColor.systemGreen.withAlphaComponent(0.75)]
+        lineTraining.drawCircleHoleEnabled = false
+        lineTraining.setDrawHighlightIndicators(false)
+        lineTraining.setColor(NSUIColor.systemGreen, alpha: 1.0)
+        lineTraining.drawCirclesEnabled = true
+        lineTraining.lineWidth = 0
+        lineTraining.highlightEnabled = true
+        lineTraining.axisDependency = YAxis.AxisDependency.right
+        lineTraining.valueFormatter = ChartYDataValueFormatter()
+        lineTraining.drawValuesEnabled = false
         
         // Sensor Start
         let chartEntrySensor = [ChartDataEntry]()
@@ -1065,6 +1217,7 @@ extension MainViewController {
         data.append(lineSmb) // Dataset 16
         data.append(lineTempTarget)
         data.append(linePump)
+        data.append(lineTraining)
         // Pulses for Temp Basal deliveries as small circles at bottom
         let basalPulseEntries: [ChartDataEntry] = []
         let basalPulseSet = LineChartDataSet(entries: basalPulseEntries, label: "TempBasal Pulses")
@@ -1800,7 +1953,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if dateTimeStamp < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
   
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(bolusData[i].sgv), data: formatPillTextExtraLine(line1: "Bolus", line2: formatter.string(from: NSNumber(value: bolusData[i].value))! + " E", time: dateTimeStamp))
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(bolusData[i].sgv), data: formatPillTextExtraLine(line1: "Bolus", line2: (formatter.string(from: NSNumber(value: bolusData[i].value))?.replacingOccurrences(of: ",", with: "."))! + " E", time: dateTimeStamp))
             mainChart.addEntry(dot)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 smallChart.addEntry(dot)
@@ -1872,7 +2025,7 @@ extension MainViewController {
             let graphHours = 24 * UserDefaultsRepository.downloadDays.value
             if dateTimeStamp < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
             
-            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(smbData[i].sgv), data: formatPillText(line1: "SMB\n" + formatter.string(from: NSNumber(value: smbData[i].value))! + " E", time: dateTimeStamp))
+            let dot = ChartDataEntry(x: Double(dateTimeStamp), y: Double(smbData[i].sgv), data: formatPillText(line1: "SMB\n" + (formatter.string(from: NSNumber(value: smbData[i].value))?.replacingOccurrences(of: ",", with: "."))! + " E", time: dateTimeStamp))
             mainChart.addEntry(dot)
             if UserDefaultsRepository.smallGraphTreatments.value {
                 smallChart.addEntry(dot)
@@ -2094,6 +2247,87 @@ extension MainViewController {
         BGChart.notifyDataSetChanged()
         if UserDefaultsRepository.smallGraphTreatments.value {
             BGChartFull.data?.dataSets[dataIndex].notifyDataSetChanged()
+            BGChartFull.data?.notifyDataChanged()
+            BGChartFull.notifyDataSetChanged()
+        }
+    }
+    
+    func updateTrainingGraph() {
+        let dataIndex = GraphDataIndex.training.rawValue
+
+        guard let mainChart = BGChart.lineData?.dataSets[dataIndex] as? LineChartDataSet,
+              let smallChart = BGChartFull.lineData?.dataSets[dataIndex] as? LineChartDataSet else {
+            return
+        }
+
+        mainChart.clear()
+        smallChart.clear()
+
+        var dotEntries: [ChartDataEntry] = []
+        var dotColors: [NSUIColor] = []
+
+        for entry in trainingGraphData {
+            let dotEntry = ChartDataEntry(
+                x: Double(entry.date),
+                y: Double(entry.sgv),
+                data: formatPillTextExtraLine(
+                    line1: "Träning",
+                    line2: entry.note,
+                    time: entry.date
+                )
+            )
+
+            dotEntries.append(dotEntry)
+            dotColors.append(.systemGreen.withAlphaComponent(0.75))
+        }
+
+        let sessionEntries = makeTrainingSessionEntries(from: trainingGraphData)
+
+        // Lägg först in synliga dots
+        for dotEntry in dotEntries {
+            mainChart.addEntry(dotEntry)
+            if UserDefaultsRepository.smallGraphTreatments.value {
+                smallChart.addEntry(dotEntry)
+            }
+        }
+
+        // Lägg sedan in osynliga session-entries som custom renderern använder
+        for sessionEntry in sessionEntries {
+            mainChart.addEntry(sessionEntry)
+            if UserDefaultsRepository.smallGraphTreatments.value {
+                smallChart.addEntry(sessionEntry)
+            }
+        }
+
+        mainChart.colors.removeAll()
+        mainChart.circleColors.removeAll()
+        smallChart.colors.removeAll()
+        smallChart.circleColors.removeAll()
+
+        // Synliga dots
+        for _ in dotEntries {
+            let color = NSUIColor.systemGreen.withAlphaComponent(0.75)
+            mainChart.addColor(color)
+            mainChart.circleColors.append(color)
+            smallChart.addColor(color)
+            smallChart.circleColors.append(color)
+        }
+
+        // Osynliga linje-entries
+        for _ in sessionEntries {
+            mainChart.addColor(.clear)
+            mainChart.circleColors.append(.clear)
+            smallChart.addColor(.clear)
+            smallChart.circleColors.append(.clear)
+        }
+
+        mainChart.notifyDataSetChanged()
+        smallChart.notifyDataSetChanged()
+
+        BGChart.data?.notifyDataChanged()
+        BGChart.notifyDataSetChanged()
+
+        if UserDefaultsRepository.smallGraphTreatments.value {
             BGChartFull.data?.notifyDataChanged()
             BGChartFull.notifyDataSetChanged()
         }
@@ -2341,6 +2575,21 @@ extension MainViewController {
         lineResume.valueFormatter = ChartYDataValueFormatter()
         lineResume.drawValuesEnabled = false
         
+        // Training
+        var chartEntryTraining = [ChartDataEntry]()
+        let lineTraining = LineChartDataSet(entries:chartEntryTraining, label: "")
+        lineTraining.circleRadius = 2
+        lineTraining.circleColors = [NSUIColor.systemGreen.withAlphaComponent(0.75)]
+        lineTraining.drawCircleHoleEnabled = false
+        lineTraining.setDrawHighlightIndicators(false)
+        lineTraining.setColor(NSUIColor.systemGreen, alpha: 1.0)
+        lineTraining.drawCirclesEnabled = true
+        lineTraining.lineWidth = 0
+        lineTraining.highlightEnabled = false
+        lineTraining.axisDependency = YAxis.AxisDependency.right
+        lineTraining.valueFormatter = ChartYDataValueFormatter()
+        lineTraining.drawValuesEnabled = false
+        
         // Sensor Start
         var chartEntrySensor = [ChartDataEntry]()
         let lineSensor = LineChartDataSet(entries:chartEntrySensor, label: "")
@@ -2491,6 +2740,7 @@ extension MainViewController {
         data.append(lineSmb) // Dataset 16
         data.append(lineTempTarget)
         data.append(linePump)
+        data.append(lineTraining)
 
         BGChartFull.highlightPerDragEnabled = true
         BGChartFull.leftAxis.enabled = false
