@@ -555,13 +555,13 @@ struct ProfileSchedulesView: View {
                     }
                     .accessibilityLabel("Profil laddades ner:")
                 } else if selectedMode == .user {
-                    HStack {
+                    HStack(spacing: 12){
                         Button {
                             showAddUserData = true
                         } label: {
                             Image(systemName: "plus")
                         }
-                        .padding(.leading, 2)
+                        .padding(.leading, 3)
                         .accessibilityLabel("Lägg till användardata")
 
                         Button {
@@ -579,14 +579,23 @@ struct ProfileSchedulesView: View {
                             Image(systemName: "square.and.arrow.down")
                         }
                         .accessibilityLabel("Importera användardata (CSV)")
+                        
+                        Button {
+                            showStatsView = true
+                        } label: {
+                            Image(systemName: "chart.bar.xaxis.ascending")
+                        }
+                        .padding(.trailing, 3)
+                        .accessibilityLabel("Visa hälsostatistik")
                     }
                 } else if selectedMode == .sick {
-                    HStack(spacing: 14) {
+                    HStack(spacing: 12) {
                         Button {
                             showAddSickDay = true
                         } label: {
                             Image(systemName: "plus")
                         }
+                        .padding(.leading, 3)
                         .accessibilityLabel("Lägg till sjukdag")
                         
                         Button {
@@ -594,6 +603,7 @@ struct ProfileSchedulesView: View {
                         } label: {
                             Image(systemName: "calendar")
                         }
+                        .padding(.trailing, 3)
                         .accessibilityLabel("Visa sjukdagshistorik som kalender")
                     }
                 } else if selectedMode == .training {
