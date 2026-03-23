@@ -231,6 +231,55 @@ struct ProfileSchedulesView: View {
         window.rootViewController?.present(nav, animated: true)
     }
 
+    private func presentTrainingAnalysis(for session: TrainingSessionEntry) {
+        let entryDate = session.startDate
+        let calendar = Calendar.current
+        let startDate = entryDate//calendar.startOfDay(for: entryDate)
+        let endDate = calendar.date(byAdding: .day, value: 1, to: startDate)
+
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+            let tabBar = window.rootViewController as? UITabBarController,
+            let tabViewControllers = tabBar.viewControllers
+        else {
+            return
+        }
+
+        var mainVC: MainViewController?
+
+        for vc in tabViewControllers {
+            if let nav = vc as? UINavigationController {
+                if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = candidate
+                    break
+                }
+            } else if let candidate = vc as? MainViewController {
+                mainVC = candidate
+                break
+            }
+        }
+
+        guard let mainVC, let endDate else {
+            return
+        }
+
+        let events = mainVC.buildEventsForMealAnalysis()
+
+        let analysisVC = MealAnalysisView(
+            events: events,
+            initialStart: startDate,
+            initialEnd: endDate,
+            modalWithTimestamp: true,
+            modalTitleString: session.trainingType,
+            preSelectedSegment: 2
+        )
+
+        let nav = UINavigationController(rootViewController: analysisVC)
+        nav.modalPresentationStyle = .formSheet
+        window.rootViewController?.present(nav, animated: true)
+    }
+
     @ViewBuilder
     private var modePickerView: some View {
         Picker("Mode", selection: $selectedMode) {
@@ -319,7 +368,12 @@ struct ProfileSchedulesView: View {
     
     @ViewBuilder
     private var trainingModeContent: some View {
-        TrainingSessionsView(sessions: viewModel.trainingSessions)
+        TrainingSessionsView(
+            sessions: viewModel.trainingSessions,
+            onTapSession: { session in
+                presentTrainingAnalysis(for: session)
+            }
+        )
     }
 
     @ViewBuilder
@@ -738,6 +792,7 @@ private struct TrainingSessionRow: View {
 @available(iOS 17.0, *)
 private struct TrainingSessionsView: View {
     let sessions: [TrainingSessionEntry]
+    let onTapSession: (TrainingSessionEntry) -> Void
 
     var body: some View {
         Group {
@@ -756,6 +811,10 @@ private struct TrainingSessionsView: View {
                             TrainingSessionRow(session: session)
                                 .padding(.horizontal, 18)
                                 .padding(.vertical, 16)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    onTapSession(session)
+                                }
 
                             if index < sessions.count - 1 {
                                 Divider()
@@ -2487,7 +2546,13 @@ private struct TrainingStatsView: View {
     struct DayTotal: Identifiable {
         let id = UUID()
         let date: Date
-        let minutes: Double
+        let metaQuestMinutes: Double
+        let gympaMinutes: Double
+        let highActivityMinutes: Double
+
+        var minutes: Double {
+            metaQuestMinutes + gympaMinutes + highActivityMinutes
+        }
     }
 
     private var filteredSessions: [TrainingSessionEntry] {
@@ -2507,14 +2572,20 @@ private struct TrainingStatsView: View {
         let today = calendar.startOfDay(for: now)
         let startDay = calendar.date(byAdding: .day, value: -(selectedPeriod.days - 1), to: today) ?? today
 
-        var dict: [Date: Double] = [:]
+        struct Bucket {
+            var metaQuest: Double = 0
+            var gympa: Double = 0
+            var highActivity: Double = 0
+        }
+
+        var dict: [Date: Bucket] = [:]
         var days: [Date] = []
 
         for offset in 0..<selectedPeriod.days {
             if let day = calendar.date(byAdding: .day, value: offset, to: startDay) {
                 let startOfDay = calendar.startOfDay(for: day)
                 days.append(startOfDay)
-                dict[startOfDay] = 0
+                dict[startOfDay] = Bucket()
             }
         }
 
@@ -2523,12 +2594,29 @@ private struct TrainingStatsView: View {
             let end = session.endDate ?? now
             let minutes = max(0, end.timeIntervalSince(start) / 60.0)
             let day = calendar.startOfDay(for: start)
-            if dict[day] != nil {
-                dict[day, default: 0] += minutes
+            guard var bucket = dict[day] else { continue }
+
+            switch session.category {
+            case .metaQuest:
+                bucket.metaQuest += minutes
+            case .gympa:
+                bucket.gympa += minutes
+            case .highActivity:
+                bucket.highActivity += minutes
             }
+
+            dict[day] = bucket
         }
 
-        return days.map { DayTotal(date: $0, minutes: dict[$0] ?? 0) }
+        return days.map {
+            let bucket = dict[$0] ?? Bucket()
+            return DayTotal(
+                date: $0,
+                metaQuestMinutes: bucket.metaQuest,
+                gympaMinutes: bucket.gympa,
+                highActivityMinutes: bucket.highActivity
+            )
+        }
     }
 
     private var totalSessionCount: Int {
@@ -2691,12 +2779,8 @@ private struct TrainingStatsRow: View {
 }
 
 @available(iOS 17.0, *)
+@available(iOS 17.0, *)
 private struct TrainingStatsBarChartView: UIViewRepresentable {
-    struct DayTotal {
-        let date: Date
-        let minutes: Double
-    }
-
     let dayTotals: [TrainingStatsView.DayTotal]
 
     func makeUIView(context: Context) -> UIView {
@@ -2709,16 +2793,22 @@ private struct TrainingStatsBarChartView: UIViewRepresentable {
         chartView.drawGridBackgroundEnabled = true
         chartView.gridBackgroundColor = UIColor.systemBackground.withAlphaComponent(0.5)
         chartView.drawBordersEnabled = false
-
         chartView.chartDescription.enabled = false
-        chartView.legend.enabled = false
+
+        chartView.legend.enabled = true
+        chartView.legend.verticalAlignment = .bottom
+        chartView.legend.horizontalAlignment = .center
+        chartView.legend.orientation = .horizontal
+        chartView.legend.drawInside = false
+        chartView.legend.yOffset = 8
+        chartView.legend.textColor = .secondaryLabel
+        chartView.legend.font = .systemFont(ofSize: 11, weight: .medium)
 
         chartView.rightAxis.enabled = false
         chartView.leftAxis.enabled = true
 
         chartView.isUserInteractionEnabled = true
         chartView.drawMarkers = false
-
         chartView.pinchZoomEnabled = false
         chartView.doubleTapToZoomEnabled = false
         chartView.scaleXEnabled = false
@@ -2748,8 +2838,6 @@ private struct TrainingStatsBarChartView: UIViewRepresentable {
         leftAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
             String(format: "%.0f", value)
         })
-
-        chartView.rightAxis.enabled = false
 
         containerView.addSubview(chartView)
         chartView.translatesAutoresizingMaskIntoConstraints = false
@@ -2800,7 +2888,10 @@ private struct TrainingStatsBarChartView: UIViewRepresentable {
         }()
 
         let entries: [BarChartDataEntry] = sorted.enumerated().map { idx, item in
-            BarChartDataEntry(x: Double(idx), y: item.minutes)
+            BarChartDataEntry(
+                x: Double(idx),
+                yValues: [item.metaQuestMinutes, item.gympaMinutes, item.highActivityMinutes]
+            )
         }
 
         let maxValue = sorted.map { $0.minutes }.max() ?? 0
@@ -2820,7 +2911,12 @@ private struct TrainingStatsBarChartView: UIViewRepresentable {
         chartView.leftAxis.setLabelCount(labelCount, force: false)
 
         let dataSet = BarChartDataSet(entries: entries, label: "Träning")
-        dataSet.colors = [NSUIColor.systemGreen.withAlphaComponent(0.85)]
+        dataSet.colors = [
+            NSUIColor.systemGreen,
+            NSUIColor.systemGreen.withAlphaComponent(0.5),
+            NSUIColor.systemGreen.withAlphaComponent(0.2)
+        ]
+        dataSet.stackLabels = ["Meta Quest", "Gympa", "Hög aktivitet"]
         dataSet.drawValuesEnabled = false
         dataSet.highlightEnabled = false
 
@@ -2838,6 +2934,28 @@ private struct TrainingStatsBarChartView: UIViewRepresentable {
             guard shownLabelIndices.contains(idx) else { return "" }
             return labels[idx]
         })
+
+        let legendEntries: [LegendEntry] = [
+            {
+                let e = LegendEntry(label: "Meta Quest")
+                e.form = .square
+                e.formColor = NSUIColor.systemGreen
+                return e
+            }(),
+            {
+                let e = LegendEntry(label: "Gympa")
+                e.form = .square
+                e.formColor = NSUIColor.systemGreen.withAlphaComponent(0.75)
+                return e
+            }(),
+            {
+                let e = LegendEntry(label: "Hög aktivitet")
+                e.form = .square
+                e.formColor = NSUIColor.systemGreen.withAlphaComponent(0.5)
+                return e
+            }()
+        ]
+        chartView.legend.setCustom(entries: legendEntries)
 
         chartView.data = data
         chartView.notifyDataSetChanged()

@@ -17,10 +17,22 @@ struct ScheduleEntry: Identifiable {
 }
 
 struct TrainingSessionEntry: Identifiable, Equatable {
+    enum Category: String, Equatable {
+        case metaQuest = "Meta Quest"
+        case gympa = "Gympa"
+        case highActivity = "Hög aktivitet"
+
+        var displayName: String { rawValue }
+    }
+
     let id = UUID()
-    let trainingType: String
+    let category: Category
     let startDate: Date
     let endDate: Date?
+
+    var trainingType: String {
+        category.displayName
+    }
 
     var isOngoing: Bool {
         endDate == nil
@@ -389,40 +401,78 @@ class ProfileSchedulesViewModel: ObservableObject {
 
             let (_, treatments) = await NightscoutCache.loadWindow(from: start, to: now)
 
-            let relevantNotes = treatments
-                .filter { $0.eventType == "Note" }
-                .filter { ($0.notes ?? "").lowercased().contains("meta quest spel") }
+            let relevantTreatments = treatments
+                .filter { treatment in
+                    if treatment.eventType == "Note" {
+                        return (treatment.notes ?? "").lowercased().contains("meta quest spel")
+                    }
+                    if treatment.eventType == "Exercise" {
+                        let note = (treatment.notes ?? "").lowercased()
+                        return note.contains("gympa") || note.contains("hög aktivitet")
+                    }
+                    return false
+                }
                 .sorted { $0.created_at < $1.created_at }
 
             var sessions: [TrainingSessionEntry] = []
             var currentMetaQuestStart: Date?
 
-            for treatment in relevantNotes {
-                guard let note = treatment.notes?.lowercased() else { continue }
+            for treatment in relevantTreatments {
+                let note = (treatment.notes ?? "").lowercased()
 
-                if note.contains("meta quest spel startades") {
-                    currentMetaQuestStart = treatment.created_at
+                if treatment.eventType == "Note" {
+                    if note.contains("meta quest spel startades") {
+                        currentMetaQuestStart = treatment.created_at
+                        continue
+                    }
+
+                    if note.contains("meta quest spel avslutades"), let startDate = currentMetaQuestStart {
+                        if treatment.created_at >= startDate {
+                            sessions.append(
+                                TrainingSessionEntry(
+                                    category: .metaQuest,
+                                    startDate: startDate,
+                                    endDate: treatment.created_at
+                                )
+                            )
+                        }
+                        currentMetaQuestStart = nil
+                    }
+
                     continue
                 }
 
-                if note.contains("meta quest spel avslutades"), let startDate = currentMetaQuestStart {
-                    if treatment.created_at >= startDate {
-                        sessions.append(
-                            TrainingSessionEntry(
-                                trainingType: "Meta Quest",
-                                startDate: startDate,
-                                endDate: treatment.created_at
-                            )
-                        )
+                if treatment.eventType == "Exercise" {
+                    guard let duration = treatment.tempBasalDuration, duration > 0 else { continue }
+
+                    let category: TrainingSessionEntry.Category?
+                    if note.contains("gympa") {
+                        category = .gympa
+                    } else if note.contains("hög aktivitet") {
+                        category = .highActivity
+                    } else {
+                        category = nil
                     }
-                    currentMetaQuestStart = nil
+
+                    guard let category else { continue }
+
+                    let startDate = treatment.created_at
+                    let endDate = startDate.addingTimeInterval(duration * 60)
+
+                    sessions.append(
+                        TrainingSessionEntry(
+                            category: category,
+                            startDate: startDate,
+                            endDate: endDate
+                        )
+                    )
                 }
             }
 
             if let startDate = currentMetaQuestStart {
                 sessions.append(
                     TrainingSessionEntry(
-                        trainingType: "Meta Quest",
+                        category: .metaQuest,
                         startDate: startDate,
                         endDate: nil
                     )
