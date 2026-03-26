@@ -622,6 +622,7 @@ struct ProfileSchedulesView: View {
                         Image(systemName: "chart.bar.xaxis.ascending")
                     }
                     .accessibilityLabel("Visa träningsstatistik")
+                    .padding(.trailing, 3)
                 }
                 }
             }
