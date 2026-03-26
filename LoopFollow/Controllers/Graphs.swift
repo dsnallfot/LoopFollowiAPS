@@ -759,17 +759,27 @@ extension MainViewController {
 
         var result: [TrainingSessionChartDataEntry] = []
         var currentStart: DataStructs.noteStruct?
+        var currentSessionLine2: String?
 
         for entry in sortedEntries {
             let note = entry.note.lowercased()
 
             if note.contains("meta quest spel startades") {
                 currentStart = entry
+                currentSessionLine2 = "Meta Quest-spelsession"
+                continue
+            }
+
+            if note.contains("träning startades") {
+                currentStart = entry
+                currentSessionLine2 = "Övrig träning"
                 continue
             }
 
             if note.contains("meta quest spel avslutades"),
                let start = currentStart,
+               let line2 = currentSessionLine2,
+               line2 == "Meta Quest-spelsession",
                entry.date >= start.date {
 
                 result.append(
@@ -779,18 +789,42 @@ extension MainViewController {
                         y: overlayY,
                         data: formatPillTextExtraLine(
                             line1: "Träning",
-                            line2: "Meta Quest-spelsession",
+                            line2: line2,
                             time: start.date
                         )
                     )
                 )
 
                 currentStart = nil
+                currentSessionLine2 = nil
+            }
+
+            if note.contains("träning avslutades"),
+               let start = currentStart,
+               let line2 = currentSessionLine2,
+               line2 == "Övrig träning",
+               entry.date >= start.date {
+
+                result.append(
+                    TrainingSessionChartDataEntry(
+                        xStart: start.date,
+                        xEnd: entry.date,
+                        y: overlayY,
+                        data: formatPillTextExtraLine(
+                            line1: "Träning",
+                            line2: line2,
+                            time: start.date
+                        )
+                    )
+                )
+
+                currentStart = nil
+                currentSessionLine2 = nil
             }
         }
 
         // Pågående session: rita 6h framåt från senaste start
-        if let start = currentStart {
+        if let start = currentStart, let line2 = currentSessionLine2 {
             result.append(
                 TrainingSessionChartDataEntry(
                     xStart: start.date,
@@ -798,7 +832,7 @@ extension MainViewController {
                     y: overlayY,
                     data: formatPillTextExtraLine(
                         line1: "Träning pågår",
-                        line2: "Meta Quest-spelsession",
+                        line2: line2,
                         time: start.date
                     )
                 )

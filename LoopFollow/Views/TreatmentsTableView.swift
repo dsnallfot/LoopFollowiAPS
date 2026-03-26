@@ -1159,9 +1159,9 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 return ("pause.circle.fill", .systemTeal.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("PumpResume") {
                 return ("play.circle.fill", .systemTeal.withAlphaComponent(0.75))
-            } else if let noteText = fullNote, noteText.contains("Meta Quest spel startades") {
+            } else if let noteText = fullNote, noteText.contains("Meta Quest spel startades") || noteText.contains("Träning startades") {
                 return ("play.circle.fill", .systemGreen.withAlphaComponent(0.75))
-            } else if let noteText = fullNote, noteText.contains("Meta Quest spel avslutades") {
+            } else if let noteText = fullNote, noteText.contains("Meta Quest spel avslutades") || noteText.contains("Träning avslutades") {
                 return ("stop.circle.fill", .systemGreen.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("Trio startades om") {
                 return ("repeat.circle.fill", .label.withAlphaComponent(0.5))

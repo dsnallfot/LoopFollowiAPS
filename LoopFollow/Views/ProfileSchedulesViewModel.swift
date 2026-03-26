@@ -21,6 +21,7 @@ struct TrainingSessionEntry: Identifiable, Equatable {
         case metaQuest = "Meta Quest"
         case gympa = "Gympa"
         case highActivity = "Hög aktivitet"
+        case training = "Övrig träning"
 
         var displayName: String { rawValue }
     }
@@ -404,7 +405,10 @@ class ProfileSchedulesViewModel: ObservableObject {
             let relevantTreatments = treatments
                 .filter { treatment in
                     if treatment.eventType == "Note" {
-                        return (treatment.notes ?? "").lowercased().contains("meta quest spel")
+                        let note = (treatment.notes ?? "").lowercased()
+                        return note.contains("meta quest spel")
+                            || note.contains("träning startades")
+                            || note.contains("träning avslutades")
                     }
                     if treatment.eventType == "Exercise" {
                         let note = (treatment.notes ?? "").lowercased()
@@ -416,6 +420,7 @@ class ProfileSchedulesViewModel: ObservableObject {
 
             var sessions: [TrainingSessionEntry] = []
             var currentMetaQuestStart: Date?
+            var currentOtherTrainingStart: Date?
 
             for treatment in relevantTreatments {
                 let note = (treatment.notes ?? "").lowercased()
@@ -423,6 +428,11 @@ class ProfileSchedulesViewModel: ObservableObject {
                 if treatment.eventType == "Note" {
                     if note.contains("meta quest spel startades") {
                         currentMetaQuestStart = treatment.created_at
+                        continue
+                    }
+
+                    if note.contains("träning startades") {
+                        currentOtherTrainingStart = treatment.created_at
                         continue
                     }
 
@@ -437,6 +447,21 @@ class ProfileSchedulesViewModel: ObservableObject {
                             )
                         }
                         currentMetaQuestStart = nil
+                        continue
+                    }
+
+                    if note.contains("träning avslutades"), let startDate = currentOtherTrainingStart {
+                        if treatment.created_at >= startDate {
+                            sessions.append(
+                                TrainingSessionEntry(
+                                    category: .training,
+                                    startDate: startDate,
+                                    endDate: treatment.created_at
+                                )
+                            )
+                        }
+                        currentOtherTrainingStart = nil
+                        continue
                     }
 
                     continue
@@ -473,6 +498,16 @@ class ProfileSchedulesViewModel: ObservableObject {
                 sessions.append(
                     TrainingSessionEntry(
                         category: .metaQuest,
+                        startDate: startDate,
+                        endDate: nil
+                    )
+                )
+            }
+
+            if let startDate = currentOtherTrainingStart {
+                sessions.append(
+                    TrainingSessionEntry(
+                        category: .training,
                         startDate: startDate,
                         endDate: nil
                     )

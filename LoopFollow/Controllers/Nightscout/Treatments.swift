@@ -171,6 +171,9 @@ extension MainViewController {
                     } else if notesText.contains("Meta Quest") {
                         // Tolka denna note som en Training, inte som vanlig note
                         training.append(entry)
+                    } else if notesText.contains("Träning") {
+                        // Tolka denna note som en Training, inte som vanlig note
+                        training.append(entry)
                     } else {
                         // Vanlig note/announcement
                         note.append(entry)

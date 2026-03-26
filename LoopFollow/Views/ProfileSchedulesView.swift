@@ -36,6 +36,7 @@ struct ProfileSchedulesView: View {
     @State private var userCSVDocument: UserProfileCSVDocument = UserProfileCSVDocument(text: "")
     @State private var userCSVImportError: String?
     @State private var showAddSickDay: Bool = false
+    @State private var showAddTraining: Bool = false
     @State private var showSickDayCalendar: Bool = false
     @State private var sickDayToDelete: SickDayHistoryEntry?
     
@@ -607,12 +608,21 @@ struct ProfileSchedulesView: View {
                         .accessibilityLabel("Visa sjukdagshistorik som kalender")
                     }
                 } else if selectedMode == .training {
+                    HStack(spacing: 12) {
+                        Button {
+                            showAddTraining = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .padding(.leading, 3)
+                        .accessibilityLabel("Lägg till träning")
                     Button {
                         showTrainingStats = true
                     } label: {
                         Image(systemName: "chart.bar.xaxis.ascending")
                     }
                     .accessibilityLabel("Visa träningsstatistik")
+                }
                 }
             }
         }
@@ -621,6 +631,13 @@ struct ProfileSchedulesView: View {
                 TrainingStatsView(sessions: viewModel.trainingSessions)
             }
         }
+        .sheet(isPresented: $showAddTraining) {
+            NavigationStack {
+                AddTrainingView()
+            }
+            .presentationDetents([.medium])
+        }
+        
         .alert(
             "Profil uppdaterades \n\(ProfileManager.shared.profileCreatedAtFormatted ?? "Okänt")",
             isPresented: $showProfileUpdatedAlert
@@ -1526,6 +1543,182 @@ private struct AddSickDayView: View {
                 Button("Spara") {
                     Storage.shared.addManualSickDay(for: selectedDate, notes: selectedType.rawValue)
                     dismiss()
+                }
+            }
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct AddTrainingView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedStartTime: Date = Date()
+    @State private var selectedEndTime: Date = Date()
+    @State private var selectedType: TrainingType = .metaquest
+    @State private var isSaving: Bool = false
+
+    enum TrainingType: String, CaseIterable, Identifiable {
+        case metaquest = "Meta Quest"
+        case othertraining = "Övrig träning"
+
+        var id: String { rawValue }
+
+        var startNote: String {
+            switch self {
+            case .metaquest:
+                return "Meta Quest spel startades"
+            case .othertraining:
+                return "Träning startades"
+            }
+        }
+
+        var endNote: String {
+            switch self {
+            case .metaquest:
+                return "Meta Quest spel avslutades"
+            case .othertraining:
+                return "Träning avslutades"
+            }
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading) {
+                HStack {
+                    Text("Starttid:")
+                        .font(.body)
+                        .fontWeight(.regular)
+                        .foregroundColor(Color.secondary)
+                    Spacer()
+                    
+                    DatePicker(
+                        "Starttid",
+                        selection: $selectedStartTime,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.compact)
+                    .environment(\.locale, Locale(identifier: "sv_SE"))
+                    .labelsHidden()
+                }
+                HStack {
+                    Text("Sluttid:")
+                        .font(.body)
+                        .fontWeight(.regular)
+                        .foregroundColor(Color.secondary)
+                    Spacer()
+                    
+                    DatePicker(
+                        "Sluttid",
+                        selection: $selectedEndTime,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.compact)
+                    .environment(\.locale, Locale(identifier: "sv_SE"))
+                    .labelsHidden()
+                }
+                
+                .padding(.bottom, 20)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(TrainingType.allCases) { type in
+                        Button {
+                            selectedType = type
+                        } label: {
+                            HStack {
+                                Text(type.rawValue)
+                                    .font(.body.monospacedDigit())
+                                Spacer()
+                                if selectedType == type {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.accentColor)
+                                }
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(UIColor.systemGray).opacity(0.15))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                Spacer()
+            }
+            .padding()
+        }
+        .navigationTitle("Lägg till Träningspass")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Avbryt") {
+                    dismiss()
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Spara") {
+                    saveTrainingNotes()
+                }
+                .disabled(isSaving)
+            }
+        }
+    }
+    
+    private func saveTrainingNotes() {
+        guard selectedEndTime >= selectedStartTime else { return }
+
+        isSaving = true
+
+        Task {
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            isoFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+            let utcOffsetMinutes = TimeZone.current.secondsFromGMT(for: selectedStartTime) / 60
+            
+            // enteredBy: use caregiverName if available, else fall back
+            let caregiver = UserDefaultsRepository.caregiverName.value.trimmingCharacters(in: .whitespacesAndNewlines)
+            let enteredBy = caregiver.isEmpty ? "LoopFollow" : "\(caregiver)"
+
+            let startBody: [String: Any] = [
+                "notes": selectedType.startNote,
+                "eventType": "Note",
+                "enteredBy": enteredBy,
+                "created_at": isoFormatter.string(from: selectedStartTime),
+                "utcOffset": utcOffsetMinutes
+            ]
+
+            let endBody: [String: Any] = [
+                "notes": selectedType.endNote,
+                "eventType": "Note",
+                "enteredBy": enteredBy,
+                "created_at": isoFormatter.string(from: selectedEndTime),
+                "utcOffset": utcOffsetMinutes
+            ]
+
+            do {
+                _ = try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: startBody)
+                _ = try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: endBody)
+
+                await MainActor.run {
+                    isSaving = false
+                    dismiss()
+                }
+            } catch {
+                LogManager.shared.log(
+                    category: .nightscout,
+                    message: "⚠️ Failed to save manual training notes: \(error.localizedDescription)",
+                    isDebug: true
+                )
+
+                await MainActor.run {
+                    isSaving = false
                 }
             }
         }
@@ -2557,11 +2750,12 @@ private struct TrainingStatsView: View {
         let id = UUID()
         let date: Date
         let metaQuestMinutes: Double
+        let otherTrainingMinutes: Double
         let gympaMinutes: Double
         let highActivityMinutes: Double
 
         var minutes: Double {
-            metaQuestMinutes + gympaMinutes + highActivityMinutes
+            metaQuestMinutes + otherTrainingMinutes + gympaMinutes + highActivityMinutes
         }
     }
 
@@ -2584,6 +2778,7 @@ private struct TrainingStatsView: View {
 
         struct Bucket {
             var metaQuest: Double = 0
+            var otherTraining: Double = 0
             var gympa: Double = 0
             var highActivity: Double = 0
         }
@@ -2609,6 +2804,8 @@ private struct TrainingStatsView: View {
             switch session.category {
             case .metaQuest:
                 bucket.metaQuest += minutes
+            case .training:
+                bucket.otherTraining += minutes
             case .gympa:
                 bucket.gympa += minutes
             case .highActivity:
@@ -2623,6 +2820,7 @@ private struct TrainingStatsView: View {
             return DayTotal(
                 date: $0,
                 metaQuestMinutes: bucket.metaQuest,
+                otherTrainingMinutes: bucket.otherTraining,
                 gympaMinutes: bucket.gympa,
                 highActivityMinutes: bucket.highActivity
             )
@@ -2846,7 +3044,8 @@ private struct TrainingStatsBarChartView: UIViewRepresentable {
         leftAxis.labelTextColor = .secondaryLabel
         leftAxis.labelFont = .systemFont(ofSize: 10, weight: .medium)
         leftAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
-            String(format: "%.0f", value)
+            let totalMinutes = Int(value.rounded())
+            return "\(totalMinutes)"
         })
 
         containerView.addSubview(chartView)
@@ -2883,50 +3082,33 @@ private struct TrainingStatsBarChartView: UIViewRepresentable {
 
         let labels = sorted.map { dateFormatter.string(from: $0.date) }
 
-        let shownLabelIndices: Set<Int> = {
-            if count <= 14 {
-                return Set(0..<count)
-            }
-
-            var result: Set<Int> = []
-            for i in 0..<7 {
-                let t = Double(i) / 6.0
-                let idx = Int((t * Double(count - 1)).rounded())
-                result.insert(max(0, min(count - 1, idx)))
-            }
-            return result
-        }()
 
         let entries: [BarChartDataEntry] = sorted.enumerated().map { idx, item in
             BarChartDataEntry(
                 x: Double(idx),
-                yValues: [item.metaQuestMinutes, item.gympaMinutes, item.highActivityMinutes]
+                yValues: [item.metaQuestMinutes, item.otherTrainingMinutes, item.gympaMinutes, item.highActivityMinutes]
             )
         }
 
         let maxValue = sorted.map { $0.minutes }.max() ?? 0
-        let axisMaximum = max(30, ceil(maxValue * 1.12 / 10.0) * 10.0)
+        let axisStep: Double = maxValue <= 180 ? 30 : 60
+        let paddedMaxValue = maxValue * 1.12
+        let axisMaximum = max(axisStep, ceil(paddedMaxValue / axisStep) * axisStep)
         chartView.leftAxis.axisMaximum = axisMaximum
         chartView.leftAxis.axisMinimum = 0
-
-        let labelCount: Int
-        switch axisMaximum {
-        case 0...60:
-            labelCount = 6
-        case 60...180:
-            labelCount = 7
-        default:
-            labelCount = 8
-        }
-        chartView.leftAxis.setLabelCount(labelCount, force: false)
+        chartView.leftAxis.granularityEnabled = true
+        chartView.leftAxis.granularity = axisStep
+        chartView.leftAxis.labelCount = Int(axisMaximum / axisStep) + 1
+        chartView.leftAxis.forceLabelsEnabled = true
 
         let dataSet = BarChartDataSet(entries: entries, label: "Träning")
         dataSet.colors = [
-            NSUIColor.systemGreen,
-            NSUIColor.systemGreen.withAlphaComponent(0.5),
-            NSUIColor.systemGreen.withAlphaComponent(0.2)
+            NSUIColor.systemGreen,                         // Meta Quest
+            NSUIColor.systemOrange.withAlphaComponent(0.7), // Övrig träning
+            NSUIColor.systemGreen.withAlphaComponent(0.6),  // Gympa
+            NSUIColor.systemGreen.withAlphaComponent(0.3)   // Hög aktivitet
         ]
-        dataSet.stackLabels = ["Meta Quest", "Gympa", "Hög aktivitet"]
+        dataSet.stackLabels = ["VR-spel", "Övrig träning", "Gympa", "Hög aktivitet"]
         dataSet.drawValuesEnabled = false
         dataSet.highlightEnabled = false
 
@@ -2936,32 +3118,33 @@ private struct TrainingStatsBarChartView: UIViewRepresentable {
         chartView.xAxis.axisMinimum = -0.5
         chartView.xAxis.axisMaximum = Double(count) - 0.5
         chartView.xAxis.granularity = 1.0
-        chartView.xAxis.labelCount = min(count <= 14 ? count : 7, 7)
-        chartView.xAxis.forceLabelsEnabled = false
-        chartView.xAxis.valueFormatter = DefaultAxisValueFormatter(block: { value, _ in
-            let idx = Int(value.rounded())
-            guard idx >= 0, idx < labels.count else { return "" }
-            guard shownLabelIndices.contains(idx) else { return "" }
-            return labels[idx]
-        })
+        chartView.xAxis.granularityEnabled = true
+        chartView.xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
+        chartView.xAxis.setLabelCount(min(6, labels.count), force: false)
 
         let legendEntries: [LegendEntry] = [
             {
-                let e = LegendEntry(label: "Meta Quest")
+                let e = LegendEntry(label: "VR-spel")
                 e.form = .square
                 e.formColor = NSUIColor.systemGreen
                 return e
             }(),
             {
+                let e = LegendEntry(label: "Övrig träning")
+                e.form = .square
+                e.formColor = NSUIColor.systemOrange.withAlphaComponent(0.7)
+                return e
+            }(),
+            {
                 let e = LegendEntry(label: "Gympa")
                 e.form = .square
-                e.formColor = NSUIColor.systemGreen.withAlphaComponent(0.75)
+                e.formColor = NSUIColor.systemGreen.withAlphaComponent(0.6)
                 return e
             }(),
             {
                 let e = LegendEntry(label: "Hög aktivitet")
                 e.form = .square
-                e.formColor = NSUIColor.systemGreen.withAlphaComponent(0.5)
+                e.formColor = NSUIColor.systemGreen.withAlphaComponent(0.3)
                 return e
             }()
         ]
