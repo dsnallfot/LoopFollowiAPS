@@ -101,8 +101,18 @@ struct Treatment {
 class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableViewDelegate, TwilioRequestable, MealAnalysisViewDelegate {
 
     private let tableView = UITableView()
-    /// The complete set of downloaded treatments.
+    /// Flattened cache of all loaded treatments (kept mostly for existing logic)
     private var treatments: [Treatment] = []
+
+    private struct TreatmentDaySection {
+        let date: Date
+        var treatments: [Treatment]
+    }
+
+    private var daySections: [TreatmentDaySection] = []
+    private var isLoadingOlderDays = false
+    private var oldestLoadedDay: Date?
+    private let initialLoadedDayCount = 3
     
     /// Simple BG point model (in mmol/L) for this view's date window
     private struct BGPoint {
@@ -136,29 +146,43 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     //private let mealTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid"]
     private let manualTypes = ["Carb Correction", "Kolhydrater", "Dextro", "Måltid", "Bolus", "Correction Bolus", "Meal Bolus", "Insulinpenna", "Exercise", "BG Check"]
     
-    // Computed property that returns the treatments filtered by the segmented control.
-    private var filteredTreatments: [Treatment] {
-        switch segmentedControl.selectedSegmentIndex {
-        case 1: // Auto – filter for all auto treatment entries
-            return treatments.filter { autoTypes.contains($0.eventType) }
-        case 2: // Manual – only Manual entries
-            return treatments.filter { treatment in
-                if treatment.eventType == "Carb Correction" {
-                    // Only include if foodType is non-empty.
-                    if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
-                        return true
+    private var filteredDaySections: [TreatmentDaySection] {
+        daySections.compactMap { section in
+            let filtered: [Treatment]
+
+            switch segmentedControl.selectedSegmentIndex {
+            case 1: // Auto
+                filtered = section.treatments.filter { autoTypes.contains($0.eventType) }
+
+            case 2: // Manual
+                filtered = section.treatments.filter { treatment in
+                    if treatment.eventType == "Carb Correction" {
+                        if let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty {
+                            return true
+                        } else {
+                            return false
+                        }
                     } else {
-                        return false
+                        return manualTypes.contains(treatment.eventType)
                     }
-                } else {
-                    return manualTypes.contains(treatment.eventType)
                 }
+
+            case 3: // Övrigt
+                filtered = section.treatments.filter {
+                    !autoTypes.contains($0.eventType) && !manualTypes.contains($0.eventType)
+                }
+
+            default: // Alla
+                filtered = section.treatments
             }
-        case 3: // Övrigt – not any insulin or meal entries
-            return treatments.filter { !autoTypes.contains($0.eventType) && !manualTypes.contains($0.eventType) }
-        default: // Allt
-            return treatments
+
+            guard !filtered.isEmpty else { return nil }
+            return TreatmentDaySection(date: section.date, treatments: filtered)
         }
+    }
+
+    private var filteredTreatments: [Treatment] {
+        filteredDaySections.flatMap { $0.treatments }
     }
     
     // Activity indicator property for refresh progress
@@ -189,7 +213,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         setupConstraints()
         
         // Initial load for today (from cache if available, else fallback fetch)
-        loadTreatments(for: selectedDate)
+        loadInitialDaySections(anchoredAt: selectedDate)
 
         // Listen for cache updates so we can refresh the table when new
         // treatments for the selected day have been written to NightscoutCache.
@@ -245,23 +269,291 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         NotificationCenter.default.removeObserver(self)
     }
     
+    private func treatment(for indexPath: IndexPath) -> Treatment {
+        filteredDaySections[indexPath.section].treatments[indexPath.row]
+    }
+
+    private func rebuildTreatmentsFlatCache() {
+        treatments = daySections
+            .flatMap { $0.treatments }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+
+    private func filteredSectionIndex(for date: Date) -> Int? {
+        let cal = Calendar.current
+        return filteredDaySections.firstIndex { cal.isDate($0.date, inSameDayAs: date) }
+    }
+
+    private func daySectionIndex(for date: Date) -> Int? {
+        let cal = Calendar.current
+        return daySections.firstIndex { cal.isDate($0.date, inSameDayAs: date) }
+    }
+
+    private func canLoadOlderDay(from date: Date) -> Bool {
+        guard let minimumDate = datePicker.minimumDate else { return true }
+        let cal = Calendar.current
+        return cal.startOfDay(for: date) >= cal.startOfDay(for: minimumDate)
+    }
+
+    private func dayTitle(for date: Date) -> String {
+        let cal = Calendar.current
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "sv_SE")
+        formatter.dateFormat = "EEEE d MMM"
+
+        if cal.isDateInToday(date) {
+            return "Idag • " + formatter.string(from: date).capitalized
+        } else if cal.isDateInYesterday(date) {
+            return "Igår • " + formatter.string(from: date).capitalized
+        } else {
+            return formatter.string(from: date).capitalized
+        }
+    }
+
+    private func mergeOrAppendDaySection(_ newSection: TreatmentDaySection) {
+        let cal = Calendar.current
+
+        if let existingIndex = daySections.firstIndex(where: { cal.isDate($0.date, inSameDayAs: newSection.date) }) {
+            daySections[existingIndex] = newSection
+        } else {
+            daySections.append(newSection)
+            daySections.sort { $0.date > $1.date }
+        }
+
+        oldestLoadedDay = daySections.map(\.date).min()
+        rebuildTreatmentsFlatCache()
+    }
+    
+    private func loadInitialDaySections(anchoredAt date: Date) {
+        let cal = Calendar.current
+        let anchorDay = cal.startOfDay(for: date)
+
+        daySections.removeAll()
+        treatments.removeAll()
+        oldestLoadedDay = nil
+        bgPoints = []
+
+        showRefreshIndicator()
+
+        let group = DispatchGroup()
+        var loadedSections: [TreatmentDaySection] = []
+        var anchorBGPoints: [BGPoint] = []
+
+        for offset in 0..<initialLoadedDayCount {
+            guard let day = cal.date(byAdding: .day, value: -offset, to: anchorDay),
+                  canLoadOlderDay(from: day) else { continue }
+
+            group.enter()
+            loadDaySection(for: day) { section, points in
+                if let section {
+                    loadedSections.append(section)
+                }
+                if cal.isDate(day, inSameDayAs: anchorDay) {
+                    anchorBGPoints = points
+                }
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            self.daySections = loadedSections.sorted { $0.date > $1.date }
+            self.oldestLoadedDay = self.daySections.map(\.date).min()
+            self.rebuildTreatmentsFlatCache()
+            self.bgPoints = anchorBGPoints
+            self.tableView.reloadData()
+            self.updateDuplicateIndicator()
+
+            if cal.isDate(anchorDay, inSameDayAs: Date()) && !self.hasAutoScrolledToTodayLatest {
+                self.scrollToLatestNonFutureTreatmentForTodayIfNeeded()
+            } else if let sectionIndex = self.filteredSectionIndex(for: anchorDay),
+                      !self.filteredDaySections[sectionIndex].treatments.isEmpty {
+                self.tableView.scrollToRow(
+                    at: IndexPath(row: 0, section: sectionIndex),
+                    at: .top,
+                    animated: false
+                )
+            }
+
+            self.hideRefreshIndicator()
+            self.syncSelectedDateFromVisibleSection()
+            self.maybeLoadOlderDaysIfNeeded()
+        }
+    }
+    
+    private func loadSingleDaySection(for date: Date, reloadTable: Bool) {
+        let cal = Calendar.current
+        let day = cal.startOfDay(for: date)
+
+        loadDaySection(for: day) { section, points in
+            DispatchQueue.main.async {
+                if let section {
+                    self.mergeOrAppendDaySection(section)
+                }
+
+                if cal.isDate(day, inSameDayAs: self.selectedDate) {
+                    self.bgPoints = points
+                }
+
+                if reloadTable {
+                    self.tableView.reloadData()
+                    self.updateDuplicateIndicator()
+                    self.syncSelectedDateFromVisibleSection()
+                    self.maybeLoadOlderDaysIfNeeded()
+                    self.hideRefreshIndicator()
+                }
+            }
+        }
+    }
+    
+    private func loadDaySection(for date: Date,
+                                completion: @escaping (TreatmentDaySection?, [BGPoint]) -> Void) {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
+        let end = cal.date(byAdding: .day, value: 1, to: start)!
+
+        Task {
+            let (sgvs, treatsJSON) = await NightscoutCache.loadWindow(from: start, to: end)
+
+            let cachedTreatments = treatsJSON.compactMap { tjson in
+                Treatment(dictionary: [
+                    "_id": tjson._id as AnyObject,
+                    "eventType": tjson.eventType as AnyObject,
+                    "enteredBy": tjson.enteredBy as AnyObject,
+                    "created_at": ISO8601DateFormatter().string(from: tjson.created_at) as AnyObject,
+                    "rate": tjson.rate as AnyObject,
+                    "absolute": tjson.absolute as AnyObject,
+                    "insulin": tjson.insulin as AnyObject,
+                    "carbs": tjson.carbs as AnyObject,
+                    "fat": tjson.fat as AnyObject,
+                    "protein": tjson.protein as AnyObject,
+                    "amount": tjson.amount as AnyObject,
+                    "foodType": tjson.foodType as AnyObject,
+                    "notes": tjson.notes as AnyObject,
+                    "glucose": tjson.glucose as AnyObject,
+                    "units": tjson.units as AnyObject,
+                    "duration": tjson.tempBasalDuration as AnyObject
+                ])
+            }
+            .sorted { $0.timestamp > $1.timestamp }
+
+            let points: [BGPoint] = sgvs.map { sgv in
+                BGPoint(
+                    date: Date(timeIntervalSince1970: sgv.date),
+                    mmol: Double(sgv.sgv) / 18.0182
+                )
+            }
+            .sorted { $0.date < $1.date }
+
+            if !cachedTreatments.isEmpty {
+                completion(TreatmentDaySection(date: start, treatments: cachedTreatments), points)
+            } else {
+                fetchDynamicTreatments(for: start) { fetched in
+                    completion(
+                        fetched.isEmpty ? nil : TreatmentDaySection(date: start, treatments: fetched),
+                        points
+                    )
+                }
+            }
+        }
+    }
+    
+    private func loadNextOlderDaySectionIfNeeded() {
+        guard !isLoadingOlderDays,
+              let oldestLoadedDay else { return }
+
+        let cal = Calendar.current
+        guard let nextDay = cal.date(byAdding: .day, value: -1, to: oldestLoadedDay),
+              canLoadOlderDay(from: nextDay) else { return }
+
+        isLoadingOlderDays = true
+
+        loadDaySection(for: nextDay) { section, _ in
+            DispatchQueue.main.async {
+                defer { self.isLoadingOlderDays = false }
+
+                if let section {
+                    self.mergeOrAppendDaySection(section)
+                    self.tableView.reloadData()
+                    self.updateDuplicateIndicator()
+                    self.syncSelectedDateFromVisibleSection()
+                    self.maybeLoadOlderDaysIfNeeded()
+                }
+            }
+        }
+    }
+
+    private func maybeLoadOlderDaysIfNeeded() {
+        guard !isLoadingOlderDays,
+              let lastVisible = tableView.indexPathsForVisibleRows?.max(),
+              !filteredDaySections.isEmpty else { return }
+
+        let lastSection = filteredDaySections.count - 1
+        let lastRow = filteredDaySections[lastSection].treatments.count - 1
+
+        guard lastVisible.section >= max(0, lastSection - 1),
+              lastVisible.row >= max(0, lastRow - 2) else { return }
+
+        loadNextOlderDaySectionIfNeeded()
+    }
+    
+    private func syncSelectedDateFromVisibleSection() {
+        guard !filteredDaySections.isEmpty else { return }
+        let visibleRows = tableView.indexPathsForVisibleRows ?? []
+
+        guard let topVisible = visibleRows.min(by: {
+            if $0.section == $1.section { return $0.row < $1.row }
+            return $0.section < $1.section
+        }) else { return }
+
+        let visibleDate = filteredDaySections[topVisible.section].date
+        let cal = Calendar.current
+
+        guard !cal.isDate(visibleDate, inSameDayAs: selectedDate) else { return }
+
+        selectedDate = visibleDate
+        datePicker.setDate(visibleDate, animated: true)
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        syncSelectedDateFromVisibleSection()
+        maybeLoadOlderDaysIfNeeded()
+    }
+    
+    private func scrollToLatestNonFutureTreatmentForTodayIfNeeded() {
+        let cal = Calendar.current
+        guard cal.isDate(selectedDate, inSameDayAs: Date()),
+              !hasAutoScrolledToTodayLatest else { return }
+
+        let now = Date()
+
+        if let sectionIndex = filteredSectionIndex(for: Date()) {
+            let rows = filteredDaySections[sectionIndex].treatments
+            if let rowIndex = rows.enumerated()
+                .filter({ $0.element.timestamp <= now })
+                .map({ $0.offset })
+                .first {
+                tableView.scrollToRow(
+                    at: IndexPath(row: rowIndex, section: sectionIndex),
+                    at: .top,
+                    animated: false
+                )
+                hasAutoScrolledToTodayLatest = true
+            }
+        }
+    }
+    
     @objc private func handleTreatmentsCacheUpdated(_ notification: Notification) {
-        // Only react if the updated day matches the currently selected day
         guard let updatedDayStart = notification.userInfo?["dayStart"] as? Date else { return }
         let cal = Calendar.current
         let selectedDayStart = cal.startOfDay(for: selectedDate)
-        guard cal.isDate(updatedDayStart, inSameDayAs: selectedDayStart) else { return }
 
-        // Reload treatments from cache for the selected date now that
-        // NightscoutCache has been refreshed.
-        loadTreatments(for: selectedDate)
+        if cal.isDate(updatedDayStart, inSameDayAs: selectedDayStart) || daySectionIndex(for: updatedDayStart) != nil {
+            loadSingleDaySection(for: updatedDayStart, reloadTable: true)
+        }
     }
-    
+
     @objc private func handleGlobalTreatmentsUpdated(_ notification: Notification) {
-        // Whenever MainViewController has finished processing fresh treatments
-        // (updateTreatments + cache sync), reload the current day's treatments
-        // from NightscoutCache.
-        loadTreatments(for: selectedDate)
+        loadSingleDaySection(for: selectedDate, reloadTable: true)
     }
     
     // MARK: - Date sync overlay
@@ -731,8 +1023,24 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     }
     
     @objc private func filterChanged() {
+        let previouslyVisibleDate = selectedDate
+
         tableView.reloadData()
         updateDuplicateIndicator()
+
+        DispatchQueue.main.async {
+            if let sectionIndex = self.filteredSectionIndex(for: previouslyVisibleDate),
+               !self.filteredDaySections[sectionIndex].treatments.isEmpty {
+                let indexPath = IndexPath(row: 0, section: sectionIndex)
+                self.tableView.scrollToRow(at: indexPath, at: .top, animated: false)
+                self.selectedDate = previouslyVisibleDate
+                self.datePicker.setDate(previouslyVisibleDate, animated: false)
+            } else {
+                self.syncSelectedDateFromVisibleSection()
+            }
+
+            self.maybeLoadOlderDaysIfNeeded()
+        }
     }
     
     // MARK: - Setup TableView
@@ -797,7 +1105,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     
     private func loadTreatments() {
         // For legacy/manual refresh, default to today
-        loadTreatments(for: selectedDate)
+        loadInitialDaySections(anchoredAt: selectedDate)
     }
 
     /// Load treatments for a full calendar day (00:00–00:00) from NightscoutCache
@@ -902,39 +1210,32 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
     /// Fallback: hämta de senaste N dagar (rolling window) för dagens datum direkt från Nightscout
     /// (används bara om cachen saknar data för idag).
-    private func fetchDynamicTreatmentsForToday24h() {
-        // Visa loading-indikator för nätverksanropet.
-        showRefreshIndicator()
+    private func fetchDynamicTreatments(for date: Date,
+                                        completion: @escaping ([Treatment]) -> Void) {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
+        let end = cal.date(byAdding: .day, value: 1, to: start)!
 
-        let now = Date()
-        let hours = 24 * max(1, UserDefaultsRepository.downloadDays.value)
-        let since = now.addingTimeInterval(-Double(hours) * 60 * 60)
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime]
-        iso.timeZone = TimeZone(secondsFromGMT: 0)
+        iso.timeZone = .current
 
         let params: [String: String] = [
-            "find[created_at][$gte]": iso.string(from: since),
-            "find[created_at][$lte]": iso.string(from: now)
+            "find[created_at][$gte]": iso.string(from: start),
+            "find[created_at][$lte]": iso.string(from: end)
         ]
 
         NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: params) { result in
             DispatchQueue.main.async {
                 if case .success(let raw) = result,
                    let entries = raw as? [[String: AnyObject]] {
-                    let fetched = entries.compactMap { Treatment(dictionary: $0) }
-
-                    let cal = Calendar.current
-                    let todayStart = cal.startOfDay(for: Date())
-                    let now = Date()
-
-                    // Only SHOW today's entries, even though we fetched a rolling window
-                    self.treatments = fetched
-                        .filter { $0.timestamp >= todayStart && $0.timestamp <= now }
+                    let fetched = entries
+                        .compactMap { Treatment(dictionary: $0) }
                         .sorted { $0.timestamp > $1.timestamp }
+                    completion(fetched)
+                } else {
+                    completion([])
                 }
-                self.tableView.reloadData()
-                self.hideRefreshIndicator()
             }
         }
     }
@@ -967,10 +1268,19 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
     @objc private func dateChanged(_ sender: UIDatePicker) {
         selectedDate = sender.date
-        // Nytt datum → låt auto-scroll till "senaste idag" ske igen
-        // om vi kommer tillbaka till dagens datum.
         hasAutoScrolledToTodayLatest = false
-        loadTreatments(for: selectedDate)
+
+        if let sectionIndex = filteredSectionIndex(for: selectedDate),
+           !filteredDaySections[sectionIndex].treatments.isEmpty {
+            tableView.scrollToRow(
+                at: IndexPath(row: 0, section: sectionIndex),
+                at: .top,
+                animated: true
+            )
+            syncSelectedDateFromVisibleSection()
+        } else {
+            loadInitialDaySections(anchoredAt: selectedDate)
+        }
     }
     
     @objc private func refreshTreatments(_ sender: UIRefreshControl) {
@@ -993,7 +1303,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         selectedDate = newDay
         datePicker.setDate(selectedDate, animated: false)
         hasAutoScrolledToTodayLatest = false
-        loadTreatments(for: selectedDate)
+        loadInitialDaySections(anchoredAt: selectedDate)
         
         // 2) Om användaren varit inne i EnteredByView, sätt filtret till "Manuell"
         if didVisitEnteredBy {
@@ -1175,8 +1485,24 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         }
     }
     
+    func numberOfSections(in tableView: UITableView) -> Int {
+        filteredDaySections.count
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return filteredTreatments.count
+        filteredDaySections[section].treatments.count
+    }
+
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        guard section < filteredDaySections.count else { return nil }
+        return dayTitle(for: filteredDaySections[section].date)
+    }
+
+    func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
+        guard let header = view as? UITableViewHeaderFooterView else { return }
+        header.tintColor = UIColor(red: 45/255.0, green: 66/255.0, blue: 86/255.0, alpha: 0.9)
+        header.textLabel?.textColor = .white
+        header.textLabel?.font = .boldSystemFont(ofSize: 14)
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -1190,7 +1516,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         cell.backgroundView = nil
         cell.selectedBackgroundView = nil
         
-        let treatment = filteredTreatments[indexPath.row]
+        let treatment = treatment(for: indexPath)
         // Check if this override is pending upload
         var isPendingUpload = false
         if treatment.eventType == "Exercise" {
@@ -1470,7 +1796,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     // MARK: - Swipe to Delete (Editing Style)
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let treatment = filteredTreatments[indexPath.row]
+        let treatment = treatment(for: indexPath)
         let timeFormatter = DateFormatter()
         timeFormatter.locale = Locale(identifier: "sv_SE")
         timeFormatter.dateFormat = "HH:mm"
@@ -2156,7 +2482,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.selectRow(at: indexPath, animated: true, scrollPosition: .none)
         
-        let treatment = filteredTreatments[indexPath.row]
+        let treatment = treatment(for: indexPath)
         
         let timeFormatter = DateFormatter()
         timeFormatter.locale = Locale(identifier: "sv_SE")
