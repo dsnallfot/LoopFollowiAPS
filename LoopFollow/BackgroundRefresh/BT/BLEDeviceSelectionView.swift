@@ -169,7 +169,7 @@ struct BLEDeviceSelectionView: View {
                         }
 
                         // Divider between rows
-                        Divider().opacity(0.35)
+                        Divider().opacity(0.8)
                     }
                 }
             }

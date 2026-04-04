@@ -386,7 +386,7 @@ extension View {
                 Color(uiColor: .systemGray)
                     .opacity(opacity)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
     }
 }
 

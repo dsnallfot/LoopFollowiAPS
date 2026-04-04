@@ -321,7 +321,7 @@ struct AnalyzeDeviationsView: View {
                                 .frame(height: 150)
                             }
                             .padding(12)
-                            .themedCardBackground(opacity: 0.12)
+                            .themedCardBackground(opacity: 0.15)
                             .padding(.horizontal, 12)
                             
                             // --- Dev chart card ---
@@ -349,7 +349,7 @@ struct AnalyzeDeviationsView: View {
                                     .frame(height: 150)
                             }
                             .padding(12)
-                            .themedCardBackground(opacity: 0.12)
+                            .themedCardBackground(opacity: 0.15)
                             .padding(.horizontal, 12)
 
                             // --- COB/IOB chart card ---
@@ -368,7 +368,7 @@ struct AnalyzeDeviationsView: View {
                                     .frame(height: 150)
                             }
                             .padding(12)
-                            .themedCardBackground(opacity: 0.12)
+                            .themedCardBackground(opacity: 0.15)
                             .padding(.horizontal, 12)
 
                         } else {
@@ -421,7 +421,7 @@ struct AnalyzeDeviationsView: View {
                                 .frame(height: 340)
                             }
                             .padding(12)
-                            .themedCardBackground(opacity: 0.12)
+                            .themedCardBackground(opacity: 0.15)
                             .padding(.horizontal, 12)
                         }
 

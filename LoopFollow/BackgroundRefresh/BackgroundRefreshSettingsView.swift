@@ -53,7 +53,7 @@ struct BackgroundRefreshSettingsView: View {
                             .frame(maxWidth: .infinity, alignment: .trailing)
                         }
 
-                        Divider().opacity(0.35)
+                        Divider().opacity(0.8)
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Välj typ av bakgrundsaktivitet.")
@@ -261,7 +261,7 @@ struct BackgroundRefreshSettingsView: View {
                                                 .sorted()
                                             
                                             if !hitNames.isEmpty {
-                                                Divider().opacity(0.35)
+                                                Divider().opacity(0.8)
                                                     //.padding(.top, 6)
                                                 
                                                 VStack(alignment: .leading, spacing: 4) {
