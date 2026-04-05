@@ -88,7 +88,6 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     /// Triggers the daily-target-reached Clippy *once per day*.
     /// Resets automatically when the calendar day changes.
     func triggerClippyDailyTargetReachedIfNeeded(now: Date = Date()) {
-        guard UserDefaultsRepository.allowClippy.value else { return }
         let todayKey = todayKeyString(now)
         let lastTriggeredDay = UserDefaults.standard.string(forKey: Self.clippyDailyTargetReachedDayKey)
 
@@ -103,10 +102,15 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         // Mark triggered for today
         UserDefaults.standard.set(todayKey, forKey: Self.clippyDailyTargetReachedDayKey)
 
+        // Always save history
         clippyDailyTargetReachedTime = now
         Storage.shared.appendClippyDailyTargetHistory(date: now)
-        clippyInfoDailyTargetReached = true
-        showClippy = true
+
+        // Only show Clippy UI if allowed
+        if UserDefaultsRepository.allowClippy.value {
+            clippyInfoDailyTargetReached = true
+            showClippy = true
+        }
     }
     
     // 🦄 Unicorn overlay behind BGView contents

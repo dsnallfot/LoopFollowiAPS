@@ -413,6 +413,7 @@ private final class ClippyHistoryStatsViewController: ThemedTableViewController 
     private var selectedDays: [Date] = []
     private var reachedEntries: [ChartDataEntry] = []
     private var missedEntries: [ChartDataEntry] = []
+    private var reachedHistoryByDay: [Date: ClippyDailyTargetHistoryEntry] = [:]
 
     private lazy var periodControl: UISegmentedControl = {
         let items = PeriodOption.allCases.map { $0.title }
@@ -456,17 +457,27 @@ private final class ClippyHistoryStatsViewController: ThemedTableViewController 
         tableView.isOpaque = false
         tableView.layer.backgroundColor = UIColor.clear.cgColor
         title = "Clippyhistorik"
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ClippyHistoryStatsCell")
 
         setupChartHeader()
         applyPeriod(selectedPeriod)
     }
 
+    private enum Row: Int, CaseIterable {
+        case reachedPercentage
+        case reachedDays
+        case fastestReached
+        case slowestReached
+        case averageReached
+        case longestReachedStreak
+    }
+
     override func numberOfSections(in tableView: UITableView) -> Int {
-        0
+        1
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        0
+        Row.allCases.count
     }
 
     @objc private func periodChanged(_ sender: UISegmentedControl) {
@@ -535,11 +546,14 @@ private final class ClippyHistoryStatsViewController: ThemedTableViewController 
             }
         )
 
+        reachedHistoryByDay = [:]
         reachedEntries = []
         missedEntries = []
 
         for (index, day) in selectedDays.enumerated() {
             if let entry = historyByDay[day] {
+                reachedHistoryByDay[day] = entry
+
                 let date = Date(timeIntervalSince1970: entry.date)
                 let comps = cal.dateComponents([.hour, .minute, .second], from: date)
                 let hour = Double(comps.hour ?? 0)
@@ -551,6 +565,102 @@ private final class ClippyHistoryStatsViewController: ThemedTableViewController 
                 missedEntries.append(ChartDataEntry(x: Double(index), y: 24.0))
             }
         }
+    }
+
+    private static let fullDateTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "sv_SE")
+        formatter.dateFormat = "yyyy-MM-dd, HH:mm"
+        return formatter
+    }()
+
+    private static let timeOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "sv_SE")
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
+    private var reachedEntriesInSelectedPeriod: [ClippyDailyTargetHistoryEntry] {
+        selectedDays.compactMap { reachedHistoryByDay[$0] }
+    }
+
+    private var reachedDayCountText: String {
+        "\(reachedEntriesInSelectedPeriod.count) av \(selectedDays.count) dagar"
+    }
+
+    private var reachedPercentageText: String {
+        guard selectedDays.count > 0 else { return "–" }
+        let pct = Double(reachedEntriesInSelectedPeriod.count) * 100.0 / Double(selectedDays.count)
+        return String(format: "%.0f %%", pct)
+    }
+
+    private var fastestReachedText: String {
+        guard let fastest = reachedEntriesInSelectedPeriod.min(by: {
+            let lhs = secondsSinceStartOfDay(for: Date(timeIntervalSince1970: $0.date))
+            let rhs = secondsSinceStartOfDay(for: Date(timeIntervalSince1970: $1.date))
+            return lhs < rhs
+        }) else {
+            return "–"
+        }
+
+        return Self.fullDateTimeFormatter.string(from: Date(timeIntervalSince1970: fastest.date))
+    }
+
+    private var slowestReachedText: String {
+        guard let slowest = reachedEntriesInSelectedPeriod.max(by: {
+            let lhs = secondsSinceStartOfDay(for: Date(timeIntervalSince1970: $0.date))
+            let rhs = secondsSinceStartOfDay(for: Date(timeIntervalSince1970: $1.date))
+            return lhs < rhs
+        }) else {
+            return "–"
+        }
+
+        return Self.fullDateTimeFormatter.string(from: Date(timeIntervalSince1970: slowest.date))
+    }
+
+    private var averageReachedText: String {
+        let entries = reachedEntriesInSelectedPeriod
+        guard !entries.isEmpty else { return "–" }
+
+        let averageSeconds = entries
+            .map { secondsSinceStartOfDay(for: Date(timeIntervalSince1970: $0.date)) }
+            .reduce(0, +) / entries.count
+
+        let hours = averageSeconds / 3600
+        let minutes = (averageSeconds % 3600) / 60
+        return String(format: "%02d:%02d", hours, minutes)
+    }
+
+    private var longestReachedStreakText: String {
+        let streak = longestReachedStreak()
+        return "\(streak) dagar"
+    }
+
+    private func secondsSinceStartOfDay(for date: Date) -> Int {
+        let comps = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
+        let hour = comps.hour ?? 0
+        let minute = comps.minute ?? 0
+        let second = comps.second ?? 0
+        return (hour * 3600) + (minute * 60) + second
+    }
+
+    private func longestReachedStreak() -> Int {
+        guard !selectedDays.isEmpty else { return 0 }
+
+        var longest = 0
+        var current = 0
+
+        for day in selectedDays {
+            if reachedHistoryByDay[day] != nil {
+                current += 1
+                longest = max(longest, current)
+            } else {
+                current = 0
+            }
+        }
+
+        return longest
     }
 
     private func loadChartData() {
@@ -651,5 +761,54 @@ private final class ClippyHistoryStatsViewController: ThemedTableViewController 
 
         timeChartView.rightAxis.enabled = false
         timeChartView.setNeedsDisplay()
+    }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: "ClippyHistoryStatsCell")
+        cell.selectionStyle = .none
+
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .systemGray.withAlphaComponent(0.15)
+            cell.backgroundConfiguration = bg
+        }
+
+        cell.textLabel?.numberOfLines = 1
+        cell.detailTextLabel?.numberOfLines = 1
+        cell.detailTextLabel?.textAlignment = .right
+        cell.detailTextLabel?.font = .monospacedDigitSystemFont(ofSize: 15, weight: .regular)
+
+        guard let row = Row(rawValue: indexPath.row) else { return cell }
+
+        switch row {
+        case .reachedPercentage:
+            cell.textLabel?.text = "Andel målgångsdagar"
+            cell.detailTextLabel?.text = reachedPercentageText
+
+        case .reachedDays:
+            cell.textLabel?.text = "Mål nåddes"
+            cell.detailTextLabel?.text = reachedDayCountText
+
+        case .fastestReached:
+            cell.textLabel?.text = "Snabbast i mål"
+            cell.detailTextLabel?.text = fastestReachedText
+
+        case .slowestReached:
+            cell.textLabel?.text = "Långsammast i mål"
+            cell.detailTextLabel?.text = slowestReachedText
+
+        case .averageReached:
+            cell.textLabel?.text = "Genomsnittlig målgång"
+            cell.detailTextLabel?.text = averageReachedText
+
+        case .longestReachedStreak:
+            cell.textLabel?.text = "Längsta streak målgång"
+            cell.detailTextLabel?.text = longestReachedStreakText
+        }
+
+        return cell
     }
 }
