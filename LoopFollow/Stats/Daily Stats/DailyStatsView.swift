@@ -57,7 +57,7 @@ struct DailyStatsView: View {
         ZStack {
             ThemeBackground()
             coreContent
-                .navigationTitle("Dagar")
+                .navigationTitle("Dag")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
 
