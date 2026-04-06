@@ -127,7 +127,7 @@ struct DailyStatsView: View {
                         Button {
                             showClippyHistoryStats = true
                         } label: {
-                            Image(systemName: "chart.bar.xaxis.ascending")
+                            Image(systemName: "target")
                         }
                     }
                     
@@ -2135,7 +2135,7 @@ struct ClippyHistoryView: View {
                     }
                 }
             }
-            .navigationTitle("Målgångshistorik")
+            .navigationTitle("Daglig 12h TITR Målgång")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -2176,7 +2176,7 @@ struct ClippyHistoryStatsView: View {
                         }
                     }
                 }
-                .navigationTitle("Målgång tid")
+                .navigationTitle("Daglig 12h TITR målgångstid")
                 .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -2600,7 +2600,7 @@ private final class ClippyHistoryStatsViewController: ThemedTableViewController 
             cell.detailTextLabel?.text = reachedPercentageText
 
         case .reachedDays:
-            cell.textLabel?.text = "Mål nåddes"
+            cell.textLabel?.text = "Mål nåddes (12h TITR)"
             cell.detailTextLabel?.text = reachedDayCountText
 
         case .fastestReached:
