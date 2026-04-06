@@ -2122,6 +2122,10 @@ struct ClippyHistoryView: View {
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        presentLoopFollowDayReport(for: reportDate(for: row))
+                                    }
 
                                     if index < rows.count - 1 {
                                         Divider().opacity(0.8)
@@ -2158,6 +2162,78 @@ struct ClippyHistoryView: View {
                 ClippyHistoryStatsView()
             }
         }
+    }
+    
+    private func reportDate(for row: RowItem) -> Date {
+        switch row {
+        case .reached(let entry):
+            return Date(timeIntervalSince1970: entry.date)
+        case .missed(let date):
+            return date
+        }
+    }
+
+    private func presentLoopFollowDayReport(for selectedDate: Date) {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: selectedDate)
+        let endOfDay = startOfDay + 24 * 60 * 60
+
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+            let tabBar = window.rootViewController as? UITabBarController,
+            let tabViewControllers = tabBar.viewControllers
+        else {
+            return
+        }
+
+        var mainVC: MainViewController?
+
+        for vc in tabViewControllers {
+            if let nav = vc as? UINavigationController {
+                if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = candidate
+                    break
+                }
+            } else if let candidate = vc as? MainViewController {
+                mainVC = candidate
+                break
+            }
+        }
+
+        guard let mainVC else { return }
+
+        let events = mainVC.buildEventsForMealAnalysis()
+
+        let analysisVC = MealAnalysisView(
+            events: events,
+            initialStart: startOfDay,
+            initialEnd: endOfDay,
+            modalWithTimestamp: true,
+            modalTitleString: "Dagens utfall",
+            preSelectedSegment: nil
+        )
+
+        let nav = UINavigationController(rootViewController: analysisVC)
+        nav.modalPresentationStyle = .formSheet
+
+        if let rootVC = window.rootViewController {
+            let presenter = topViewController(from: rootVC)
+            presenter?.present(nav, animated: true)
+        }
+    }
+
+    private func topViewController(from root: UIViewController?) -> UIViewController? {
+        if let nav = root as? UINavigationController {
+            return topViewController(from: nav.visibleViewController)
+        }
+        if let tab = root as? UITabBarController {
+            return topViewController(from: tab.selectedViewController)
+        }
+        if let presented = root?.presentedViewController {
+            return topViewController(from: presented)
+        }
+        return root
     }
 }
 
