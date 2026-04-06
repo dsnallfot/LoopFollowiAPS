@@ -2095,6 +2095,7 @@ struct ClippyHistoryView: View {
                                             HStack(spacing: 8) {
                                                 Image(systemName: "star.fill")
                                                     .foregroundStyle(.yellow)
+                                                    .frame(width: 18)
                                                 Text("Mål nåddes")
                                             }
 
@@ -2109,6 +2110,7 @@ struct ClippyHistoryView: View {
                                             HStack(spacing: 8) {
                                                 Image(systemName: "xmark")
                                                     .foregroundStyle(.red)
+                                                    .frame(width: 18)
                                                 Text("Mål nåddes ej")
                                             }
 
