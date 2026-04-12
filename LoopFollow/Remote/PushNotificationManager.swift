@@ -38,6 +38,7 @@ class PushNotificationManager {
 
     func sendOverridePushNotification(override: ProfileManager.TrioOverride, completion: @escaping (Bool, String?) -> Void) {
         let message = PushMessage(
+            aps: .init(alert: "Remote Override"),
             user: user,
             commandType: .startOverride,
             sharedSecret: sharedSecret,
@@ -50,6 +51,7 @@ class PushNotificationManager {
 
     func sendCancelOverridePushNotification(completion: @escaping (Bool, String?) -> Void) {
         let message = PushMessage(
+            aps: .init(alert: "Remote avbryt override"),
             user: user,
             commandType: .cancelOverride,
             sharedSecret: sharedSecret,
@@ -64,6 +66,7 @@ class PushNotificationManager {
         let bolusAmount = Decimal(bolusAmount.doubleValue(for: .internationalUnit()))
 
         let message = PushMessage(
+            aps: .init(alert: "Remote bolus"),
             user: user,
             commandType: .bolus,
             bolusAmount: bolusAmount,
@@ -79,6 +82,7 @@ class PushNotificationManager {
         let durationValue = Int(duration.doubleValue(for: HKUnit.minute()))
 
         let message = PushMessage(
+            aps: .init(alert: "Remote temp target"),
             user: user,
             commandType: .tempTarget,
             bolusAmount: nil,
@@ -93,6 +97,7 @@ class PushNotificationManager {
 
     func sendCancelTempTargetPushNotification(completion: @escaping (Bool, String?) -> Void) {
         let message = PushMessage(
+            aps: .init(alert: "Remote avbryt temp target"),
             user: user,
             commandType: .cancelTempTarget,
             sharedSecret: sharedSecret,
@@ -134,6 +139,7 @@ class PushNotificationManager {
         }
 
         let message = PushMessage(
+            aps: .init(alert: "Remote måltid"),
             user: user,
             commandType: .meal,
             bolusAmount: bolusAmountValue,
@@ -251,9 +257,9 @@ class PushNotificationManager {
         request.setValue("bearer \(jwt)", forHTTPHeaderField: "authorization")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
         request.setValue("10", forHTTPHeaderField: "apns-priority")
-        request.setValue("0", forHTTPHeaderField: "apns-expiration")
+        request.setValue("300", forHTTPHeaderField: "apns-expiration")
         request.setValue(bundleId, forHTTPHeaderField: "apns-topic")
-        request.setValue("background", forHTTPHeaderField: "apns-push-type")
+        request.setValue("alert", forHTTPHeaderField: "apns-push-type")
 
         do {
             let jsonData = try JSONEncoder().encode(message)

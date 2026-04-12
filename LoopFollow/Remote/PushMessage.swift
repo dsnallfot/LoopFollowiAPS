@@ -9,7 +9,19 @@
 import Foundation
 
 struct PushMessage: Encodable {
-    let aps: [String: Int] = ["content-available": 1]
+    struct APS: Encodable {
+            let contentAvailable: Int = 1
+            let interruptionLevel: String = "time-sensitive"
+            let alert: String
+
+            enum CodingKeys: String, CodingKey {
+                case contentAvailable = "content-available"
+                case interruptionLevel = "interruption-level"
+                case alert
+            }
+        }
+
+    let aps: APS
     var user: String
     var commandType: TRCCommandType
     var bolusAmount: Decimal?
@@ -61,3 +73,4 @@ struct PushMessage: Encodable {
         }
     }
 }
+
