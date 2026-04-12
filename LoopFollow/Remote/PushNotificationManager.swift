@@ -38,7 +38,7 @@ class PushNotificationManager {
 
     func sendOverridePushNotification(override: ProfileManager.TrioOverride, completion: @escaping (Bool, String?) -> Void) {
         let message = PushMessage(
-            aps: .init(alert: "Remote Override"),
+            aps: .init(alert: "Remote Override mottagen"),
             user: user,
             commandType: .startOverride,
             sharedSecret: sharedSecret,
@@ -51,7 +51,7 @@ class PushNotificationManager {
 
     func sendCancelOverridePushNotification(completion: @escaping (Bool, String?) -> Void) {
         let message = PushMessage(
-            aps: .init(alert: "Remote avbryt override"),
+            aps: .init(alert: "Remote avbryt override mottagen"),
             user: user,
             commandType: .cancelOverride,
             sharedSecret: sharedSecret,
@@ -66,7 +66,7 @@ class PushNotificationManager {
         let bolusAmount = Decimal(bolusAmount.doubleValue(for: .internationalUnit()))
 
         let message = PushMessage(
-            aps: .init(alert: "Remote bolus"),
+            aps: .init(alert: "Remote bolus mottagen"),
             user: user,
             commandType: .bolus,
             bolusAmount: bolusAmount,
@@ -82,7 +82,7 @@ class PushNotificationManager {
         let durationValue = Int(duration.doubleValue(for: HKUnit.minute()))
 
         let message = PushMessage(
-            aps: .init(alert: "Remote temp target"),
+            aps: .init(alert: "Remote temp target mottagen"),
             user: user,
             commandType: .tempTarget,
             bolusAmount: nil,
@@ -97,7 +97,7 @@ class PushNotificationManager {
 
     func sendCancelTempTargetPushNotification(completion: @escaping (Bool, String?) -> Void) {
         let message = PushMessage(
-            aps: .init(alert: "Remote avbryt temp target"),
+            aps: .init(alert: "Remote avbryt temp target mottagen"),
             user: user,
             commandType: .cancelTempTarget,
             sharedSecret: sharedSecret,
@@ -139,7 +139,7 @@ class PushNotificationManager {
         }
 
         let message = PushMessage(
-            aps: .init(alert: "Remote måltid"),
+            aps: .init(alert: "Remote måltid mottagen"),
             user: user,
             commandType: .meal,
             bolusAmount: bolusAmountValue,

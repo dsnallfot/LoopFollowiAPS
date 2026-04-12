@@ -47,7 +47,7 @@ struct OverrideView: View {
                 } else {
                     Form {
                         if let activeNote = overrideNote.value {
-                            Section(header: Text("Active Override")) {
+                            Section(header: Text("Aktiv Override")) {
                                 HStack {
                                     Text("Override")
                                     Spacer()
@@ -59,7 +59,7 @@ struct OverrideView: View {
                                     showAlert = true
                                 } label: {
                                     HStack {
-                                        Text("Cancel Override")
+                                        Text("Avbryt Override")
                                         Spacer()
                                         Image(systemName: "xmark.app")
                                             .font(.title)
@@ -68,8 +68,8 @@ struct OverrideView: View {
                                 .tint(.red)
                             }
                         }
-
-                        Section(header: Text("Available Overrides")) {
+                        
+                        Section(header: Text("Tillgängliga Overrides")) {
                             if profileManager.trioOverrides.isEmpty {
                                 Text("No overrides available.")
                                     .foregroundColor(.secondary)
@@ -85,18 +85,18 @@ struct OverrideView: View {
                                                 Text(override.name)
                                                     .font(.headline)
                                                 if let duration = override.duration {
-                                                    Text("Duration: \(Int(duration)) minutes")
+                                                    Text("Varaktighet: \(Int(duration)) minutes")
                                                         .font(.subheadline)
                                                         .foregroundColor(.secondary)
                                                 }
                                                 if let percentage = override.percentage {
-                                                    Text("Percentage: \(Int(percentage))%")
+                                                    Text("Procent: \(Int(percentage))%")
                                                         .font(.subheadline)
                                                         .foregroundColor(.secondary)
                                                 }
-
+                                                
                                                 if let target = override.target {
-                                                    Text("Target: \(Localizer.formatQuantity(target)) \(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString)")
+                                                    Text("Mål: \(Localizer.formatQuantity(target)) \(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString)")
                                                         .font(.subheadline)
                                                         .foregroundColor(.secondary)
                                                 }
@@ -110,62 +110,62 @@ struct OverrideView: View {
                             }
                         }
                     }
-
+                    
                     if isLoading {
-                        ProgressView("Please wait...")
+                        ProgressView("Vänligen vänta...")
                             .padding()
                     }
                 }
             }
-            .navigationTitle("Overrides")
-            .navigationBarTitleDisplayMode(.inline)
-            .alert(isPresented: $showAlert) {
-                switch alertType {
-                case .confirmActivation:
-                    return Alert(
-                        title: Text("Activate Override"),
-                        message: Text("Do you want to activate the override '\(selectedOverride?.name ?? "")'?"),
-                        primaryButton: .default(Text("Confirm"), action: {
-                            if let override = selectedOverride {
-                                activateOverride(override)
-                            }
-                        }),
-                        secondaryButton: .cancel()
-                    )
-                case .confirmCancellation:
-                    return Alert(
-                        title: Text("Cancel Override"),
-                        message: Text("Are you sure you want to cancel the active override?"),
-                        primaryButton: .default(Text("Confirm"), action: {
-                            cancelOverride()
-                        }),
-                        secondaryButton: .cancel()
-                    )
-                case .statusSuccess:
-                    return Alert(
-                        title: Text("Success"),
-                        message: Text(statusMessage ?? ""),
-                        dismissButton: .default(Text("OK"), action: {
-                            presentationMode.wrappedValue.dismiss()
-                        })
-                    )
-                case .statusFailure:
-                    return Alert(
-                        title: Text("Error"),
-                        message: Text(statusMessage ?? "An error occurred."),
-                        dismissButton: .default(Text("OK"))
-                    )
-                case .validation:
-                    return Alert(
-                        title: Text("Validation Error"),
-                        message: Text(alertMessage ?? "Invalid input."),
-                        dismissButton: .default(Text("OK"))
-                    )
-                case .none:
-                    return Alert(title: Text("Unknown Alert"))
+                .navigationTitle("Override")
+                .navigationBarTitleDisplayMode(.inline)
+                .alert(isPresented: $showAlert) {
+                    switch alertType {
+                    case .confirmActivation:
+                        return Alert(
+                            title: Text("Aktivera Override"),
+                            message: Text("Vill du aktivera override '\(selectedOverride?.name ?? "")'?"),
+                            primaryButton: .default(Text("Confirm"), action: {
+                                if let override = selectedOverride {
+                                    activateOverride(override)
+                                }
+                            }),
+                            secondaryButton: .cancel()
+                        )
+                    case .confirmCancellation:
+                        return Alert(
+                            title: Text("Avbryt Override"),
+                            message: Text("Är du säker på att du vill avbryta pågående override"),
+                            primaryButton: .default(Text("Bekräfta"), action: {
+                                cancelOverride()
+                            }),
+                            secondaryButton: .cancel()
+                        )
+                    case .statusSuccess:
+                        return Alert(
+                            title: Text("Lyckades"),
+                            message: Text(statusMessage ?? ""),
+                            dismissButton: .default(Text("OK"), action: {
+                                presentationMode.wrappedValue.dismiss()
+                            })
+                        )
+                    case .statusFailure:
+                        return Alert(
+                            title: Text("Fel"),
+                            message: Text(statusMessage ?? "An error occurred."),
+                            dismissButton: .default(Text("OK"))
+                        )
+                    case .validation:
+                        return Alert(
+                            title: Text("Validation Error"),
+                            message: Text(alertMessage ?? "Invalid input."),
+                            dismissButton: .default(Text("OK"))
+                        )
+                    case .none:
+                        return Alert(title: Text("Unknown Alert"))
+                    }
                 }
             }
-        }
     }
 
     // MARK: - Functions
@@ -177,10 +177,10 @@ struct OverrideView: View {
             DispatchQueue.main.async {
                 self.isLoading = false
                 if success {
-                    self.statusMessage = "Override command sent successfully."
+                    self.statusMessage = "Overridekommando lyckades."
                     self.alertType = .statusSuccess
                 } else {
-                    self.statusMessage = errorMessage ?? "Failed to send override command."
+                    self.statusMessage = errorMessage ?? "Overridekommando misslyckades!"
                     self.alertType = .statusFailure
                 }
                 self.showAlert = true
@@ -195,10 +195,10 @@ struct OverrideView: View {
             DispatchQueue.main.async {
                 self.isLoading = false
                 if success {
-                    self.statusMessage = "Cancel override command sent successfully."
+                    self.statusMessage = "Avbryt override-kommando lyckades."
                     self.alertType = .statusSuccess
                 } else {
-                    self.statusMessage = errorMessage ?? "Failed to send cancel override command."
+                    self.statusMessage = errorMessage ?? "Avbryt override-kommando misslyckades!"
                     self.alertType = .statusFailure
                 }
                 self.showAlert = true

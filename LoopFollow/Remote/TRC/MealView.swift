@@ -51,9 +51,9 @@ struct MealView: View {
         NavigationView {
             VStack {
                 Form {
-                    Section(header: Text("Meal Data")) {
+                    Section(header: Text("Registrera måltid")) {
                         HKQuantityInputView(
-                            label: "Carbs",
+                            label: "Kolhydrater",
                             quantity: $carbs,
                             unit: .gram(),
                             maxLength: 4,
@@ -64,7 +64,7 @@ struct MealView: View {
                                 handleValidationError(message)
                             }
                         )
-
+                        
                         if mealWithFatProtein.value {
                             HKQuantityInputView(
                                 label: "Protein",
@@ -78,9 +78,9 @@ struct MealView: View {
                                     handleValidationError(message)
                                 }
                             )
-
+                            
                             HKQuantityInputView(
-                                label: "Fat",
+                                label: "Fett",
                                 quantity: $fat,
                                 unit: .gram(),
                                 maxLength: 4,
@@ -94,15 +94,15 @@ struct MealView: View {
                         }
                         
                         HStack {
-                            Text("Notes")
+                            Text("Anteckning")
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            TextField("Add notes", text: $notes)
+                            TextField("Lägg till anteckning", text: $notes)
                                 .multilineTextAlignment(.trailing)
                         }
-
+                        
                         if mealWithBolus.value {
                             HKQuantityInputView(
-                                label: "Bolus Amount",
+                                label: "Bolus mängd",
                                 quantity: $bolusAmount,
                                 unit: .internationalUnit(),
                                 maxLength: 4,
@@ -115,12 +115,12 @@ struct MealView: View {
                             )
                         }
                     }
-
-                    Section(header: Text("Schedule")) {
-                        Toggle("Schedule for later", isOn: $isScheduling)
+                    
+                    Section(header: Text("Schemalägg")) {
+                        Toggle("Schemalägg senare", isOn: $isScheduling)
                         if isScheduling {
                             DatePicker(
-                                "Select Time",
+                                "Välj tid",
                                 selection: Binding(
                                     get: { self.selectedTime ?? Date() },
                                     set: { self.selectedTime = $0 }
@@ -128,22 +128,22 @@ struct MealView: View {
                                 displayedComponents: .hourAndMinute
                             )
                             .datePickerStyle(CompactDatePickerStyle())
-
+                            
                             if bolusAmount.doubleValue(for: .internationalUnit()) > 0 {
-                                Text("Note: The meal will be scheduled, but the bolus is enacted immediately.")
+                                Text("OBS! Denna måltid schemaläggs, men bolusen ges omgående!")
                             }
                         }
                     }
-
+                    
                     LoadingButtonView(
-                        buttonText: "Send Meal",
-                        progressText: "Sending Meal Data...",
+                        buttonText: "Skicka måltid",
+                        progressText: "Skickar måltidsregistrering...",
                         isLoading: isLoading,
                         action: {
                             carbsFieldIsFocused = false
                             proteinFieldIsFocused = false
                             fatFieldIsFocused = false
-
+                            
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 guard carbs.doubleValue(for: .gram()) != 0 ||
                                         protein.doubleValue(for: .gram()) != 0 ||
@@ -159,7 +159,7 @@ struct MealView: View {
                         isDisabled: isButtonDisabled
                     )
                 }
-                .navigationTitle("Meal")
+                .navigationTitle("Måltid")
                 .navigationBarTitleDisplayMode(.inline)
             }
             .onAppear {
@@ -173,42 +173,42 @@ struct MealView: View {
                     let proteinAmount = protein.doubleValue(for: HKUnit.gram())
                     let fatAmount = fat.doubleValue(for: HKUnit.gram())
                     let bolusAmount = bolusAmount.doubleValue(for: .internationalUnit())
-
-                    var message = "Are you sure you want to send the meal data"
-
+                    
+                    var message = "Är du säker på att du vill skicka måltidsregistreringen?"
+                    
                     if let selectedTime = selectedTime {
                         let timeFormatter = DateFormatter()
                         timeFormatter.timeStyle = .short
                         let timeString = timeFormatter.string(from: selectedTime)
-                        message += " for \(timeString)?"
+                        message += " till \(timeString)?"
                     } else {
-                        message += " now?"
+                        message += " nu?"
                     }
-
+                    
                     if carbsAmount > 0 {
-                        message += String(format: "\nCarbs: %.0f g", carbsAmount)
+                        message += String(format: "\nKolhydrater: %.0f g", carbsAmount)
                     }
-
+                    
                     if proteinAmount > 0 {
                         message += String(format: "\nProtein: %.0f g", proteinAmount)
                     }
-
+                    
                     if fatAmount > 0 {
-                        message += String(format: "\nFat: %.0f g", fatAmount)
+                        message += String(format: "\nFett: %.0f g", fatAmount)
                     }
-
+                    
                     if bolusAmount > 0 {
                         message += String(format: "\nBolus: %.2f U", bolusAmount)
                     }
                     
                     if !notes.isEmpty {
-                        message += String(format: "\nNotes: %@", notes)
+                        message += String(format: "\nAnteckning: %@", notes)
                     }
-
+                    
                     return Alert(
-                        title: Text("Confirm Meal"),
+                        title: Text("Bekräfta måltid"),
                         message: Text(message),
-                        primaryButton: .default(Text("Confirm"), action: {
+                        primaryButton: .default(Text("Bekräfta"), action: {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 if bolusAmount > 0 {
                                     authenticateUser { success in
@@ -223,7 +223,7 @@ struct MealView: View {
                         }),
                         secondaryButton: .cancel()
                     )
-
+                    
                 case .statusSuccess:
                     return Alert(
                         title: Text("Status"),
@@ -281,7 +281,7 @@ struct MealView: View {
             DispatchQueue.main.async {
                 isLoading = false
                 if success {
-                    statusMessage = "Meal command sent successfully."
+                    statusMessage = "Måltidskommando lyckades"
                     carbs = HKQuantity(unit: .gram(), doubleValue: 0.0)
                     protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
                     fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
@@ -290,7 +290,7 @@ struct MealView: View {
                     isScheduling = false
                     alertType = .statusSuccess
                 } else {
-                    statusMessage = errorMessage ?? "Failed to send meal command."
+                    statusMessage = errorMessage ?? "Måltidskommando misslyckades!"
                     alertType = .statusFailure
                 }
                 showAlert = true
@@ -314,7 +314,7 @@ struct MealView: View {
         let context = LAContext()
         var error: NSError?
 
-        let reason = "Confirm your identity to send bolus."
+        let reason = "Bekräfta din identitet för att skicka bolus."
 
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
             context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, _ in

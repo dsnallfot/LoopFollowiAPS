@@ -33,82 +33,82 @@ struct BolusView: View {
 
     var body: some View {
         NavigationView {
-            VStack {
-                Form {
-                    Section {
-                        HKQuantityInputView(
-                            label: "Bolus Amount",
-                            quantity: $bolusAmount,
-                            unit: .internationalUnit(),
-                            maxLength: 4,
-                            minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
-                            maxValue: maxBolus.value,
-                            isFocused: $bolusFieldIsFocused,
-                            onValidationError: { message in
-                                handleValidationError(message)
-                            }
+                VStack {
+                    Form {
+                        Section {
+                            HKQuantityInputView(
+                                label: "Bolus mängd",
+                                quantity: $bolusAmount,
+                                unit: .internationalUnit(),
+                                maxLength: 4,
+                                minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
+                                maxValue: maxBolus.value,
+                                isFocused: $bolusFieldIsFocused,
+                                onValidationError: { message in
+                                    handleValidationError(message)
+                                }
+                            )
+                        }
+                        
+                        LoadingButtonView(
+                            buttonText: "Skicka Bolus",
+                            progressText: "Skickar Bolus...",
+                            isLoading: isLoading,
+                            action: {
+                                bolusFieldIsFocused = false
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    if bolusAmount.doubleValue(for: HKUnit.internationalUnit()) > 0.0 {
+                                        alertType = .confirmBolus
+                                        showAlert = true
+                                    }
+                                }
+                            },
+                            isDisabled: isLoading
                         )
                     }
-
-                    LoadingButtonView(
-                        buttonText: "Send Bolus",
-                        progressText: "Sending Bolus...",
-                        isLoading: isLoading,
-                        action: {
-                            bolusFieldIsFocused = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                if bolusAmount.doubleValue(for: HKUnit.internationalUnit()) > 0.0 {
-                                    alertType = .confirmBolus
-                                    showAlert = true
-                                }
-                            }
-                        },
-                        isDisabled: isLoading
-                    )
+                    .navigationTitle("Bolus")
+                    .navigationBarTitleDisplayMode(.inline)
                 }
-                .navigationTitle("Bolus")
-                .navigationBarTitleDisplayMode(.inline)
-            }
-            .alert(isPresented: $showAlert) {
-                switch alertType {
-                case .confirmBolus:
-                    return Alert(
-                        title: Text("Confirm Bolus"),
-                        message: Text("Are you sure you want to send \(bolusAmount.doubleValue(for: HKUnit.internationalUnit()), specifier: "%.2f") U?"),
-                        primaryButton: .default(Text("Confirm"), action: {
-                            authenticateUser { success in
-                                if success {
-                                    sendBolus()
+                .alert(isPresented: $showAlert) {
+                    switch alertType {
+                    case .confirmBolus:
+                        return Alert(
+                            title: Text("Bekräfta Bolus"),
+                            message: Text("Är du säker på att du vill skicka \(bolusAmount.doubleValue(for: HKUnit.internationalUnit()), specifier: "%.2f") E?"),
+                            primaryButton: .default(Text("Bekräfta"), action: {
+                                authenticateUser { success in
+                                    if success {
+                                        sendBolus()
+                                    }
                                 }
-                            }
-                        }),
-                        secondaryButton: .cancel()
-                    )
-                case .statusSuccess:
-                    return Alert(
-                        title: Text("Status"),
-                        message: Text(statusMessage ?? ""),
-                        dismissButton: .default(Text("OK"), action: {
-                            presentationMode.wrappedValue.dismiss()
-                        })
-                    )
-                case .statusFailure:
-                    return Alert(
-                        title: Text("Status"),
-                        message: Text(statusMessage ?? ""),
-                        dismissButton: .default(Text("OK"))
-                    )
-                case .validation:
-                    return Alert(
-                        title: Text("Validation Error"),
-                        message: Text(alertMessage ?? "Invalid input."),
-                        dismissButton: .default(Text("OK"))
-                    )
-                case .none:
-                    return Alert(title: Text("Unknown Alert"))
+                            }),
+                            secondaryButton: .cancel()
+                        )
+                    case .statusSuccess:
+                        return Alert(
+                            title: Text("Status"),
+                            message: Text(statusMessage ?? ""),
+                            dismissButton: .default(Text("OK"), action: {
+                                presentationMode.wrappedValue.dismiss()
+                            })
+                        )
+                    case .statusFailure:
+                        return Alert(
+                            title: Text("Status"),
+                            message: Text(statusMessage ?? ""),
+                            dismissButton: .default(Text("OK"))
+                        )
+                    case .validation:
+                        return Alert(
+                            title: Text("Validation Error"),
+                            message: Text(alertMessage ?? "Invalid input."),
+                            dismissButton: .default(Text("OK"))
+                        )
+                    case .none:
+                        return Alert(title: Text("Unknown Alert"))
+                    }
                 }
             }
-        }
     }
 
     private func sendBolus() {
@@ -118,11 +118,11 @@ struct BolusView: View {
             DispatchQueue.main.async {
                 isLoading = false
                 if success {
-                    statusMessage = "Bolus command sent successfully."
+                    statusMessage = "Boluskommando lyckades."
                     bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
                     alertType = .statusSuccess
                 } else {
-                    statusMessage = errorMessage ?? "Failed to send bolus command."
+                    statusMessage = errorMessage ?? "Boluskommando misslyckades!"
                     alertType = .statusFailure
                 }
                 showAlert = true
@@ -134,7 +134,7 @@ struct BolusView: View {
         let context = LAContext()
         var error: NSError?
 
-        let reason = "Confirm your identity to send bolus."
+        let reason = "Bekräfta din identitet för att skicka bolus."
 
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
             context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, _ in

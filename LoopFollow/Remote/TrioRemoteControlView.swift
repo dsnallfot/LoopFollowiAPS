@@ -13,24 +13,28 @@ struct TrioRemoteControlView: View {
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        NavigationView {
-            VStack {
-                let columns = [
-                    GridItem(.flexible(), spacing: 16),
-                    GridItem(.flexible(), spacing: 16)
-                ]
-
-                LazyVGrid(columns: columns, spacing: 16) {
-                    CommandButtonView(command: "Meal", iconName: "fork.knife", destination: MealView())
-                    CommandButtonView(command: "Bolus", iconName: "syringe", destination: BolusView())
-                    CommandButtonView(command: "Temp Target", iconName: "scope", destination: TempTargetView())
-                    CommandButtonView(command: "Overrides", iconName: "slider.horizontal.3", destination: OverrideView())
+            NavigationView {
+                ZStack {
+                    ThemeBackground()
+                        .ignoresSafeArea()
+                VStack {
+                    let columns = [
+                        GridItem(.flexible(), spacing: 16),
+                        GridItem(.flexible(), spacing: 16)
+                    ]
+                    
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        CommandButtonView(command: "Måltid", iconName: "fork.knife", destination: MealView())
+                        CommandButtonView(command: "Bolus", iconName: "syringe", destination: BolusView())
+                        //CommandButtonView(command: "Tillfälliga mål", iconName: "scope", destination: TempTargetView())
+                        CommandButtonView(command: "Override", iconName: "slider.horizontal.3", destination: OverrideView())
+                    }
+                    .padding(.horizontal)
+                    
+                    Spacer()
                 }
-                .padding(.horizontal)
-
-                Spacer()
+                .navigationBarTitle("Trio fjärrstyrning", displayMode: .inline)
             }
-            .navigationBarTitle("Trio Remote Control", displayMode: .inline)
         }
     }
 }
@@ -48,12 +52,13 @@ struct CommandButtonView<Destination: View>: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 50, height: 50)
                 Text(command)
+                    .fontWeight(.semibold)
             }
             .frame(maxWidth: .infinity, minHeight: 100)
             .padding()
-            .background(Color.blue)
+            .background(Color.blue.opacity(0.8))
             .foregroundColor(.white)
-            .cornerRadius(8)
+            .cornerRadius(30)
         }
         .buttonStyle(PlainButtonStyle())
     }

@@ -49,9 +49,9 @@ struct TempTargetView: View {
                 } else {
                     Form {
                         if let tempTargetValue = tempTarget.value {
-                            Section(header: Text("Existing Temp Target")) {
+                            Section(header: Text("Befintliga tillfälliga mål")) {
                                 HStack {
-                                    Text("Current Target")
+                                    Text("Nuvarande mål")
                                     Spacer()
                                     Text(Localizer.formatQuantity(tempTargetValue))
                                     Text(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString).foregroundColor(.secondary)
@@ -61,7 +61,7 @@ struct TempTargetView: View {
                                     showAlert = true
                                 } label: {
                                     HStack {
-                                        Text("Cancel Temp Target")
+                                        Text("Avbryt tillfälligt mål")
                                         Spacer()
                                         Image(systemName: "xmark.app")
                                             .font(.title)
@@ -70,7 +70,7 @@ struct TempTargetView: View {
                                 .tint(.red)
                             }
                         }
-                        Section(header: Text("Temporary Target")) {
+                        Section(header: Text("Tillfälliga mål")) {
                             HStack {
                                 Text("Target")
                                 Spacer()
@@ -88,7 +88,7 @@ struct TempTargetView: View {
                                 Text(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString).foregroundColor(.secondary)
                             }
                             HStack {
-                                Text("Duration")
+                                Text("Varaktighet")
                                 Spacer()
                                 TextFieldWithToolBar(
                                     quantity: $duration,
@@ -100,7 +100,7 @@ struct TempTargetView: View {
                                     }
                                 )
                                 .focused($durationFieldIsFocused)
-                                Text("minutes").foregroundColor(.secondary)
+                                Text("minuter").foregroundColor(.secondary)
                             }
                             HStack {
                                 Button {
@@ -109,7 +109,7 @@ struct TempTargetView: View {
                                     targetFieldIsFocused = false
                                     durationFieldIsFocused = false
                                 } label: {
-                                    Text("Enact")
+                                    Text("Aktivera")
                                 }
                                 .disabled(isButtonDisabled)
                                 .buttonStyle(BorderlessButtonStyle())
@@ -123,7 +123,7 @@ struct TempTargetView: View {
                                     targetFieldIsFocused = false
                                     durationFieldIsFocused = false
                                 } label: {
-                                    Text("Save as Preset")
+                                    Text("Spara som förval")
                                 }
                                 .disabled(isButtonDisabled)
                                 .buttonStyle(BorderlessButtonStyle())
@@ -133,7 +133,7 @@ struct TempTargetView: View {
                         }
 
                         if !presetManager.presets.isEmpty {
-                            Section(header: Text("Presets")) {
+                            Section(header: Text("Förval")) {
                                 ForEach(presetManager.presets) { preset in
                                     HStack {
                                         Text(preset.name)
@@ -156,7 +156,7 @@ struct TempTargetView: View {
                                             targetFieldIsFocused = false
                                             durationFieldIsFocused = false
                                         } label: {
-                                            Label("Delete", systemImage: "trash")
+                                            Label("Radera", systemImage: "trash")
                                         }
                                     }
                                 }
@@ -165,20 +165,20 @@ struct TempTargetView: View {
                     }
 
                     if isLoading {
-                        ProgressView("Please wait...")
+                        ProgressView("Vänligen vänta...")
                             .padding()
                     }
                 }
             }
-            .navigationTitle("Remote")
+            .navigationTitle("Tillfälligt mål")
             .navigationBarTitleDisplayMode(.inline)
             .alert(isPresented: $showAlert) {
                 switch alertType {
                 case .confirmCommand:
                     return Alert(
-                        title: Text("Confirm Command"),
-                        message: Text("New Target: \(Localizer.formatQuantity(newHKTarget)) \(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString)\nDuration: \(Int(duration.doubleValue(for: HKUnit.minute()))) minutes"),
-                        primaryButton: .default(Text("Confirm"), action: {
+                        title: Text("Bekräfta kommando"),
+                        message: Text("Nytt mål: \(Localizer.formatQuantity(newHKTarget)) \(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString)\nVaraktighet: \(Int(duration.doubleValue(for: HKUnit.minute()))) minuter"),
+                        primaryButton: .default(Text("Bekräfta"), action: {
                             enactTempTarget()
                         }),
                         secondaryButton: .cancel()
@@ -199,9 +199,9 @@ struct TempTargetView: View {
                     )
                 case .confirmCancellation:
                     return Alert(
-                        title: Text("Confirm Cancellation"),
-                        message: Text("Are you sure you want to cancel the existing temp target?"),
-                        primaryButton: .default(Text("Confirm"), action: {
+                        title: Text("Bekräfta avbryt"),
+                        message: Text("AÄr du säker på att du vill avbryta nuvarande tillfälliga mål?"),
+                        primaryButton: .default(Text("Bekräfta"), action: {
                             cancelTempTarget()
                         }),
                         secondaryButton: .cancel()
@@ -218,19 +218,19 @@ struct TempTargetView: View {
             }
             .sheet(isPresented: $showPresetSheet) {
                 VStack {
-                    Text("Save Preset")
+                    Text("Spara förval")
                         .font(.headline)
                         .padding()
-                    TextField("Preset Name", text: $presetName)
+                    TextField("Förval namn", text: $presetName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding()
                     HStack {
-                        Button("Cancel") {
+                        Button("Avbryt") {
                             showPresetSheet = false
                         }
                         .padding()
                         Spacer()
-                        Button("Save") {
+                        Button("Spara") {
                             presetManager.addPreset(name: presetName, target: newHKTarget, duration: duration)
                             presetName = ""
                             showPresetSheet = false
@@ -257,10 +257,10 @@ struct TempTargetView: View {
             DispatchQueue.main.async {
                 self.isLoading = false
                 if success {
-                    self.statusMessage = "Temp target command successfully sent."
+                    self.statusMessage = "Tillfälligt mål-kommando lyckades."
                     self.alertType = .statusSuccess
                 } else {
-                    self.statusMessage = errorMessage ?? "Failed to send temp target command."
+                    self.statusMessage = errorMessage ?? "Tillfälligt mål-kommando misslyckades!"
                     self.alertType = .statusFailure
                 }
                 self.showAlert = true
@@ -275,10 +275,10 @@ struct TempTargetView: View {
             DispatchQueue.main.async {
                 self.isLoading = false
                 if success {
-                    self.statusMessage = "Cancel temp target command successfully sent."
+                    self.statusMessage = "Avbryt tillfälligt mål-kommando lyckades."
                     self.alertType = .statusSuccess
                 } else {
-                    self.statusMessage = errorMessage ?? "Failed to send cancel temp target command."
+                    self.statusMessage = errorMessage ?? "Avbryt tillfälligt mål-kommando misslyckades!"
                     self.alertType = .statusFailure
                 }
                 self.showAlert = true
