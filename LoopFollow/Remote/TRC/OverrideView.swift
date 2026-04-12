@@ -85,7 +85,7 @@ struct OverrideView: View {
                                                 Text(override.name)
                                                     .font(.headline)
                                                 if let duration = override.duration {
-                                                    Text("Varaktighet: \(Int(duration)) minutes")
+                                                    Text("Varaktighet: \(Int(duration)) minuter")
                                                         .font(.subheadline)
                                                         .foregroundColor(.secondary)
                                                 }
