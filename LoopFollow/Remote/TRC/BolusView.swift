@@ -10,6 +10,7 @@ import SwiftUI
 import HealthKit
 import LocalAuthentication
 
+@available(iOS 16.0, *)
 struct BolusView: View {
     @Environment(\.presentationMode) private var presentationMode
     @State private var bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
@@ -32,43 +33,49 @@ struct BolusView: View {
     }
 
     var body: some View {
-        NavigationView {
-                VStack {
-                    Form {
-                        Section {
-                            HKQuantityInputView(
-                                label: "Bolus mängd",
-                                quantity: $bolusAmount,
-                                unit: .internationalUnit(),
-                                maxLength: 4,
-                                minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
-                                maxValue: maxBolus.value,
-                                isFocused: $bolusFieldIsFocused,
-                                onValidationError: { message in
-                                    handleValidationError(message)
-                                }
-                            )
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+        VStack {
+            Form {
+                Section {
+                    HKQuantityInputView(
+                        label: "Bolus mängd",
+                        quantity: $bolusAmount,
+                        unit: .internationalUnit(),
+                        maxLength: 4,
+                        minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
+                        maxValue: maxBolus.value,
+                        isFocused: $bolusFieldIsFocused,
+                        onValidationError: { message in
+                            handleValidationError(message)
                         }
-                        
-                        LoadingButtonView(
-                            buttonText: "Skicka Bolus",
-                            progressText: "Skickar Bolus...",
-                            isLoading: isLoading,
-                            action: {
-                                bolusFieldIsFocused = false
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    if bolusAmount.doubleValue(for: HKUnit.internationalUnit()) > 0.0 {
-                                        alertType = .confirmBolus
-                                        showAlert = true
-                                    }
-                                }
-                            },
-                            isDisabled: isLoading
-                        )
-                    }
-                    .navigationTitle("Bolus")
-                    .navigationBarTitleDisplayMode(.inline)
+                    )
                 }
+                .listRowBackground(Color(.systemGray).opacity(0.15))
+                
+                LoadingButtonView(
+                    buttonText: "Skicka Bolus",
+                    progressText: "Skickar Bolus...",
+                    isLoading: isLoading,
+                    action: {
+                        bolusFieldIsFocused = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            if bolusAmount.doubleValue(for: HKUnit.internationalUnit()) > 0.0 {
+                                alertType = .confirmBolus
+                                showAlert = true
+                            }
+                        }
+                    },
+                    isDisabled: isLoading
+                )
+            }
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .navigationTitle("Bolus")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
                 .alert(isPresented: $showAlert) {
                     switch alertType {
                     case .confirmBolus:
@@ -108,7 +115,6 @@ struct BolusView: View {
                         return Alert(title: Text("Unknown Alert"))
                     }
                 }
-            }
     }
 
     private func sendBolus() {

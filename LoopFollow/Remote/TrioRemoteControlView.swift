@@ -8,6 +8,7 @@
 
 import SwiftUI
 
+@available(iOS 16.0, *)
 struct TrioRemoteControlView: View {
     @ObservedObject var viewModel: TrioRemoteControlViewModel
     @Environment(\.presentationMode) var presentationMode
@@ -24,10 +25,10 @@ struct TrioRemoteControlView: View {
                     ]
                     
                     LazyVGrid(columns: columns, spacing: 16) {
-                        CommandButtonView(command: "Måltid", iconName: "fork.knife", destination: MealView())
-                        CommandButtonView(command: "Bolus", iconName: "syringe", destination: BolusView())
-                        //CommandButtonView(command: "Tillfälliga mål", iconName: "scope", destination: TempTargetView())
-                        CommandButtonView(command: "Override", iconName: "slider.horizontal.3", destination: OverrideView())
+                        CommandButtonView(command: "Måltid", iconName: "fork.knife", destination: MealView(), color: Color(UIColor.carbs))
+                        CommandButtonView(command: "Bolus", iconName: "syringe", destination: BolusView(), color: Color(UIColor.insulin))
+                        CommandButtonView(command: "Tillfälliga mål", iconName: "scope", destination: TempTargetView(), color: .mint)
+                        CommandButtonView(command: "Override", iconName: "slider.horizontal.3", destination: OverrideView(), color: .purple)
                     }
                     .padding(.horizontal)
                     
@@ -43,6 +44,7 @@ struct CommandButtonView<Destination: View>: View {
     let command: String
     let iconName: String
     let destination: Destination
+    let color: Color
 
     var body: some View {
         NavigationLink(destination: destination) {
@@ -56,7 +58,7 @@ struct CommandButtonView<Destination: View>: View {
             }
             .frame(maxWidth: .infinity, minHeight: 100)
             .padding()
-            .background(Color.blue.opacity(0.8))
+            .background(color.opacity(0.8))
             .foregroundColor(.white)
             .cornerRadius(30)
         }

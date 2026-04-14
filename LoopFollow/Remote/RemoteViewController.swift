@@ -12,6 +12,7 @@ import SwiftUI
 import HealthKit
 import Combine
 
+@available(iOS 16.0, *)
 class RemoteViewController: UIViewController {
 
     private var cancellable: AnyCancellable?

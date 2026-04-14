@@ -10,6 +10,7 @@ import SwiftUI
 import HealthKit
 import LocalAuthentication
 
+@available(iOS 16.0, *)
 struct MealView: View {
     @Environment(\.presentationMode) private var presentationMode
     @State private var carbs = HKQuantity(unit: .gram(), doubleValue: 0.0)
@@ -17,21 +18,21 @@ struct MealView: View {
     @State private var fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
     @State private var bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
     @State private var notes: String = ""
-
+    
     private let pushNotificationManager = PushNotificationManager()
-
+    
     @ObservedObject private var maxCarbs = Storage.shared.maxCarbs
     @ObservedObject private var maxProtein = Storage.shared.maxProtein
     @ObservedObject private var maxFat = Storage.shared.maxFat
     @ObservedObject private var mealWithBolus = Storage.shared.mealWithBolus
     @ObservedObject private var mealWithFatProtein = Storage.shared.mealWithFatProtein
     @ObservedObject private var maxBolus = Storage.shared.maxBolus
-
+    
     @FocusState private var carbsFieldIsFocused: Bool
     @FocusState private var proteinFieldIsFocused: Bool
     @FocusState private var fatFieldIsFocused: Bool
     @FocusState private var bolusFieldIsFocused: Bool
-
+    
     @State private var showAlert: Bool = false
     @State private var alertType: AlertType? = nil
     @State private var alertMessage: String? = nil
@@ -39,16 +40,18 @@ struct MealView: View {
     @State private var statusMessage: String? = nil
     @State private var selectedTime: Date? = nil
     @State private var isScheduling: Bool = false
-
+    
     enum AlertType {
         case confirmMeal
         case statusSuccess
         case statusFailure
         case validationError
     }
-
+    
     var body: some View {
-        NavigationView {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
             VStack {
                 Form {
                     Section(header: Text("Registrera måltid")) {
@@ -115,6 +118,7 @@ struct MealView: View {
                             )
                         }
                     }
+                    .listRowBackground(Color(.systemGray).opacity(0.15))
                     
                     Section(header: Text("Schemalägg")) {
                         Toggle("Schemalägg senare", isOn: $isScheduling)
@@ -134,6 +138,7 @@ struct MealView: View {
                             }
                         }
                     }
+                    .listRowBackground(Color(.systemGray).opacity(0.15))
                     
                     LoadingButtonView(
                         buttonText: "Skicka måltid",
@@ -159,94 +164,96 @@ struct MealView: View {
                         isDisabled: isButtonDisabled
                     )
                 }
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
                 .navigationTitle("Måltid")
                 .navigationBarTitleDisplayMode(.inline)
             }
-            .onAppear {
-                selectedTime = nil
-                isScheduling = false
-            }
-            .alert(isPresented: $showAlert) {
-                switch alertType {
-                case .confirmMeal:
-                    let carbsAmount = carbs.doubleValue(for: HKUnit.gram())
-                    let proteinAmount = protein.doubleValue(for: HKUnit.gram())
-                    let fatAmount = fat.doubleValue(for: HKUnit.gram())
-                    let bolusAmount = bolusAmount.doubleValue(for: .internationalUnit())
-                    
-                    var message = "Är du säker på att du vill skicka måltidsregistreringen?"
-                    
-                    if let selectedTime = selectedTime {
-                        let timeFormatter = DateFormatter()
-                        timeFormatter.timeStyle = .short
-                        let timeString = timeFormatter.string(from: selectedTime)
-                        message += " till \(timeString)?"
-                    } else {
-                        message += " nu?"
-                    }
-                    
-                    if carbsAmount > 0 {
-                        message += String(format: "\nKolhydrater: %.0f g", carbsAmount)
-                    }
-                    
-                    if proteinAmount > 0 {
-                        message += String(format: "\nProtein: %.0f g", proteinAmount)
-                    }
-                    
-                    if fatAmount > 0 {
-                        message += String(format: "\nFett: %.0f g", fatAmount)
-                    }
-                    
-                    if bolusAmount > 0 {
-                        message += String(format: "\nBolus: %.2f U", bolusAmount)
-                    }
-                    
-                    if !notes.isEmpty {
-                        message += String(format: "\nAnteckning: %@", notes)
-                    }
-                    
-                    return Alert(
-                        title: Text("Bekräfta måltid"),
-                        message: Text(message),
-                        primaryButton: .default(Text("Bekräfta"), action: {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                if bolusAmount > 0 {
-                                    authenticateUser { success in
-                                        if success {
-                                            sendMealCommand()
-                                        }
-                                    }
-                                } else {
-                                    sendMealCommand()
-                                }
-                            }
-                        }),
-                        secondaryButton: .cancel()
-                    )
-                    
-                case .statusSuccess:
-                    return Alert(
-                        title: Text("Status"),
-                        message: Text(statusMessage ?? ""),
-                        dismissButton: .default(Text("OK"), action: {
-                            presentationMode.wrappedValue.dismiss()
-                        })
-                    )
-                case .statusFailure:
-                    return Alert(
-                        title: Text("Status"),
-                        message: Text(statusMessage ?? ""),
-                        dismissButton: .default(Text("OK"))
-                    )
-                case .validationError:
-                    return Alert(
-                        title: Text("Validation Error"),
-                        message: Text(alertMessage ?? ""),
-                        dismissButton: .default(Text("OK"))
-                    )
-                case .none:
-                    return Alert(title: Text("Unknown Alert"))
+        }
+        .onAppear {
+            selectedTime = nil
+            isScheduling = false
+        }
+        .alert(isPresented: $showAlert) {
+            switch alertType {
+            case .confirmMeal:
+                let carbsAmount = carbs.doubleValue(for: HKUnit.gram())
+                let proteinAmount = protein.doubleValue(for: HKUnit.gram())
+                let fatAmount = fat.doubleValue(for: HKUnit.gram())
+                let bolusAmount = bolusAmount.doubleValue(for: .internationalUnit())
+                
+                var message = "Är du säker på att du vill skicka måltidsregistreringen"
+                
+                if let selectedTime = selectedTime {
+                    let timeFormatter = DateFormatter()
+                    timeFormatter.timeStyle = .short
+                    let timeString = timeFormatter.string(from: selectedTime)
+                    message += " till \(timeString)?"
+                } else {
+                    message += " nu?"
                 }
+                
+                if carbsAmount > 0 {
+                    message += String(format: "\nKolhydrater: %.0f g", carbsAmount)
+                }
+                
+                if proteinAmount > 0 {
+                    message += String(format: "\nProtein: %.0f g", proteinAmount)
+                }
+                
+                if fatAmount > 0 {
+                    message += String(format: "\nFett: %.0f g", fatAmount)
+                }
+                
+                if bolusAmount > 0 {
+                    message += String(format: "\nBolus: %.2f U", bolusAmount)
+                }
+                
+                if !notes.isEmpty {
+                    message += String(format: "\nAnteckning: %@", notes)
+                }
+                
+                return Alert(
+                    title: Text("Bekräfta måltid"),
+                    message: Text(message),
+                    primaryButton: .default(Text("Bekräfta"), action: {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            if bolusAmount > 0 {
+                                authenticateUser { success in
+                                    if success {
+                                        sendMealCommand()
+                                    }
+                                }
+                            } else {
+                                sendMealCommand()
+                            }
+                        }
+                    }),
+                    secondaryButton: .cancel()
+                )
+                
+            case .statusSuccess:
+                return Alert(
+                    title: Text("Status"),
+                    message: Text(statusMessage ?? ""),
+                    dismissButton: .default(Text("OK"), action: {
+                        presentationMode.wrappedValue.dismiss()
+                    })
+                )
+            case .statusFailure:
+                return Alert(
+                    title: Text("Status"),
+                    message: Text(statusMessage ?? ""),
+                    dismissButton: .default(Text("OK"))
+                )
+            case .validationError:
+                return Alert(
+                    title: Text("Validation Error"),
+                    message: Text(alertMessage ?? ""),
+                    dismissButton: .default(Text("OK"))
+                )
+            case .none:
+                return Alert(title: Text("Unknown Alert"))
             }
         }
     }

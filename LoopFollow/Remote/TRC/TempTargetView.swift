@@ -40,7 +40,6 @@ struct TempTargetView: View {
     }
 
     var body: some View {
-        NavigationView {
             VStack {
                 if device.value != "Trio" {
                     ErrorMessageView(
@@ -242,7 +241,6 @@ struct TempTargetView: View {
                 }
                 .padding()
             }
-        }
     }
 
     private var isButtonDisabled: Bool {

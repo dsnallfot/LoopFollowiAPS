@@ -9,6 +9,7 @@
 import SwiftUI
 import HealthKit
 
+@available(iOS 16.0, *)
 struct OverrideView: View {
     @Environment(\.presentationMode) private var presentationMode
     private let pushNotificationManager = PushNotificationManager()
@@ -38,7 +39,9 @@ struct OverrideView: View {
     }
 
     var body: some View {
-        NavigationView {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
             VStack {
                 if device.value != "Trio" {
                     ErrorMessageView(
@@ -67,6 +70,7 @@ struct OverrideView: View {
                                 }
                                 .tint(.red)
                             }
+                            .listRowBackground(Color(.systemGray).opacity(0.15))
                         }
                         
                         Section(header: Text("Tillgängliga Overrides")) {
@@ -84,6 +88,7 @@ struct OverrideView: View {
                                             VStack(alignment: .leading) {
                                                 Text(override.name)
                                                     .font(.headline)
+                                                    .foregroundColor(.primary)
                                                 if let duration = override.duration {
                                                     Text("Varaktighet: \(Int(duration)) minuter")
                                                         .font(.subheadline)
@@ -109,6 +114,7 @@ struct OverrideView: View {
                                 }
                             }
                         }
+                        .listRowBackground(Color(.systemGray).opacity(0.15))
                     }
                     
                     if isLoading {
@@ -117,8 +123,11 @@ struct OverrideView: View {
                     }
                 }
             }
-                .navigationTitle("Override")
-                .navigationBarTitleDisplayMode(.inline)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .navigationTitle("Override")
+            .navigationBarTitleDisplayMode(.inline)
+        }
                 .alert(isPresented: $showAlert) {
                     switch alertType {
                     case .confirmActivation:
@@ -165,7 +174,6 @@ struct OverrideView: View {
                         return Alert(title: Text("Unknown Alert"))
                     }
                 }
-            }
     }
 
     // MARK: - Functions

@@ -39,7 +39,7 @@ extension HKUnit {
         } else if self == .milligramsPerDeciliter {
             return NSLocalizedString("mg/dL", comment: "The short unit display string for milligrams of glucose per decilter")
         } else if self == .internationalUnit() {
-            return NSLocalizedString("U", comment: "The short unit display string for international units of insulin")
+            return NSLocalizedString("E", comment: "The short unit display string for international units of insulin")
         } else if self == .gram() {
             return NSLocalizedString("g", comment: "The short unit display string for grams")
         } else {
