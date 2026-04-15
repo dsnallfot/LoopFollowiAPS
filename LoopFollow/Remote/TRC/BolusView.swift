@@ -89,7 +89,7 @@ struct BolusView: View {
                                     }
                                 }
                             }),
-                            secondaryButton: .cancel()
+                            secondaryButton: .cancel(Text("Avbryt"))
                         )
                     case .statusSuccess:
                         return Alert(

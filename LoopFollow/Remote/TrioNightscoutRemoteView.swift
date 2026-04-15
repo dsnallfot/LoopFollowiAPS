@@ -189,7 +189,7 @@ struct TrioNightscoutRemoteView: View {
                         primaryButton: .default(Text("Confirm"), action: {
                             enactTempTarget()
                         }),
-                        secondaryButton: .cancel()
+                        secondaryButton: .cancel(Text("Avbryt"))
                     )
                 case .status:
                     return Alert(
@@ -206,7 +206,7 @@ struct TrioNightscoutRemoteView: View {
                         primaryButton: .default(Text("Confirm"), action: {
                             cancelTempTarget()
                         }),
-                        secondaryButton: .cancel()
+                        secondaryButton: .cancel(Text("Avbryt"))
                     )
                 case .validation:
                     return Alert(

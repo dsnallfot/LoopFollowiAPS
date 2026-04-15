@@ -134,12 +134,12 @@ struct OverrideView: View {
                         return Alert(
                             title: Text("Aktivera Override"),
                             message: Text("Vill du aktivera override '\(selectedOverride?.name ?? "")'?"),
-                            primaryButton: .default(Text("Confirm"), action: {
+                            primaryButton: .default(Text("Bekräfta"), action: {
                                 if let override = selectedOverride {
                                     activateOverride(override)
                                 }
                             }),
-                            secondaryButton: .cancel()
+                            secondaryButton: .cancel(Text("Avbryt"))
                         )
                     case .confirmCancellation:
                         return Alert(
@@ -148,7 +148,7 @@ struct OverrideView: View {
                             primaryButton: .default(Text("Bekräfta"), action: {
                                 cancelOverride()
                             }),
-                            secondaryButton: .cancel()
+                            secondaryButton: .cancel(Text("Avbryt"))
                         )
                     case .statusSuccess:
                         return Alert(

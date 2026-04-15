@@ -204,7 +204,7 @@ struct TempTargetView: View {
                         primaryButton: .default(Text("Bekräfta"), action: {
                             enactTempTarget()
                         }),
-                        secondaryButton: .cancel()
+                        secondaryButton: .cancel(Text("Avbryt"))
                     )
                 case .statusSuccess:
                     return Alert(
@@ -227,7 +227,7 @@ struct TempTargetView: View {
                         primaryButton: .default(Text("Bekräfta"), action: {
                             cancelTempTarget()
                         }),
-                        secondaryButton: .cancel()
+                        secondaryButton: .cancel(Text("Avbryt"))
                     )
                 case .validation:
                     return Alert(

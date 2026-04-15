@@ -163,6 +163,17 @@ extension Notification.Name {
     static let sickDaysUpdated = Notification.Name("sickDaysUpdated")
 }
 
+struct ComboPresetEntry: Codable, Equatable, Identifiable {
+    var id: UUID
+    var name: String
+    var carbsGrams: Double
+    var proteinGrams: Double
+    var fatGrams: Double
+    var bolusUnits: Double
+    var notes: String
+    var overrideName: String?
+}
+
 struct UserProfileEntry: Codable, Equatable {
     var name: String
     var birthDate: Date?
@@ -257,6 +268,37 @@ extension Storage {
                 LogManager.shared.log(
                     category: .treatments,
                     message: "Failed to encode pumpChangeHistory: \(error)"
+                )
+            }
+        }
+    }
+    
+    // MARK: - Combo presets
+
+    var comboPresets: [ComboPresetEntry] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "comboPresets") else {
+                return []
+            }
+            do {
+                return try JSONDecoder().decode([ComboPresetEntry].self, from: storedData)
+            } catch {
+                LogManager.shared.log(
+                    category: .general,
+                    message: "Failed to decode comboPresets, resetting to empty array: \(error)"
+                )
+                UserDefaults.standard.removeObject(forKey: "comboPresets")
+                return []
+            }
+        }
+        set {
+            do {
+                let encoded = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encoded, forKey: "comboPresets")
+            } catch {
+                LogManager.shared.log(
+                    category: .general,
+                    message: "Failed to encode comboPresets: \(error)"
                 )
             }
         }

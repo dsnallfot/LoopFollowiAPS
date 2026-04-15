@@ -154,6 +154,56 @@ class PushNotificationManager {
 
         sendPushNotification(message: message, completion: completion)
     }
+    
+    func sendComboPushNotification(
+        carbs: HKQuantity,
+        protein: HKQuantity,
+        fat: HKQuantity,
+        bolusAmount: HKQuantity,
+        notes: String?,
+        scheduledTime: Date?,
+        override: ProfileManager.TrioOverride?,
+        completion: @escaping (Bool, String?) -> Void
+    ) {
+        func convertToOptionalInt(_ quantity: HKQuantity) -> Int? {
+            let valueInGrams = quantity.doubleValue(for: .gram())
+            return valueInGrams > 0 ? Int(valueInGrams) : nil
+        }
+
+        func convertToOptionalDecimal(_ quantity: HKQuantity?) -> Decimal? {
+            guard let quantity = quantity else { return nil }
+            let value = quantity.doubleValue(for: .internationalUnit())
+            return value > 0 ? Decimal(value) : nil
+        }
+
+        let carbsValue = convertToOptionalInt(carbs)
+        let proteinValue = convertToOptionalInt(protein)
+        let fatValue = convertToOptionalInt(fat)
+        let scheduledTimeInterval: TimeInterval? = scheduledTime?.timeIntervalSince1970
+        let bolusAmountValue = convertToOptionalDecimal(bolusAmount)
+
+        guard carbsValue != nil || proteinValue != nil || fatValue != nil else {
+            completion(false, "No nutrient data provided. At least one of carbs, fat, or protein must be greater than 0.")
+            return
+        }
+
+        let message = PushMessage(
+            aps: .init(alert: "Remote förval mottagen"),
+            user: user,
+            commandType: .combo,
+            bolusAmount: bolusAmountValue,
+            carbs: carbsValue,
+            protein: proteinValue,
+            fat: fatValue,
+            notes: notes,
+            sharedSecret: sharedSecret,
+            timestamp: Date().timeIntervalSince1970,
+            overrideName: override?.name,
+            scheduledTime: scheduledTimeInterval
+        )
+
+        sendPushNotification(message: message, completion: completion)
+    }
 
     private func validateCredentials() -> [String]? {
         var errors = [String]()

@@ -29,6 +29,7 @@ struct TrioRemoteControlView: View {
                         CommandButtonView(command: "Bolus", iconName: "syringe", destination: BolusView(), color: Color(UIColor.insulin))
                         CommandButtonView(command: "Tillfälliga mål", iconName: "scope", destination: TempTargetView(), color: .mint)
                         CommandButtonView(command: "Override", iconName: "slider.horizontal.3", destination: OverrideView(), color: .purple)
+                        CommandButtonView(command: "Förval", iconName: "plus.square.on.square", destination: ComboView(), color: .pink)
                     }
                     .padding(.horizontal)
                     

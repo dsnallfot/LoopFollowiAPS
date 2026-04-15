@@ -194,7 +194,7 @@ struct MealView: View {
                 }
                 
                 if carbsAmount > 0 {
-                    message += String(format: "\nKolhydrater: %.0f g", carbsAmount)
+                    message += String(format: "\n\nKolhydrater: %.0f g", carbsAmount)
                 }
                 
                 if proteinAmount > 0 {
@@ -206,11 +206,11 @@ struct MealView: View {
                 }
                 
                 if bolusAmount > 0 {
-                    message += String(format: "\nBolus: %.2f U", bolusAmount)
+                    message += String(format: "\nBolus: %.2f E", bolusAmount)
                 }
                 
                 if !notes.isEmpty {
-                    message += String(format: "\nAnteckning: %@", notes)
+                    message += String(format: "\n\nAnteckning: %@", notes)
                 }
                 
                 return Alert(
@@ -229,7 +229,7 @@ struct MealView: View {
                             }
                         }
                     }),
-                    secondaryButton: .cancel()
+                    secondaryButton: .cancel(Text("Avbryt"))
                 )
                 
             case .statusSuccess:
