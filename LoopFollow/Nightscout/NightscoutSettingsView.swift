@@ -35,6 +35,10 @@ struct NightscoutSettingsView: View {
                     Text(viewModel.nightscoutStatus)
                 }
                 .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
+                Section(header: Text("Realtidsuppdateringar")) {
+                    webSocketSection
+                }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
             }
             .scrollContentBackground(.hidden)
             .background(Color.clear)
@@ -43,6 +47,59 @@ struct NightscoutSettingsView: View {
         //    viewModel.dismiss()
         //}
     }
+    
+    @State private var showWebSocketInfo = false
+
+        private var webSocketSection: some View {
+            Section(header: webSocketSectionHeader) {
+                Toggle("Aktivera WebSocket", isOn: $viewModel.webSocketEnabled)
+                if viewModel.webSocketEnabled {
+                    HStack {
+                        //Text("Status")
+                        //Spacer()
+                        Text(viewModel.webSocketStatus)
+                            //.foregroundColor(viewModel.webSocketStatusColor)
+                    }
+                }
+            }
+            .sheet(isPresented: $showWebSocketInfo) {
+                NavigationStack {
+                    ScrollView {
+                        Text("""
+                        När funktionen är aktiverad upprätthåller LoopFollow en live-anslutning till Nightscout via WebSocket. Detta gör att uppdateringar (nya glukosvärden, behandlingar, enhetsstatus) kommer in inom några sekunder istället för att vänta på nästa uppdateringsintervall.
+
+                        Polling fortsätter med lägre frekvens som en säkerhetsåtgärd. Om WebSocket-anslutningen bryts återupptas normal polling omedelbart.
+
+                        Denna funktion kan påverka batteriförbrukningen. På WiFi är påverkan minimal. På mobildata kan anslutningen hindra radion från att gå ner i viloläge.
+                        """)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .navigationTitle("Realtidsuppdateringar")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Klar") { showWebSocketInfo = false }
+                        }
+                    }
+                }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
+        }
+
+        private var webSocketSectionHeader: some View {
+            HStack(spacing: 4) {
+                Text("Observera")
+                Button {
+                    showWebSocketInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(Color.accentColor)
+                }
+                .buttonStyle(.plain)
+            }
+        }
 }
 /*
 

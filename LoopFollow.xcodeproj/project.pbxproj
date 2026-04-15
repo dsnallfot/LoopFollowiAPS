@@ -85,6 +85,9 @@
 		65CDBDD12DBD296800587289 /* NSCacheTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CDBDD02DBD296600587289 /* NSCacheTask.swift */; };
 		65EBBB512DA5520B00212D5C /* TrioOrefViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */; };
 		65EBBB532DA5526100212D5C /* TrioOrefView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65EBBB522DA5526000212D5C /* TrioOrefView.swift */; };
+		65FF0D4B2F8DA821000F1DC0 /* NightscoutSocketDataHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65FF0D4A2F8DA81C000F1DC0 /* NightscoutSocketDataHandler.swift */; };
+		65FF0D4D2F8DA865000F1DC0 /* NightscoutSocketManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65FF0D4C2F8DA861000F1DC0 /* NightscoutSocketManager.swift */; };
+		65FF0D502F8DAC36000F1DC0 /* SocketIO in Frameworks */ = {isa = PBXBuildFile; productRef = 65FF0D4F2F8DAC36000F1DC0 /* SocketIO */; };
 		DD07B5C929E2F9C400C6A635 /* NightscoutUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */; };
 		DD0C0C602C415B9D00DBADDF /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0C0C5F2C415B9D00DBADDF /* ProfileManager.swift */; };
 		DD0C0C622C4175FD00DBADDF /* NSProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0C0C612C4175FD00DBADDF /* NSProfile.swift */; };
@@ -429,6 +432,8 @@
 		65CDBDD02DBD296600587289 /* NSCacheTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSCacheTask.swift; sourceTree = "<group>"; };
 		65EBBB502DA5520900212D5C /* TrioOrefViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioOrefViewModel.swift; sourceTree = "<group>"; };
 		65EBBB522DA5526000212D5C /* TrioOrefView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioOrefView.swift; sourceTree = "<group>"; };
+		65FF0D4A2F8DA81C000F1DC0 /* NightscoutSocketDataHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutSocketDataHandler.swift; sourceTree = "<group>"; };
+		65FF0D4C2F8DA861000F1DC0 /* NightscoutSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutSocketManager.swift; sourceTree = "<group>"; };
 		A7D55B42A22051DAD69E89D0 /* Pods_LoopFollow.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_LoopFollow.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD07B5C829E2F9C400C6A635 /* NightscoutUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightscoutUtils.swift; sourceTree = "<group>"; };
 		DD0C0C5F2C415B9D00DBADDF /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
@@ -709,6 +714,7 @@
 				FCFEEC9E2486E68E00402A7F /* WebKit.framework in Frameworks */,
 				3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */,
 				DD48781C2C7DAF140048F05C /* SwiftJWT in Frameworks */,
+				65FF0D502F8DAC36000F1DC0 /* SocketIO in Frameworks */,
 				655DF79B2F44CDBB0085EC78 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1029,6 +1035,8 @@
 				DD0C0C5F2C415B9D00DBADDF /* ProfileManager.swift */,
 				DD0C0C612C4175FD00DBADDF /* NSProfile.swift */,
 				DD5334222C60ED3600062F9D /* IAge.swift */,
+				65FF0D4A2F8DA81C000F1DC0 /* NightscoutSocketDataHandler.swift */,
+				65FF0D4C2F8DA861000F1DC0 /* NightscoutSocketManager.swift */,
 			);
 			path = Nightscout;
 			sourceTree = "<group>";
@@ -1435,6 +1443,7 @@
 			packageProductDependencies = (
 				DD48781B2C7DAF140048F05C /* SwiftJWT */,
 				655DF79A2F44CDBB0085EC78 /* ZIPFoundation */,
+				65FF0D4F2F8DAC36000F1DC0 /* SocketIO */,
 			);
 			productName = LoopFollow;
 			productReference = FC9788142485969B00A7906C /* Loop Follow.app */;
@@ -1467,6 +1476,7 @@
 			packageReferences = (
 				DD48781A2C7DAF140048F05C /* XCRemoteSwiftPackageReference "Swift-JWT" */,
 				655DF7992F44CDBB0085EC78 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+				65FF0D4E2F8DAC36000F1DC0 /* XCRemoteSwiftPackageReference "socket" */,
 			);
 			productRefGroup = FC9788152485969B00A7906C /* Products */;
 			projectDirPath = "";
@@ -1843,6 +1853,7 @@
 				DDF699962C5582290058A8D9 /* TextFieldWithToolBar.swift in Sources */,
 				DD91E4DD2BDEC3F8002D9E97 /* GlucoseConversion.swift in Sources */,
 				DD4878132C7B750D0048F05C /* TempTargetView.swift in Sources */,
+				65FF0D4D2F8DA865000F1DC0 /* NightscoutSocketManager.swift in Sources */,
 				DD0C0C682C48529400DBADDF /* Metric.swift in Sources */,
 				FCC6886D2489909D00A0279D /* AnyConvertible.swift in Sources */,
 				651C9D3E2ED5D3180077D40A /* GRIRiskGridView.swift in Sources */,
@@ -1894,6 +1905,7 @@
 				65CDBDD12DBD296800587289 /* NSCacheTask.swift in Sources */,
 				651C9D2E2ED5D2710077D40A /* StatsDataService.swift in Sources */,
 				6574FFFA2ED8689E00DEF7D0 /* StatsTrendCalculator.swift in Sources */,
+				65FF0D4B2F8DA821000F1DC0 /* NightscoutSocketDataHandler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2111,6 +2123,14 @@
 				minimumVersion = 0.9.20;
 			};
 		};
+		65FF0D4E2F8DAC36000F1DC0 /* XCRemoteSwiftPackageReference "socket" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/socketio/socket.io-client-swift";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
 		DD48781A2C7DAF140048F05C /* XCRemoteSwiftPackageReference "Swift-JWT" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Kitura/Swift-JWT.git";
@@ -2126,6 +2146,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 655DF7992F44CDBB0085EC78 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
 			productName = ZIPFoundation;
+		};
+		65FF0D4F2F8DAC36000F1DC0 /* SocketIO */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 65FF0D4E2F8DAC36000F1DC0 /* XCRemoteSwiftPackageReference "socket" */;
+			productName = SocketIO;
 		};
 		DD48781B2C7DAF140048F05C /* SwiftJWT */ = {
 			isa = XCSwiftPackageProductDependency;

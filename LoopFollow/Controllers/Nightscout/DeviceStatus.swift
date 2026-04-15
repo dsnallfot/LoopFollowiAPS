@@ -370,6 +370,33 @@ extension MainViewController {
         let secondsAgo = now - latestLoopTime
         
         DispatchQueue.main.async {
+                    var interval: Double
+                    if secondsAgo >= (20 * 60) {
+                        interval = 5 * 60
+                    } else if secondsAgo >= (10 * 60) {
+                        interval = 60
+                    } else if secondsAgo >= (7 * 60) {
+                        interval = 30
+                    } else if secondsAgo >= (5 * 60) {
+                        interval = 10
+                    } else {
+                        interval = 310 - secondsAgo
+                        
+                        TaskScheduler.shared.rescheduleTask(id: .alarmCheck, to: Date().addingTimeInterval(3))
+                    }
+
+                    if NightscoutSocketManager.shared.connectionState == .authenticated {
+                        interval = max(interval * 3, 60)
+                    }
+
+                    TaskScheduler.shared.rescheduleTask(
+                        id: .deviceStatus,
+                        to: Date().addingTimeInterval(interval)
+                    )
+                }
+        
+        /*
+        DispatchQueue.main.async {
             if secondsAgo >= (20 * 60) {
                 TaskScheduler.shared.rescheduleTask(
                     id: .deviceStatus,
@@ -401,6 +428,7 @@ extension MainViewController {
                 )
             }
         }
+        */
         LogManager.shared.log(category: .deviceStatus, message: "Update Device Status done", isDebug: true)
     }
 }

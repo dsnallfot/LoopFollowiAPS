@@ -30,6 +30,8 @@ class Storage {
 
     var cachedJWT = StorageValue<String?>(key: "cachedJWT", defaultValue: nil)
     var jwtExpirationDate = StorageValue<Date?>(key: "jwtExpirationDate", defaultValue: nil)
+    
+    var webSocketEnabled = StorageValue<Bool>(key: "webSocketEnabled", defaultValue: false)
 
     var backgroundRefreshType = StorageValue<BackgroundRefreshType>(key: "backgroundRefreshType", defaultValue: .silentTune)
 

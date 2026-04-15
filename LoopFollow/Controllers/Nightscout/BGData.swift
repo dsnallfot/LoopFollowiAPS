@@ -347,7 +347,13 @@ extension MainViewController {
                 LogManager.shared.log(category: .nightscout,
                                       message: "Fresh reading. Scheduling next fetch in \(delayToSchedule) seconds.",
                                       isDebug: true)
+                
+                TaskScheduler.shared.rescheduleTask(id: .alarmCheck, to: Date().addingTimeInterval(3))
             }
+            
+            if NightscoutSocketManager.shared.connectionState == .authenticated {
+                            delayToSchedule = max(delayToSchedule * 3, 60)
+                        }
             
             TaskScheduler.shared.rescheduleTask(id: .fetchBG, to: Date().addingTimeInterval(delayToSchedule))
             

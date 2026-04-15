@@ -40,6 +40,7 @@ class LogManager {
         case treatments = "Treatments"
         case trio = "Trio"
         case volumeButtonSnooze = "Volume Button Snooze"
+        case websocket = "WebSocket"
     }
 
     init() {
