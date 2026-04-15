@@ -9,6 +9,7 @@
 import SwiftUI
 import HealthKit
 
+@available(iOS 16.0, *)
 struct TempTargetView: View {
     @Environment(\.presentationMode) private var presentationMode
     private let pushNotificationManager = PushNotificationManager()
@@ -40,137 +41,160 @@ struct TempTargetView: View {
     }
 
     var body: some View {
-            VStack {
-                if device.value != "Trio" {
-                    ErrorMessageView(
-                        message: "Remote commands are currently only available for Trio."
-                    )
-                } else {
-                    Form {
-                        if let tempTargetValue = tempTarget.value {
-                            Section(header: Text("Befintliga tillfälliga mål")) {
-                                HStack {
-                                    Text("Nuvarande mål")
-                                    Spacer()
-                                    Text(Localizer.formatQuantity(tempTargetValue))
-                                    Text(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString).foregroundColor(.secondary)
-                                }
-                                Button {
-                                    alertType = .confirmCancellation
-                                    showAlert = true
-                                } label: {
-                                    HStack {
-                                        Text("Avbryt tillfälligt mål")
-                                        Spacer()
-                                        Image(systemName: "xmark.app")
-                                            .font(.title)
-                                    }
-                                }
-                                .tint(.red)
-                            }
-                        }
-                        Section(header: Text("Tillfälliga mål")) {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+        VStack {
+            if device.value != "Trio" {
+                ErrorMessageView(
+                    message: "Remote commands are currently only available for Trio."
+                )
+            } else {
+                Form {
+                    if let tempTargetValue = tempTarget.value {
+                        Section(header: Text("Befintliga tillfälliga mål")) {
                             HStack {
-                                Text("Target")
+                                Text("Nuvarande mål")
                                 Spacer()
-                                TextFieldWithToolBar(
-                                    quantity: $newHKTarget,
-                                    maxLength: 4,
-                                    unit: UserDefaultsRepository.getPreferredUnit(),
-                                    minValue: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 80),
-                                    maxValue: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 200),
-                                    onValidationError: { message in
-                                        handleValidationError(message)
-                                    }
-                                )
-                                .focused($targetFieldIsFocused)
+                                Text(Localizer.formatQuantity(tempTargetValue))
                                 Text(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString).foregroundColor(.secondary)
                             }
-                            HStack {
-                                Text("Varaktighet")
-                                Spacer()
-                                TextFieldWithToolBar(
-                                    quantity: $duration,
-                                    maxLength: 4,
-                                    unit: HKUnit.minute(),
-                                    minValue: HKQuantity(unit: .minute(), doubleValue: 5),
-                                    onValidationError: { message in
-                                        handleValidationError(message)
-                                    }
-                                )
-                                .focused($durationFieldIsFocused)
-                                Text("minuter").foregroundColor(.secondary)
+                            Button {
+                                alertType = .confirmCancellation
+                                showAlert = true
+                            } label: {
+                                HStack {
+                                    Text("Avbryt tillfälligt mål")
+                                    Spacer()
+                                    Image(systemName: "xmark.app")
+                                        .font(.title)
+                                }
                             }
-                            HStack {
-                                Button {
+                            .tint(.red)
+                        }
+                        .listRowBackground(Color(.systemGray).opacity(0.15))
+                    }
+                    Section(header: Text("Tillfälliga mål")) {
+                        HStack {
+                            Text("Target")
+                            Spacer()
+                            TextFieldWithToolBar(
+                                quantity: $newHKTarget,
+                                maxLength: 4,
+                                unit: UserDefaultsRepository.getPreferredUnit(),
+                                minValue: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 80),
+                                maxValue: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 200),
+                                onValidationError: { message in
+                                    handleValidationError(message)
+                                }
+                            )
+                            .focused($targetFieldIsFocused)
+                            Text(UserDefaultsRepository.getPreferredUnit().localizedShortUnitString).foregroundColor(.secondary)
+                        }
+                        HStack {
+                            Text("Varaktighet")
+                            Spacer()
+                            TextFieldWithToolBar(
+                                quantity: $duration,
+                                maxLength: 4,
+                                unit: HKUnit.minute(),
+                                minValue: HKQuantity(unit: .minute(), doubleValue: 5),
+                                onValidationError: { message in
+                                    handleValidationError(message)
+                                }
+                            )
+                            .focused($durationFieldIsFocused)
+                            Text("minuter").foregroundColor(.secondary)
+                        }
+                    }
+                    .listRowBackground(Color(.systemGray).opacity(0.15))
+                    Section() {
+                    HStack {
+                        if #available(iOS 26.0, *) {
+                            Button {
+                                alertType = .confirmCommand
+                                showAlert = true
+                                targetFieldIsFocused = false
+                                durationFieldIsFocused = false
+                            } label: {
+                                Text("Aktivera")
+                            }
+                            .disabled(isButtonDisabled)
+                            .buttonStyle(.glassProminent)
+                            .padding(.leading, -15)
+                            //.font(.callout)
+                            //.controlSize(.mini)
+                        } else {
+                            // Fallback on earlier versions
+                        }
+                        
+                        Spacer()
+                        
+                        if #available(iOS 26.0, *) {
+                            Button {
+                                showPresetSheet = true
+                                targetFieldIsFocused = false
+                                durationFieldIsFocused = false
+                            } label: {
+                                Text("Spara som förval")
+                            }
+                            .disabled(isButtonDisabled)
+                            .buttonStyle(.glassProminent)
+                            .padding(.trailing, -15)
+                            //.font(.callout)
+                            //.controlSize(.mini)
+                        } else {
+                            // Fallback on earlier versions
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                    .listRowBackground(Color(.clear))
+                    
+                    if !presetManager.presets.isEmpty {
+                        Section(header: Text("Förval")) {
+                            ForEach(presetManager.presets) { preset in
+                                HStack {
+                                    Text(preset.name)
+                                    Spacer()
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture {
                                     alertType = .confirmCommand
+                                    newHKTarget = preset.target
+                                    duration = preset.duration
                                     showAlert = true
                                     targetFieldIsFocused = false
                                     durationFieldIsFocused = false
-                                } label: {
-                                    Text("Aktivera")
                                 }
-                                .disabled(isButtonDisabled)
-                                .buttonStyle(BorderlessButtonStyle())
-                                .font(.callout)
-                                .controlSize(.mini)
-
-                                Spacer()
-
-                                Button {
-                                    showPresetSheet = true
-                                    targetFieldIsFocused = false
-                                    durationFieldIsFocused = false
-                                } label: {
-                                    Text("Spara som förval")
-                                }
-                                .disabled(isButtonDisabled)
-                                .buttonStyle(BorderlessButtonStyle())
-                                .font(.callout)
-                                .controlSize(.mini)
-                            }
-                        }
-
-                        if !presetManager.presets.isEmpty {
-                            Section(header: Text("Förval")) {
-                                ForEach(presetManager.presets) { preset in
-                                    HStack {
-                                        Text(preset.name)
-                                        Spacer()
-                                    }
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        alertType = .confirmCommand
-                                        newHKTarget = preset.target
-                                        duration = preset.duration
-                                        showAlert = true
+                                .swipeActions {
+                                    Button(role: .destructive) {
+                                        if let index = presetManager.presets.firstIndex(where: { $0.id == preset.id }) {
+                                            presetManager.deletePreset(at: index)
+                                        }
                                         targetFieldIsFocused = false
                                         durationFieldIsFocused = false
-                                    }
-                                    .swipeActions {
-                                        Button(role: .destructive) {
-                                            if let index = presetManager.presets.firstIndex(where: { $0.id == preset.id }) {
-                                                presetManager.deletePreset(at: index)
-                                            }
-                                            targetFieldIsFocused = false
-                                            durationFieldIsFocused = false
-                                        } label: {
-                                            Label("Radera", systemImage: "trash")
-                                        }
+                                    } label: {
+                                        Label("Radera", systemImage: "trash")
                                     }
                                 }
                             }
                         }
-                    }
-
-                    if isLoading {
-                        ProgressView("Vänligen vänta...")
-                            .padding()
+                        .listRowBackground(Color(.systemGray).opacity(0.15))
                     }
                 }
+                
+                if isLoading {
+                    ProgressView("Vänligen vänta...")
+                        .padding()
+                }
             }
-            .navigationTitle("Tillfälligt mål")
-            .navigationBarTitleDisplayMode(.inline)
+        }
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
+        .navigationTitle("Tillfälligt mål")
+        .navigationBarTitleDisplayMode(.inline)
+    }
             .alert(isPresented: $showAlert) {
                 switch alertType {
                 case .confirmCommand:
@@ -216,6 +240,9 @@ struct TempTargetView: View {
                 }
             }
             .sheet(isPresented: $showPresetSheet) {
+                ZStack {
+                    ThemeBackground()
+                        .ignoresSafeArea()
                 VStack {
                     Text("Spara förval")
                         .font(.headline)
@@ -224,22 +251,33 @@ struct TempTargetView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding()
                     HStack {
-                        Button("Avbryt") {
-                            showPresetSheet = false
+                        if #available(iOS 26.0, *) {
+                            Button("Avbryt") {
+                                showPresetSheet = false
+                            }
+                            .buttonStyle(.glassProminent)
+                            .padding()
+                        } else {
+                            // Fallback on earlier versions
                         }
-                        .padding()
                         Spacer()
-                        Button("Spara") {
-                            presetManager.addPreset(name: presetName, target: newHKTarget, duration: duration)
-                            presetName = ""
-                            showPresetSheet = false
+                        if #available(iOS 26.0, *) {
+                            Button("Spara") {
+                                presetManager.addPreset(name: presetName, target: newHKTarget, duration: duration)
+                                presetName = ""
+                                showPresetSheet = false
+                            }
+                            .disabled(presetName.isEmpty)
+                            .buttonStyle(.glassProminent)
+                            .padding()
+                        } else {
+                            // Fallback on earlier versions
                         }
-                        .disabled(presetName.isEmpty)
-                        .padding()
                     }
                     Spacer()
                 }
                 .padding()
+            }
             }
     }
 

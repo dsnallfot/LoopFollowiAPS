@@ -26,15 +26,20 @@ struct LoadingButtonView: View {
                     }
                     .padding()
                 } else {
-                    Button(action: {
-                        action()
-                    }) {
-                        Text(buttonText)
-                            .frame(maxWidth: .infinity)
+                    if #available(iOS 26.0, *) {
+                        Button(action: {
+                            action()
+                        }) {
+                            Text(buttonText)
+                                .frame(maxWidth: .infinity)
+                                .fontWeight(.semibold)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .controlSize(.large)
+                        .disabled(isDisabled)
+                    } else {
+                        // Fallback on earlier versions
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(isDisabled)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .center)

@@ -121,7 +121,7 @@ struct MealView: View {
                     .listRowBackground(Color(.systemGray).opacity(0.15))
                     
                     Section(header: Text("Schemalägg")) {
-                        Toggle("Schemalägg senare", isOn: $isScheduling)
+                        Toggle("Schemalägg till senare", isOn: $isScheduling)
                         if isScheduling {
                             DatePicker(
                                 "Välj tid",
