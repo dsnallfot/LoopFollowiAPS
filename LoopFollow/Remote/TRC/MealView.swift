@@ -27,6 +27,7 @@ struct MealView: View {
     @ObservedObject private var mealWithBolus = Storage.shared.mealWithBolus
     @ObservedObject private var mealWithFatProtein = Storage.shared.mealWithFatProtein
     @ObservedObject private var maxBolus = Storage.shared.maxBolus
+    @ObservedObject private var CRValue = Storage.shared.sharedCRValue
     
     @FocusState private var carbsFieldIsFocused: Bool
     @FocusState private var proteinFieldIsFocused: Bool
@@ -166,6 +167,9 @@ struct MealView: View {
         .onAppear {
             selectedTime = nil
             isScheduling = false
+
+            // Debug: Fetch sharedCRValue from DeviceStatusOpenAPS
+            print("📊 sharedCRValue from DeviceStatusOpenAPS: \(CRValue.value)")
         }
         .alert(isPresented: $showAlert) {
             switch alertType {

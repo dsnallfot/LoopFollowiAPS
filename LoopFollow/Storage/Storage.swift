@@ -43,6 +43,23 @@ class Storage {
     var uploadAppStartNote = StorageValue<Bool>(key: "uploadAppStartNote", defaultValue: false)
     
     var sensorScheduleOffset = StorageValue<Double?>(key: "sensorScheduleOffset", defaultValue: nil)
+    
+    // Shared DeviceStatus / Remote Meal values
+    var sharedCRValue = StorageValue<String>(key: "sharedCRValue", defaultValue: "")
+    var sharedRawEvBG = StorageValue<String>(key: "sharedRawEvBG", defaultValue: "")
+    var sharedRawMinPredBG = StorageValue<String>(key: "sharedRawMinPredBG", defaultValue: "")
+    var sharedMinPredBG = StorageValue<Double>(key: "sharedMinPredBG", defaultValue: 0.0)
+    var sharedLatestIOB = StorageValue<String>(key: "sharedLatestIOB", defaultValue: "")
+    var sharedLatestCOB = StorageValue<String>(key: "sharedLatestCOB", defaultValue: "")
+    var sharedLatestISF = StorageValue<String>(key: "sharedLatestISF", defaultValue: "")
+    var sharedLatestSens = StorageValue<String>(key: "sharedLatestSens", defaultValue: "")
+    var sharedLatestCarbReq = StorageValue<String>(key: "sharedLatestCarbReq", defaultValue: "")
+    var sharedLatestInsulinReq = StorageValue<String>(key: "sharedLatestInsulinReq", defaultValue: "")
+    var sharedLatestMinMax = StorageValue<String>(key: "sharedLatestMinMax", defaultValue: "")
+    var sharedLatestEvBG = StorageValue<String>(key: "sharedLatestEvBG", defaultValue: "")
+    var sharedLatestBG = StorageValue<String>(key: "sharedLatestBG", defaultValue: "")
+    var sharedLatestDirection = StorageValue<String>(key: "sharedLatestDirection", defaultValue: "")
+    var sharedLatestDelta = StorageValue<String>(key: "sharedLatestDelta", defaultValue: "")
 
     // Persist latest Bluetooth heartbeat so UI can show a value immediately after app restart
     var lastBluetoothHeartbeatDate = StorageValue<Date?>(key: "lastBluetoothHeartbeatDate", defaultValue: nil)

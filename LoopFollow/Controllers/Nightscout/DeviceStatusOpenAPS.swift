@@ -7,22 +7,10 @@ import Foundation
 import UIKit
 import HealthKit
 
-var sharedCRValue: String = ""
-var sharedRawEvBG: String = ""
-var sharedRawMinPredBG: String = ""
-var sharedMinPredBG: Double = 0.0
-var sharedLatestIOB: String = ""
-var sharedLatestCOB: String = ""
-var sharedLatestISF: String = ""
-var sharedLatestSens: String = ""
-var sharedLatestCarbReq: String = ""
-var sharedLatestInsulinReq: String = ""
-var sharedLatestMinMax: String = ""
-var sharedLatestEvBG: String = ""
-
 extension MainViewController {
     func DeviceStatusOpenAPS(formatter: ISO8601DateFormatter, lastDeviceStatus: [String: AnyObject]?, lastLoopRecord: [String: AnyObject]) {
         ObservableUserDefaults.shared.device.value = lastDeviceStatus?["device"] as? String ?? ""
+        let storage = Storage.shared
         
         if lastLoopRecord["failureReason"] != nil {
             LoopStatusLabel.text = "X"
@@ -157,7 +145,7 @@ extension MainViewController {
         if let enactedISFValue = enactedOrSuggested["ISF"] as? Double {
             let isfInMmol = enactedISFValue * 0.0555 // Conversion factor for mmol/L
             let isfUnit = "mmol/L"
-            sharedLatestISF = String(format: "%.1f %@", isfInMmol, isfUnit)
+            storage.sharedLatestISF.value = String(format: "%.1f %@", isfInMmol, isfUnit)
 
             var determinedISFUnit: HKUnit = .milligramsPerDeciliter
             if enactedISFValue < 25 {
@@ -197,8 +185,8 @@ extension MainViewController {
                     let minPredBGString = nsString.substring(with: match.range(at: 1))
                     if let minPredBG = Double(minPredBGString) {
                         let formattedMinPredBGString = String(format: "%.1f", minPredBG)
-                        sharedMinPredBG = minPredBG
-                        sharedRawMinPredBG = formattedMinPredBGString
+                        storage.sharedMinPredBG.value = minPredBG
+                        storage.sharedRawMinPredBG.value = formattedMinPredBGString
                         //LogManager.shared.log(category: .deviceStatus, message: "Extracted MinPredBG from reason: \(formattedMinPredBGString)", isDebug: true)
                     } else {
                         LogManager.shared.log(category: .deviceStatus, message: "Failed to convert extracted MinPredBG to Double: \(minPredBGString)", isDebug: true)
@@ -210,8 +198,8 @@ extension MainViewController {
                 // Fallback: Use UserDefaultsRepository.lowLine (already in correct units)
                 let fallbackMinPredBG = Double(UserDefaultsRepository.lowLine.value)  * 0.0555
                 let formattedFallbackMinPredBG = String(format: "%.1f", fallbackMinPredBG)
-                sharedMinPredBG = fallbackMinPredBG
-                sharedRawMinPredBG = formattedFallbackMinPredBG
+                storage.sharedMinPredBG.value = fallbackMinPredBG
+                storage.sharedRawMinPredBG.value = formattedFallbackMinPredBG
                 LogManager.shared.log(category: .deviceStatus, message: "Reason string not available, using fallback MinPredBG: \(formattedFallbackMinPredBG)", isDebug: true)
             }
 
@@ -231,10 +219,10 @@ extension MainViewController {
 
             if let profileCR = profileCR, let enactedCR = enactedCR, profileCR != enactedCR {
                 infoManager.updateInfoData(type: .carbRatio, value: profileCR, enactedValue: enactedCR, separator: .arrow, unit: " g/E")
-                sharedCRValue = String(format: "%.1f", enactedCR)
+                storage.sharedCRValue.value = String(format: "%.1f", enactedCR)
             } else if let profileCR = profileCR {
                 infoManager.updateInfoData(type: .carbRatio, value: profileCR, unit: "g/E")
-                sharedCRValue = String(format: "%.1f", profileCR)
+                storage.sharedCRValue.value = String(format: "%.1f", profileCR)
             }
 
         // IOB
@@ -242,7 +230,7 @@ extension MainViewController {
             // Klassisk Loop/OpenAPS-IOB (dvs över profilbasal)
             infoManager.updateInfoData(type: .iob, value: iobMetric, unit: "E")
             latestIOB = iobMetric
-            sharedLatestIOB = String(format: "%.2f E", latestIOB?.value ?? 0.00)
+            storage.sharedLatestIOB.value = String(format: "%.2f E", latestIOB?.value ?? 0.00)
 
             // Beräkna teoretisk basal-IOB för nuvarande klockslag
             let profile = ProfileManager.shared
@@ -269,7 +257,7 @@ extension MainViewController {
             if let cobMetric = CarbMetric(from: enactedOrSuggested, key: "COB") {
                 infoManager.updateInfoData(type: .cob, value: cobMetric, unit: "g")
                 latestCOB = cobMetric
-                sharedLatestCOB = String(format: "%.0f g", latestCOB?.value ?? 0)
+                storage.sharedLatestCOB.value = String(format: "%.0f g", latestCOB?.value ?? 0)
             } else if let reasonString = enactedOrSuggested["reason"] as? String {
                 // Fallback: Extract COB from reason string
                 let cobPattern = "COB: (\\d+(?:\\.\\d+)?)"
@@ -506,10 +494,10 @@ extension MainViewController {
             }
             infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: unitForInfo)
             UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
-            sharedLatestInsulinReq = String(format: "%.2f E", insulinReqMetric.value)
+            storage.sharedLatestInsulinReq.value = String(format: "%.2f E", insulinReqMetric.value)
         } else {
             UserDefaultsRepository.deviceRecBolus.value = 0
-            sharedLatestInsulinReq = "0 E"
+            storage.sharedLatestInsulinReq.value = "0 E"
             infoManager.setPriority(false, for: .recBolus)
         }
         
@@ -526,7 +514,7 @@ extension MainViewController {
             }
 
             infoManager.updateInfoData(type: .carbReq, value: latestCarbReq, unit: unitForInfo)
-            sharedLatestCarbReq = "\(latestCarbReq) g"
+            storage.sharedLatestCarbReq.value = "\(latestCarbReq) g"
 
             LogManager.shared.log(
                 category: .deviceStatus,
@@ -538,7 +526,7 @@ extension MainViewController {
             let defaultCarbReq = "0"
             infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq, unit: "g")
             infoManager.setPriority(false, for: .carbReq)
-            sharedLatestCarbReq = "\(defaultCarbReq) g"
+            storage.sharedLatestCarbReq.value = "\(defaultCarbReq) g"
 
             LogManager.shared.log(
                 category: .deviceStatus,
@@ -550,7 +538,7 @@ extension MainViewController {
         // Autosens
         if let sens = enactedOrSuggested["sensitivityRatio"] as? Double {
             let formattedSens = String(format: "%.0f", sens * 100.0) + " %"
-            sharedLatestSens = formattedSens
+            storage.sharedLatestSens.value = formattedSens
 
             var formattedSensLimit: String?
 
@@ -592,8 +580,8 @@ extension MainViewController {
 
             // Update visualization for remote meal info popup
             latestEvBG = formattedBGString + " mmol/L"
-            sharedRawEvBG = formattedBGString
-            sharedLatestEvBG = latestEvBG
+            storage.sharedRawEvBG.value = formattedBGString
+            storage.sharedLatestEvBG.value = latestEvBG
 
             // Check if loop is inactive
             if ((TimeInterval(Date().timeIntervalSince1970) - lastLoopTime) / 60) > 16 {
@@ -743,10 +731,10 @@ extension MainViewController {
             if minPredBG != Double.infinity && maxPredBG != -Double.infinity {
                 let value = "\(Localizer.toDisplayUnits(String(minPredBG)))/\(Localizer.toDisplayUnits(String(maxPredBG)))"
                 infoManager.updateInfoData(type: .minMax, value: value, unit: "mmol/L")
-                sharedLatestMinMax = "\(value) mmol/L"
+                storage.sharedLatestMinMax.value = "\(value) mmol/L"
             } else {
                 infoManager.updateInfoData(type: .minMax, value: "N/A", unit: "mmol/L")
-                sharedLatestMinMax = "N/A"
+                storage.sharedLatestMinMax.value = "N/A"
             }
         }
     }

@@ -27,6 +27,8 @@ class CustomActionViewController: ThemedViewController, UIPickerViewDataSource, 
     // Property to store the selected override option
     var selectedCustomAction: String?
     
+    let storage = Storage.shared
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
@@ -52,7 +54,7 @@ class CustomActionViewController: ThemedViewController, UIPickerViewDataSource, 
         numberFormatter.maximumFractionDigits = 1
         
         //MinPredBG & Low Threshold
-        let minPredBG = Decimal(sharedMinPredBG)
+        let minPredBG = Decimal(storage.sharedMinPredBG.value)
         let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
         
         // Format the MinPredBG value & low threshold to have one decimal place

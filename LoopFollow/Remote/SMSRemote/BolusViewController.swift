@@ -26,6 +26,8 @@ class BolusViewController: ThemedViewController, UITextFieldDelegate, TwilioRequ
     var lowThreshold: Decimal = 0.0
     
     let maxBolus = UserDefaultsRepository.maxBolus.value
+    
+    let storage = Storage.shared
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -48,7 +50,7 @@ class BolusViewController: ThemedViewController, UITextFieldDelegate, TwilioRequ
         numberFormatter.maximumFractionDigits = 1
         
         //MinPredBG & Low Threshold
-        let minPredBG = Decimal(sharedMinPredBG)
+        let minPredBG = Decimal(storage.sharedMinPredBG.value)
         let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
         
         // Format the MinPredBG value & low threshold to have one decimal place

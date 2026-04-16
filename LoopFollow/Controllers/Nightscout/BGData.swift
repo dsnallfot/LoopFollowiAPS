@@ -12,9 +12,6 @@ import UIKit
 fileprivate var isBGFetchInProgress = false
 fileprivate var bgFetchStartedAt: Date? = nil
 
-var sharedLatestBG: String = ""
-var sharedLatestDirection: String = ""
-var sharedLatestDelta: String = ""
 
 extension MainViewController {
     // Dex Share Web Call
@@ -521,7 +518,7 @@ extension MainViewController {
             }
             self.BGText.text = bgDisplay
             //Daniel: Added for visualization in remote meal info popup
-            sharedLatestBG = bgDisplay
+            Storage.shared.sharedLatestBG.value = bgDisplay
             snoozerBG = bgDisplay
             self.setBGTextColor()
             // 🦄 Show/hide unicorn for exactly 5.5 mmol/L
@@ -533,13 +530,13 @@ extension MainViewController {
             if let directionBG = entries[latestEntryIndex].direction {
                 self.DirectionText.text = self.bgDirectionGraphic(directionBG)
                 //Daniel: Added for visualization in remote meal info popup
-                sharedLatestDirection = self.bgDirectionGraphic(directionBG)
+                Storage.shared.sharedLatestDirection.value = self.bgDirectionGraphic(directionBG)
                 snoozerDirection = self.bgDirectionGraphic(directionBG)
                 self.latestDirectionString = self.bgDirectionGraphic(directionBG)
             } else {
                 self.DirectionText.text = ""
                 //Daniel: Added for visualization in remote meal info popup
-                sharedLatestDirection = ""
+                Storage.shared.sharedLatestDirection.value = ""
                 snoozerDirection = ""
                 self.latestDirectionString = ""
             }
@@ -556,13 +553,13 @@ extension MainViewController {
                 if deltaWasInterpolated { formattedDelta += "*" }
 
                 // Daniel: Added for visualization in remote meal info popup
-                sharedLatestDelta = formattedDelta
+                Storage.shared.sharedLatestDelta.value = formattedDelta
 
                 self.DeltaText.text = formattedDelta
                 snoozerDelta = formattedDelta
             } else {
                 self.DeltaText.text = "--"
-                sharedLatestDelta = "--"
+                Storage.shared.sharedLatestDelta.value = "--"
                 snoozerDelta = "--"
                 self.latestDeltaString = "--"
             }

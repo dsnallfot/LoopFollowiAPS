@@ -54,6 +54,8 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
     
     var popupView: UIView?
     
+    let storage = Storage.shared
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         if UserDefaultsRepository.forceDarkMode.value {
@@ -96,7 +98,7 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
     //Bolus calculation preperations
         
         //Carb ratio
-        if let sharedCRDouble = Double(sharedCRValue) {
+        if let sharedCRDouble = Double(storage.sharedCRValue.value) {
             CR = Decimal(sharedCRDouble)
         } else {
             LogManager.shared.log(category: .remote, message: "CR could not be fetched", isDebug: true)
@@ -114,24 +116,11 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
         CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
         LogManager.shared.log(category: .remote, message: "CR: \(formattedCR) g/E", isDebug: true)
         
-        
-        //print("Latest Autosens: \(sharedLatestSens)") // Just print for now. To use as info in bolusrecommendation later on
-        //print("Latest ISF: \(sharedLatestISF)") // Just print for now. To use as info in bolusrecommendation later on
-        //print("Latest IOB: \(sharedLatestIOB)") // Just print for now. To use as info in bolusrecommendation later on
-        //print("Latest COB: \(sharedLatestCOB)") // Just print for now. To use as info in bolusrecommendation later on
-        //print("Latest InsulinReq: \(sharedLatestInsulinReq)") // Just print for now. To use as info in bolusrecommendation later on
-        //print("Latest CarbReq: \(sharedLatestCarbReq)") // Just print for now. To use as info in bolusrecommendation later on
-        //print("Delta: \(Double(sharedDeltaBG) * 0.0555) mmol/L") // Just print for now. To use as info in bolusrecommendation later on
-
-        //print("BG: \(sharedLatestBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
-        //print("Direction: \(sharedLatestDirection)")// Just print for now. To use as info in bolusrecommendation later on
-        //print("Delta: \(sharedLatestDelta) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
-        //print("MinPredBG: \(sharedRawMinPredBG) mmol/L")// Just print for now. To use as info in bolusrecommendation later on
-        LogManager.shared.log(category: .remote, message: "MinPredBG: \(sharedRawMinPredBG) mmol/L", isDebug: true)
+        LogManager.shared.log(category: .remote, message: "MinPredBG: \(storage.sharedRawMinPredBG.value) mmol/L", isDebug: true)
         
         
         //MinPredBG & Low Threshold
-        let minPredBG = Decimal(sharedMinPredBG)
+        let minPredBG = Decimal(storage.sharedMinPredBG.value)
         let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
         
         // Format the MinPredBG value & low threshold to have one decimal place
@@ -220,17 +209,21 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
             
             // Add metrics to the popup
             let metrics = ["BG", "Autosens", "ISF", "IOB", "COB", "Behov insulin", "Behov kolhydrater", "Min/Max BG", "Prognos BG"]
-            let latestBGString = (sharedLatestBG + "  " + sharedLatestDirection + "  (" + sharedLatestDelta + ")")
+            let latestBGString = (
+                storage.sharedLatestBG.value + "  " +
+                storage.sharedLatestDirection.value + "  (" +
+                storage.sharedLatestDelta.value + ")"
+            )
             let values = [
                 latestBGString,
-                sharedLatestSens,
-                sharedLatestISF,
-                sharedLatestIOB,
-                sharedLatestCOB,
-                sharedLatestInsulinReq,
-                sharedLatestCarbReq,
-                sharedLatestMinMax,
-                sharedLatestEvBG
+                storage.sharedLatestSens.value,
+                storage.sharedLatestISF.value,
+                storage.sharedLatestIOB.value,
+                storage.sharedLatestCOB.value,
+                storage.sharedLatestInsulinReq.value,
+                storage.sharedLatestCarbReq.value,
+                storage.sharedLatestMinMax.value,
+                storage.sharedLatestEvBG.value
             ]
 
             for (index, metric) in metrics.enumerated() {
