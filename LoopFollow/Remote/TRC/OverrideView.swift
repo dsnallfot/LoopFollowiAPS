@@ -108,7 +108,8 @@ struct OverrideView: View {
                                             }
                                             Spacer()
                                             Image(systemName: "arrow.right.circle")
-                                                .foregroundColor(.blue)
+                                                .font(.title3)
+                                                .foregroundColor(.purple)
                                         }
                                     }
                                 }

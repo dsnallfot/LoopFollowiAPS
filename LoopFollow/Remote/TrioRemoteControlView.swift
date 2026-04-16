@@ -30,6 +30,7 @@ struct TrioRemoteControlView: View {
                         CommandButtonView(command: "Tillfälliga mål", iconName: "scope", destination: TempTargetView(), color: .mint)
                         CommandButtonView(command: "Override", iconName: "slider.horizontal.3", destination: OverrideView(), color: .purple)
                         CommandButtonView(command: "Förval", iconName: "plus.square.on.square", destination: ComboView(), color: .pink)
+                        ShortcutButtonView(command: "Hälsologgning", iconName: "list.clipboard", color: .gray)
                     }
                     .padding(.horizontal)
                     
@@ -49,6 +50,36 @@ struct CommandButtonView<Destination: View>: View {
 
     var body: some View {
         NavigationLink(destination: destination) {
+            VStack {
+                Image(systemName: iconName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 50, height: 50)
+                Text(command)
+                    .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity, minHeight: 100)
+            .padding()
+            .background(color.opacity(0.8))
+            .foregroundColor(.white)
+            .cornerRadius(30)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct ShortcutButtonView: View {
+    let command: String
+    let iconName: String
+    let color: Color
+
+    var body: some View {
+        Button(action: {
+            let urlString = "shortcuts://run-shortcut?name=Hälsologgning"
+            if let url = URL(string: urlString) {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
+        }) {
             VStack {
                 Image(systemName: iconName)
                     .resizable()
