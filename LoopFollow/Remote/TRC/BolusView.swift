@@ -40,7 +40,7 @@ struct BolusView: View {
             Form {
                 Section {
                     HKQuantityInputView(
-                        label: "Bolus mängd",
+                        label: "Bolus",
                         quantity: $bolusAmount,
                         unit: .internationalUnit(),
                         maxLength: 4,

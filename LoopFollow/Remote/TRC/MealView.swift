@@ -54,7 +54,7 @@ struct MealView: View {
                 .ignoresSafeArea()
             VStack {
                 Form {
-                    Section(header: Text("Registrera måltid")) {
+                    Section(header: Text("Måltid")) {
                         HKQuantityInputView(
                             label: "Kolhydrater",
                             quantity: $carbs,
@@ -99,7 +99,7 @@ struct MealView: View {
                         
                         if mealWithBolus.value {
                             HKQuantityInputView(
-                                label: "Bolus mängd",
+                                label: "Bolus",
                                 quantity: $bolusAmount,
                                 unit: .internationalUnit(),
                                 maxLength: 4,

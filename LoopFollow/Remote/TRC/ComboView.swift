@@ -294,7 +294,7 @@ private struct ComboEditorView: View {
 
                         if mealWithBolus.value {
                             HKQuantityInputView(
-                                label: "Bolus mängd",
+                                label: "Bolus",
                                 quantity: $bolusAmount,
                                 unit: .internationalUnit(),
                                 maxLength: 4,
@@ -419,6 +419,21 @@ private struct ComboEditorView: View {
         .sheet(isPresented: $showOverridePicker) {
             NavigationStack {
                 List {
+                    Button {
+                        selectedOverride = nil
+                        showOverridePicker = false
+                    } label: {
+                        HStack {
+                            Text("Ingen override")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if selectedOverride == nil {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+
                     if profileManager.trioOverrides.isEmpty {
                         Text("Inga overrides tillgängliga.")
                             .foregroundColor(.secondary)
