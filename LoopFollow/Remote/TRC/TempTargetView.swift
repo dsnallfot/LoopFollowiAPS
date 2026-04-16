@@ -74,9 +74,9 @@ struct TempTargetView: View {
                         }
                         .listRowBackground(Color(.systemGray).opacity(0.15))
                     }
-                    Section(header: Text("Tillfälliga mål")) {
+                    Section() {
                         HStack {
-                            Text("Target")
+                            Text("Målvärde")
                             Spacer()
                             TextFieldWithToolBar(
                                 quantity: $newHKTarget,

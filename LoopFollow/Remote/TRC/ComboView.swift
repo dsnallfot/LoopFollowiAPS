@@ -242,13 +242,13 @@ private struct ComboEditorView: View {
             VStack {
                 Form {
                     if mode != .sendFromPreset {
-                        Section(header: Text("Namn på förval")) {
-                            TextField("Ange namn", text: $presetName)
+                        Section() {
+                            TextField("Ange namn på förval", text: $presetName)
                         }
                         .listRowBackground(Color(.systemGray).opacity(0.15))
                     }
 
-                    Section(header: Text("Måltid")) {
+                    Section() {
                         HKQuantityInputView(
                             label: "Kolhydrater",
                             quantity: $carbs,
@@ -308,7 +308,7 @@ private struct ComboEditorView: View {
                     .listRowBackground(Color(.systemGray).opacity(0.15))
 
 
-                    Section(header: Text("Override")) {
+                    Section() {
                         Button {
                             showOverridePicker = true
                         } label: {
@@ -329,7 +329,7 @@ private struct ComboEditorView: View {
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
                     
-                    Section(header: Text("Schemalägg")) {
+                    Section() {
                         Toggle("Schemalägg till senare", isOn: $isScheduling)
 
                         if isScheduling {

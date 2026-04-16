@@ -54,7 +54,7 @@ struct MealView: View {
                 .ignoresSafeArea()
             VStack {
                 Form {
-                    Section(header: Text("Måltid")) {
+                    Section() {
                         HKQuantityInputView(
                             label: "Kolhydrater",
                             quantity: $carbs,
@@ -112,7 +112,7 @@ struct MealView: View {
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
                     
-                    Section(header: Text("Schemalägg")) {
+                    Section() {
                         Toggle("Schemalägg till senare", isOn: $isScheduling)
                         if isScheduling {
                             DatePicker(
