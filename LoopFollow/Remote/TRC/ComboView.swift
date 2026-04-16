@@ -247,7 +247,7 @@ private struct ComboEditorView: View {
                         }
                         .listRowBackground(Color(.systemGray).opacity(0.15))
                     }
-
+                    
                     Section() {
                         HKQuantityInputView(
                             label: "Kolhydrater",
@@ -259,7 +259,7 @@ private struct ComboEditorView: View {
                             isFocused: $carbsFieldIsFocused,
                             onValidationError: { _ in }
                         )
-
+                        
                         if mealWithFatProtein.value {
                             HKQuantityInputView(
                                 label: "Protein",
@@ -271,7 +271,7 @@ private struct ComboEditorView: View {
                                 isFocused: $proteinFieldIsFocused,
                                 onValidationError: { _ in }
                             )
-
+                            
                             HKQuantityInputView(
                                 label: "Fett",
                                 quantity: $fat,
@@ -283,15 +283,15 @@ private struct ComboEditorView: View {
                                 onValidationError: { _ in }
                             )
                         }
-
+                        
                         HStack {
                             Text("Anteckning")
                                 .frame(maxWidth: .infinity, alignment: .leading)
-
+                            
                             TextField("Lägg till anteckning", text: $notes)
                                 .multilineTextAlignment(.trailing)
                         }
-
+                        
                         if mealWithBolus.value {
                             HKQuantityInputView(
                                 label: "Bolus",
@@ -306,8 +306,8 @@ private struct ComboEditorView: View {
                         }
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
-
-
+                    
+                    
                     Section() {
                         Button {
                             showOverridePicker = true
@@ -315,12 +315,12 @@ private struct ComboEditorView: View {
                             HStack {
                                 Text("Välj override")
                                     .foregroundColor(.primary)
-
+                                
                                 Spacer()
-
+                                
                                 Text(selectedOverride?.name ?? "Ingen vald")
                                     .foregroundColor(.secondary)
-
+                                
                                 Image(systemName: "chevron.right")
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
@@ -329,9 +329,10 @@ private struct ComboEditorView: View {
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
                     
+                    if mealWithFatProtein.value {
                     Section() {
                         Toggle("Schemalägg till senare", isOn: $isScheduling)
-
+                        
                         if isScheduling {
                             DatePicker(
                                 "Välj tid",
@@ -342,13 +343,14 @@ private struct ComboEditorView: View {
                                 displayedComponents: .hourAndMinute
                             )
                             .datePickerStyle(CompactDatePickerStyle())
-
+                            
                             if bolusAmount.doubleValue(for: .internationalUnit()) > 0 {
                                 Text("OBS! Denna måltid schemaläggs, men overriden aktiveras och bolusen ges omgående!")
                             }
                         }
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
+                }
 
                     LoadingButtonView(
                         buttonText: primaryButtonTitle,

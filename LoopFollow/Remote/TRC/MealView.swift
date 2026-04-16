@@ -17,6 +17,7 @@ struct MealView: View {
     @State private var protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
     @State private var fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
     @State private var bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
+    @State private var isUsingCalculatedBolus: Bool = false
     @State private var notes: String = ""
     
     private let pushNotificationManager = PushNotificationManager()
@@ -97,8 +98,32 @@ struct MealView: View {
                             TextField("Lägg till anteckning", text: $notes)
                                 .multilineTextAlignment(.trailing)
                         }
+                    }
+                    .listRowBackground(Color(.systemGray).opacity(0.15))
+                    Section() {
                         
                         if mealWithBolus.value {
+                            HStack(spacing: 8) {
+                                Text("CR: \(formattedCRValue) g/E")
+                                
+                                Spacer()
+
+                                Button {
+                                    toggleCalculatedBolus()
+                                } label: {
+                                    Text("Beräknad bolus:")
+                                    Text("\(formattedCalculatedBolus) E")
+                                    Image(systemName: isUsingCalculatedBolus ? "plus.app.fill" : "plus.app")
+                                        //.fontWeight(.semibold)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(calculatedBolusValue <= 0)
+                                //.foregroundColor(.blue)
+                            }
+                            //.font(.subheadline)
+                            .foregroundColor(Color(UIColor.insulin.withAlphaComponent(0.7)))
+                            .fontWeight(.semibold)
+
                             HKQuantityInputView(
                                 label: "Bolus",
                                 quantity: $bolusAmount,
@@ -113,6 +138,7 @@ struct MealView: View {
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
                     
+                    if mealWithFatProtein.value {
                     Section() {
                         Toggle("Schemalägg till senare", isOn: $isScheduling)
                         if isScheduling {
@@ -132,6 +158,7 @@ struct MealView: View {
                         }
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
+                }
                     
                     LoadingButtonView(
                         buttonText: primaryButtonTitle,
@@ -170,6 +197,18 @@ struct MealView: View {
 
             // Debug: Fetch sharedCRValue from DeviceStatusOpenAPS
             print("📊 sharedCRValue from DeviceStatusOpenAPS: \(CRValue.value)")
+        }
+        .onChange(of: carbs.doubleValue(for: .gram())) { _ in
+            if isUsingCalculatedBolus {
+                bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: calculatedBolusValue)
+            }
+        }
+        .onChange(of: bolusAmount.doubleValue(for: .internationalUnit())) { newValue in
+            let roundedCalculated = (calculatedBolusValue * 100).rounded() / 100
+            let roundedCurrent = (newValue * 100).rounded() / 100
+            if isUsingCalculatedBolus, roundedCurrent != roundedCalculated {
+                isUsingCalculatedBolus = false
+            }
         }
         .alert(isPresented: $showAlert) {
             switch alertType {
@@ -252,6 +291,39 @@ struct MealView: View {
             case .none:
                 return Alert(title: Text("Unknown Alert"))
             }
+        }
+    }
+
+    private var parsedCRValue: Double? {
+        let normalized = CRValue.value.replacingOccurrences(of: ",", with: ".")
+        return Double(normalized)
+    }
+
+    private var formattedCRValue: String {
+        guard let parsedCRValue, parsedCRValue > 0 else { return "--.-" }
+        return String(format: "%.0f", parsedCRValue)
+    }
+
+    private var calculatedBolusValue: Double {
+        guard let parsedCRValue, parsedCRValue > 0 else { return 0.0 }
+        let carbsValue = carbs.doubleValue(for: .gram())
+        let calculated = carbsValue / parsedCRValue
+        return (calculated * 100).rounded() / 100
+    }
+
+    private var formattedCalculatedBolus: String {
+        String(format: "%.2f", calculatedBolusValue)
+    }
+
+    private func toggleCalculatedBolus() {
+        if isUsingCalculatedBolus {
+            bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
+            isUsingCalculatedBolus = false
+        } else {
+            let value = calculatedBolusValue
+            guard value > 0 else { return }
+            bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: value)
+            isUsingCalculatedBolus = true
         }
     }
 
