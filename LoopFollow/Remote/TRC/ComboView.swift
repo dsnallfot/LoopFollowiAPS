@@ -255,11 +255,9 @@ private struct ComboEditorView: View {
                             unit: .gram(),
                             maxLength: 4,
                             minValue: HKQuantity(unit: .gram(), doubleValue: 0),
-                            maxValue: maxCarbs.value,
+                            maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                             isFocused: $carbsFieldIsFocused,
-                            onValidationError: { message in
-                                handleValidationError(message)
-                            }
+                            onValidationError: { _ in }
                         )
 
                         if mealWithFatProtein.value {
@@ -269,11 +267,9 @@ private struct ComboEditorView: View {
                                 unit: .gram(),
                                 maxLength: 4,
                                 minValue: HKQuantity(unit: .gram(), doubleValue: 0),
-                                maxValue: maxProtein.value,
+                                maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                                 isFocused: $proteinFieldIsFocused,
-                                onValidationError: { message in
-                                    handleValidationError(message)
-                                }
+                                onValidationError: { _ in }
                             )
 
                             HKQuantityInputView(
@@ -282,11 +278,9 @@ private struct ComboEditorView: View {
                                 unit: .gram(),
                                 maxLength: 4,
                                 minValue: HKQuantity(unit: .gram(), doubleValue: 0),
-                                maxValue: maxFat.value,
+                                maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                                 isFocused: $fatFieldIsFocused,
-                                onValidationError: { message in
-                                    handleValidationError(message)
-                                }
+                                onValidationError: { _ in }
                             )
                         }
 
@@ -305,11 +299,9 @@ private struct ComboEditorView: View {
                                 unit: .internationalUnit(),
                                 maxLength: 4,
                                 minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
-                                maxValue: maxBolus.value,
+                                maxValue: HKQuantity(unit: .internationalUnit(), doubleValue: 999),
                                 isFocused: $bolusFieldIsFocused,
-                                onValidationError: { message in
-                                    handleValidationError(message)
-                                }
+                                onValidationError: { _ in }
                             )
                         }
                     }
@@ -393,6 +385,7 @@ private struct ComboEditorView: View {
                         },
                         isDisabled: isButtonDisabled
                     )
+                    .id("\(primaryButtonTitle)-\(isButtonDisabled)-\(isLoading)")
                 }
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
@@ -576,15 +569,45 @@ private struct ComboEditorView: View {
         }
     }
 
-    private var primaryButtonTitle: String {
+    private var defaultPrimaryButtonTitle: String {
         switch mode {
         case .createPreset:
-            return "Spara som förval"
-        case .editPreset:
             return "Spara förval"
+        case .editPreset:
+            return "Uppdatera förval"
         case .sendFromPreset:
             return "Skicka Förval"
         }
+    }
+
+    private var buttonGuardrailMessage: String? {
+        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
+        let carbsValue = carbs.doubleValue(for: .gram())
+        let fatValue = fat.doubleValue(for: .gram())
+        let proteinValue = protein.doubleValue(for: .gram())
+
+        let maxBolusValue = maxBolus.value.doubleValue(for: .internationalUnit())
+        let maxCarbsValue = maxCarbs.value.doubleValue(for: .gram())
+        let maxFatValue = maxFat.value.doubleValue(for: .gram())
+        let maxProteinValue = maxProtein.value.doubleValue(for: .gram())
+
+        if bolusValue > maxBolusValue {
+            return String(format: "⛔️ Max bolus %.1f E", maxBolusValue)
+        }
+        if carbsValue > maxCarbsValue {
+            return String(format: "⛔️ Max kolhydrater %.0f g", maxCarbsValue)
+        }
+        if fatValue > maxFatValue {
+            return String(format: "⛔️ Max fett %.0f g", maxFatValue)
+        }
+        if proteinValue > maxProteinValue {
+            return String(format: "⛔️ Max protein %.0f g", maxProteinValue)
+        }
+        return nil
+    }
+
+    private var primaryButtonTitle: String {
+        buttonGuardrailMessage ?? defaultPrimaryButtonTitle
     }
 
     private var progressText: String {
@@ -592,14 +615,14 @@ private struct ComboEditorView: View {
         case .createPreset:
             return "Sparar förval..."
         case .editPreset:
-            return "Sparar förval..."
+            return "Uppdaterar förval..."
         case .sendFromPreset:
             return "Skickar förvalskommando..."
         }
     }
 
     private var isButtonDisabled: Bool {
-        isLoading
+        isLoading || buttonGuardrailMessage != nil
     }
 
     private func savePreset() {

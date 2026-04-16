@@ -61,11 +61,9 @@ struct MealView: View {
                             unit: .gram(),
                             maxLength: 4,
                             minValue: HKQuantity(unit: .gram(), doubleValue: 0),
-                            maxValue: maxCarbs.value,
+                            maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                             isFocused: $carbsFieldIsFocused,
-                            onValidationError: { message in
-                                handleValidationError(message)
-                            }
+                            onValidationError: { _ in }
                         )
                         
                         if mealWithFatProtein.value {
@@ -75,11 +73,9 @@ struct MealView: View {
                                 unit: .gram(),
                                 maxLength: 4,
                                 minValue: HKQuantity(unit: .gram(), doubleValue: 0),
-                                maxValue: maxProtein.value,
+                                maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                                 isFocused: $proteinFieldIsFocused,
-                                onValidationError: { message in
-                                    handleValidationError(message)
-                                }
+                                onValidationError: { _ in }
                             )
                             
                             HKQuantityInputView(
@@ -88,11 +84,9 @@ struct MealView: View {
                                 unit: .gram(),
                                 maxLength: 4,
                                 minValue: HKQuantity(unit: .gram(), doubleValue: 0),
-                                maxValue: maxFat.value,
+                                maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                                 isFocused: $fatFieldIsFocused,
-                                onValidationError: { message in
-                                    handleValidationError(message)
-                                }
+                                onValidationError: { _ in }
                             )
                         }
                         
@@ -110,11 +104,9 @@ struct MealView: View {
                                 unit: .internationalUnit(),
                                 maxLength: 4,
                                 minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
-                                maxValue: maxBolus.value,
+                                maxValue: HKQuantity(unit: .internationalUnit(), doubleValue: 999),
                                 isFocused: $bolusFieldIsFocused,
-                                onValidationError: { message in
-                                    handleValidationError(message)
-                                }
+                                onValidationError: { _ in }
                             )
                         }
                     }
@@ -141,14 +133,14 @@ struct MealView: View {
                     .listRowBackground(Color(.systemGray).opacity(0.15))
                     
                     LoadingButtonView(
-                        buttonText: "Skicka måltid",
+                        buttonText: primaryButtonTitle,
                         progressText: "Skickar måltidsregistrering...",
                         isLoading: isLoading,
                         action: {
                             carbsFieldIsFocused = false
                             proteinFieldIsFocused = false
                             fatFieldIsFocused = false
-                            
+
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 guard carbs.doubleValue(for: .gram()) != 0 ||
                                         protein.doubleValue(for: .gram()) != 0 ||
@@ -163,6 +155,7 @@ struct MealView: View {
                         },
                         isDisabled: isButtonDisabled
                     )
+                    .id("\(primaryButtonTitle)-\(isButtonDisabled)-\(isLoading)")
                 }
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
@@ -258,8 +251,38 @@ struct MealView: View {
         }
     }
 
+    private var buttonGuardrailMessage: String? {
+        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
+        let carbsValue = carbs.doubleValue(for: .gram())
+        let fatValue = fat.doubleValue(for: .gram())
+        let proteinValue = protein.doubleValue(for: .gram())
+
+        let maxBolusValue = maxBolus.value.doubleValue(for: .internationalUnit())
+        let maxCarbsValue = maxCarbs.value.doubleValue(for: .gram())
+        let maxFatValue = maxFat.value.doubleValue(for: .gram())
+        let maxProteinValue = maxProtein.value.doubleValue(for: .gram())
+
+        if bolusValue > maxBolusValue {
+            return String(format: "⛔️ Max bolus %.1f E", maxBolusValue)
+        }
+        if carbsValue > maxCarbsValue {
+            return String(format: "⛔️ Max kolhydrater %.0f g", maxCarbsValue)
+        }
+        if fatValue > maxFatValue {
+            return String(format: "⛔️ Max fett %.0f g", maxFatValue)
+        }
+        if proteinValue > maxProteinValue {
+            return String(format: "⛔️ Max protein %.0f g", maxProteinValue)
+        }
+        return nil
+    }
+
+    private var primaryButtonTitle: String {
+        buttonGuardrailMessage ?? "Skicka måltid"
+    }
+
     private var isButtonDisabled: Bool {
-        return isLoading
+        isLoading || buttonGuardrailMessage != nil
     }
 
     private func sendMealCommand() {

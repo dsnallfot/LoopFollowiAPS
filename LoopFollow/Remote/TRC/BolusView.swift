@@ -45,17 +45,15 @@ struct BolusView: View {
                         unit: .internationalUnit(),
                         maxLength: 4,
                         minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
-                        maxValue: maxBolus.value,
+                        maxValue: permissiveBolusInputMax,
                         isFocused: $bolusFieldIsFocused,
-                        onValidationError: { message in
-                            handleValidationError(message)
-                        }
+                        onValidationError: { _ in }
                     )
                 }
                 .listRowBackground(Color(.systemGray).opacity(0.15))
                 
                 LoadingButtonView(
-                    buttonText: "Skicka Bolus",
+                    buttonText: primaryButtonTitle,
                     progressText: "Skickar Bolus...",
                     isLoading: isLoading,
                     action: {
@@ -67,8 +65,9 @@ struct BolusView: View {
                             }
                         }
                     },
-                    isDisabled: isLoading
+                    isDisabled: isButtonDisabled
                 )
+                .id("\(primaryButtonTitle)-\(isButtonDisabled)-\(isLoading)")
             }
             .scrollContentBackground(.hidden)
             .background(Color.clear)
@@ -115,6 +114,28 @@ struct BolusView: View {
                         return Alert(title: Text("Unknown Alert"))
                     }
                 }
+    }
+
+    private var permissiveBolusInputMax: HKQuantity {
+        HKQuantity(unit: .internationalUnit(), doubleValue: 999)
+    }
+
+    private var buttonGuardrailMessage: String? {
+        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
+        let maxBolusValue = maxBolus.value.doubleValue(for: .internationalUnit())
+
+        if bolusValue > maxBolusValue {
+            return String(format: "⛔️ Max bolus %.1f E", maxBolusValue)
+        }
+        return nil
+    }
+
+    private var primaryButtonTitle: String {
+        buttonGuardrailMessage ?? "Skicka Bolus"
+    }
+
+    private var isButtonDisabled: Bool {
+        isLoading || buttonGuardrailMessage != nil
     }
 
     private func sendBolus() {
