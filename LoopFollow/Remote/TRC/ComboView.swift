@@ -18,6 +18,7 @@ struct ComboView: View {
     @State private var presetBeingEdited: ComboPreset? = nil
     @State private var showCreatePreset: Bool = false
     @State private var presetPendingDelete: ComboPreset? = nil
+    @State private var listRefreshID = UUID()
 
     var body: some View {
         ZStack {
@@ -91,6 +92,7 @@ struct ComboView: View {
                             .listRowBackground(Color(.systemGray).opacity(0.15))
                         }
                     }
+                    .id(listRefreshID)
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
                 }
@@ -108,24 +110,36 @@ struct ComboView: View {
             }
         }
         .sheet(item: $selectedPreset) { preset in
-            ComboEditorView(mode: .sendFromPreset, preset: preset) { _ in }
+            NavigationStack {
+                ComboEditorView(mode: .sendFromPreset, preset: preset) { _ in }
+            }
         }
-        .sheet(item: $presetBeingEdited) { preset in
-            ComboEditorView(mode: .editPreset, preset: preset) { updatedPreset in
-                if let index = presets.firstIndex(where: { $0.id == updatedPreset.id }) {
-                    presets[index] = updatedPreset
-                    savePresetsToStorage()
+        .sheet(item: $presetBeingEdited, onDismiss: {
+            refreshPresets()
+        }) { preset in
+            NavigationStack {
+                ComboEditorView(mode: .editPreset, preset: preset) { updatedPreset in
+                    if let index = presets.firstIndex(where: { $0.id == updatedPreset.id }) {
+                        presets[index] = updatedPreset
+                        savePresetsToStorage()
+                        refreshPresets()
+                    }
                 }
             }
         }
-        .sheet(isPresented: $showCreatePreset) {
-            ComboEditorView(mode: .createPreset, preset: nil) { newPreset in
-                presets.append(newPreset)
-                savePresetsToStorage()
+        .sheet(isPresented: $showCreatePreset, onDismiss: {
+            refreshPresets()
+        }) {
+            NavigationStack {
+                ComboEditorView(mode: .createPreset, preset: nil) { newPreset in
+                    presets.append(newPreset)
+                    savePresetsToStorage()
+                    refreshPresets()
+                }
             }
         }
         .onAppear {
-            loadPresetsFromStorage()
+            refreshPresets()
         }
         .alert("Vill du verkligen radera \(presetPendingDelete?.name ?? "detta förval")?", isPresented: Binding(
             get: { presetPendingDelete != nil },
@@ -138,6 +152,7 @@ struct ComboView: View {
                 if let presetPendingDelete {
                     presets.removeAll { $0.id == presetPendingDelete.id }
                     savePresetsToStorage()
+                    refreshPresets()
                 }
                 presetPendingDelete = nil
             }
@@ -150,6 +165,11 @@ struct ComboView: View {
     
     private func loadPresetsFromStorage() {
         presets = storage.comboPresets.map { ComboPreset(storageEntry: $0) }
+    }
+
+    private func refreshPresets() {
+        loadPresetsFromStorage()
+        listRefreshID = UUID()
     }
 
     private func savePresetsToStorage() {
@@ -378,6 +398,13 @@ private struct ComboEditorView: View {
                 .background(Color.clear)
                 .navigationTitle(navigationTitle)
                 .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Avbryt") {
+                            dismiss()
+                        }
+                    }
+                }
             }
         }
         .onAppear {
@@ -608,13 +635,15 @@ private struct ComboEditorView: View {
                 of: now
             ) ?? now
         }
+        
+        let finalNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Remote" : notes
 
         pushNotificationManager.sendComboPushNotification(
             carbs: carbs,
             protein: protein,
             fat: fat,
             bolusAmount: bolusAmount,
-            notes: notes,
+            notes: finalNotes,
             scheduledTime: scheduledDate,
             override: selectedOverride
         ) { success, errorMessage in

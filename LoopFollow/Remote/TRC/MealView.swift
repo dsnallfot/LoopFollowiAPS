@@ -276,13 +276,15 @@ struct MealView: View {
                                           second: currentSecond,
                                           of: now) ?? now
         }
+        
+        let finalNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Remote" : notes
 
         pushNotificationManager.sendMealPushNotification(
             carbs: carbs,
             protein: protein,
             fat: fat,
             bolusAmount: bolusAmount,
-            notes: notes,
+            notes: finalNotes,
             scheduledTime: scheduledDate
         ) { success, errorMessage in
             DispatchQueue.main.async {
