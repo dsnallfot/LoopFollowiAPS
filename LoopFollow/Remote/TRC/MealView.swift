@@ -105,6 +105,7 @@ struct MealView: View {
                         if mealWithBolus.value {
                             HStack(spacing: 8) {
                                 Text("CR: \(formattedCRValue) g/E")
+                                    .monospacedDigit()
                                 
                                 Spacer()
 
@@ -113,6 +114,7 @@ struct MealView: View {
                                 } label: {
                                     Text("Beräknad bolus:")
                                     Text("\(formattedCalculatedBolus) E")
+                                        .monospacedDigit()
                                     Image(systemName: isUsingCalculatedBolus ? "plus.app.fill" : "plus.app")
                                         //.fontWeight(.semibold)
                                 }
