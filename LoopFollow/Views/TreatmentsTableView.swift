@@ -122,6 +122,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
     /// Glucose points loaded for the current date window
     private var bgPoints: [BGPoint] = []
+    private var bgPointsByDay: [Date: [BGPoint]] = [:]
     
     /// Tracks whether we've already auto-scrolled to the latest non-future
     /// treatment for "today" in the current session, to avoid fighting the user.
@@ -443,6 +444,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 )
             }
             .sorted { $0.date < $1.date }
+            
+            self.storeBGPoints(points, for: start)
 
             if !cachedTreatments.isEmpty {
                 completion(TreatmentDaySection(date: start, treatments: cachedTreatments), points)
@@ -467,9 +470,11 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
         isLoadingOlderDays = true
 
-        loadDaySection(for: nextDay) { section, _ in
+        loadDaySection(for: nextDay) { section, points in
             DispatchQueue.main.async {
                 defer { self.isLoadingOlderDays = false }
+
+                self.storeBGPoints(points, for: nextDay)
 
                 if let section {
                     self.mergeOrAppendDaySection(section)
@@ -1163,6 +1168,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
                     // Spara BG-punkterna när vi faktiskt använder cache-datan
                     self.bgPoints = newBGPoints
+                    self.storeBGPoints(newBGPoints, for: date)
 
                     self.tableView.reloadData()
 
@@ -1358,18 +1364,18 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     }
 
     /// Låg / ok / hög-symbol för en Kh-måltid, baserat på BG ~3h efter.
-    /// Om ingen BG finns inom ±30 min runt +3h visas "–".
+    /// Om ingen BG finns inom ±30 min runt +3h visas "⏳".
     private func statusSymbolForCarbMeal(at mealDate: Date) -> String {
-        guard !bgPoints.isEmpty else { return "–" }
+        let relevantBGPoints = bgPointsForMealStatus(at: mealDate)
+        guard !relevantBGPoints.isEmpty else { return "⏳" }
 
         // Target time = 3h efter måltid
         let target = mealDate.addingTimeInterval(3 * 60 * 60)
 
         // Tillåt max ±30 minuter från target
         let maxDelta: TimeInterval = 30 * 60
-        
-        guard let point = nearestBGPoint(around: target, in: bgPoints, maxDelta: maxDelta) else {
-            // Ingen BG tillräckligt nära target → kan inte utvärdera ännu
+
+        guard let point = nearestBGPoint(around: target, in: relevantBGPoints, maxDelta: maxDelta) else {
             return "⏳"
         }
 
@@ -1385,6 +1391,24 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         } else {
             return "🟢"
         }
+    }
+    
+    private func storeBGPoints(_ points: [BGPoint], for day: Date) {
+        let dayStart = Calendar.current.startOfDay(for: day)
+        bgPointsByDay[dayStart] = points.sorted { $0.date < $1.date }
+    }
+
+    private func bgPointsForMealStatus(at mealDate: Date) -> [BGPoint] {
+        let cal = Calendar.current
+        let dayStart = cal.startOfDay(for: mealDate)
+        let nextDayStart = cal.date(byAdding: .day, value: 1, to: dayStart)
+
+        var combined = bgPointsByDay[dayStart] ?? []
+        if let nextDayStart {
+            combined += bgPointsByDay[nextDayStart] ?? []
+        }
+
+        return combined.sorted { $0.date < $1.date }
     }
     
     // MARK: - UITableViewDataSource Methods
