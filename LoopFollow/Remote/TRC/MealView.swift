@@ -353,8 +353,13 @@ struct MealView: View {
         return nil
     }
 
+    private var defaultPrimaryButtonTitle: String {
+        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
+        return bolusValue > 0 ? "Skicka Måltid och Bolus" : "Skicka Måltid"
+    }
+
     private var primaryButtonTitle: String {
-        buttonGuardrailMessage ?? "Skicka måltid"
+        buttonGuardrailMessage ?? defaultPrimaryButtonTitle
     }
 
     private var isButtonDisabled: Bool {

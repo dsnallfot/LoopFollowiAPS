@@ -32,7 +32,7 @@ struct ComboView: View {
                             .font(.system(size: 40))
                             .foregroundStyle(.secondary)
 
-                        Text("Skapa ett förval genom att klicka på plustecknet uppe till höger")
+                        Text("Skapa ett snabbval genom att klicka på plustecknet uppe till höger")
                             .font(.body)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -97,7 +97,7 @@ struct ComboView: View {
                     .background(Color.clear)
                 }
             }
-            .navigationTitle("Förval")
+            .navigationTitle("Snabbval")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -141,7 +141,7 @@ struct ComboView: View {
         .onAppear {
             refreshPresets()
         }
-        .alert("Vill du verkligen radera \(presetPendingDelete?.name ?? "detta förval")?", isPresented: Binding(
+        .alert("Vill du verkligen radera \(presetPendingDelete?.name ?? "detta snabbval")?", isPresented: Binding(
             get: { presetPendingDelete != nil },
             set: { if !$0 { presetPendingDelete = nil } }
         )) {
@@ -243,7 +243,7 @@ private struct ComboEditorView: View {
                 Form {
                     if mode != .sendFromPreset {
                         Section() {
-                            TextField("Ange namn på förval", text: $presetName)
+                            TextField("Ange namn på snabbval", text: $presetName)
                         }
                         .listRowBackground(Color(.systemGray).opacity(0.15))
                     }
@@ -373,7 +373,7 @@ private struct ComboEditorView: View {
                                 switch mode {
                                 case .createPreset, .editPreset:
                                     guard !presetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                                        handleValidationError("Du måste ange ett namn på förvalet.")
+                                        handleValidationError("Du måste ange ett namn på snabbvalet.")
                                         return
                                     }
                                     savePreset()
@@ -501,7 +501,7 @@ private struct ComboEditorView: View {
                 let bolus = bolusAmount.doubleValue(for: .internationalUnit())
                 let name = presetName
 
-                var message = "Är du säker på att du vill skicka förvalet '\(name)'?\n"
+                var message = "Är du säker på att du vill skicka snabbvaletet '\(name)'?\n"
 
                 if carbsAmount > 0 {
                     message += String(format: "\nKolhydrater: %.0f g", carbsAmount)
@@ -528,7 +528,7 @@ private struct ComboEditorView: View {
                 }
 
                 return Alert(
-                    title: Text("Bekräfta förval"),
+                    title: Text("Bekräfta snabbval"),
                     message: Text(message),
                     primaryButton: .default(Text("Bekräfta"), action: {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -578,22 +578,22 @@ private struct ComboEditorView: View {
     private var navigationTitle: String {
         switch mode {
         case .createPreset:
-            return "Nytt förval"
+            return "Nytt Snabbval"
         case .editPreset:
-            return "Redigera förval"
+            return "Redigera Snabbval"
         case .sendFromPreset:
-            return preset?.name ?? "Förval"
+            return preset?.name ?? "Snabbval"
         }
     }
 
     private var defaultPrimaryButtonTitle: String {
         switch mode {
         case .createPreset:
-            return "Spara förval"
+            return "Spara Snabbval"
         case .editPreset:
-            return "Uppdatera förval"
+            return "Uppdatera Snabbval"
         case .sendFromPreset:
-            return "Skicka Förval"
+            return "Skicka Snabbval"
         }
     }
 
@@ -630,11 +630,11 @@ private struct ComboEditorView: View {
     private var progressText: String {
         switch mode {
         case .createPreset:
-            return "Sparar förval..."
+            return "Sparar snabbval..."
         case .editPreset:
-            return "Uppdaterar förval..."
+            return "Uppdaterar snabbval..."
         case .sendFromPreset:
-            return "Skickar förvalskommando..."
+            return "Skickar snabbvalskommando..."
         }
     }
 
@@ -691,10 +691,10 @@ private struct ComboEditorView: View {
                 isLoading = false
 
                 if success {
-                    statusMessage = "Förvalskommando lyckades"
+                    statusMessage = "Snabbvalskommando lyckades"
                     alertType = .statusSuccess
                 } else {
-                    statusMessage = errorMessage ?? "Förvalskommando misslyckades!"
+                    statusMessage = errorMessage ?? "Snabbvalskommando misslyckades!"
                     alertType = .statusFailure
                 }
 

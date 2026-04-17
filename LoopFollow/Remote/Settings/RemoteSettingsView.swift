@@ -202,7 +202,7 @@ struct RemoteSettingsView: View {
                         Toggle("Måltid med bolus", isOn: $viewModel.mealWithBolus)
                             .toggleStyle(SwitchToggleStyle())
 
-                        Toggle("Måltid med Fett/Protein", isOn: $viewModel.mealWithFatProtein)
+                        Toggle("Måltid med Fett/Protein/Tid", isOn: $viewModel.mealWithFatProtein)
                             .toggleStyle(SwitchToggleStyle())
                     }
                     .listRowBackground(Color(UIColor.systemGray).opacity(0.15))

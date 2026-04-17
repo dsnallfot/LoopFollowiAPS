@@ -188,7 +188,7 @@ class PushNotificationManager {
         }
 
         let message = PushMessage(
-            aps: .init(alert: "Remote förval mottagen"),
+            aps: .init(alert: "Remote snabbval mottagen"),
             user: user,
             commandType: .combo,
             bolusAmount: bolusAmountValue,
