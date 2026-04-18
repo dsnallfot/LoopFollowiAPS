@@ -1983,7 +1983,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         
         // Edit actions for updating duration on Exercise (Override) treatments
         // and editing note text for Note treatments, and editing glucose for BG Check.
-        var actions: [UIContextualAction] = []
+        var actions: [UIContextualAction] = [deleteAction]
 
         if treatment.eventType == "Exercise" {
             let editAction = UIContextualAction(style: .normal, title: nil) { (action, view, completionHandler) in
