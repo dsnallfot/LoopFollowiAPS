@@ -62,7 +62,7 @@ class CustomActionViewController: ThemedViewController, UIPickerViewDataSource, 
         let formattedLowThreshold = numberFormatter.string(from: NSDecimalNumber(decimal: lowThreshold) as NSNumber)?.replacingOccurrences(of: ",", with: ".") ?? "" ?? ""
          
         // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinPredBG is "0.0"
-        minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
+        minPredBGValue.text = formattedMinPredBG == "0" ? "--" : formattedMinPredBG
         LogManager.shared.log(category: .remote, message: "Predicted Min BG: \(formattedMinPredBG) mmol/L", isDebug: true)
         LogManager.shared.log(category: .remote, message: "Low threshold: \(formattedLowThreshold) mmol/L", isDebug: true)
         

@@ -113,7 +113,7 @@ class InfoManager {
                 tableData[type.rawValue].value = "Normal profil" // Fallback to "Normal profil"
             }
         } else {
-            tableData[type.rawValue].value = "N/A"
+            tableData[type.rawValue].value = "--"
         }
         tableView?.reloadData()
     }
@@ -128,7 +128,7 @@ class InfoManager {
                     tableData[type.rawValue].value = "Normal profil" // Fallback to "Normal profil"
                 }
             } else {
-                tableData[type.rawValue].value = "N/A"
+                tableData[type.rawValue].value = "--"
             }
         }
         tableView?.reloadData()

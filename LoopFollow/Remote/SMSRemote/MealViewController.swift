@@ -113,7 +113,7 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
         let formattedCR = numberFormatter.string(from: NSDecimalNumber(decimal: CR) as NSNumber) ?? ""
         
         // Set the text field with the formatted value of CR or "N/A" if formattedCR is "0.0"
-        CRValue.text = formattedCR == "0" ? "N/A" : formattedCR
+        CRValue.text = formattedCR == "0" ? "--" : formattedCR
         LogManager.shared.log(category: .remote, message: "CR: \(formattedCR) g/E", isDebug: true)
         
         LogManager.shared.log(category: .remote, message: "MinPredBG: \(storage.sharedRawMinPredBG.value) mmol/L", isDebug: true)
@@ -128,7 +128,7 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
         let formattedLowThreshold = numberFormatter.string(from: NSDecimalNumber(decimal: lowThreshold) as NSNumber)?.replacingOccurrences(of: ",", with: ".") ?? ""
          
         // Set the text field with the formatted value of minPredBG or "N/A" if formattedMinGuardG is "0.0"
-        minPredBGValue.text = formattedMinPredBG == "0" ? "N/A" : formattedMinPredBG
+        minPredBGValue.text = formattedMinPredBG == "0" ? "--" : formattedMinPredBG
         LogManager.shared.log(category: .remote, message: "Predicted Min BG: \(formattedMinPredBG) mmol/L", isDebug: true)
         LogManager.shared.log(category: .remote, message: "Low threshold: \(formattedLowThreshold) mmol/L", isDebug: true)
         

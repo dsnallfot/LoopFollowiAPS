@@ -19,9 +19,9 @@ extension MainViewController {
         let now = date.timeIntervalSince1970
         let currentBG = bgs[bgs.count - 1].sgv
         
-        let iobString = latestIOB?.formattedValue() ?? "N/A"
+        let iobString = latestIOB?.formattedValue() ?? "--"
         let latestIOBValue = latestIOB?.value ?? 0.0
-        let cobString = latestCOB?.formattedValue() ?? "N/A"
+        let cobString = latestCOB?.formattedValue() ?? "--"
         
         let compressionLowDropMultiplier: Float = 2.0
 
@@ -575,8 +575,8 @@ extension MainViewController {
         let recentEnd: TimeInterval = recentOverride?.endDate ?? 0
         let now = dateTimeUtils.getNowTimeIntervalUTC()
         
-        let iobString = latestIOB?.formattedValue() ?? "N/A"
-        let cobString = latestCOB?.formattedValue() ?? "N/A"
+        let iobString = latestIOB?.formattedValue() ?? "--"
+        let cobString = latestCOB?.formattedValue() ?? "--"
         
         var triggerStart = false
         var triggerEnd = false
@@ -631,8 +631,8 @@ extension MainViewController {
         let recentEnd: TimeInterval = recentTempTarget?.endDate ?? 0
         let now = dateTimeUtils.getNowTimeIntervalUTC()
         
-        let iobString = latestIOB?.formattedValue() ?? "N/A"
-        let cobString = latestCOB?.formattedValue() ?? "N/A"
+        let iobString = latestIOB?.formattedValue() ?? "--"
+        let cobString = latestCOB?.formattedValue() ?? "--"
 
         var triggerStart = false
         var triggerEnd = false
@@ -779,8 +779,8 @@ extension MainViewController {
         
         AlarmSound.whichAlarm = "none"
         guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
-        let iobString = latestIOB?.formattedValue() ?? "N/A"
-        let cobString = latestCOB?.formattedValue() ?? "N/A"
+        let iobString = latestIOB?.formattedValue() ?? "--"
+        let cobString = latestCOB?.formattedValue() ?? "--"
         snoozer.updateDisplayWhenTriggered(
             bgVal: Localizer.toDisplayUnits(String(bgData[bgData.count - 1].sgv)),
             directionVal: latestDirectionString,

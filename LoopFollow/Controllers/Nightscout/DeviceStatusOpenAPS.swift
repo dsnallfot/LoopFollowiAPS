@@ -452,7 +452,7 @@ extension MainViewController {
                     LogManager.shared.log(category: .deviceStatus, message: "Invalid MaxSMB value extracted: \(maxSmbValueString), defaulting to N/A", isDebug: true)
                     infoManager.updateInfoData(
                         type: .maxSMB,
-                        value: "N/A",
+                        value: "--",
                         unit: "E ⚫️"
                     )
                 }
@@ -733,8 +733,8 @@ extension MainViewController {
                 infoManager.updateInfoData(type: .minMax, value: value, unit: "mmol/L")
                 storage.sharedLatestMinMax.value = "\(value) mmol/L"
             } else {
-                infoManager.updateInfoData(type: .minMax, value: "N/A", unit: "mmol/L")
-                storage.sharedLatestMinMax.value = "N/A"
+                infoManager.updateInfoData(type: .minMax, value: "--", unit: "mmol/L")
+                storage.sharedLatestMinMax.value = "--"
             }
         }
     }

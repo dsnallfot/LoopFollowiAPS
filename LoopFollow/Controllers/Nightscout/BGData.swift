@@ -577,7 +577,7 @@ extension MainViewController {
                     self.infoManager.updateInfoData(type: .sensorStatus, value: status)
                     self.infoManager.setPriority(true, for: .sensorStatus)
                 } else {
-                    self.infoManager.updateInfoData(type: .sensorStatus, value: "N/A")
+                    self.infoManager.updateInfoData(type: .sensorStatus, value: "--")
                     self.infoManager.setPriority(false, for: .sensorStatus)
                 }
 
@@ -590,7 +590,7 @@ extension MainViewController {
                     self.infoManager.updateInfoData(type: .sensorStatus, value: status)
                     self.infoManager.setPriority(true, for: .sensorStatus)
                 } else {
-                    self.infoManager.updateInfoData(type: .sensorStatus, value: "N/A")
+                    self.infoManager.updateInfoData(type: .sensorStatus, value: "--")
                     self.infoManager.setPriority(false, for: .sensorStatus)
                 }
 

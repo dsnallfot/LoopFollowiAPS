@@ -2826,7 +2826,7 @@ extension MainViewController {
             let thisItem = thisData[i]
             // Format a label for the override data entry.
             let labelText = formatPillTextExtraLine(
-                line1: thisItem.notes ?? "N/A",
+                line1: thisItem.notes ?? "--",
                 line2: "Varaktighet: " + String(format:"%.0f", (thisItem.duration / 60)) + " min",
                 time: thisItem.date
             )

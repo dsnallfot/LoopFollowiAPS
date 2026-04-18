@@ -1652,8 +1652,8 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         if UserDefaultsRepository.persistentNotification.value && bgTime > UserDefaultsRepository.persistentNotificationLastBGTime.value && bgData.count > 0 {
             guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
             
-            let iobString = latestIOB?.formattedValue() ?? "N/A"
-            let cobString = latestCOB?.formattedValue() ?? "N/A"
+            let iobString = latestIOB?.formattedValue() ?? "--"
+            let cobString = latestCOB?.formattedValue() ?? "--"
             
             snoozer.sendNotification(
                 self,
