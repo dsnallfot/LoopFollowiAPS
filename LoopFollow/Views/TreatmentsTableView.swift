@@ -1853,12 +1853,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                         switch result {
                         case .success(_):
                             DispatchQueue.main.async {
-                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
-                                    self.treatments.remove(at: index)
-                                }
-                                self.removeTreatmentFromCache(treatment)
-                                self.tableView.reloadData()
-                                self.updateDuplicateIndicator()
+                                self.applyLocalTreatmentDeletion(treatment)
                             }
                         case .failure(let error):
                             DispatchQueue.main.async {
@@ -1913,12 +1908,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                         switch result {
                         case .success(_):
                             DispatchQueue.main.async {
-                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
-                                    self.treatments.remove(at: index)
-                                }
-                                self.removeTreatmentFromCache(treatment)
-                                self.tableView.reloadData()
-                                self.updateDuplicateIndicator()
+                                self.applyLocalTreatmentDeletion(treatment)
                             }
                         case .failure(let error):
                             DispatchQueue.main.async {
@@ -1972,12 +1962,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                         switch result {
                         case .success(_):
                             DispatchQueue.main.async {
-                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
-                                    self.treatments.remove(at: index)
-                                }
-                                self.removeTreatmentFromCache(treatment)
-                                self.tableView.reloadData()
-                                self.updateDuplicateIndicator()
+                                self.applyLocalTreatmentDeletion(treatment)
                             }
                         case .failure(let error):
                             DispatchQueue.main.async {
@@ -2238,128 +2223,14 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             actions = [deleteAction, editNoteAction]*/
 
         } else if treatment.eventType == "BG Check" {
-            let editBGAction = UIContextualAction(style: .normal, title: nil) { (action, view, completionHandler) in
-                // Current glucose value
-                let currentGlucose = (treatment.rawData["glucose"] as? Double) ?? 0.0
-
-                let alert = UIAlertController(
-                    title: "Ändra fingerstick-värde i Nightscout",
-                    message: "\nAnge nytt blodsockervärde (mmol/L)\n\n(OBS! Detta ändrar INTE något i Trio)",
-                    preferredStyle: .alert
-                )
-
-                alert.addTextField { textField in
-                    textField.keyboardType = .decimalPad
-                    if currentGlucose > 0 {
-                        textField.text = String(format: "%.1f", currentGlucose)
-                    }
-                }
-
-                alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
-                    completionHandler(false)
-                }))
-
-                alert.addAction(UIAlertAction(title: "Spara ändring", style: .default, handler: { _ in
-                    guard let text = alert.textFields?.first?.text?
-                            .trimmingCharacters(in: .whitespacesAndNewlines),
-                          !text.isEmpty else {
-                        completionHandler(false)
-                        return
-                    }
-
-                    // Tillåt både komma och punkt som decimalavskiljare
-                    let normalized = text.replacingOccurrences(of: ",", with: ".")
-                    guard let newGlucose = Double(normalized), newGlucose > 0 else {
-                        completionHandler(false)
-                        return
-                    }
-
-                    guard let treatmentId = treatment.documentId else {
-                        self.showAlert(title: "Fel", message: "Saknar dokument-ID för behandlingen") { }
-                        completionHandler(false)
-                        return
-                    }
-
-                    // 1) Hämta aktuellt Nightscout-dokument
-                    NightscoutUtils.fetchTreatmentById(treatmentId) { result in
-                        switch result {
-                        case .failure(let error):
-                            self.showAlert(title: "Fel", message: error.localizedDescription) { }
-                            completionHandler(false)
-                        case .success(var doc):
-                            // Ta bort _id så att Nightscout/MongoDB själv får skapa ett nytt ObjectId
-                            doc.removeValue(forKey: "_id")
-
-                            // Uppdatera glucose i dokumentet (i mmol/L)
-                            doc["glucose"] = newGlucose
-
-                            // 2) Radera befintlig post
-                            NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { deleteResult in
-                                switch deleteResult {
-                                case .failure(let error):
-                                    self.showAlert(title: "Kunde inte radera", message: error.localizedDescription) { }
-                                    completionHandler(false)
-                                case .success(_):
-                                    // 3) Posta om samma treatment med uppdaterat fingerstickvärde (utan _id)
-                                    Task {
-                                        do {
-                                            let createdDoc = try await NightscoutUtils.executePostRequestRaw(eventType: .treatments, body: doc)
-
-                                            DispatchQueue.main.async {
-                                                // Ta bort den gamla raden lokalt
-                                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
-                                                    let removed = self.treatments.remove(at: index)
-                                                    self.removeTreatmentFromCache(removed)
-
-                                                // Lägg in den nya raden direkt om vi fick tillbaka dokumentet
-                                                // och uppdatera cache-filen för rätt dag.
-                                                if let createdDoc = createdDoc,
-                                                   let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
-                                                    self.treatments.insert(newTreatment, at: index)
-                                                    NightscoutCache.upsertTreatment(from: createdDoc)
-                                                }
-                                                } else {
-                                                // Om vi inte hittade den, lägg den nya överst som fallback
-                                                if let createdDoc = createdDoc,
-                                                   let newTreatment = Treatment(dictionary: createdDoc as [String : AnyObject]) {
-                                                    self.treatments.insert(newTreatment, at: 0)
-                                                    NightscoutCache.upsertTreatment(from: createdDoc)
-                                                }
-                                                }
-
-                                                self.tableView.reloadData()
-                                                self.updateDuplicateIndicator()
-                                                completionHandler(true)
-                                            }
-                                        } catch {
-                                            // Om uppladdningen misslyckas, lägg dokumentet i pending-kön för retry
-                                            NightscoutUtils.addPendingUploadDocument(doc)
-
-                                            DispatchQueue.main.async {
-                                                self.showAlert(
-                                                    title: "Kunde inte spara",
-                                                    message: "\nFingerstick-värdet kunde inte laddas upp just nu. Det kommer att laddas upp automatiskt nästa gång Behandlingslogg öppnas."
-                                                ) { }
-                                                completionHandler(false)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }))
-
-                self.present(alert, animated: true, completion: nil)
+            let editBGAction = UIContextualAction(style: .normal, title: nil) { (_, _, completionHandler) in
+                self.presentEditBGCheckViewController(for: treatment, completionHandler: completionHandler)
             }
-
+            
             editBGAction.image = UIImage(systemName: "pencil")
             editBGAction.backgroundColor = .systemBlue
-
+            
             actions = [deleteAction, editBGAction]
-
-        } else {
-            actions = [deleteAction]
         }
 
         // Set the trashcan SF Symbol and customize appearance.
@@ -2564,6 +2435,62 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         self.present(alert, animated: true, completion: nil)
     }
     
+    private func presentEditBGCheckViewController(for treatment: Treatment,
+                                                  completionHandler: @escaping (Bool) -> Void) {
+        let currentGlucose = (treatment.rawData["glucose"] as? Double) ?? 0.0
+
+        let currentCreatedAt: Date = {
+            if let rawCreatedAt = treatment.rawData["created_at"] as? String {
+                let isoWithFractional = ISO8601DateFormatter()
+                isoWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                if let date = isoWithFractional.date(from: rawCreatedAt) {
+                    return date
+                }
+
+                let isoFallback = ISO8601DateFormatter()
+                isoFallback.formatOptions = [.withInternetDateTime]
+                if let date = isoFallback.date(from: rawCreatedAt) {
+                    return date
+                }
+            }
+
+            return treatment.timestamp
+        }()
+
+        let editorVC = BGCheckEditViewController(
+            initialGlucose: currentGlucose,
+            initialDate: currentCreatedAt
+        )
+
+        editorVC.onCancel = {
+            completionHandler(false)
+        }
+
+        editorVC.onSave = { [weak self] updatedGlucose, updatedDate in
+            guard let self else {
+                completionHandler(false)
+                return
+            }
+
+            self.saveEditedBGCheck(
+                treatment: treatment,
+                updatedGlucose: updatedGlucose,
+                updatedDate: updatedDate,
+                completionHandler: completionHandler
+            )
+        }
+
+        let nav = UINavigationController(rootViewController: editorVC)
+        nav.modalPresentationStyle = .pageSheet
+
+        if let sheet = nav.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+
+        present(nav, animated: true)
+    }
+    
     private func presentEditNoteViewController(for treatment: Treatment,
                                                completionHandler: @escaping (Bool) -> Void) {
         let currentNotes = (treatment.rawData["notes"] as? String) ?? ""
@@ -2619,6 +2546,101 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
         present(nav, animated: true)
     }
+    
+    private func saveEditedBGCheck(treatment: Treatment,
+                                   updatedGlucose: Double,
+                                   updatedDate: Date,
+                                   completionHandler: @escaping (Bool) -> Void) {
+        guard let treatmentId = treatment.documentId else {
+            self.showAlert(title: "Fel", message: "Saknar dokument-ID för behandlingen") { }
+            completionHandler(false)
+            return
+        }
+
+        NightscoutUtils.fetchTreatmentById(treatmentId) { result in
+            switch result {
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self.showAlert(title: "Fel", message: error.localizedDescription) { }
+                    completionHandler(false)
+                }
+
+            case .success(var doc):
+                doc.removeValue(forKey: "_id")
+
+                let iso = ISO8601DateFormatter()
+                iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                iso.timeZone = TimeZone(secondsFromGMT: 0)
+
+                let createdAtString = iso.string(from: updatedDate)
+                let originalTimestamp = treatment.timestamp
+
+                doc["glucose"] = updatedGlucose
+                doc["created_at"] = createdAtString
+                //doc["timestamp"] = Int(updatedDate.timeIntervalSince1970 * 1000)
+                //doc["mills"] = Int(updatedDate.timeIntervalSince1970 * 1000)
+                doc["utcOffset"] = 0
+
+                NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { deleteResult in
+                    switch deleteResult {
+                    case .failure(let error):
+                        DispatchQueue.main.async {
+                            self.showAlert(title: "Kunde inte radera", message: error.localizedDescription) { }
+                            completionHandler(false)
+                        }
+
+                    case .success:
+                        Task {
+                            do {
+                                let createdDoc = try await NightscoutUtils.executePostRequestRaw(
+                                    eventType: .treatments,
+                                    body: doc
+                                )
+
+                                DispatchQueue.main.async {
+                                    let oldDayStart = Calendar.current.startOfDay(for: originalTimestamp)
+                                    let newDayStart = Calendar.current.startOfDay(for: updatedDate)
+
+                                    if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                        let removed = self.treatments.remove(at: index)
+                                        self.removeTreatmentFromCache(removed)
+
+                                        if let createdDoc = createdDoc,
+                                           let newTreatment = Treatment(dictionary: createdDoc as [String: AnyObject]) {
+                                            self.treatments.insert(newTreatment, at: index)
+                                            NightscoutCache.upsertTreatment(from: createdDoc)
+                                        }
+                                    } else if let createdDoc = createdDoc,
+                                              let newTreatment = Treatment(dictionary: createdDoc as [String: AnyObject]) {
+                                        self.treatments.insert(newTreatment, at: 0)
+                                        NightscoutCache.upsertTreatment(from: createdDoc)
+                                    }
+
+                                    if oldDayStart != newDayStart {
+                                        self.refreshTableKeepingSelectionIfNeeded()
+                                    }
+
+                                    self.tableView.reloadData()
+                                    self.updateDuplicateIndicator()
+                                    completionHandler(true)
+                                }
+                            } catch {
+                                NightscoutUtils.addPendingUploadDocument(doc)
+
+                                DispatchQueue.main.async {
+                                    self.showAlert(
+                                        title: "Kunde inte spara",
+                                        message: "\nFingerstick-värdet kunde inte laddas upp just nu. Det kommer att laddas upp automatiskt nästa gång Behandlingslogg öppnas."
+                                    ) { }
+                                    completionHandler(false)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private func saveEditedNote(treatment: Treatment,
                                 updatedNotes: String,
@@ -2646,11 +2668,12 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 iso.timeZone = TimeZone(secondsFromGMT: 0)
 
                 let createdAtString = iso.string(from: updatedDate)
-                let millis = Int(updatedDate.timeIntervalSince1970 * 1000)
+                //let millis = Int(updatedDate.timeIntervalSince1970 * 1000)
+                let originalTimestamp = treatment.timestamp
 
                 doc["notes"] = updatedNotes
                 doc["created_at"] = createdAtString
-                //doc["timestamp"] = updatedDate.timeIntervalSince1970 * 1000
+                //doc["timestamp"] = millis
                 //doc["mills"] = millis
                 doc["utcOffset"] = 0
 
@@ -2671,6 +2694,9 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                                 )
 
                                 DispatchQueue.main.async {
+                                    let oldDayStart = Calendar.current.startOfDay(for: originalTimestamp)
+                                    let newDayStart = Calendar.current.startOfDay(for: updatedDate)
+
                                     if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
                                         let removed = self.treatments.remove(at: index)
                                         self.removeTreatmentFromCache(removed)
@@ -2680,12 +2706,14 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                                             self.treatments.insert(newTreatment, at: index)
                                             NightscoutCache.upsertTreatment(from: createdDoc)
                                         }
-                                    } else {
-                                        if let createdDoc = createdDoc,
-                                           let newTreatment = Treatment(dictionary: createdDoc as [String: AnyObject]) {
-                                            self.treatments.insert(newTreatment, at: 0)
-                                            NightscoutCache.upsertTreatment(from: createdDoc)
-                                        }
+                                    } else if let createdDoc = createdDoc,
+                                              let newTreatment = Treatment(dictionary: createdDoc as [String: AnyObject]) {
+                                        self.treatments.insert(newTreatment, at: 0)
+                                        NightscoutCache.upsertTreatment(from: createdDoc)
+                                    }
+
+                                    if oldDayStart != newDayStart {
+                                        self.refreshTableKeepingSelectionIfNeeded()
                                     }
 
                                     self.tableView.reloadData()
@@ -3048,27 +3076,64 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         return formatted
     }
     
-    /// Remove a treatment that has just been deleted in Nightscout from the
-    /// local NightscoutCache so duplicates don’t re-appear after an app restart.
-    private func removeTreatmentFromCache(_ treatment: Treatment) {
-        let dayStart = Calendar.current.startOfDay(for: treatment.timestamp)
-
-        // Load the cached payload for that calendar day (if any).
-        guard var payload = try? NightscoutCache.readDay(dayStart) else { return }
-
-        // Prefer to match by Nightscout `_id`; fall back to timestamp + eventType.
-        if let id = treatment.documentId {
-            payload.treatments.removeAll { $0._id == id }
+    private func applyLocalTreatmentDeletion(_ treatment: Treatment) {
+        if let index = treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+            treatments.remove(at: index)
         } else {
-            payload.treatments.removeAll {
-                $0.created_at == treatment.timestamp && $0.eventType == treatment.eventType
+            treatments.removeAll {
+                $0.timestamp == treatment.timestamp &&
+                $0.eventType == treatment.eventType &&
+                $0.documentId == treatment.documentId
             }
         }
 
-        // Save the pruned day payload back to disk.
-        try? NightscoutCache.writeDay(date: dayStart,
-                                      sgv: payload.sgv,
-                                      treatments: payload.treatments)
+        removeTreatmentFromCache(treatment)
+        refreshTableKeepingSelectionIfNeeded()
+        tableView.reloadData()
+        updateDuplicateIndicator()
+    }
+    
+    /// Remove a treatment that has just been deleted in Nightscout from the
+    /// local NightscoutCache so duplicates don’t re-appear after an app restart.
+    private func removeTreatmentFromCache(_ treatment: Treatment) {
+        let possibleDates: [Date] = {
+            if let rawCreatedAt = treatment.rawData["created_at"] as? String {
+                let isoWithFractional = ISO8601DateFormatter()
+                isoWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                if let date = isoWithFractional.date(from: rawCreatedAt) {
+                    return [date, treatment.timestamp]
+                }
+
+                let isoFallback = ISO8601DateFormatter()
+                isoFallback.formatOptions = [.withInternetDateTime]
+                if let date = isoFallback.date(from: rawCreatedAt) {
+                    return [date, treatment.timestamp]
+                }
+            }
+            return [treatment.timestamp]
+        }()
+
+        let uniqueDayStarts = Array(Set(possibleDates.map { Calendar.current.startOfDay(for: $0) }))
+
+        for dayStart in uniqueDayStarts {
+            guard var payload = try? NightscoutCache.readDay(dayStart) else { continue }
+
+            if let id = treatment.documentId {
+                payload.treatments.removeAll { $0._id == id }
+            } else {
+                payload.treatments.removeAll {
+                    $0.created_at == treatment.timestamp && $0.eventType == treatment.eventType
+                }
+            }
+
+            try? NightscoutCache.writeDay(date: dayStart,
+                                          sgv: payload.sgv,
+                                          treatments: payload.treatments)
+        }
+    }
+
+    private func refreshTableKeepingSelectionIfNeeded() {
+        treatments.sort { $0.timestamp > $1.timestamp }
     }
 
     // MARK: - Rolling Window Freshness Refresh for Today
@@ -3236,7 +3301,7 @@ fileprivate final class NoteEditViewController: ThemedViewController {
     }
 
     private func setupView() {
-        view.backgroundColor = .systemBackground
+        updateBackgroundForCurrentMode()
     }
 
     private func setupNavigationBar() {
@@ -3268,16 +3333,17 @@ fileprivate final class NoteEditViewController: ThemedViewController {
 
         contentStack.axis = .vertical
         contentStack.spacing = 16
+        contentStack.alignment = .leading
 
         let notesLabel = makeSectionLabel("Anteckning")
         let dateLabel = makeSectionLabel("Tidpunkt")
 
         notesTextView.font = .preferredFont(forTextStyle: .body)
-        notesTextView.backgroundColor = .secondarySystemBackground
-        notesTextView.layer.cornerRadius = 12
-        notesTextView.textContainerInset = UIEdgeInsets(top: 12, left: 10, bottom: 12, right: 10)
+        notesTextView.backgroundColor = .label.withAlphaComponent(0.12)
+        notesTextView.layer.cornerRadius = 18
+        notesTextView.textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
         notesTextView.isScrollEnabled = false
-        //notesTextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 140).isActive = true
+        notesTextView.heightAnchor.constraint(equalToConstant: 36).isActive = true
 
         datePicker.datePickerMode = .dateAndTime
         datePicker.preferredDatePickerStyle = .compact
@@ -3288,6 +3354,7 @@ fileprivate final class NoteEditViewController: ThemedViewController {
         contentStack.addArrangedSubview(notesTextView)
         contentStack.addArrangedSubview(dateLabel)
         contentStack.addArrangedSubview(datePicker)
+        datePicker.setContentHuggingPriority(.required, for: .horizontal)
 
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -3330,4 +3397,176 @@ fileprivate final class NoteEditViewController: ThemedViewController {
             self.onSave?(trimmedNotes, self.datePicker.date)
         }
     }
+}
+
+fileprivate final class BGCheckEditViewController: ThemedViewController {
+
+    private let initialGlucose: Double
+    private let initialDate: Date
+
+    var onSave: ((Double, Date) -> Void)?
+    var onCancel: (() -> Void)?
+
+    private let scrollView = UIScrollView()
+    private let contentStack = UIStackView()
+    private let glucoseTextField = UITextField()
+    private let datePicker = UIDatePicker()
+
+    init(initialGlucose: Double, initialDate: Date) {
+        self.initialGlucose = initialGlucose
+        self.initialDate = initialDate
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupView()
+        setupNavigationBar()
+        setupLayout()
+        populateValues()
+    }
+
+    private func setupView() {
+        view.backgroundColor = .systemBackground
+    }
+
+    private func setupNavigationBar() {
+        title = "Redigera fingerstick"
+
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            title: "Avbryt",
+            style: .plain,
+            target: self,
+            action: #selector(cancelTapped)
+        )
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Spara",
+            style: .done,
+            target: self,
+            action: #selector(saveTapped)
+        )
+    }
+
+    private func setupLayout() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        glucoseTextField.translatesAutoresizingMaskIntoConstraints = false
+        datePicker.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentStack)
+
+        contentStack.axis = .vertical
+        contentStack.spacing = 16
+        contentStack.alignment = .leading
+
+        let glucoseLabel = makeSectionLabel("Blodsocker (mmol/L)")
+        let dateLabel = makeSectionLabel("Tidpunkt")
+
+        glucoseTextField.font = .preferredFont(forTextStyle: .body)
+        glucoseTextField.backgroundColor = .label.withAlphaComponent(0.12)
+        glucoseTextField.layer.cornerRadius = 12
+        glucoseTextField.borderStyle = .none
+        glucoseTextField.keyboardType = .decimalPad
+        glucoseTextField.clearButtonMode = .whileEditing
+        glucoseTextField.setLeftPaddingPoints(12)
+        glucoseTextField.setRightPaddingPoints(12)
+        glucoseTextField.heightAnchor.constraint(equalToConstant: 52).isActive = true
+
+        datePicker.datePickerMode = .dateAndTime
+        datePicker.preferredDatePickerStyle = .compact
+        datePicker.locale = Locale(identifier: "sv_SE")
+        datePicker.minuteInterval = 1
+        datePicker.setContentHuggingPriority(.required, for: .horizontal)
+
+        let glucoseFieldContainer = UIView()
+        glucoseFieldContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        glucoseFieldContainer.addSubview(glucoseTextField)
+
+        NSLayoutConstraint.activate([
+            glucoseTextField.topAnchor.constraint(equalTo: glucoseFieldContainer.topAnchor),
+            glucoseTextField.leadingAnchor.constraint(equalTo: glucoseFieldContainer.leadingAnchor),
+            glucoseTextField.trailingAnchor.constraint(equalTo: glucoseFieldContainer.trailingAnchor),
+            glucoseTextField.bottomAnchor.constraint(equalTo: glucoseFieldContainer.bottomAnchor)
+        ])
+
+        contentStack.addArrangedSubview(glucoseLabel)
+        contentStack.addArrangedSubview(glucoseFieldContainer)
+        contentStack.addArrangedSubview(dateLabel)
+        contentStack.addArrangedSubview(datePicker)
+
+        glucoseFieldContainer.widthAnchor.constraint(equalTo: contentStack.widthAnchor).isActive = true
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 20),
+            contentStack.leadingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.leadingAnchor, constant: 16),
+            contentStack.trailingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.trailingAnchor, constant: -16),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -20),
+            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32)
+        ])
+    }
+
+    private func populateValues() {
+        glucoseTextField.text = String(format: "%.1f", initialGlucose)
+        datePicker.date = initialDate
+    }
+
+    private func makeSectionLabel(_ text: String) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.font = .preferredFont(forTextStyle: .headline)
+        label.numberOfLines = 0
+        return label
+    }
+
+    @objc private func cancelTapped() {
+        dismiss(animated: true) {
+            self.onCancel?()
+        }
+    }
+
+    @objc private func saveTapped() {
+        let trimmedText = glucoseTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let normalized = trimmedText.replacingOccurrences(of: ",", with: ".")
+        guard let glucose = Double(normalized), glucose > 0 else { return }
+
+        dismiss(animated: true) {
+            self.onSave?(glucose, self.datePicker.date)
+        }
+    }
+}
+
+fileprivate extension UITextField {
+
+    func setLeftPaddingPoints(_ amount: CGFloat) {
+
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: amount, height: 1))
+
+        leftView = paddingView
+
+        leftViewMode = .always
+
+    }
+
+    func setRightPaddingPoints(_ amount: CGFloat) {
+
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: amount, height: 1))
+
+        rightView = paddingView
+
+        rightViewMode = .always
+
+    }
+
 }
