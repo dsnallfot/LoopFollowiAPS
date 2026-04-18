@@ -29,6 +29,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     @IBOutlet weak var AlertLabel: UILabel!
     @IBOutlet weak var clockLabel: UILabel!
     @IBOutlet weak var snoozeForMinuteLabel: UILabel!
+    @IBOutlet weak var snoozeForMinuteUnit: UILabel!
     @IBOutlet weak var snoozeForMinuteStepper: UIStepper!
     @IBOutlet weak var debugTextView: UITextView!
     
@@ -87,6 +88,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         clockLabel.isHidden = false
         snoozeForMinuteStepper.isHidden = true
         snoozeForMinuteLabel.isHidden = true
+        snoozeForMinuteUnit.isHidden = true
         
     }
     
@@ -666,6 +668,7 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
             self.clockLabel.isHidden = false
             self.snoozeForMinuteStepper.isHidden = true
             self.snoozeForMinuteLabel.isHidden = true
+            self.snoozeForMinuteUnit.isHidden = true
         }
         LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing alarm with volume button done and Snoozer UI updated")
     }

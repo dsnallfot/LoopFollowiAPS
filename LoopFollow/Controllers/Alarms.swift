@@ -121,7 +121,7 @@ extension MainViewController {
                     if UserDefaultsRepository.alertIOBDayTime.value { numLoops = -1 }
                     if !UserDefaultsRepository.alertIOBDayTimeAudible.value { playSound = false }
                 }
-                triggerAlarm(sound: UserDefaultsRepository.alertIOBSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertIOBSnoozeHours.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                triggerAlarm(sound: UserDefaultsRepository.alertIOBSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertIOBSnoozeHours.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " h ")
                 return
             }
         }
@@ -139,7 +139,7 @@ extension MainViewController {
                     if UserDefaultsRepository.alertCOBDayTime.value { numLoops = -1 }
                     if !UserDefaultsRepository.alertCOBDayTimeAudible.value { playSound = false }
                 }
-                triggerAlarm(sound: UserDefaultsRepository.alertCOBSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertCOBSnoozeHours.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                triggerAlarm(sound: UserDefaultsRepository.alertCOBSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertCOBSnoozeHours.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " h ")
                 return
             }
         }
@@ -158,7 +158,7 @@ extension MainViewController {
                         UserDefaultsRepository.alertTemporaryActive.value = false
                         AlarmSound.whichAlarm = "⚠️ Tillfällig varning"
                         if UserDefaultsRepository.alertTemporaryBGRepeat.value { numLoops = -1 }
-                        triggerAlarm(sound: UserDefaultsRepository.alertTemporarySound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, latestIOB: iobString, latestCOB: cobString)
+                        triggerAlarm(sound: UserDefaultsRepository.alertTemporarySound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                         return
                     }
                 } else{
@@ -166,7 +166,7 @@ extension MainViewController {
                         tabBarController?.selectedIndex = 2
                         AlarmSound.whichAlarm = "⚠️ Tillfällig varning"
                         if UserDefaultsRepository.alertTemporaryBGRepeat.value { numLoops = -1 }
-                        triggerAlarm(sound: UserDefaultsRepository.alertTemporarySound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, latestIOB: iobString, latestCOB: cobString)
+                        triggerAlarm(sound: UserDefaultsRepository.alertTemporarySound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                         return
                     }
                 }
@@ -205,7 +205,7 @@ extension MainViewController {
                         if UserDefaultsRepository.alertUrgentLowDayTime.value { numLoops = -1 }
                         if !UserDefaultsRepository.alertUrgentLowDayTimeAudible.value { playSound = false }
                     }
-                    triggerAlarm(sound: UserDefaultsRepository.alertUrgentLowSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertUrgentLowSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                    triggerAlarm(sound: UserDefaultsRepository.alertUrgentLowSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertUrgentLowSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                     return
                 } else {
                     return
@@ -239,7 +239,7 @@ extension MainViewController {
                     //print ("It is DayTime and playSound = ", playSound)
                 }
 
-                triggerAlarm(sound: UserDefaultsRepository.alertLowSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertLowSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                triggerAlarm(sound: UserDefaultsRepository.alertLowSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertLowSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                 return
             }
             
@@ -257,7 +257,7 @@ extension MainViewController {
                         if UserDefaultsRepository.alertUrgentHighDayTime.value { numLoops = -1 }
                         if !UserDefaultsRepository.alertUrgentHighDayTimeAudible.value { playSound = false }
                     }
-                    triggerAlarm(sound: UserDefaultsRepository.alertUrgentHighSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertUrgentHighSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                    triggerAlarm(sound: UserDefaultsRepository.alertUrgentHighSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertUrgentHighSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                     return
                 } else {
                     return
@@ -285,7 +285,7 @@ extension MainViewController {
                     if !UserDefaultsRepository.alertHighDayTimeAudible.value { playSound = false }
                     //print ("It is DayTime and playSound = ", playSound)
                 }
-                triggerAlarm(sound: UserDefaultsRepository.alertHighSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertHighSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                triggerAlarm(sound: UserDefaultsRepository.alertHighSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertHighSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                 return
             }
             
@@ -310,7 +310,7 @@ extension MainViewController {
                             if UserDefaultsRepository.alertFastDropDayTime.value { numLoops = -1 }
                             if !UserDefaultsRepository.alertFastDropDayTimeAudible.value { playSound = false }
                         }
-                        triggerAlarm(sound: UserDefaultsRepository.alertFastDropSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertFastDropSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                        triggerAlarm(sound: UserDefaultsRepository.alertFastDropSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertFastDropSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                         return
                     }
                 }
@@ -335,7 +335,7 @@ extension MainViewController {
                             if UserDefaultsRepository.alertFastRiseDayTime.value { numLoops = -1 }
                             if !UserDefaultsRepository.alertFastRiseDayTimeAudible.value { playSound = false }
                         }
-                        triggerAlarm(sound: UserDefaultsRepository.alertFastRiseSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertFastRiseSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                        triggerAlarm(sound: UserDefaultsRepository.alertFastRiseSound.value, snooozedBGReadingTime: currentBGTime, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertFastRiseSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                         return
                     }
                 }
@@ -358,7 +358,7 @@ extension MainViewController {
                 if UserDefaultsRepository.alertMissedReadingDayTime.value { numLoops = -1 }
                 if !UserDefaultsRepository.alertMissedReadingDayTimeAudible.value { playSound = false }
             }
-            triggerAlarm(sound: UserDefaultsRepository.alertMissedReadingSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertMissedReadingSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+            triggerAlarm(sound: UserDefaultsRepository.alertMissedReadingSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertMissedReadingSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
             return
         }
         
@@ -405,7 +405,7 @@ extension MainViewController {
                         if UserDefaultsRepository.alertNotLoopingDayTime.value { numLoops = -1 }
                         if !UserDefaultsRepository.alertNotLoopingDayTimeAudible.value { playSound = false }
                     }
-                    triggerAlarm(sound: UserDefaultsRepository.alertNotLoopingSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertNotLoopingSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                    triggerAlarm(sound: UserDefaultsRepository.alertNotLoopingSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertNotLoopingSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                     return
                 }
             }
@@ -438,7 +438,7 @@ extension MainViewController {
                             if UserDefaultsRepository.alertMissedBolusDayTime.value { numLoops = -1 }
                             if !UserDefaultsRepository.alertMissedBolusDayTimeAudible.value { playSound = false }
                         }
-                        triggerAlarm(sound: UserDefaultsRepository.alertMissedBolusSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertMissedBolusSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                        triggerAlarm(sound: UserDefaultsRepository.alertMissedBolusSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertMissedBolusSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                         return
                     }
                     
@@ -467,7 +467,7 @@ extension MainViewController {
                             if UserDefaultsRepository.alertMissedBolusDayTime.value { numLoops = -1 }
                             if !UserDefaultsRepository.alertMissedBolusDayTimeAudible.value { playSound = false }
                         }
-                        triggerAlarm(sound: UserDefaultsRepository.alertMissedBolusSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertMissedBolusSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                        triggerAlarm(sound: UserDefaultsRepository.alertMissedBolusSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertMissedBolusSnooze.value, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                         return
                     }
                     
@@ -491,7 +491,7 @@ extension MainViewController {
                         if UserDefaultsRepository.alertSAGEDayTime.value { numLoops = -1 }
                         if !UserDefaultsRepository.alertSAGEDayTimeAudible.value { playSound = false }
                     }
-                    triggerAlarm(sound: UserDefaultsRepository.alertSAGESound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertSAGESnooze.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                    triggerAlarm(sound: UserDefaultsRepository.alertSAGESound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertSAGESnooze.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " h ")
                     return
                 }
             }
@@ -512,7 +512,7 @@ extension MainViewController {
                         if UserDefaultsRepository.alertCAGEDayTime.value { numLoops = -1 }
                         if !UserDefaultsRepository.alertCAGEDayTimeAudible.value { playSound = false }
                     }
-                    triggerAlarm(sound: UserDefaultsRepository.alertCAGESound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertCAGESnooze.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                    triggerAlarm(sound: UserDefaultsRepository.alertCAGESound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertCAGESnooze.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " h ")
                     return
                 }
             }
@@ -530,7 +530,7 @@ extension MainViewController {
                         if UserDefaultsRepository.alertPumpDayTime.value { numLoops = -1 }
                         if !UserDefaultsRepository.alertPumpDayTimeAudible.value { playSound = false }
                     }
-                    triggerAlarm(sound: UserDefaultsRepository.alertPumpSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertPumpSnoozeHours.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString)
+                    triggerAlarm(sound: UserDefaultsRepository.alertPumpSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertPumpSnoozeHours.value, snoozeIncrement: 1, audio: playSound, latestIOB: iobString, latestCOB: cobString, unit: " h ")
                     return
                 }
             }
@@ -544,7 +544,7 @@ extension MainViewController {
                 AlarmSound.whichAlarm = "🪫 Låg batterinivå"
 
                 if UserDefaultsRepository.alertBatteryRepeat.value { numLoops = -1 }
-                triggerAlarm(sound: UserDefaultsRepository.alertBatterySound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertBatterySnoozeHours.value, snoozeIncrement: 1, audio: true, latestIOB: iobString, latestCOB: cobString)
+                triggerAlarm(sound: UserDefaultsRepository.alertBatterySound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertBatterySnoozeHours.value, snoozeIncrement: 1, audio: true, latestIOB: iobString, latestCOB: cobString, unit: " h ")
                 return
             }
         }
@@ -557,7 +557,7 @@ extension MainViewController {
                 AlarmSound.whichAlarm = "👉 Rek. Bolus"
 
                 if UserDefaultsRepository.alertRecBolusRepeat.value { numLoops = -1 }
-                triggerAlarm(sound: UserDefaultsRepository.alertRecBolusSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertRecBolusSnooze.value, snoozeIncrement: 5, audio: true, latestIOB: iobString, latestCOB: cobString)
+                triggerAlarm(sound: UserDefaultsRepository.alertRecBolusSound.value, snooozedBGReadingTime: nil, overrideVolume: UserDefaultsRepository.overrideSystemOutputVolume.value, numLoops: numLoops, snoozeTime: UserDefaultsRepository.alertRecBolusSnooze.value, snoozeIncrement: 5, audio: true, latestIOB: iobString, latestCOB: cobString, unit: " min ")
                 return
             }
         }
@@ -704,7 +704,7 @@ extension MainViewController {
         }
     }
     
-    func triggerAlarm(sound: String, snooozedBGReadingTime: TimeInterval?, overrideVolume: Bool, numLoops: Int, snoozeTime: Int = 0, snoozeIncrement: Int = 5, audio: Bool = true, latestIOB: String, latestCOB: String) {
+    func triggerAlarm(sound: String, snooozedBGReadingTime: TimeInterval?, overrideVolume: Bool, numLoops: Int, snoozeTime: Int = 0, snoozeIncrement: Int = 5, audio: Bool = true, latestIOB: String, latestCOB: String, unit: String) {
         // Small delay to allow latestDirectionString / latestDeltaString
         // to settle (e.g. Dex -> Nightscout update race)
         let delay: TimeInterval = 2.0
@@ -743,12 +743,14 @@ extension MainViewController {
             snoozer.clockLabel.isHidden = true
             snoozer.debugTextView.isHidden = true
             snoozer.snoozeForMinuteLabel.text = String(snoozeTime)
+            snoozer.snoozeForMinuteUnit.text = unit
             snoozer.snoozeForMinuteStepper.value = Double(snoozeTime)
             snoozer.snoozeForMinuteStepper.stepValue = Double(snoozeIncrement)
             
             if snoozeTime != 0 {
                 snoozer.snoozeForMinuteStepper.isHidden = false
                 snoozer.snoozeForMinuteLabel.isHidden = false
+                snoozer.snoozeForMinuteUnit.isHidden = false
             }
             
             self.tabBarController?.selectedIndex = 2
@@ -793,6 +795,7 @@ extension MainViewController {
         snoozer.clockLabel.isHidden = false
         snoozer.snoozeForMinuteStepper.isHidden = true
         snoozer.snoozeForMinuteLabel.isHidden = true
+        snoozer.snoozeForMinuteUnit.isHidden = true
         if AlarmSound.isPlaying {
             AlarmSound.stop()
         }
