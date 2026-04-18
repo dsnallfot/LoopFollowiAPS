@@ -107,6 +107,22 @@ class PushNotificationManager {
         sendPushNotification(message: message, completion: completion)
     }
 
+    func sendDeleteMealPushNotification(
+        mealDate: Date,
+        completion: @escaping (Bool, String?) -> Void
+    ) {
+        let message = PushMessage(
+            aps: .init(alert: "Remote radera måltid mottagen"),
+            user: user,
+            commandType: .deleteMeal,
+            sharedSecret: sharedSecret,
+            timestamp: Date().timeIntervalSince1970,
+            scheduledTime: mealDate.timeIntervalSince1970
+        )
+
+        sendPushNotification(message: message, completion: completion)
+    }
+
     func sendMealPushNotification(
         carbs: HKQuantity,
         protein: HKQuantity,

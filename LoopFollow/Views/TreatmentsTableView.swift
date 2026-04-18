@@ -1829,8 +1829,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         let deleteAction = UIContextualAction(style: .destructive, title: nil) { (action, view, completionHandler) in
             // Retrieve remote type from Storage.
             let remoteType = Storage.shared.remoteType.value
-            
-            // If the treatment is a Carb Correction and remote type is SMS, present the three-option alert.
+
+            // If the treatment is a Carb Correction, present remote-delete options for SMS or TRC.
             if treatment.eventType == "Carb Correction",
                let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty,
                remoteType == .sms {
@@ -1838,12 +1838,12 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     title: "Radera måltid?",
                     message: "\nVälj om du vill: \n\n• Radera måltiden i Trio (vilket också raderar den i Nightscout) \n\n• Radera endast måltiden i Nightscout (vilket INTE raderar den i Trio!)",
                     preferredStyle: .alert)
-                
+
                 alert.addAction(UIAlertAction(title: "Trio & Nightscout", style: .default, handler: { _ in
                     self.deleteEntryInTrio(for: treatment)
                     completionHandler(true)
                 }))
-                
+
                 alert.addAction(UIAlertAction(title: "Endast Nightscout", style: .destructive, handler: { _ in
                     guard let treatmentId = treatment.documentId else {
                         completionHandler(false)
@@ -1874,7 +1874,67 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                         completionHandler(true)
                     }
                 }))
-                
+
+                alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
+                    completionHandler(false)
+                }))
+                self.present(alert, animated: true, completion: nil)
+            } else if treatment.eventType == "Carb Correction",
+                      let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty,
+                      remoteType == .trc {
+                let alert = UIAlertController(
+                    title: "Radera måltid?",
+                    message: "\nVälj om du vill: \n\n• Radera måltiden i Trio (vilket också raderar den i Nightscout) \n\n• Radera endast måltiden i Nightscout (vilket INTE raderar den i Trio!)",
+                    preferredStyle: .alert
+                )
+
+                alert.addAction(UIAlertAction(title: "Trio & Nightscout", style: .default, handler: { _ in
+                    let pushNotificationManager = PushNotificationManager()
+                    pushNotificationManager.sendDeleteMealPushNotification(mealDate: treatment.timestamp) { success, errorMessage in
+                        DispatchQueue.main.async {
+                            let resultAlert = UIAlertController(
+                                title: "Status",
+                                message: success ? "Raderingskommando skickades" : (errorMessage ?? "Raderingskommando misslyckades"),
+                                preferredStyle: .alert
+                            )
+                            resultAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                            self.present(resultAlert, animated: true, completion: nil)
+                        }
+                    }
+                    completionHandler(true)
+                }))
+
+                alert.addAction(UIAlertAction(title: "Endast Nightscout", style: .destructive, handler: { _ in
+                    guard let treatmentId = treatment.documentId else {
+                        completionHandler(false)
+                        return
+                    }
+                    NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
+                        switch result {
+                        case .success(_):
+                            DispatchQueue.main.async {
+                                if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                    self.treatments.remove(at: index)
+                                }
+                                self.removeTreatmentFromCache(treatment)
+                                self.tableView.reloadData()
+                                self.updateDuplicateIndicator()
+                            }
+                        case .failure(let error):
+                            DispatchQueue.main.async {
+                                let failureAlert = UIAlertController(
+                                    title: "Kunde inte radera!",
+                                    message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
+                                    preferredStyle: .alert)
+                                failureAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                                self.present(failureAlert, animated: true, completion: nil)
+                            }
+                            LogManager.shared.log(category: .treatments, message: "Failed to delete treatment: \(error.localizedDescription)", isDebug: true)
+                        }
+                        completionHandler(true)
+                    }
+                }))
+
                 alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel, handler: { _ in
                     completionHandler(false)
                 }))
@@ -2054,8 +2114,18 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             editAction.backgroundColor = .systemBlue
 
             actions = [deleteAction, editAction]
-
+            
         } else if treatment.eventType == "Note" {
+            let editNoteAction = UIContextualAction(style: .normal, title: nil) { (_, _, completionHandler) in
+                self.presentEditNoteViewController(for: treatment, completionHandler: completionHandler)
+            }
+
+            editNoteAction.image = UIImage(systemName: "pencil")
+            editNoteAction.backgroundColor = .systemBlue
+
+            actions = [deleteAction, editNoteAction]
+
+        /*} else if treatment.eventType == "Note" {
             let editNoteAction = UIContextualAction(style: .normal, title: nil) { (action, view, completionHandler) in
                 // Current notes text
                 let currentNotes = (treatment.rawData["notes"] as? String) ?? ""
@@ -2165,7 +2235,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             editNoteAction.image = UIImage(systemName: "pencil")
             editNoteAction.backgroundColor = .systemBlue
 
-            actions = [deleteAction, editNoteAction]
+            actions = [deleteAction, editNoteAction]*/
 
         } else if treatment.eventType == "BG Check" {
             let editBGAction = UIContextualAction(style: .normal, title: nil) { (action, view, completionHandler) in
@@ -2492,6 +2562,152 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             completion()
         }))
         self.present(alert, animated: true, completion: nil)
+    }
+    
+    private func presentEditNoteViewController(for treatment: Treatment,
+                                               completionHandler: @escaping (Bool) -> Void) {
+        let currentNotes = (treatment.rawData["notes"] as? String) ?? ""
+
+        let currentCreatedAt: Date = {
+            if let rawCreatedAt = treatment.rawData["created_at"] as? String {
+                let isoWithFractional = ISO8601DateFormatter()
+                isoWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                if let date = isoWithFractional.date(from: rawCreatedAt) {
+                    return date
+                }
+
+                let isoFallback = ISO8601DateFormatter()
+                isoFallback.formatOptions = [.withInternetDateTime]
+                if let date = isoFallback.date(from: rawCreatedAt) {
+                    return date
+                }
+            }
+
+            return treatment.timestamp
+        }()
+
+        let editorVC = NoteEditViewController(
+            initialNotes: currentNotes,
+            initialDate: currentCreatedAt
+        )
+
+        editorVC.onCancel = {
+            completionHandler(false)
+        }
+
+        editorVC.onSave = { [weak self] updatedNotes, updatedDate in
+            guard let self else {
+                completionHandler(false)
+                return
+            }
+
+            self.saveEditedNote(
+                treatment: treatment,
+                updatedNotes: updatedNotes,
+                updatedDate: updatedDate,
+                completionHandler: completionHandler
+            )
+        }
+
+        let nav = UINavigationController(rootViewController: editorVC)
+        nav.modalPresentationStyle = .pageSheet
+
+        if let sheet = nav.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+
+        present(nav, animated: true)
+    }
+
+    private func saveEditedNote(treatment: Treatment,
+                                updatedNotes: String,
+                                updatedDate: Date,
+                                completionHandler: @escaping (Bool) -> Void) {
+        guard let treatmentId = treatment.documentId else {
+            self.showAlert(title: "Fel", message: "Saknar dokument-ID för behandlingen") { }
+            completionHandler(false)
+            return
+        }
+
+        NightscoutUtils.fetchTreatmentById(treatmentId) { result in
+            switch result {
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self.showAlert(title: "Fel", message: error.localizedDescription) { }
+                    completionHandler(false)
+                }
+
+            case .success(var doc):
+                doc.removeValue(forKey: "_id")
+
+                let iso = ISO8601DateFormatter()
+                iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                iso.timeZone = TimeZone(secondsFromGMT: 0)
+
+                let createdAtString = iso.string(from: updatedDate)
+                let millis = Int(updatedDate.timeIntervalSince1970 * 1000)
+
+                doc["notes"] = updatedNotes
+                doc["created_at"] = createdAtString
+                //doc["timestamp"] = updatedDate.timeIntervalSince1970 * 1000
+                //doc["mills"] = millis
+                doc["utcOffset"] = 0
+
+                NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { deleteResult in
+                    switch deleteResult {
+                    case .failure(let error):
+                        DispatchQueue.main.async {
+                            self.showAlert(title: "Kunde inte radera", message: error.localizedDescription) { }
+                            completionHandler(false)
+                        }
+
+                    case .success:
+                        Task {
+                            do {
+                                let createdDoc = try await NightscoutUtils.executePostRequestRaw(
+                                    eventType: .treatments,
+                                    body: doc
+                                )
+
+                                DispatchQueue.main.async {
+                                    if let index = self.treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
+                                        let removed = self.treatments.remove(at: index)
+                                        self.removeTreatmentFromCache(removed)
+
+                                        if let createdDoc = createdDoc,
+                                           let newTreatment = Treatment(dictionary: createdDoc as [String: AnyObject]) {
+                                            self.treatments.insert(newTreatment, at: index)
+                                            NightscoutCache.upsertTreatment(from: createdDoc)
+                                        }
+                                    } else {
+                                        if let createdDoc = createdDoc,
+                                           let newTreatment = Treatment(dictionary: createdDoc as [String: AnyObject]) {
+                                            self.treatments.insert(newTreatment, at: 0)
+                                            NightscoutCache.upsertTreatment(from: createdDoc)
+                                        }
+                                    }
+
+                                    self.tableView.reloadData()
+                                    self.updateDuplicateIndicator()
+                                    completionHandler(true)
+                                }
+                            } catch {
+                                NightscoutUtils.addPendingUploadDocument(doc)
+
+                                DispatchQueue.main.async {
+                                    self.showAlert(
+                                        title: "Kunde inte spara",
+                                        message: "\nNoteringen kunde inte laddas upp just nu. Den kommer att laddas upp automatiskt nästa gång Behandlingslogg öppnas."
+                                    ) { }
+                                    completionHandler(false)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// Called when an alert is dismissed (e.g. after cancellation or authentication failure).
@@ -2984,6 +3200,134 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             }
 
             dayCursor = nextDay
+        }
+    }
+}
+
+fileprivate final class NoteEditViewController: ThemedViewController {
+
+    private let initialNotes: String
+    private let initialDate: Date
+
+    var onSave: ((String, Date) -> Void)?
+    var onCancel: (() -> Void)?
+
+    private let scrollView = UIScrollView()
+    private let contentStack = UIStackView()
+    private let notesTextView = UITextView()
+    private let datePicker = UIDatePicker()
+
+    init(initialNotes: String, initialDate: Date) {
+        self.initialNotes = initialNotes
+        self.initialDate = initialDate
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupView()
+        setupNavigationBar()
+        setupLayout()
+        populateValues()
+    }
+
+    private func setupView() {
+        view.backgroundColor = .systemBackground
+    }
+
+    private func setupNavigationBar() {
+        title = "Redigera anteckning"
+
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            title: "Avbryt",
+            style: .plain,
+            target: self,
+            action: #selector(cancelTapped)
+        )
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Spara",
+            style: .done,
+            target: self,
+            action: #selector(saveTapped)
+        )
+    }
+
+    private func setupLayout() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        notesTextView.translatesAutoresizingMaskIntoConstraints = false
+        datePicker.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentStack)
+
+        contentStack.axis = .vertical
+        contentStack.spacing = 16
+
+        let notesLabel = makeSectionLabel("Anteckning")
+        let dateLabel = makeSectionLabel("Tidpunkt")
+
+        notesTextView.font = .preferredFont(forTextStyle: .body)
+        notesTextView.backgroundColor = .secondarySystemBackground
+        notesTextView.layer.cornerRadius = 12
+        notesTextView.textContainerInset = UIEdgeInsets(top: 12, left: 10, bottom: 12, right: 10)
+        notesTextView.isScrollEnabled = false
+        //notesTextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 140).isActive = true
+
+        datePicker.datePickerMode = .dateAndTime
+        datePicker.preferredDatePickerStyle = .compact
+        datePicker.locale = Locale(identifier: "sv_SE")
+        datePicker.minuteInterval = 1
+
+        contentStack.addArrangedSubview(notesLabel)
+        contentStack.addArrangedSubview(notesTextView)
+        contentStack.addArrangedSubview(dateLabel)
+        contentStack.addArrangedSubview(datePicker)
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 20),
+            contentStack.leadingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.leadingAnchor, constant: 16),
+            contentStack.trailingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.trailingAnchor, constant: -16),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -20),
+            contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -32)
+        ])
+    }
+
+    private func populateValues() {
+        notesTextView.text = initialNotes
+        datePicker.date = initialDate
+    }
+
+    private func makeSectionLabel(_ text: String) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.font = .preferredFont(forTextStyle: .headline)
+        label.numberOfLines = 0
+        return label
+    }
+
+    @objc private func cancelTapped() {
+        dismiss(animated: true) {
+            self.onCancel?()
+        }
+    }
+
+    @objc private func saveTapped() {
+        let trimmedNotes = notesTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedNotes.isEmpty else { return }
+
+        dismiss(animated: true) {
+            self.onSave?(trimmedNotes, self.datePicker.date)
         }
     }
 }
