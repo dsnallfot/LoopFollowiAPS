@@ -309,8 +309,9 @@ struct MealView: View {
     private var calculatedBolusValue: Double {
         guard let parsedCRValue, parsedCRValue > 0 else { return 0.0 }
         let carbsValue = carbs.doubleValue(for: .gram())
-        let calculated = carbsValue / parsedCRValue
-        return (calculated * 100).rounded() / 100
+        let raw = carbsValue / parsedCRValue
+        let step = 0.05
+        return floor(raw / step) * step
     }
 
     private var formattedCalculatedBolus: String {

@@ -37,8 +37,14 @@ class PushNotificationManager {
     }
 
     func sendOverridePushNotification(override: ProfileManager.TrioOverride, completion: @escaping (Bool, String?) -> Void) {
+        var alertString = "Remote Override"
+        alertString += "\(override.name)"
+        alertString += "\nInlagt av: \(user)"
+        if alertString.count > 200 {
+            alertString = String(alertString.prefix(200)) + "…"
+        }
         let message = PushMessage(
-            aps: .init(alert: "Remote Override mottagen"),
+            aps: .init(alert: alertString),
             user: user,
             commandType: .startOverride,
             sharedSecret: sharedSecret,
@@ -63,13 +69,19 @@ class PushNotificationManager {
     }
 
     func sendBolusPushNotification(bolusAmount: HKQuantity, completion: @escaping (Bool, String?) -> Void) {
-        let bolusAmount = Decimal(bolusAmount.doubleValue(for: .internationalUnit()))
-
+        let bolusAmountDecimal = Decimal(bolusAmount.doubleValue(for: .internationalUnit()))
+        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
+        var alertString = "Remote bolus"
+        alertString += "\nBolus: \(String(format: "%.2f", bolusValue)) E"
+        alertString += "\nInlagt av: \(user)"
+        if alertString.count > 200 {
+            alertString = String(alertString.prefix(200)) + "…"
+        }
         let message = PushMessage(
-            aps: .init(alert: "Remote bolus mottagen"),
+            aps: .init(alert: alertString),
             user: user,
             commandType: .bolus,
-            bolusAmount: bolusAmount,
+            bolusAmount: bolusAmountDecimal,
             sharedSecret: sharedSecret,
             timestamp: Date().timeIntervalSince1970
         )
@@ -79,10 +91,19 @@ class PushNotificationManager {
 
     func sendTempTargetPushNotification(target: HKQuantity, duration: HKQuantity, completion: @escaping (Bool, String?) -> Void) {
         let targetValue = Int(target.doubleValue(for: HKUnit.milligramsPerDeciliter))
+        let targetMgdl = target.doubleValue(for: HKUnit.milligramsPerDeciliter)
+        let targetValueMmol = targetMgdl / 18.018
         let durationValue = Int(duration.doubleValue(for: HKUnit.minute()))
 
+        var alertString = "Remote temp target"
+        alertString += "\nMål: \(String(format: "%.1f", targetValueMmol)) mmol/L"
+        alertString += "\nVaraktighet: \(durationValue) min"
+        alertString += "\nInlagt av: \(user)"
+        if alertString.count > 200 {
+            alertString = String(alertString.prefix(200)) + "…"
+        }
         let message = PushMessage(
-            aps: .init(alert: "Remote temp target mottagen"),
+            aps: .init(alert: alertString),
             user: user,
             commandType: .tempTarget,
             bolusAmount: nil,
@@ -154,8 +175,48 @@ class PushNotificationManager {
             return
         }
 
+        // Build dynamic alert string
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+
+        let timeString: String = {
+            if let scheduledTime = scheduledTime {
+                return formatter.string(from: scheduledTime)
+            } else {
+                return formatter.string(from: Date())
+            }
+        }()
+
+        let sender = user
+        
+        var alertString = "Remote måltid"
+        if let notes = notes, !notes.isEmpty {
+            alertString += " (\(notes))"
+        }
+
+        if let carbs = carbsValue {
+            alertString += "\nKolhydrater: \(carbs) g"
+        }
+        if let fat = fatValue {
+            alertString += "\nFett: \(fat) g"
+        }
+        if let protein = proteinValue {
+            alertString += "\nProtein: \(protein) g"
+        }
+        if let bolus = bolusAmountValue {
+            alertString += "\nBolus: \(bolus) E"
+        }
+
+        alertString += "\nTid: \(timeString)"
+        
+        alertString += "\nInlagt av: \(sender)"
+
+        if alertString.count > 200 {
+            alertString = String(alertString.prefix(200)) + "…"
+        }
+
         let message = PushMessage(
-            aps: .init(alert: "Remote måltid mottagen"),
+            aps: .init(alert: alertString),
             user: user,
             commandType: .meal,
             bolusAmount: bolusAmountValue,
@@ -203,8 +264,47 @@ class PushNotificationManager {
             return
         }
 
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+
+        let timeString: String = {
+            if let scheduledTime = scheduledTime {
+                return formatter.string(from: scheduledTime)
+            } else {
+                return formatter.string(from: Date())
+            }
+        }()
+
+        var alertString = "Remote snabbval"
+        if let notes = notes, !notes.isEmpty {
+            alertString += " (\(notes))"
+        }
+
+        if let carbs = carbsValue {
+            alertString += "\nKolhydrater: \(carbs) g"
+        }
+        if let fat = fatValue {
+            alertString += "\nFett: \(fat) g"
+        }
+        if let protein = proteinValue {
+            alertString += "\nProtein: \(protein) g"
+        }
+        if let bolus = bolusAmountValue {
+            alertString += "\nBolus: \(bolus) E"
+        }
+        if let overrideName = override?.name, !overrideName.isEmpty {
+            alertString += "\nOverride: \(overrideName)"
+        }
+
+        alertString += "\nTid: \(timeString)"
+        alertString += "\nInlagt av: \(user)"
+
+        if alertString.count > 200 {
+            alertString = String(alertString.prefix(200)) + "…"
+        }
+
         let message = PushMessage(
-            aps: .init(alert: "Remote snabbval mottagen"),
+            aps: .init(alert: alertString),
             user: user,
             commandType: .combo,
             bolusAmount: bolusAmountValue,
