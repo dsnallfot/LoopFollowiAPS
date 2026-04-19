@@ -211,6 +211,7 @@ private struct ComboEditorView: View {
     @ObservedObject private var mealWithFatProtein = Storage.shared.mealWithFatProtein
     @ObservedObject private var maxBolus = Storage.shared.maxBolus
 
+    @FocusState private var presetNameFieldIsFocused: Bool
     @FocusState private var carbsFieldIsFocused: Bool
     @FocusState private var proteinFieldIsFocused: Bool
     @FocusState private var fatFieldIsFocused: Bool
@@ -244,6 +245,7 @@ private struct ComboEditorView: View {
                     if mode != .sendFromPreset {
                         Section() {
                             TextField("Ange namn på snabbval", text: $presetName)
+                                .focused($presetNameFieldIsFocused)
                         }
                         .listRowBackground(Color(.systemGray).opacity(0.15))
                     }
@@ -416,6 +418,18 @@ private struct ComboEditorView: View {
             } else {
                 selectedTime = nil
                 isScheduling = false
+            }
+
+            presetNameFieldIsFocused = false
+            carbsFieldIsFocused = false
+            proteinFieldIsFocused = false
+            fatFieldIsFocused = false
+            bolusFieldIsFocused = false
+
+            if mode == .createPreset {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    presetNameFieldIsFocused = true
+                }
             }
         }
         .sheet(isPresented: $showOverridePicker) {

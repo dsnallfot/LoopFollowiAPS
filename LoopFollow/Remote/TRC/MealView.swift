@@ -197,6 +197,15 @@ struct MealView: View {
             selectedTime = nil
             isScheduling = false
 
+            carbsFieldIsFocused = false
+            proteinFieldIsFocused = false
+            fatFieldIsFocused = false
+            bolusFieldIsFocused = false
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                carbsFieldIsFocused = true
+            }
+
             // Debug: Fetch sharedCRValue from DeviceStatusOpenAPS
             print("📊 sharedCRValue from DeviceStatusOpenAPS: \(CRValue.value)")
         }

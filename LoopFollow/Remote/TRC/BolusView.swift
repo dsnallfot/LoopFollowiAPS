@@ -73,6 +73,13 @@ struct BolusView: View {
             .background(Color.clear)
             .navigationTitle("Bolus")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                bolusFieldIsFocused = false
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    bolusFieldIsFocused = true
+                }
+            }
         }
     }
                 .alert(isPresented: $showAlert) {
