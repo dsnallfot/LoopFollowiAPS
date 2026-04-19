@@ -191,7 +191,7 @@ class PushNotificationManager {
         
         var alertString = "Remote måltid"
         if let notes = notes, !notes.isEmpty {
-            alertString += " (\(notes))"
+            alertString += "\n\(notes)"
         }
 
         if let carbs = carbsValue {
@@ -277,7 +277,7 @@ class PushNotificationManager {
 
         var alertString = "Remote snabbval"
         if let notes = notes, !notes.isEmpty {
-            alertString += " (\(notes))"
+            alertString += "\n\(notes)"
         }
 
         if let carbs = carbsValue {
