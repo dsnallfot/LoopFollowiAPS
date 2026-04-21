@@ -175,7 +175,14 @@ class ProfileSchedulesViewModel: ObservableObject {
                     
                     // Fetch and format carb ratio schedule
                     self.carbRatioEntries = profile.carbRatioSchedule.map { entry in
-                        ScheduleEntry(time: self.formatTime(entry.timeAsSeconds), value: "\(Int(entry.value))")
+                        let value: String
+                        if entry.value.truncatingRemainder(dividingBy: 1) == 0 {
+                            value = "\(Int(entry.value))"
+                        } else {
+                            value = String(format: "%.1f", entry.value)
+                        }
+
+                        return ScheduleEntry(time: self.formatTime(entry.timeAsSeconds), value: value)
                     }
 
                     // Fetch and format ISF schedule
