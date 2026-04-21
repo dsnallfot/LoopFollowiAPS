@@ -1493,6 +1493,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 return ("pause.circle.fill", .systemTeal.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("PumpResume") {
                 return ("play.circle.fill", .systemTeal.withAlphaComponent(0.75))
+            } else if let noteText = fullNote, noteText.contains("⚠️") {
+                return ("exclamationmark.triangle.fill", .systemYellow.withAlphaComponent(0.85))
             } else if let noteText = fullNote, noteText.contains("Meta Quest spel startades") || noteText.contains("Träning startades") {
                 return ("play.circle.fill", .systemGreen.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("Meta Quest spel avslutades") || noteText.contains("Träning avslutades") {
@@ -1633,6 +1635,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 // Create regex patterns for the replacements.
                 let resumePattern = "PumpResume"
                 let suspendPattern = "PumpSuspend"
+                let warningPattern = "⚠️ "
                 var modifiedNote = note
 
                 // Replace "PumpResume" with "Pump startades".
@@ -1644,6 +1647,12 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 if let suspendRegex = try? NSRegularExpression(pattern: suspendPattern, options: []) {
                     let range = NSRange(location: 0, length: modifiedNote.utf16.count)
                     modifiedNote = suspendRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "Pump pausades")
+                }
+                
+                // Replace "⚠️ " with "".
+                if let suspendRegex = try? NSRegularExpression(pattern: warningPattern, options: []) {
+                    let range = NSRange(location: 0, length: modifiedNote.utf16.count)
+                    modifiedNote = suspendRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "")
                 }
 
                 let preview = previewNoteText(for: modifiedNote)
@@ -2804,6 +2813,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 var modifiedNote = fullNote
                 modifiedNote = modifiedNote.replacingOccurrences(of: "PumpResume", with: "Pump startades")
                 modifiedNote = modifiedNote.replacingOccurrences(of: "PumpSuspend", with: "Pump pausades")
+                //modifiedNote = modifiedNote.replacingOccurrences(of: "⚠️ ", with: "")
                 var message = modifiedNote
                 if let enteredBy = treatment.rawData["enteredBy"] as? String {
                     message += "\nInlagt av: \(enteredBy)"

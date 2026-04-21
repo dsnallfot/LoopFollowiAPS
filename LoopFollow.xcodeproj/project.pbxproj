@@ -70,6 +70,7 @@
 		6582C4B72ED23B4F0047658C /* GlucoseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6582C4B62ED23B490047658C /* GlucoseView.swift */; };
 		659AC6832D7C594D0069FC7C /* TreatmentsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */; };
 		65AD37922F7022F300F942A8 /* Training.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65AD37912F7022F000F942A8 /* Training.swift */; };
+		65B347812F97B861001CA945 /* WarningEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B347802F97B85C001CA945 /* WarningEvent.swift */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
 		65B3E5CD2D3FFB3000622194 /* TempTargetviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5CA2D3FFB3000622194 /* TempTargetviewController.swift */; };
 		65B3E5CE2D3FFB3000622194 /* BolusViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C82D3FFB3000622194 /* BolusViewController.swift */; };
@@ -418,6 +419,7 @@
 		6582C4B62ED23B490047658C /* GlucoseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseView.swift; sourceTree = "<group>"; };
 		659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreatmentsTableView.swift; sourceTree = "<group>"; };
 		65AD37912F7022F000F942A8 /* Training.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Training.swift; sourceTree = "<group>"; };
+		65B347802F97B85C001CA945 /* WarningEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WarningEvent.swift; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
 		65B3E5C62D3FFB3000622194 /* SMSRemoteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMSRemoteViewController.swift; sourceTree = "<group>"; };
 		65B3E5C72D3FFB3000622194 /* MealViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealViewController.swift; sourceTree = "<group>"; };
@@ -978,6 +980,7 @@
 		DD493AEA2ACF2761009A6922 /* Treatments */ = {
 			isa = PBXGroup;
 			children = (
+				65B347802F97B85C001CA945 /* WarningEvent.swift */,
 				65AD37912F7022F000F942A8 /* Training.swift */,
 				DD7E19872ACDA5DA00DBD158 /* Notes.swift */,
 				DD7E19832ACDA50C00DBD158 /* Overrides.swift */,
@@ -1695,6 +1698,7 @@
 				DD5334292C6166A500062F9D /* InfoDisplaySettingsView.swift in Sources */,
 				FCC68850248935D800A0279D /* AlarmViewController.swift in Sources */,
 				DD48781E2C7DAF2F0048F05C /* PushNotificationManager.swift in Sources */,
+				65B347812F97B861001CA945 /* WarningEvent.swift in Sources */,
 				653A8D942F33F13B0026A491 /* AlarmUIComponents.swift in Sources */,
 				DD2C2E562D3C3917006413A5 /* DexcomSettingsView.swift in Sources */,
 				DD9ED0CA2D355257000D2A63 /* LogView.swift in Sources */,

@@ -33,6 +33,7 @@ enum GraphDataIndex: Int {
     case tempTarget = 17
     case pump = 18
     case training = 19
+    case warningEvent = 20
 }
 
 extension GraphDataIndex {
@@ -58,6 +59,7 @@ extension GraphDataIndex {
         case .tempTarget: return "Temp Target"
         case .pump: return "Pump Change"
         case .training: return "Träning"
+        case .warningEvent: return "Varning"
         }
     }
 }
@@ -74,7 +76,7 @@ class CompositeRenderer: LineChartRenderer {
         animator: Animator?,
         viewPortHandler: ViewPortHandler?,
         tempTargetDataSetIndex: Int,
-        smbDataSetIndex: Int,
+        warningDataSetIndex: Int,
         bgCheckDataSetIndex: Int,
         trainingDataSetIndex: Int
     ) {
@@ -94,7 +96,7 @@ class CompositeRenderer: LineChartRenderer {
             dataProvider: provider,
             animator: animator,
             viewPortHandler: viewPortHandler,
-            smbDataSetIndex: smbDataSetIndex
+            warningDataSetIndex: warningDataSetIndex
         )
 
         self.bgCheckRenderer = BGCheckRenderer(
@@ -130,15 +132,16 @@ class CompositeRenderer: LineChartRenderer {
         tempTargetRenderer.drawExtras(context: context)
         bgCheckRenderer.drawExtras(context: context)
         trainingSessionRenderer.drawExtras(context: context)
-        // Daniel: Do not draw those triangles for smbs // triangleRenderer.drawExtras(context: context)
+        // Daniel: Do not draw those triangles for smbs //
+        triangleRenderer.drawExtras(context: context)
     }
 }
 
 class TriangleRenderer: LineChartRenderer {
-    let smbDataSetIndex: Int
+    let warningDataSetIndex: Int
     
-    init(dataProvider: LineChartDataProvider?, animator: Animator?, viewPortHandler: ViewPortHandler?, smbDataSetIndex: Int) {
-        self.smbDataSetIndex = smbDataSetIndex
+    init(dataProvider: LineChartDataProvider?, animator: Animator?, viewPortHandler: ViewPortHandler?, warningDataSetIndex: Int) {
+        self.warningDataSetIndex = warningDataSetIndex
         super.init(dataProvider: dataProvider!, animator: animator!, viewPortHandler: viewPortHandler!)
     }
     
@@ -147,7 +150,7 @@ class TriangleRenderer: LineChartRenderer {
         
         guard let dataProvider = dataProvider else { return }
         
-        if dataProvider.lineData?.dataSets.count ?? 0 > smbDataSetIndex, let lineDataSet = dataProvider.lineData?.dataSets[smbDataSetIndex] as? LineChartDataSet {
+        if dataProvider.lineData?.dataSets.count ?? 0 > warningDataSetIndex, let lineDataSet = dataProvider.lineData?.dataSets[warningDataSetIndex] as? LineChartDataSet {
             let trans = dataProvider.getTransformer(forAxis: lineDataSet.axisDependency)
             let phaseY = animator.phaseY
             
@@ -158,9 +161,9 @@ class TriangleRenderer: LineChartRenderer {
                 
                 context.saveGState()
                 context.beginPath()
-                context.move(to: CGPoint(x: pt.x, y: pt.y + 9))
-                context.addLine(to: CGPoint(x: pt.x - 5, y: pt.y - 1))
-                context.addLine(to: CGPoint(x: pt.x + 5, y: pt.y - 1))
+                context.move(to: CGPoint(x: pt.x, y: pt.y - 6))
+                context.addLine(to: CGPoint(x: pt.x - 6, y: pt.y + 6))
+                context.addLine(to: CGPoint(x: pt.x + 6, y: pt.y + 6))
                 context.closePath()
                 
                 context.setFillColor(lineDataSet.circleColors.first!.cgColor)
@@ -449,7 +452,7 @@ let ScaleXMax:Float = 150.0
 extension MainViewController {
     func updateChartRenderers() {
         let tempTargetDataIndex = GraphDataIndex.tempTarget.rawValue
-        let smbDataIndex = GraphDataIndex.smb.rawValue
+        let warningDataIndex = GraphDataIndex.warningEvent.rawValue
         let bgCheckDataIndex = GraphDataIndex.bgCheck.rawValue
         let trainingDataIndex = GraphDataIndex.training.rawValue
 
@@ -458,7 +461,7 @@ extension MainViewController {
             animator: BGChart.chartAnimator,
             viewPortHandler: BGChart.viewPortHandler,
             tempTargetDataSetIndex: tempTargetDataIndex,
-            smbDataSetIndex: smbDataIndex,
+            warningDataSetIndex: warningDataIndex,
             bgCheckDataSetIndex: bgCheckDataIndex,
             trainingDataSetIndex: trainingDataIndex
         )
@@ -1049,6 +1052,21 @@ extension MainViewController {
         lineTraining.valueFormatter = ChartYDataValueFormatter()
         lineTraining.drawValuesEnabled = false
         
+        // Warning
+        let chartEntryWarning = [ChartDataEntry]()
+        let lineWarning = LineChartDataSet(entries:chartEntryWarning, label: "")
+        lineWarning.circleRadius = CGFloat(globalVariables.dotOther)
+        lineWarning.circleColors = [NSUIColor.systemYellow.withAlphaComponent(1.0)]
+        lineWarning.drawCircleHoleEnabled = false
+        lineWarning.setDrawHighlightIndicators(false)
+        lineWarning.setColor(NSUIColor.clear)
+        lineWarning.drawCirclesEnabled = false
+        lineWarning.lineWidth = 0
+        lineWarning.highlightEnabled = true
+        lineWarning.axisDependency = YAxis.AxisDependency.right
+        lineWarning.valueFormatter = ChartYDataValueFormatter()
+        lineWarning.drawValuesEnabled = false
+        
         // Sensor Start
         let chartEntrySensor = [ChartDataEntry]()
         let lineSensor = LineChartDataSet(entries:chartEntrySensor, label: "")
@@ -1249,9 +1267,11 @@ extension MainViewController {
         data.append(COBlinePrediction) // Dataset 14
         data.append(UAMlinePrediction) // Dataset 15
         data.append(lineSmb) // Dataset 16
-        data.append(lineTempTarget)
-        data.append(linePump)
-        data.append(lineTraining)
+        data.append(lineTempTarget) // Dataset 17
+        data.append(linePump) // Dataset 18
+        data.append(lineTraining) // Dataset 19
+        data.append(lineWarning) // Dataset 20
+        
         // Pulses for Temp Basal deliveries as small circles at bottom
         let basalPulseEntries: [ChartDataEntry] = []
         let basalPulseSet = LineChartDataSet(entries: basalPulseEntries, label: "TempBasal Pulses")
@@ -2287,7 +2307,7 @@ extension MainViewController {
     }
     
     func updateTrainingGraph() {
-        let dataIndex = GraphDataIndex.training.rawValue
+        let dataIndex = 19//GraphDataIndex.training.rawValue
 
         guard let mainChart = BGChart.lineData?.dataSets[dataIndex] as? LineChartDataSet,
               let smallChart = BGChartFull.lineData?.dataSets[dataIndex] as? LineChartDataSet else {
@@ -2362,6 +2382,34 @@ extension MainViewController {
         BGChart.notifyDataSetChanged()
 
         if UserDefaultsRepository.smallGraphTreatments.value {
+            BGChartFull.data?.notifyDataChanged()
+            BGChartFull.notifyDataSetChanged()
+        }
+    }
+    
+    func updateWarningGraph() {
+        var dataIndex = 20
+        BGChart.lineData?.dataSets[dataIndex].clear()
+        BGChartFull.lineData?.dataSets[dataIndex].clear()
+        let thisData = warningGraphData
+        for i in 0..<thisData.count{
+            
+            // skip if outside of visible area
+            let graphHours = 24 * UserDefaultsRepository.downloadDays.value
+            if thisData[i].date < dateTimeUtils.getTimeIntervalNHoursAgo(N: graphHours) { continue }
+            
+            let value = ChartDataEntry(x: Double(thisData[i].date), y: Double(thisData[i].sgv), data: formatPillTextNotes(line1: thisData[i].note, time: thisData[i].date))
+            BGChart.data?.dataSets[dataIndex].addEntry(value)
+            if UserDefaultsRepository.smallGraphTreatments.value {
+                BGChartFull.data?.dataSets[dataIndex].addEntry(value)
+            }
+        }
+        
+        BGChart.data?.dataSets[dataIndex].notifyDataSetChanged()
+        BGChart.data?.notifyDataChanged()
+        BGChart.notifyDataSetChanged()
+        if UserDefaultsRepository.smallGraphTreatments.value {
+            BGChartFull.data?.dataSets[dataIndex].notifyDataSetChanged()
             BGChartFull.data?.notifyDataChanged()
             BGChartFull.notifyDataSetChanged()
         }
@@ -2624,6 +2672,21 @@ extension MainViewController {
         lineTraining.valueFormatter = ChartYDataValueFormatter()
         lineTraining.drawValuesEnabled = false
         
+        // Warning
+        var chartEntryWarning = [ChartDataEntry]()
+        let lineWarning = LineChartDataSet(entries:chartEntryWarning, label: "")
+        lineWarning.circleRadius = 2
+        lineWarning.circleColors = [NSUIColor.systemYellow.withAlphaComponent(0.65)]
+        lineWarning.drawCircleHoleEnabled = false
+        lineWarning.setDrawHighlightIndicators(false)
+        lineWarning.setColor(NSUIColor.systemYellow, alpha: 1.0)
+        lineWarning.drawCirclesEnabled = true
+        lineWarning.lineWidth = 0
+        lineWarning.highlightEnabled = false
+        lineWarning.axisDependency = YAxis.AxisDependency.right
+        lineWarning.valueFormatter = ChartYDataValueFormatter()
+        lineWarning.drawValuesEnabled = false
+        
         // Sensor Start
         var chartEntrySensor = [ChartDataEntry]()
         let lineSensor = LineChartDataSet(entries:chartEntrySensor, label: "")
@@ -2772,9 +2835,10 @@ extension MainViewController {
         data.append(COBlinePrediction) // Dataset 14
         data.append(UAMlinePrediction) // Dataset 15
         data.append(lineSmb) // Dataset 16
-        data.append(lineTempTarget)
-        data.append(linePump)
-        data.append(lineTraining)
+        data.append(lineTempTarget) // Dataset 17
+        data.append(linePump) // Dataset 18
+        data.append(lineTraining) // Dataset 19
+        data.append(lineWarning) // Dataset 20
 
         BGChartFull.highlightPerDragEnabled = true
         BGChartFull.leftAxis.enabled = false

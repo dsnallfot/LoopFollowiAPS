@@ -131,6 +131,7 @@ extension MainViewController {
         var suspendPump: [[String:AnyObject]] = []
         var resumePump: [[String:AnyObject]] = []
         var training: [[String:AnyObject]] = []
+        var warningEvent: [[String:AnyObject]] = []
         var pumpSiteChange: [cageData] = []
         var cgmSensorStart: [sageData] = []
         var insulinCartridge: [iageData] = []
@@ -174,6 +175,9 @@ extension MainViewController {
                     } else if notesText.contains("Träning") {
                         // Tolka denna note som en Training, inte som vanlig note
                         training.append(entry)
+                    } else if notesText.contains("⚠️") {
+                        // Tolka denna note som en Varning, inte som vanlig note
+                        warningEvent.append(entry)
                     } else {
                         // Vanlig note/announcement
                         note.append(entry)
@@ -279,6 +283,13 @@ extension MainViewController {
         } else {
             if trainingGraphData.count > 0 {
                 clearOldTraining()
+            }
+        }
+        if warningEvent.count > 0 {
+            processWarning(entries: warningEvent)
+        } else {
+            if warningGraphData.count > 0 {
+                clearOldWarning()
             }
         }
         processSage(entries: cgmSensorStart)

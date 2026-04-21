@@ -133,6 +133,12 @@ extension MainViewController {
         updateTrainingGraph()
     }
     
+    func clearOldWarning()
+    {
+        warningGraphData.removeAll()
+        updateWarningGraph()
+    }
+    
     func clearOldSensor()
     {
         sensorStartGraphData.removeAll()
