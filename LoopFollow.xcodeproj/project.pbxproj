@@ -44,6 +44,7 @@
 		653266832F9A124400B5EABC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 653266822F9A124400B5EABC /* WidgetKit.framework */; };
 		653266852F9A124400B5EABC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 653266842F9A124400B5EABC /* SwiftUI.framework */; };
 		653266922F9A124600B5EABC /* LoopFollowWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 653266812F9A124400B5EABC /* LoopFollowWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		653266C22F9A154800B5EABC /* PhoneSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653266C12F9A153100B5EABC /* PhoneSessionManager.swift */; };
 		6537566D2F10225B0061AF34 /* BatteryLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6537566C2F10224E0061AF34 /* BatteryLogView.swift */; };
 		6539A4E72EF1BBF200913601 /* TrioRestartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6539A4E62EF1BBE400913601 /* TrioRestartsView.swift */; };
 		6539A4E92EF2802D00913601 /* TrioSettingsLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6539A4E82EF2801D00913601 /* TrioSettingsLogView.swift */; };
@@ -440,6 +441,7 @@
 		653266812F9A124400B5EABC /* LoopFollowWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LoopFollowWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		653266822F9A124400B5EABC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		653266842F9A124400B5EABC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
+		653266C12F9A153100B5EABC /* PhoneSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSessionManager.swift; sourceTree = "<group>"; };
 		6537566C2F10224E0061AF34 /* BatteryLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryLogView.swift; sourceTree = "<group>"; };
 		6539A4E62EF1BBE400913601 /* TrioRestartsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioRestartsView.swift; sourceTree = "<group>"; };
 		6539A4E82EF2801D00913601 /* TrioSettingsLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioSettingsLogView.swift; sourceTree = "<group>"; };
@@ -922,6 +924,14 @@
 				65304F802ED3A34F00B457AC /* EnableSnoozeAllIntent.swift */,
 			);
 			path = Intents;
+			sourceTree = "<group>";
+		};
+		653266C02F9A151600B5EABC /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				653266C12F9A153100B5EABC /* PhoneSessionManager.swift */,
+			);
+			path = Watch;
 			sourceTree = "<group>";
 		};
 		65B3E5C52D3FFAAD00622194 /* SMSRemote */ = {
@@ -1408,6 +1418,7 @@
 				DDEF503D2D32753A00999A5D /* Task */,
 				650A60712EE0D17A00EF4C93 /* Views */,
 				FCC68871248A736700A0279D /* ViewControllers */,
+				653266C02F9A151600B5EABC /* Watch */,
 				FCC688702489A57C00A0279D /* Loop Follow.entitlements */,
 				FC8DEEE62485D1ED0075863F /* Info.plist */,
 			);
@@ -1965,6 +1976,7 @@
 				650A60732EE0D1C800EF4C93 /* BasalIOBCalculator.swift in Sources */,
 				DD4878052C7B2C970048F05C /* Storage.swift in Sources */,
 				651C9D352ED5D2C30077D40A /* TIRGraphView.swift in Sources */,
+				653266C22F9A154800B5EABC /* PhoneSessionManager.swift in Sources */,
 				DD493AE12ACF22FE009A6922 /* Profile.swift in Sources */,
 				DD493ADF2ACF22BB009A6922 /* SAge.swift in Sources */,
 				DDF699992C5AA3060058A8D9 /* TempTargetPresetManager.swift in Sources */,

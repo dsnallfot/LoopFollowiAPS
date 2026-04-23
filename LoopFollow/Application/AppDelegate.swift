@@ -10,6 +10,7 @@ import UIKit
 import CoreData
 import UserNotifications
 import EventKit
+import WatchConnectivity
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -57,6 +58,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // Ensure VolumeButtonHandler is initialized so it can receive alarm notifications
         _ = VolumeButtonHandler.shared
+        
+        PhoneSessionManager.shared.startSession()
 
         // Post a Nightscout Note about app restart, debounced
         postLaunchNoteToNightscoutIfNeeded()
