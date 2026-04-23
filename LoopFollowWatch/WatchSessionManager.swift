@@ -3,6 +3,7 @@
 
 import Foundation
 import WatchConnectivity
+import Combine
 
 class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = WatchSessionManager()

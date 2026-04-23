@@ -4,6 +4,7 @@
 import SwiftUI
 import WatchKit
 import WidgetKit
+import Combine
 
 struct ContentView: View {
     @ObservedObject var sessionManager: WatchSessionManager
