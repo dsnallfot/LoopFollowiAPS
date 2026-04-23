@@ -10,7 +10,79 @@ import Foundation
 import AVFoundation
 import CallKit
 
+fileprivate var alarmTriggerPending = false
+fileprivate var alarmTriggerPendingResetWorkItem: DispatchWorkItem?
+fileprivate let alarmTriggerPendingFallbackTimeout: TimeInterval = 8.0
+
 extension MainViewController {
+    private func acquireAlarmTriggerPendingLock() -> Bool {
+        if Thread.isMainThread {
+            return acquireAlarmTriggerPendingLockOnMain()
+        }
+
+        var acquired = false
+        DispatchQueue.main.sync {
+            acquired = acquireAlarmTriggerPendingLockOnMain()
+        }
+        return acquired
+    }
+
+    private func acquireAlarmTriggerPendingLockOnMain() -> Bool {
+        guard !alarmTriggerPending else {
+            LogManager.shared.log(
+                category: .alarm,
+                message: "Skipped alarm trigger because another alarm is already pending.",
+                isDebug: false
+            )
+            return false
+        }
+
+        alarmTriggerPending = true
+
+        alarmTriggerPendingResetWorkItem?.cancel()
+        let resetWorkItem = DispatchWorkItem {
+            alarmTriggerPending = false
+            alarmTriggerPendingResetWorkItem = nil
+            LogManager.shared.log(
+                category: .alarm,
+                message: "Released stale alarm pending lock via fallback timeout.",
+                isDebug: false
+            )
+        }
+        alarmTriggerPendingResetWorkItem = resetWorkItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + alarmTriggerPendingFallbackTimeout, execute: resetWorkItem)
+
+        LogManager.shared.log(
+            category: .alarm,
+            message: "Acquired alarm pending lock.",
+            isDebug: true
+        )
+
+        return true
+    }
+
+    private func releaseAlarmTriggerPendingLock() {
+        let releaseBlock = {
+            alarmTriggerPendingResetWorkItem?.cancel()
+            alarmTriggerPendingResetWorkItem = nil
+
+            if alarmTriggerPending {
+                LogManager.shared.log(
+                    category: .alarm,
+                    message: "Released alarm pending lock.",
+                    isDebug: true
+                )
+            }
+
+            alarmTriggerPending = false
+        }
+
+        if Thread.isMainThread {
+            releaseBlock()
+        } else {
+            DispatchQueue.main.async(execute: releaseBlock)
+        }
+    }
     func checkAlarms(bgs: [ShareGlucoseData]) {
         // Don't check or fire alarms within 1 minute of prior alarm
         if checkAlarmTimer.isValid {  return }
@@ -705,29 +777,40 @@ extension MainViewController {
     }
     
     func triggerAlarm(sound: String, snooozedBGReadingTime: TimeInterval?, overrideVolume: Bool, numLoops: Int, snoozeTime: Int = 0, snoozeIncrement: Int = 5, audio: Bool = true, latestIOB: String, latestCOB: String, unit: String) {
+        guard acquireAlarmTriggerPendingLock() else { return }
         // Small delay to allow latestDirectionString / latestDeltaString
         // to settle (e.g. Dex -> Nightscout update race)
         let delay: TimeInterval = 2.0
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self = self else { return }
-            
+            guard let self = self else {
+                DispatchQueue.main.async {
+                    alarmTriggerPending = false
+                    alarmTriggerPendingResetWorkItem?.cancel()
+                    alarmTriggerPendingResetWorkItem = nil
+                }
+                return
+            }
+
             LogManager.shared.log(category: .alarm, message: "Alarm triggered: \(AlarmSound.whichAlarm)")
-            
+
             // Persist alarm trigger so we can visualize frequency and types later
             Storage.shared.appendAlarmHistory(
                 alarmLabel: AlarmSound.whichAlarm,
                 message: "Alarm triggered: \(AlarmSound.whichAlarm)",
                 date: Date().timeIntervalSince1970
             )
-            
+
             var audioDuringCall = true
             if !UserDefaultsRepository.alertAudioDuringPhone.value && self.isOnPhoneCall() {
                 audioDuringCall = false
             }
-            
-            guard let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController else { return }
-            
+
+            guard let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController else {
+                self.releaseAlarmTriggerPendingLock()
+                return
+            }
+
             snoozer.updateDisplayWhenTriggered(
                 bgVal: Localizer.toDisplayUnits(String(self.bgData[self.bgData.count - 1].sgv)),
                 directionVal: self.latestDirectionString,
@@ -737,7 +820,7 @@ extension MainViewController {
                 latestIOB: latestIOB,
                 latestCOB: latestCOB
             )
-            
+
             snoozer.SnoozeButton.isHidden = false
             snoozer.AlertLabel.isHidden = false
             snoozer.clockLabel.isHidden = true
@@ -746,31 +829,32 @@ extension MainViewController {
             snoozer.snoozeForMinuteUnit.text = unit
             snoozer.snoozeForMinuteStepper.value = Double(snoozeTime)
             snoozer.snoozeForMinuteStepper.stepValue = Double(snoozeIncrement)
-            
+
             if snoozeTime != 0 {
                 snoozer.snoozeForMinuteStepper.isHidden = false
                 snoozer.snoozeForMinuteLabel.isHidden = false
                 snoozer.snoozeForMinuteUnit.isHidden = false
             }
-            
+
             self.tabBarController?.selectedIndex = 2
-            
+
             if snooozedBGReadingTime != nil {
                 UserDefaultsRepository.snoozedBGReadingTime.value = snooozedBGReadingTime
             }
-            
+
             if audio && !UserDefaultsRepository.alertMuteAllIsMuted.value && audioDuringCall {
                 AlarmSound.setSoundFile(str: sound)
                 AlarmSound.play(overrideVolume: overrideVolume, numLoops: numLoops)
             }
-            
+
             let bgSeconds = self.bgData.last!.date
             let now = Date().timeIntervalSince1970
             let secondsAgo = now - bgSeconds
             var timerLength = 290 - secondsAgo
             if timerLength < 10 { timerLength = 290 }
-            
+
             self.startAlarmPlayingTimer(time: timerLength)
+            self.releaseAlarmTriggerPendingLock()
         }
     }
 
