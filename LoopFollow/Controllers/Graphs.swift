@@ -861,7 +861,7 @@ extension MainViewController {
         lineBG.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            lineBG.lineWidth = 2
+            lineBG.lineWidth = 2.5//2
         } else {
             lineBG.lineWidth = 0
         }
@@ -885,7 +885,7 @@ extension MainViewController {
         linePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            linePrediction.lineWidth = 2
+            linePrediction.lineWidth = 0//2
         } else {
             linePrediction.lineWidth = 0
         }
@@ -1124,7 +1124,7 @@ extension MainViewController {
         COBlinePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            COBlinePrediction.lineWidth = 2
+            COBlinePrediction.lineWidth = 0//2
         } else {
             COBlinePrediction.lineWidth = 0
         }
@@ -1148,7 +1148,7 @@ extension MainViewController {
         IOBlinePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            IOBlinePrediction.lineWidth = 2
+            IOBlinePrediction.lineWidth = 0//2
         } else {
             IOBlinePrediction.lineWidth = 0
         }
@@ -1172,7 +1172,7 @@ extension MainViewController {
         UAMlinePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            UAMlinePrediction.lineWidth = 2
+            UAMlinePrediction.lineWidth = 0//2
         } else {
             UAMlinePrediction.lineWidth = 0
         }
@@ -1196,7 +1196,7 @@ extension MainViewController {
         ZTlinePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
-            ZTlinePrediction.lineWidth = 2
+            ZTlinePrediction.lineWidth = 0//2
         } else {
             ZTlinePrediction.lineWidth = 0
         }
