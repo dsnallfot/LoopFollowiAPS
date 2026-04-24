@@ -178,6 +178,9 @@ extension MainViewController {
                     } else if notesText.contains("⚠️") {
                         // Tolka denna note som en Varning, inte som vanlig note
                         warningEvent.append(entry)
+                    } else if notesText.contains("⛔️") {
+                        // Tolka denna note som en Varning, inte som vanlig note
+                        warningEvent.append(entry)
                     } else {
                         // Vanlig note/announcement
                         note.append(entry)

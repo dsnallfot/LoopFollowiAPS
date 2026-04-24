@@ -1493,7 +1493,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 return ("pause.circle.fill", .systemTeal.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("PumpResume") {
                 return ("play.circle.fill", .systemTeal.withAlphaComponent(0.75))
-            } else if let noteText = fullNote, noteText.contains("⚠️") {
+            } else if let noteText = fullNote, noteText.contains("⚠️") || noteText.contains("⛔️") {
                 return ("exclamationmark.triangle.fill", .systemYellow.withAlphaComponent(0.85))
             } else if let noteText = fullNote, noteText.contains("Meta Quest spel startades") || noteText.contains("Träning startades") {
                 return ("play.circle.fill", .systemGreen.withAlphaComponent(0.75))
