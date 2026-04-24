@@ -52,7 +52,7 @@ struct WatchBolusView: View {
                 confirmSummary
                     .padding(.bottom, 12)
 
-                CrownConfirmView(label: confirmedAmount > 0 ? "att ge" : "för att skicka måltid") {
+                CrownConfirmView(label: confirmedAmount > 0 ? "för bolus" : "för måltid") {
                     sendBolusAndMeal()
                 }
 
@@ -127,7 +127,7 @@ struct WatchBolusView: View {
                 .padding(.leading, 8)
                 .padding(.top, -8)
 
-                Button(amount > 0 ? "Bekräfta" : (pendingMeal != nil ? "Skippa" : "Bekräfta")) {
+                Button(amount > 0 ? "Bekräfta" : (pendingMeal != nil ? "Ingen bolus" : "Bekräfta")) {
                     confirmedAmount = amount
                     showConfirm = true
                 }

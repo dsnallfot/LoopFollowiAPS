@@ -70,11 +70,11 @@ struct CrownConfirmView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.green)
                 } else if tapped {
-                    Text("Scrolla krona \(label)")
+                    Text("Scrolla \(label)")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.primary)
                 } else {
-                    Text("Klicka hjul \(label)")
+                    Text("Klicka \(label)")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                 }

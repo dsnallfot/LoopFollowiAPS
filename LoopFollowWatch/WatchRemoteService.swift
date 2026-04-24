@@ -1,10 +1,10 @@
 // LoopFollow
 // WatchRemoteService.swift
 
-import CryptoKit
 import Foundation
 import UserNotifications
 import WatchKit
+import CryptoKit
 
 class WatchRemoteService {
 
@@ -25,11 +25,18 @@ class WatchRemoteService {
     static func sendBolus(amount: Double, config: WatchConfig, completion: @escaping (Bool, String?) -> Void) {
         switch config.remoteType {
         case "Trio Remote Control":
+            let alertString = Self.truncatedAlertString([
+                "Remote bolus",
+                String(format: "Bolus: %.2f E", amount),
+                "Inlagt av: \(config.trcUser)",
+            ])
             let payload = TRCPayload(
+                aps: APSPayload(alert: alertString),
                 user: config.trcUser,
                 commandType: "bolus",
-                timestamp: Date().timeIntervalSince1970,
-                bolusAmount: amount
+                bolusAmount: amount,
+                sharedSecret: config.trcSharedSecret,
+                timestamp: Date().timeIntervalSince1970
             )
             sendTRCCommand(payload: payload, config: config, completion: completion)
         case "Nightscout":
@@ -45,21 +52,50 @@ class WatchRemoteService {
         }
     }
 
-    static func sendMeal(carbs: Int, protein: Int? = nil, fat: Int? = nil, entryTime: Date? = nil, config: WatchConfig, completion: @escaping (Bool, String?) -> Void) {
+    static func sendMeal(
+        carbs: Int,
+        protein: Int? = nil,
+        fat: Int? = nil,
+        notes: String? = "⌚️",
+        entryTime: Date? = nil,
+        config: WatchConfig,
+        completion: @escaping (Bool, String?) -> Void
+    ) {
         let timestamp = entryTime ?? Date()
         switch config.remoteType {
         case "Trio Remote Control":
-            var payload = TRCPayload(
+            let mealNotes = (notes?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ? notes : "⌚️"
+            let scheduledTime = entryTime?.timeIntervalSince1970
+
+            var alertLines = ["Remote måltid"]
+            if let mealNotes = mealNotes {
+                alertLines.append(mealNotes)
+            }
+            alertLines.append("Kolhydrater: \(carbs) g")
+            if let fat = fat {
+                alertLines.append("Fett: \(fat) g")
+            }
+            if let protein = protein {
+                alertLines.append("Protein: \(protein) g")
+            }
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss"
+            alertLines.append("Tid: \(formatter.string(from: timestamp))")
+            alertLines.append("Inlagt av: \(config.trcUser)")
+            let alertString = Self.truncatedAlertString(alertLines)
+            let payload = TRCPayload(
+                aps: APSPayload(alert: alertString),
                 user: config.trcUser,
                 commandType: "meal",
+                carbs: carbs,
+                protein: protein,
+                fat: fat,
+                notes: mealNotes,
+                sharedSecret: config.trcSharedSecret,
                 timestamp: Date().timeIntervalSince1970,
-                carbs: carbs
+                scheduledTime: scheduledTime
             )
-            payload.protein = protein
-            payload.fat = fat
-            if let entryTime = entryTime {
-                payload.scheduledTime = entryTime.timeIntervalSince1970
-            }
             sendTRCCommand(payload: payload, config: config, completion: completion)
         case "Nightscout":
             var body: [String: Any] = [
@@ -79,12 +115,21 @@ class WatchRemoteService {
     static func sendTempTarget(target: Int, duration: Int, config: WatchConfig, completion: @escaping (Bool, String?) -> Void) {
         switch config.remoteType {
         case "Trio Remote Control":
+            let targetValueMmol = Double(target) / 18.018
+            let alertString = Self.truncatedAlertString([
+                "Remote temp target",
+                String(format: "Mål: %.1f mmol/L", targetValueMmol),
+                "Varaktighet: \(duration) min",
+                "Inlagt av: \(config.trcUser)",
+            ])
             let payload = TRCPayload(
+                aps: APSPayload(alert: alertString),
                 user: config.trcUser,
                 commandType: "temp_target",
-                timestamp: Date().timeIntervalSince1970,
                 target: target,
-                duration: duration
+                duration: duration,
+                sharedSecret: config.trcSharedSecret,
+                timestamp: Date().timeIntervalSince1970
             )
             sendTRCCommand(payload: payload, config: config, completion: completion)
         case "Nightscout":
@@ -106,9 +151,15 @@ class WatchRemoteService {
     static func cancelTempTarget(config: WatchConfig, completion: @escaping (Bool, String?) -> Void) {
         switch config.remoteType {
         case "Trio Remote Control":
+            let alertString = Self.truncatedAlertString([
+                "Remote avbryt temp target mottagen",
+                "Inlagt av: \(config.trcUser)",
+            ])
             let payload = TRCPayload(
+                aps: APSPayload(alert: alertString),
                 user: config.trcUser,
                 commandType: "cancel_temp_target",
+                sharedSecret: config.trcSharedSecret,
                 timestamp: Date().timeIntervalSince1970
             )
             sendTRCCommand(payload: payload, config: config, completion: completion)
@@ -129,9 +180,16 @@ class WatchRemoteService {
     static func sendOverride(name: String, config: WatchConfig, completion: @escaping (Bool, String?) -> Void) {
         switch config.remoteType {
         case "Trio Remote Control":
+            let alertString = Self.truncatedAlertString([
+                "Remote Override",
+                name,
+                "Inlagt av: \(config.trcUser)",
+            ])
             let payload = TRCPayload(
+                aps: APSPayload(alert: alertString),
                 user: config.trcUser,
                 commandType: "start_override",
+                sharedSecret: config.trcSharedSecret,
                 timestamp: Date().timeIntervalSince1970,
                 overrideName: name
             )
@@ -144,9 +202,15 @@ class WatchRemoteService {
     static func cancelOverride(config: WatchConfig, completion: @escaping (Bool, String?) -> Void) {
         switch config.remoteType {
         case "Trio Remote Control":
+            let alertString = Self.truncatedAlertString([
+                "Remote avbryt override mottagen",
+                "Inlagt av: \(config.trcUser)",
+            ])
             let payload = TRCPayload(
+                aps: APSPayload(alert: alertString),
                 user: config.trcUser,
                 commandType: "cancel_override",
+                sharedSecret: config.trcSharedSecret,
                 timestamp: Date().timeIntervalSince1970
             )
             sendTRCCommand(payload: payload, config: config, completion: completion)
@@ -157,38 +221,57 @@ class WatchRemoteService {
 
     // MARK: - TRC (Trio Remote Control) via APNS
 
+    private struct APSPayload: Encodable {
+        let alert: String
+        let contentAvailable: Int = 1
+        let interruptionLevel: String = "time-sensitive"
+
+        enum CodingKeys: String, CodingKey {
+            case alert
+            case contentAvailable = "content-available"
+            case interruptionLevel = "interruption-level"
+        }
+    }
     private struct TRCPayload: Encodable {
+        var aps: APSPayload
         var user: String
         var commandType: String
-        var timestamp: TimeInterval
-
         var bolusAmount: Double?
         var target: Int?
         var duration: Int?
         var carbs: Int?
         var protein: Int?
         var fat: Int?
+        var notes: String?
+        var sharedSecret: String
+        var timestamp: TimeInterval
         var overrideName: String?
         var scheduledTime: TimeInterval?
 
         enum CodingKeys: String, CodingKey {
+            case aps
             case user
             case commandType = "command_type"
-            case timestamp
             case bolusAmount = "bolus_amount"
-            case target, duration, carbs, protein, fat, overrideName
+            case target
+            case duration
+            case carbs
+            case protein
+            case fat
+            case notes
+            case sharedSecret = "shared_secret"
+            case timestamp
+            case overrideName
             case scheduledTime = "scheduled_time"
         }
     }
 
-    private struct APNSMessage: Encodable {
-        let aps: [String: Int] = ["content-available": 1]
-        let encryptedData: String
-
-        enum CodingKeys: String, CodingKey {
-            case aps
-            case encryptedData = "encrypted_data"
+    private static func truncatedAlertString(_ lines: [String]) -> String {
+        let alertString = lines.joined(separator: "\n")
+        if alertString.count > 200 {
+            return String(alertString.prefix(200)) + "…"
         }
+        return alertString
     }
 
     private static func sendTRCCommand(payload: TRCPayload, config: WatchConfig, completion: @escaping (Bool, String?) -> Void) {
@@ -200,12 +283,6 @@ class WatchRemoteService {
               !config.trcBundleId.isEmpty
         else {
             completion(false, "Missing TRC credentials")
-            return
-        }
-
-        // Encrypt payload
-        guard let encryptedData = encryptPayload(payload, sharedSecret: config.trcSharedSecret) else {
-            completion(false, "Encryption failed")
             return
         }
 
@@ -222,17 +299,15 @@ class WatchRemoteService {
             return
         }
 
-        let message = APNSMessage(encryptedData: encryptedData)
-
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("bearer \(jwt)", forHTTPHeaderField: "authorization")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
         request.setValue("10", forHTTPHeaderField: "apns-priority")
-        request.setValue("0", forHTTPHeaderField: "apns-expiration")
+        request.setValue("300", forHTTPHeaderField: "apns-expiration")
         request.setValue(config.trcBundleId, forHTTPHeaderField: "apns-topic")
-        request.setValue("background", forHTTPHeaderField: "apns-push-type")
-        request.httpBody = try? JSONEncoder().encode(message)
+        request.setValue("alert", forHTTPHeaderField: "apns-push-type")
+        request.httpBody = try? JSONEncoder().encode(payload)
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
@@ -248,22 +323,6 @@ class WatchRemoteService {
                 }
             }
         }.resume()
-    }
-
-    // MARK: - CryptoKit AES-GCM Encryption
-
-    private static func encryptPayload<T: Encodable>(_ payload: T, sharedSecret: String) -> String? {
-        guard let secretData = sharedSecret.data(using: .utf8) else { return nil }
-        let keyHash = SHA256.hash(data: secretData)
-        let symmetricKey = SymmetricKey(data: keyHash)
-
-        guard let payloadData = try? JSONEncoder().encode(payload) else { return nil }
-
-        guard let sealedBox = try? AES.GCM.seal(payloadData, using: symmetricKey) else { return nil }
-
-        // Format: nonce (12 bytes) + ciphertext + tag (16 bytes) — matches CryptoSwift GCM combined mode
-        guard let combined = sealedBox.combined else { return nil }
-        return combined.base64EncodedString()
     }
 
     // MARK: - CryptoKit P256 JWT Signing
