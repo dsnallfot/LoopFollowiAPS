@@ -62,7 +62,7 @@ struct RectangularComplicationView: View {
                 useColor: useColor
             )
         } else {
-            Text("No Data")
+            Text("Ingen data")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
         }
@@ -92,27 +92,31 @@ private struct SparklineView: View {
         return (lo - 2, hi + 2)
     }
 
-    /// Generate up to 4 "nice" ticks within the visible range.
-    private var yTicks: [Int] {
+    /// Generate nice mmol/L ticks within the dynamically scaled mg/dL range.
+    /// The graph itself still scales from visible mg/dL data, but labels are shown as mmol/L.
+    private var yTicksMmol: [Double] {
         let range = dataRange
-        let lo = Int(ceil(range.min))
-        let hi = Int(floor(range.max))
-        let span = hi - lo
+        let loMmol = range.min / 18.0
+        let hiMmol = range.max / 18.0
+        let span = hiMmol - loMmol
         guard span > 0 else { return [] }
 
-        let step: Int
-        if span <= 20 { step = 5 }
-        else if span <= 50 { step = 10 }
-        else if span <= 100 { step = 20 }
-        else { step = 40 }
+        let step: Double
+        if span <= 1.5 { step = 0.5 }
+        else if span <= 3.0 { step = 1.0 }
+        else if span <= 6.0 { step = 2.0 }
+        else if span <= 12.0 { step = 4.0 }
+        else { step = 5.0 }
 
-        let start = lo + (step - (lo % step)) % step
-        var ticks: [Int] = []
-        var v = start
-        while v <= hi && ticks.count < 4 {
-            ticks.append(v)
-            v += step
+        let start = ceil(loMmol / step) * step
+        var ticks: [Double] = []
+        var value = start
+
+        while value <= hiMmol + 0.0001 && ticks.count < 5 {
+            ticks.append(value)
+            value += step
         }
+
         return ticks
     }
 
@@ -150,8 +154,9 @@ private struct SparklineView: View {
 
             ZStack {
                 // Dotted horizontal reference lines + Y-axis labels
-                ForEach(yTicks, id: \.self) { value in
-                    let y = topInset + yPosition(for: Double(value), yMin: yMin, yMax: yMax, height: chartH)
+                ForEach(yTicksMmol, id: \.self) { valueMmol in
+                    let valueMgdl = valueMmol * 18.0
+                    let y = topInset + yPosition(for: valueMgdl, yMin: yMin, yMax: yMax, height: chartH)
 
                     Path { path in
                         path.move(to: CGPoint(x: 0, y: y))
@@ -160,7 +165,7 @@ private struct SparklineView: View {
                     .stroke(style: StrokeStyle(lineWidth: 0.3, dash: [1, 3]))
                     .foregroundColor(.secondary.opacity(0.15))
 
-                    Text("\(value)")
+                    Text(tickLabel(valueMmol))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.secondary.opacity(0.6))
                         .frame(width: 28, alignment: .trailing)
@@ -199,6 +204,13 @@ private struct SparklineView: View {
                 }
             }
         }
+    }
+
+    private func tickLabel(_ value: Double) -> String {
+        if value.rounded() == value {
+            return String(format: "%.0f", value)
+        }
+        return String(format: "%.1f", value)
     }
 
     // MARK: - Path builders
@@ -368,7 +380,7 @@ private struct StatsPanel: View {
 
     private var stalenessText: String {
         let minutes = Int(displayDate.timeIntervalSince(data.bgTimestamp) / 60)
-        if minutes < 1 { return "now" }
+        if minutes < 1 { return "nu" }
         return "\(minutes)m"
     }
 

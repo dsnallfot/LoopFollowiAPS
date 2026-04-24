@@ -27,6 +27,34 @@ struct ContentView: View {
         Date().addingTimeInterval(timeOffset * 300 - zoomHours * 3600 * 0.3)
     }
 
+    private var screenWidth: CGFloat {
+        WKInterfaceDevice.current().screenBounds.width
+    }
+
+    private var isCompactWatch: Bool {
+        screenWidth <= 184
+    }
+
+    private var bgFontSize: CGFloat {
+        isCompactWatch ? 42 : 48
+    }
+
+    private var trendFontSize: CGFloat {
+        isCompactWatch ? 20 : 22
+    }
+
+    private var deltaFontSize: CGFloat {
+        isCompactWatch ? 18 : 20
+    }
+
+    private var iconFontSize: CGFloat {
+        isCompactWatch ? 24 : 27
+    }
+
+    private var reloadFontSize: CGFloat {
+        isCompactWatch ? 23 : 26
+    }
+
     var body: some View {
         Group {
             if let config = sessionManager.config, config.hasAnySource {
@@ -45,7 +73,7 @@ struct ContentView: View {
                 } else {
                     VStack(spacing: 8) {
                         ProgressView()
-                        Text("Loading...")
+                        Text("Laddar...")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                             .offset(y: -20)
@@ -53,10 +81,10 @@ struct ContentView: View {
                 }
             } else {
                 VStack(spacing: 8) {
-                    Text("No Config")
+                    Text("Ingen data")
                         .font(.headline)
                         .foregroundColor(.secondary)
-                    Text("Open LoopFollow on\nyour iPhone to sync\nsettings.")
+                    Text("Öppna LoopFollow på\ndin iPhone för att \nsynkronisera.")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -147,40 +175,44 @@ struct ContentView: View {
         ZStack {
             VStack(spacing: 0) {
                 // Row 1: BG + trend/delta stack ... loop indicator + reload
-                HStack(alignment: .center, spacing: 2) {
+                HStack(alignment: .center, spacing: isCompactWatch ? 1 : 2) {
                     Text(reading.bgText(units: config.units))
-                        .font(.system(size: 48, weight: .regular, design: .default))
+                        .font(.system(size: bgFontSize, weight: .regular, design: .default))
                         .foregroundColor(bgColor)
                         .lineLimit(1)
-                        .fixedSize()
+                        .minimumScaleFactor(0.72)
+                        .allowsTightening(true)
 
                     VStack(alignment: .center, spacing: -3) {
                         Text(reading.direction)
-                            .font(.system(size: 22, weight: .semibold, design: .default))
+                            .font(.system(size: trendFontSize, weight: .semibold, design: .default))
                             .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
 
                         if !reading.deltaText(units: config.units).isEmpty {
                             Text(reading.deltaText(units: config.units))
-                                .font(.system(size: 20, weight: .medium, design: .default))
+                                .font(.system(size: deltaFontSize, weight: .medium, design: .default))
                                 .foregroundColor(.white)
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                                 .offset(y: -2)
                         }
                     }
-                    .fixedSize()
+                    .fixedSize(horizontal: true, vertical: false)
 
-                    Spacer()
+                    Spacer(minLength: isCompactWatch ? 4 : 8)
 
                     // Loop success indicator
                     Button {
                         showLoopDetail = true
                     } label: {
                         Image(systemName: loopStatusIcon)
-                            .font(.system(size: 27, weight: .medium))
+                            .font(.system(size: iconFontSize, weight: .medium))
                             .foregroundColor(loopStatusColor)
                     }
                     .buttonStyle(.plain)
-                    .padding(.trailing, 12)
+                    .padding(.trailing, isCompactWatch ? 6 : 12)
                     .sheet(isPresented: $showLoopDetail) {
                         FollowStatusView(bgFetcher: bgFetcher, sessionManager: sessionManager)
                     }
@@ -190,13 +222,19 @@ struct ContentView: View {
                         timeOffset = zoomHours * 3.6
                         bgFetcher.reload()
                     } label: {
-                        Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90")
-                            .font(.system(size: 26, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.7))
+                        if #available(watchOS 11.0, *) {
+                            Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90")
+                                .font(.system(size: reloadFontSize, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.7))
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: reloadFontSize, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, isCompactWatch ? 0 : 4)
                 .padding(.top, 30)
 
                 // Row 2: Gray bar — IOB (left), COB (center), Basal (right)
@@ -204,7 +242,7 @@ struct ContentView: View {
                     if let status = displayStatus {
                         let dataColor: Color = isTimeTravel && !bgFetcher.statusMatchesScroll ? .gray : .white
                         if let iob = status.iob {
-                            Text(String(format: "%.1fU", iob))
+                            Text(String(format: "%.1fE", iob))
                                 .foregroundColor(dataColor)
                         }
                         Spacer()
@@ -215,12 +253,12 @@ struct ContentView: View {
                         Spacer()
                         if let currentBasal = status.basalRate {
                             let scheduled = bgFetcher.scheduledBasal ?? currentBasal
-                            Text(String(format: "%.1f\u{2192}%.1fU/h", scheduled, currentBasal))
+                            Text(String(format: "%.2f\u{2192}%.2fE/h", scheduled, currentBasal))
                                 .foregroundColor(dataColor)
                         }
                     }
                 }
-                .font(.system(size: 16, weight: .medium, design: .default))
+                .font(.system(size: 14, weight: .medium, design: .default))
                 .foregroundColor(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
@@ -272,15 +310,17 @@ struct ContentView: View {
 
                 // Row 4: Status + source combined in one row
                 HStack(spacing: 4) {
+                    Text("  ")
                     Circle()
                         .fill(bgFetcher.lastError == nil ? Color.green : Color.red)
                         .frame(width: 6, height: 6)
                     Text(freshnessText(reading: reading))
                         .foregroundColor(isTimeTravel ? .blue : .white)
-                    Text("·")
-                        .foregroundColor(.secondary)
-                    Text(bgFetcher.activeSource.isEmpty ? "---" : bgFetcher.activeSource)
-                        .foregroundColor(.secondary)
+                    //Text("·")
+                    //    .foregroundColor(.secondary)
+                    Spacer()
+                    //Text(bgFetcher.activeSource.isEmpty ? "---" : //bgFetcher.activeSource)
+                       // .foregroundColor(.secondary)
                 }
                 .font(.system(size: 13))
                 .lineLimit(1)
@@ -293,13 +333,14 @@ struct ContentView: View {
                             .foregroundColor(.purple)
                     }
                     if status.tempTargetActive, let text = status.tempTargetText {
-                        Text("Temp Target: \(text)")
+                        Text("Tillf. mål: \(text)")
                             .font(.system(size: 10))
                             .foregroundColor(.orange)
                     }
                 }
             }
             .padding(.bottom, 10)
+            .padding(.horizontal, isCompactWatch ? 2 : 6)
             .opacity(stale ? 0.6 : 1.0)
 
             // Reload overlay
@@ -365,7 +406,7 @@ struct ContentView: View {
         if let latest = bgFetcher.currentBG,
            reading.timestamp != latest.timestamp {
             let formatter = DateFormatter()
-            formatter.dateFormat = "h:mm a"
+            formatter.dateFormat = "HH:mm"
             return formatter.string(from: reading.timestamp)
         }
         // At current reading: live countdown

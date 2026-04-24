@@ -240,6 +240,8 @@ struct BGChartView: View {
         .focusable()
         .focused($chartFocused)
         .digitalCrownRotation($timeOffset, from: -300, through: 22, by: 1, sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: false)
+        .contentShape(Rectangle())
+        .id(zoomHours)
         .onAppear { chartFocused = true }
         .onChange(of: timeOffset) { newValue in
             let snapped = newValue.rounded()
@@ -249,32 +251,50 @@ struct BGChartView: View {
                 WKInterfaceDevice.current().play(.click)
             }
         }
+        .highPriorityGesture(
+            LongPressGesture(minimumDuration: 0.35)
+                .onEnded { _ in
+                    cycleZoomIn()
+                }
+        )
         .onTapGesture(count: 5) {
-            treatmentLevel = (treatmentLevel + 1) % 3
-            WKInterfaceDevice.current().play(.click)
+            cycleTreatmentLevel()
         }
         .onTapGesture(count: 3) {
-            // Triple-tap: zoom out (reverse cycle)
-            switch zoomHours {
-            case 6: zoomHours = 0.25
-            case 0.25: zoomHours = 0.5
-            case 0.5: zoomHours = 1
-            case 1: zoomHours = 2
-            case 2: zoomHours = 3
-            default: zoomHours = 6
-            }
+            cycleZoomOut()
         }
         .onTapGesture(count: 2) {
-            // Double-tap: zoom in cycle 6h→3h→2h→1h→30m→15m→6h
-            switch zoomHours {
-            case 6: zoomHours = 3
-            case 3: zoomHours = 2
-            case 2: zoomHours = 1
-            case 1: zoomHours = 0.5
-            case 0.5: zoomHours = 0.25
-            default: zoomHours = 6
-            }
+            cycleZoomIn()
         }
+    }
+
+    private func cycleTreatmentLevel() {
+        treatmentLevel = (treatmentLevel + 1) % 3
+        WKInterfaceDevice.current().play(.click)
+    }
+
+    private func cycleZoomIn() {
+        // Cycle 6h → 3h → 2h → 1h → 30m → 15m → 6h
+        let levels: [Double] = [6, 3, 2, 1, 0.5, 0.25]
+        let currentIndex = nearestZoomIndex(in: levels)
+        let nextIndex = (currentIndex + 1) % levels.count
+        zoomHours = levels[nextIndex]
+        WKInterfaceDevice.current().play(.click)
+    }
+
+    private func cycleZoomOut() {
+        // Reverse cycle 15m → 30m → 1h → 2h → 3h → 6h → 15m
+        let levels: [Double] = [6, 3, 2, 1, 0.5, 0.25]
+        let currentIndex = nearestZoomIndex(in: levels)
+        let previousIndex = (currentIndex - 1 + levels.count) % levels.count
+        zoomHours = levels[previousIndex]
+        WKInterfaceDevice.current().play(.click)
+    }
+
+    private func nearestZoomIndex(in levels: [Double]) -> Int {
+        levels.enumerated().min { lhs, rhs in
+            abs(lhs.element - zoomHours) < abs(rhs.element - zoomHours)
+        }?.offset ?? 0
     }
 
     private func pointColor(bgValue: Int) -> Color {

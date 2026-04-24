@@ -4,6 +4,7 @@
 import Foundation
 import WatchConnectivity
 import Combine
+import WidgetKit
 
 class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = WatchSessionManager()
@@ -71,7 +72,7 @@ class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate {
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         handleReceivedConfig(message)
     }
-
+/*
     private func handleReceivedConfig(_ dict: [String: Any]) {
         // Ignore if this is a requestConfig message from Watch itself
         guard dict["requestConfig"] == nil else { return }
@@ -80,6 +81,25 @@ class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate {
 
         let newConfig = WatchConfig(from: dict)
         newConfig.saveToDefaults()
+        DispatchQueue.main.async {
+            self.config = newConfig
+        }
+    }
+    */
+    private func handleReceivedConfig(_ dict: [String: Any]) {
+        guard dict["requestConfig"] == nil else { return }
+        guard dict["nsURL"] != nil || dict["dexUsername"] != nil else { return }
+
+        let newConfig = WatchConfig(from: dict)
+        newConfig.saveToDefaults()
+
+        if let shared = UserDefaults(suiteName: WidgetData.appGroupID) {
+            print("Post-save app group nsURL: \(shared.string(forKey: "nsURL") ?? "<nil>")")
+            print("Post-save app group nsToken empty: \((shared.string(forKey: "nsToken") ?? "").isEmpty)")
+        }
+
+        WidgetCenter.shared.reloadTimelines(ofKind: "BGComplication")
+
         DispatchQueue.main.async {
             self.config = newConfig
         }

@@ -22,9 +22,9 @@ struct WatchMealView: View {
     }
 
     private var entryTimeText: String {
-        if abs(entryTimeOffset) < 1 { return "Now" }
+        if abs(entryTimeOffset) < 1 { return "Nu" }
         let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
+        formatter.dateFormat = "HH:mm"
         let entryTime = Date().addingTimeInterval(entryTimeOffset * 60)
         return formatter.string(from: entryTime)
     }
@@ -147,10 +147,10 @@ struct WatchMealView: View {
     private var activeFieldLabel: String {
         guard let field = editingField else { return "" }
         switch field {
-        case .carbs: return "Carbs"
-        case .fat: return "Fat"
+        case .carbs: return "Kolh"
+        case .fat: return "Fett"
         case .protein: return "Protein"
-        case .time: return "Time"
+        case .time: return "Tid"
         }
     }
 
@@ -186,7 +186,7 @@ struct WatchMealView: View {
 
             Spacer()
 
-            Text("Meal")
+            Text("Måltid")
                 .font(.system(size: 16, weight: .semibold))
 
             Spacer()
@@ -206,17 +206,17 @@ struct WatchMealView: View {
         .padding(.horizontal, 20)
 
         LazyVGrid(columns: gridColumns, spacing: 8) {
-            mealTile(label: "Carbs", value: "\(Int(carbs.rounded()))g", field: .carbs)
+            mealTile(label: "Kolh", value: "\(Int(carbs.rounded()))g", field: .carbs)
 
             if config.mealWithFatProtein {
-                mealTile(label: "Fat", value: "\(Int(fat.rounded()))g", field: .fat)
+                mealTile(label: "Fett", value: "\(Int(fat.rounded()))g", field: .fat)
                 mealTile(label: "Protein", value: "\(Int(protein.rounded()))g", field: .protein)
             }
 
-            mealTile(label: "Time", value: entryTimeText, field: .time)
+            mealTile(label: "Tid", value: entryTimeText, field: .time)
         }
 
-        Button("Continue") {
+        Button("Fortsätt") {
             if carbs > 0 || protein > 0 || fat > 0 {
                 bgFetcher.pendingCarbs = Double(Int(carbs.rounded()))
                 bgFetcher.updateRecommendedBolus()

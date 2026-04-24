@@ -1,5 +1,5 @@
 {
-  "originHash" : "cd4850ea09aceb330b0ba5d6653fd8b5d933e7c5aeccaad15807b413ba9b54dc",
+  "originHash" : "8b2813070b405d965b5c822863b221f9e01cb7b10f301ac4ffe97d9a4eb0a747",
   "pins" : [
     {
       "identity" : "bluecryptor",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kitura/BlueRSA.git",
       "state" : {
-        "revision" : "440f78db26d8bb073f29590f1c7bd31004da09ae",
-        "version" : "1.0.201"
+        "revision" : "f40325520344a966523b214394aa350132a6af68",
+        "version" : "1.0.203"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log.git",
       "state" : {
-        "revision" : "9cb486020ebf03bfa5b5df985387a14a98744537",
-        "version" : "1.6.1"
+        "revision" : "5073617dac96330a486245e4c0179cb0a6fd2256",
+        "version" : "1.12.0"
       }
     },
     {

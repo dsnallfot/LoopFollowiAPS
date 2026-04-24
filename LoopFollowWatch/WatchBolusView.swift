@@ -52,7 +52,7 @@ struct WatchBolusView: View {
                 confirmSummary
                     .padding(.bottom, 12)
 
-                CrownConfirmView(label: confirmedAmount > 0 ? "to deliver" : "to send meal") {
+                CrownConfirmView(label: confirmedAmount > 0 ? "att ge" : "för att skicka måltid") {
                     sendBolusAndMeal()
                 }
 
@@ -97,14 +97,14 @@ struct WatchBolusView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
 
-                Text(String(format: "%.2f U", amount))
+                Text(String(format: "%.2f E", amount))
                     .font(.system(size: 60, weight: .bold, design: .rounded))
                     .foregroundColor(.blue)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
 
                 HStack(spacing: 6) {
-                    Text("Calculated: \(String(format: "%.2f", bgFetcher.recommendedBolus))U")
+                    Text("Beräknad: \(String(format: "%.2f", bgFetcher.recommendedBolus))E")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.blue)
                         .lineLimit(1)
@@ -127,7 +127,7 @@ struct WatchBolusView: View {
                 .padding(.leading, 8)
                 .padding(.top, -8)
 
-                Button(amount > 0 ? "Confirm" : (pendingMeal != nil ? "Skip" : "Confirm")) {
+                Button(amount > 0 ? "Bekräfta" : (pendingMeal != nil ? "Skippa" : "Bekräfta")) {
                     confirmedAmount = amount
                     showConfirm = true
                 }
@@ -182,7 +182,7 @@ struct WatchBolusView: View {
     @ViewBuilder
     private var confirmSummary: some View {
         VStack(spacing: 4) {
-            Label(String(format: "%.2f U", confirmedAmount), systemImage: "drop.fill")
+            Label(String(format: "%.2f E", confirmedAmount), systemImage: "drop.fill")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundColor(confirmedAmount > 0 ? .blue : .secondary)
             if let meal = pendingMeal {
@@ -235,17 +235,17 @@ struct WatchBolusView: View {
                     sendMeal(meal)
                 } else {
                     bgFetcher.pendingCarbs = 0
-                    resultMessage = "Bolus sent!"
+                    resultMessage = "Bolus skickades!"
                     showCelebration = CelebrationOverlay.shouldCelebrate()
                     WatchRemoteService.postLocalNotification(
-                        title: "Bolus Sent",
-                        body: String(format: "%.2fU bolus command sent", confirmedAmount)
+                        title: "Bolus skickades",
+                        body: String(format: "%.2fE bolus kommando skickades", confirmedAmount)
                     )
                     autoDismiss()
                 }
             } else {
                 bgFetcher.pendingCarbs = 0
-                resultMessage = error ?? "Failed"
+                resultMessage = error ?? "Misslyckades"
                 isError = true
             }
         }
@@ -269,23 +269,23 @@ struct WatchBolusView: View {
 
             if success {
                 if confirmedAmount > 0 {
-                    resultMessage = "Bolus + Meal\nsent!"
+                    resultMessage = "Bolus + Måltid\nskickades!"
                     showCelebration = CelebrationOverlay.shouldCelebrate()
                     WatchRemoteService.postLocalNotification(
-                        title: "Bolus + Meal Sent",
-                        body: String(format: "%.2fU bolus + %dg carbs", confirmedAmount, meal.carbs)
+                        title: "Bolus + måltid skickades",
+                        body: String(format: "%.2fE bolus + %dg kolh", confirmedAmount, meal.carbs)
                     )
                 } else {
-                    resultMessage = "Meal sent!"
+                    resultMessage = "Måltid skickades!"
                     showCelebration = CelebrationOverlay.shouldCelebrate()
                     WatchRemoteService.postLocalNotification(
-                        title: "Meal Sent",
-                        body: "\(meal.carbs)g carbs logged"
+                        title: "Måltid skickades",
+                        body: "\(meal.carbs)g kh registrerades"
                     )
                 }
                 autoDismiss()
             } else {
-                resultMessage = error ?? "Meal failed"
+                resultMessage = error ?? "Måltid misslyckades"
                 isError = true
             }
         }
@@ -296,16 +296,23 @@ private struct BolusCalcDetailView: View {
     let calc: BolusCalculation
     let recommended: Double
 
+    private let mgdlToMmol: Double = 1.0 / 18.0182
+
+    private var bgMmol: Double { calc.bg * mgdlToMmol }
+    private var targetMmol: Double { calc.target }
+    private var isfMmol: Double { calc.isf * mgdlToMmol }
+    private var deltaMmol: Double { calc.delta * mgdlToMmol }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Bolus Calculation")
+                Text("Bolusberäkning")
                     .font(.system(size: 14, weight: .bold))
                     .frame(maxWidth: .infinity, alignment: .center)
 
                 calcRow(
-                    label: "GLUCOSE",
-                    detail: "(\(fmtInt(calc.bg)) − \(fmtInt(calc.target))) / \(fmtInt(calc.isf))",
+                    label: "Glukos",
+                    detail: "(\(fmtInt(bgMmol)) − \(fmtInt(targetMmol))) / \(fmtInt(isfMmol))",
                     result: calc.glucoseEffect
                 )
 
@@ -324,14 +331,14 @@ private struct BolusCalcDetailView: View {
 
                 calcRow(
                     label: "DELTA",
-                    detail: "\(fmtInt(calc.delta)) / \(fmtInt(calc.isf))",
+                    detail: "\(fmtInt(deltaMmol)) / \(fmtInt(isfMmol))",
                     result: calc.deltaEffect
                 )
 
                 Divider()
 
                 HStack {
-                    Text("Full Bolus")
+                    Text("Full bolus")
                         .font(.system(size: 11, weight: .semibold))
                     Spacer()
                     Text(fmt(calc.fullBolus))
@@ -340,10 +347,10 @@ private struct BolusCalcDetailView: View {
                 }
 
                 HStack {
-                    Text("Recommended")
+                    Text("Beräknad bolus")
                         .font(.system(size: 11, weight: .semibold))
                     Spacer()
-                    Text("\(fmt(recommended)) U")
+                    Text("\(fmt(recommended)) E")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(.blue)
                 }

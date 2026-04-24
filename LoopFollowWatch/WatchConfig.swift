@@ -111,7 +111,7 @@ struct WatchConfig: Equatable {
         maxProtein = dict["maxProtein"] as? Double ?? 30.0
         maxFat = dict["maxFat"] as? Double ?? 30.0
     }
-
+/*
     func saveToDefaults() {
         let defaults = UserDefaults.standard
         defaults.set(toDictionary(), forKey: "watchConfig")
@@ -123,11 +123,51 @@ struct WatchConfig: Equatable {
             shared.set(nsToken, forKey: "nsToken")
         }
     }
+    */
+    func saveToDefaults() {
+        let defaults = UserDefaults.standard
+        defaults.set(toDictionary(), forKey: "watchConfig")
+        defaults.set(nsURL, forKey: "nsURL")
+        defaults.set(nsToken, forKey: "nsToken")
+
+        if let shared = UserDefaults(suiteName: WidgetData.appGroupID) {
+            shared.set(nsURL, forKey: "nsURL")
+            shared.set(nsToken, forKey: "nsToken")
+            shared.synchronize()
+
+            print("Saved widget config to app group. nsURL empty: \(nsURL.isEmpty), token empty: \(nsToken.isEmpty)")
+        } else {
+            print("Failed to open app group defaults: \(WidgetData.appGroupID)")
+        }
+    }
 
     static func loadFromDefaults() -> WatchConfig? {
-        guard let dict = UserDefaults.standard.dictionary(forKey: "watchConfig") else {
-            return nil
+        if let dict = UserDefaults.standard.dictionary(forKey: "watchConfig") {
+            return WatchConfig(from: dict)
         }
-        return WatchConfig(from: dict)
+
+        let nsURL = UserDefaults.standard.string(forKey: "nsURL") ?? ""
+        let nsToken = UserDefaults.standard.string(forKey: "nsToken") ?? ""
+
+        if !nsURL.isEmpty || !nsToken.isEmpty {
+            var dict: [String: Any] = [:]
+            dict["nsURL"] = nsURL
+            dict["nsToken"] = nsToken
+            return WatchConfig(from: dict)
+        }
+
+        if let shared = UserDefaults(suiteName: WidgetData.appGroupID) {
+            let sharedURL = shared.string(forKey: "nsURL") ?? ""
+            let sharedToken = shared.string(forKey: "nsToken") ?? ""
+
+            if !sharedURL.isEmpty || !sharedToken.isEmpty {
+                var dict: [String: Any] = [:]
+                dict["nsURL"] = sharedURL
+                dict["nsToken"] = sharedToken
+                return WatchConfig(from: dict)
+            }
+        }
+
+        return nil
     }
 }

@@ -17,13 +17,13 @@ enum WidgetNightscoutFetcher {
         case unchanged(WidgetData) // cache was already current
         case failed(WidgetData?)   // network/parse error; returns cache if available
     }
-
+/*
     /// Fetch the latest 3 entries from Nightscout, merge into cached WidgetData,
     /// and return the result. Completes on an arbitrary queue.
     static func fetch(timeout: TimeInterval = 4, completion: @escaping (FetchResult) -> Void) {
         let shared = UserDefaults(suiteName: WidgetData.appGroupID) ?? .standard
-        let nsURL = shared.string(forKey: "nsURL") ?? ""
-        let nsToken = shared.string(forKey: "nsToken") ?? ""
+        let nsURL = shared.string(forKey: "nsURL") ?? "https://ivarsnightscout.herokuapp.com"
+        let nsToken = shared.string(forKey: "nsToken") ?? "token=loopfollow-bf1773e37f692289"
 
         guard !nsURL.isEmpty else {
             completion(.failed(WidgetData.load()))
@@ -57,6 +57,67 @@ enum WidgetNightscoutFetcher {
             }
 
             guard let data = data else {
+                completion(.failed(WidgetData.load()))
+                return
+            }
+
+            let result = mergeResponse(data: data)
+            completion(result)
+        }.resume()
+    }
+    */
+    
+    static func fetch(timeout: TimeInterval = 4, completion: @escaping (FetchResult) -> Void) {
+        guard let shared = UserDefaults(suiteName: WidgetData.appGroupID) else {
+            print("Widget fetch: could not open app group defaults \(WidgetData.appGroupID)")
+            completion(.failed(WidgetData.load()))
+            return
+        }
+
+        let nsURL = (shared.string(forKey: "nsURL") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        var nsToken = (shared.string(forKey: "nsToken") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Accept both "abc123" and "token=abc123"
+        if nsToken.hasPrefix("token=") {
+            nsToken.removeFirst("token=".count)
+        }
+
+        print("Widget fetch nsURL=\(nsURL) tokenEmpty=\(nsToken.isEmpty)")
+
+        guard !nsURL.isEmpty else {
+            completion(.failed(WidgetData.load()))
+            return
+        }
+
+        var components = URLComponents(string: nsURL)
+        components?.path = "/api/v1/entries.json"
+
+        var queryItems = [URLQueryItem]()
+        if !nsToken.isEmpty {
+            queryItems.append(URLQueryItem(name: "token", value: nsToken))
+        }
+        queryItems.append(URLQueryItem(name: "count", value: "3"))
+        queryItems.append(URLQueryItem(name: "find[type][$ne]", value: "cal"))
+        components?.queryItems = queryItems
+
+        guard let url = components?.url else {
+            completion(.failed(WidgetData.load()))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = timeout
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            if let error {
+                print("Widget fetch error: \(error.localizedDescription)")
+                completion(.failed(WidgetData.load()))
+                return
+            }
+
+            guard let data = data else {
+                print("Widget fetch: no data")
                 completion(.failed(WidgetData.load()))
                 return
             }

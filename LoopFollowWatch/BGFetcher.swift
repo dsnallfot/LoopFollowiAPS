@@ -28,7 +28,7 @@ struct WidgetData: Codable {
     private static let storageKey = "widgetData"
 
     /// App Group shared between the watch app and widget extension.
-    static let appGroupID = "group.loopfollow.shared"
+    static let appGroupID = "group.com.RMSRR5SURS.LoopFollow"
 
     private static var sharedDefaults: UserDefaults {
         UserDefaults(suiteName: appGroupID) ?? .standard
@@ -780,7 +780,8 @@ class BGFetcher: ObservableObject {
         }()
 
         // Floor-round division results to 0.01 (safety rounding — always rounds down)
-        let glucoseEffect = floor((Double(bg) - target) / isf * 100) / 100
+        let targetMgdl = target * 18.0182
+        let glucoseEffect = floor((Double(bg) - targetMgdl) / isf * 100) / 100
         let iobEffect = -iob // no rounding — already a concrete value
         let totalCarbs = cob + pendingCarbs
         let cobEffect = (cr != nil && cr! > 0) ? floor(totalCarbs / cr! * 100) / 100 : 0

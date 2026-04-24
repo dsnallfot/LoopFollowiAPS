@@ -104,19 +104,19 @@ struct StatsView: View {
         VStack(spacing: 4) {
             HStack(spacing: 2) {
                 StatCell(
-                    label: "Low",
+                    label: "Låg",
                     value: percentText(stats?.percentLow)
                 )
-                StatCell(label: "In Range", value: percentText(stats?.percentRange))
+                StatCell(label: "Inom mål", value: percentText(stats?.percentRange))
                 StatCell(
-                    label: "High",
+                    label: "Hög",
                     value: percentText(stats?.percentHigh)
                 )
             }
             HStack(spacing: 2) {
-                StatCell(label: "Avg BG", value: avgBGText(stats?.avgBG))
-                StatCell(label: "Est A1C", value: a1cText(stats?.a1c))
-                StatCell(label: "Std Dev", value: stdDevText(stats?.stdDev))
+                StatCell(label: "Medel", value: avgBGText(stats?.avgBG))
+                StatCell(label: "eA1C", value: a1cText(stats?.a1c))
+                StatCell(label: "Std Av", value: stdDevText(stats?.stdDev))
             }
         }
     }

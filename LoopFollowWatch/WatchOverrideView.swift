@@ -42,21 +42,21 @@ struct WatchOverrideView: View {
                             .foregroundColor(.secondary)
                     }
 
-                    CrownConfirmView(label: "to activate") {
+                    CrownConfirmView(label: "att aktivera") {
                         sendOverride(name: override.name)
                     }
                 } else if showCancelConfirm {
-                    Text("Cancel Override")
+                    Text("Avbryt override")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.red)
 
-                    CrownConfirmView(label: "to cancel") {
+                    CrownConfirmView(label: "att avbryta") {
                         cancelOverride()
                     }
                 } else {
                     // Active override section (check both devicestatus and treatments)
                     if let activeOverride = activeOverrideEntry {
-                        Text("Active Override")
+                        Text("Aktiv override")
                             .font(.system(size: 12))
                             .foregroundColor(.gray)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -73,7 +73,7 @@ struct WatchOverrideView: View {
                         Button {
                             showCancelConfirm = true
                         } label: {
-                            Text("Cancel Override")
+                            Text("Avbryt override")
                                 .font(.system(size: 15, weight: .medium))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
@@ -85,7 +85,7 @@ struct WatchOverrideView: View {
                         Divider()
                     }
 
-                    Text("Available Overrides")
+                    Text("Välj override")
                         .font(.system(size: 14, weight: .semibold))
 
                     if bgFetcher.overridePresets.isEmpty {
@@ -140,15 +140,15 @@ struct WatchOverrideView: View {
     private func sendOverride(name: String) {
         WatchRemoteService.sendOverride(name: name, config: config) { success, error in
             if success {
-                resultMessage = "Override activated!"
+                resultMessage = "Override aktiverad!"
                 showCelebration = CelebrationOverlay.shouldCelebrate()
                 WatchRemoteService.postLocalNotification(
-                    title: "Override Activated",
-                    body: "\(name) override command sent"
+                    title: "Override aktiverad",
+                    body: "\(name) kommando skickades"
                 )
                 autoDismiss()
             } else {
-                resultMessage = error ?? "Failed"
+                resultMessage = error ?? "Misslyckades"
                 isError = true
             }
         }
@@ -157,15 +157,15 @@ struct WatchOverrideView: View {
     private func cancelOverride() {
         WatchRemoteService.cancelOverride(config: config) { success, error in
             if success {
-                resultMessage = "Override cancelled"
+                resultMessage = "Override avbröts"
                 showCelebration = CelebrationOverlay.shouldCelebrate()
                 WatchRemoteService.postLocalNotification(
-                    title: "Override Cancelled",
-                    body: "Override cancel command sent"
+                    title: "Override avbröts",
+                    body: "Avbryt override kommando skickades"
                 )
                 autoDismiss()
             } else {
-                resultMessage = error ?? "Failed"
+                resultMessage = error ?? "Misslyckades"
                 isError = true
             }
         }

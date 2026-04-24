@@ -28,7 +28,7 @@ struct RemoteControlView: View {
                 Button {
                     router.activeDestination = .meal
                 } label: {
-                    RemoteTile(icon: "fork.knife", label: "Meal", color: .yellow)
+                    RemoteTile(icon: "fork.knife", label: "Måltid", color: .yellow)
                 }
                 .buttonStyle(.plain)
 
@@ -42,7 +42,7 @@ struct RemoteControlView: View {
                 Button {
                     router.activeDestination = .tempTarget
                 } label: {
-                    RemoteTile(icon: "target", label: "Temp", color: tempColor)
+                    RemoteTile(icon: "target", label: "Tf. Mål", color: tempColor)
                 }
                 .buttonStyle(.plain)
             }

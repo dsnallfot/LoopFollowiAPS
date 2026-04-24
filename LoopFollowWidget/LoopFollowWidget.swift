@@ -14,6 +14,8 @@ struct BGComplicationEntryView: View {
             CircularComplicationView(entry: entry)
         case .accessoryRectangular:
             RectangularComplicationView(entry: entry)
+        case .accessoryInline:
+            Text(entry.data?.bgValue.description ?? "--")
         default:
             RectangularComplicationView(entry: entry)
         }
@@ -31,7 +33,11 @@ struct BGComplicationWidget: Widget {
         }
         .configurationDisplayName("BG Monitor")
         .description("Blood glucose with trend and stats.")
-        .supportedFamilies([.accessoryCircular, .accessoryRectangular])
+        .supportedFamilies([
+            .accessoryCircular,
+            .accessoryRectangular,
+            .accessoryInline
+        ])
     }
 }
 

@@ -41,9 +41,7 @@
 		65304F892ED3A3D200B457AC /* LoopFollowShortcutsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65304F882ED3A3D000B457AC /* LoopFollowShortcutsProvider.swift */; };
 		6530969A2EE1996300117528 /* BGCheckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653096992EE1996100117528 /* BGCheckView.swift */; };
 		653266292F9A102E00B5EABC /* LoopFollowWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 6532661F2F9A102C00B5EABC /* LoopFollowWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		653266832F9A124400B5EABC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 653266822F9A124400B5EABC /* WidgetKit.framework */; };
-		653266852F9A124400B5EABC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 653266842F9A124400B5EABC /* SwiftUI.framework */; };
-		653266922F9A124600B5EABC /* LoopFollowWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 653266812F9A124400B5EABC /* LoopFollowWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		653266922F9A124600B5EABC /* LoopFollowWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 653266812F9A124400B5EABC /* LoopFollowWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		653266C22F9A154800B5EABC /* PhoneSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653266C12F9A153100B5EABC /* PhoneSessionManager.swift */; };
 		6537566D2F10225B0061AF34 /* BatteryLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6537566C2F10224E0061AF34 /* BatteryLogView.swift */; };
 		6539A4E72EF1BBF200913601 /* TrioRestartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6539A4E62EF1BBE400913601 /* TrioRestartsView.swift */; };
@@ -369,12 +367,12 @@
 			remoteGlobalIDString = 6532661E2F9A102C00B5EABC;
 			remoteInfo = "LoopFollowWatch Watch App";
 		};
-		653266902F9A124600B5EABC /* PBXContainerItemProxy */ = {
+		659EE8872F9A50F20046E467 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = FC97880C2485969B00A7906C /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 653266802F9A124400B5EABC;
-			remoteInfo = LoopFollowWidgetExtension;
+			remoteInfo = LoopFollowWidget;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -390,15 +388,15 @@
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		653266972F9A124600B5EABC /* Embed Foundation Extensions */ = {
+		653266972F9A124600B5EABC /* Embed App Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				653266922F9A124600B5EABC /* LoopFollowWidget.appex in Embed Foundation Extensions */,
+				653266922F9A124600B5EABC /* LoopFollowWidget.appex in Embed App Extensions */,
 			);
-			name = "Embed Foundation Extensions";
+			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -796,8 +794,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				653266852F9A124400B5EABC /* SwiftUI.framework in Frameworks */,
-				653266832F9A124400B5EABC /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1542,10 +1538,12 @@
 				6532661B2F9A102C00B5EABC /* Sources */,
 				6532661C2F9A102C00B5EABC /* Frameworks */,
 				6532661D2F9A102C00B5EABC /* Resources */,
+				653266972F9A124600B5EABC /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				65C287722F9A4C5000C84E66 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				653266202F9A102C00B5EABC /* LoopFollowWatch */,
@@ -1590,13 +1588,11 @@
 				04DA71CCA0280FA5FA2DF7A6 /* [CP] Embed Pods Frameworks */,
 				DDB0AF532BB1AA0900AFA48B /* Capture Build Details */,
 				6532662A2F9A102E00B5EABC /* Embed Watch Content */,
-				653266972F9A124600B5EABC /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				653266282F9A102E00B5EABC /* PBXTargetDependency */,
-				653266912F9A124600B5EABC /* PBXTargetDependency */,
 			);
 			name = LoopFollow;
 			packageProductDependencies = (
@@ -2115,10 +2111,10 @@
 			target = 6532661E2F9A102C00B5EABC /* LoopFollowWatch */;
 			targetProxy = 653266272F9A102E00B5EABC /* PBXContainerItemProxy */;
 		};
-		653266912F9A124600B5EABC /* PBXTargetDependency */ = {
+		65C287722F9A4C5000C84E66 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 653266802F9A124400B5EABC /* LoopFollowWidget */;
-			targetProxy = 653266902F9A124600B5EABC /* PBXContainerItemProxy */;
+			targetProxy = 659EE8872F9A50F20046E467 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -2150,6 +2146,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = LoopFollowWatch/LoopFollowWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -2167,7 +2164,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.Watch;
+				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -2176,7 +2173,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 10.6;
@@ -2191,6 +2188,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = LoopFollowWatch/LoopFollowWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -2208,7 +2206,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.Watch;
+				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -2216,7 +2214,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 10.6;
@@ -2231,6 +2229,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = LoopFollowWidget/LoopFollowWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -2256,18 +2255,20 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.watch.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = NO;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
 				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Debug;
@@ -2280,6 +2281,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_ENTITLEMENTS = LoopFollowWidget/LoopFollowWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -2305,17 +2307,19 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.watch.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = NO;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
 				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Release;
@@ -2449,7 +2453,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.$(unique_id).LoopFollow$(app_suffix)";
+				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow;
 				PRODUCT_NAME = "Loop Follow";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
@@ -2470,7 +2474,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.$(unique_id).LoopFollow$(app_suffix)";
+				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow;
 				PRODUCT_NAME = "Loop Follow";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;

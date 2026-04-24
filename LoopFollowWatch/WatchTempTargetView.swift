@@ -44,7 +44,7 @@ struct WatchTempTargetView: View {
                         } else {
                             // Active temp target section (check both devicestatus and treatments)
                             if let activeTT = activeTempTargetEntry {
-                                Text("Active Temp Target")
+                                Text("Aktivt tillf. mål")
                                     .font(.system(size: 12))
                                     .foregroundColor(.gray)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,7 +61,7 @@ struct WatchTempTargetView: View {
                                 Button {
                                     cancelTarget()
                                 } label: {
-                                    Text("Cancel Temp Target")
+                                    Text("Avbryt tillf. mål")
                                         .font(.system(size: 15, weight: .medium))
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 14)
@@ -73,7 +73,7 @@ struct WatchTempTargetView: View {
                                 Divider()
                             }
 
-                            Text("Temp Targets")
+                            Text("Tillf. mål")
                                 .font(.system(size: 14, weight: .semibold))
 
                             Button {
@@ -140,15 +140,15 @@ struct WatchTempTargetView: View {
     private func sendTempTarget() {
         WatchRemoteService.sendTempTarget(target: pendingTarget, duration: pendingDuration, config: config) { success, error in
             if success {
-                resultMessage = "Target set!"
+                resultMessage = "Mål inställt!"
                 showCelebration = CelebrationOverlay.shouldCelebrate()
                 WatchRemoteService.postLocalNotification(
-                    title: "Temp Target Set",
-                    body: "\(pendingTarget) mg/dL for \(pendingDuration)m"
+                    title: "Tillf. mål inställt",
+                    body: "\(pendingTarget) mg/dL i \(pendingDuration)m"
                 )
                 autoDismiss()
             } else {
-                resultMessage = error ?? "Failed"
+                resultMessage = error ?? "Misslyckades"
                 isError = true
             }
         }
@@ -157,15 +157,15 @@ struct WatchTempTargetView: View {
     private func cancelTarget() {
         WatchRemoteService.cancelTempTarget(config: config) { success, error in
             if success {
-                resultMessage = "Target cancelled"
+                resultMessage = "Tillf. mål avbröts"
                 showCelebration = CelebrationOverlay.shouldCelebrate()
                 WatchRemoteService.postLocalNotification(
-                    title: "Temp Target Cancelled",
-                    body: "Temp target cancel command sent"
+                    title: "Tillf. mål avbröts",
+                    body: "Avbryt tillf. mål kommando skickades"
                 )
                 autoDismiss()
             } else {
-                resultMessage = error ?? "Failed"
+                resultMessage = error ?? "Misslyckades"
                 isError = true
             }
         }
@@ -244,22 +244,22 @@ private struct CustomTempTargetView: View {
                 ScrollView {
                     VStack(spacing: 8) {
                         if showConfirm {
-                            Text("\(pendingTarget) \(config.units == "mmol/L" ? "mmol/L" : "mg/dL") for \(pendingDuration)m")
+                            Text("\(pendingTarget) \(config.units == "mmol/L" ? "mmol/L" : "mg/dL") i \(pendingDuration)m")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(tempColor)
 
-                            CrownConfirmView(label: "to set target") {
+                            CrownConfirmView(label: "för att ställa in mål") {
                                 sendTempTarget()
                             }
                         } else {
-                            Text("Custom Target")
+                            Text("ANpassat mål")
                                 .font(.system(size: 14, weight: .semibold))
 
                             Button {
                                 editingField = .target
                             } label: {
                                 HStack {
-                                    Text("Target:")
+                                    Text("Mål:")
                                         .font(.system(size: 12))
                                         .foregroundColor(.primary)
                                     Spacer()
@@ -280,7 +280,7 @@ private struct CustomTempTargetView: View {
                                 editingField = .duration
                             } label: {
                                 HStack {
-                                    Text("Duration:")
+                                    Text("Varaktighet:")
                                         .font(.system(size: 12))
                                         .foregroundColor(.primary)
                                     Spacer()
@@ -295,7 +295,7 @@ private struct CustomTempTargetView: View {
                             }
                             .buttonStyle(.plain)
 
-                            Text("Tap a field, then scroll crown")
+                            Text("Klicka på ett fält, scrolla sedan kronan")
                                 .font(.system(size: 9))
                                 .foregroundColor(.secondary)
 
@@ -304,7 +304,7 @@ private struct CustomTempTargetView: View {
                                 pendingDuration = Int(customDuration)
                                 showConfirm = true
                             } label: {
-                                Text("Set")
+                                Text("Ställ in")
                                     .font(.system(size: 15, weight: .semibold))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 14)
@@ -337,15 +337,15 @@ private struct CustomTempTargetView: View {
     private func sendTempTarget() {
         WatchRemoteService.sendTempTarget(target: pendingTarget, duration: pendingDuration, config: config) { success, error in
             if success {
-                resultMessage = "Target set!"
+                resultMessage = "Mål inställt!"
                 showCelebration = CelebrationOverlay.shouldCelebrate()
                 WatchRemoteService.postLocalNotification(
-                    title: "Temp Target Set",
-                    body: "\(pendingTarget) mg/dL for \(pendingDuration)m"
+                    title: "Tillf mål inställt",
+                    body: "\(pendingTarget) mg/dL i \(pendingDuration)m"
                 )
                 autoDismiss()
             } else {
-                resultMessage = error ?? "Failed"
+                resultMessage = error ?? "Misslyckades"
                 isError = true
             }
         }

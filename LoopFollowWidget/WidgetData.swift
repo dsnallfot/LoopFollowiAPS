@@ -26,21 +26,31 @@ struct WidgetData: Codable {
 
     /// App Group shared between the watch app and widget extension.
     /// Both targets must have this App Group in their entitlements.
-    static let appGroupID = "group.loopfollow.shared"
+    static let appGroupID = "group.com.RMSRR5SURS.LoopFollow"
 
     private static var sharedDefaults: UserDefaults {
         UserDefaults(suiteName: appGroupID) ?? .standard
     }
 
     func save() {
-        guard let data = try? JSONEncoder().encode(self) else { return }
+        guard let data = try? JSONEncoder().encode(self) else {
+            print("WidgetData.save encode failed")
+            return
+        }
+        print("WidgetData.save appGroup=\(Self.appGroupID) bg=\(bgValue) history=\(history.count)")
         Self.sharedDefaults.set(data, forKey: Self.storageKey)
     }
 
     static func load() -> WidgetData? {
-        guard let data = sharedDefaults.data(forKey: Self.storageKey),
-              let decoded = try? JSONDecoder().decode(WidgetData.self, from: data)
-        else { return nil }
+        guard let data = sharedDefaults.data(forKey: Self.storageKey) else {
+            print("WidgetData.load no data in app group \(appGroupID)")
+            return nil
+        }
+        guard let decoded = try? JSONDecoder().decode(WidgetData.self, from: data) else {
+            print("WidgetData.load decode failed")
+            return nil
+        }
+        print("WidgetData.load success bg=\(decoded.bgValue) history=\(decoded.history.count)")
         return decoded
     }
 }

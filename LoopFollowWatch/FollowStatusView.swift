@@ -39,8 +39,8 @@ struct FollowStatusView: View {
     /// Picker style, so we render this ourselves.
     private var tabSelector: some View {
         HStack(spacing: 4) {
-            tabButton(title: "Device", tag: 0)
-            tabButton(title: "Profile", tag: 1)
+            tabButton(title: "Status", tag: 0)
+            tabButton(title: "Profil", tag: 1)
         }
         .padding(.horizontal, 6)
     }
@@ -112,7 +112,7 @@ private struct DeviceStatusTab: View {
         return VStack(alignment: .leading, spacing: 4) {
             SectionHeader("Loop")
             Group {
-                StatusRow("IOB", FollowStatusFormat.units(s?.iob, decimals: 2, suffix: " U"))
+                StatusRow("IOB", FollowStatusFormat.units(s?.iob, decimals: 2, suffix: " E"))
                 StatusRow("COB", FollowStatusFormat.units(s?.cob, decimals: 0, suffix: " g"))
                 // Prefer the temp-basal treatment's `absolute` (what the pump
                 // actually delivered, matching the iPhone Follow display) over
@@ -122,7 +122,7 @@ private struct DeviceStatusTab: View {
                     current: bgFetcher.currentTempBasal ?? s?.basalRate,
                     scheduled: bgFetcher.scheduledBasal,
                     valueFormatter: { String(format: "%.2f", $0) },
-                    suffix: " U/hr"
+                    suffix: " E/h"
                 ))
                 if s?.isOpenAPS == true {
                     StatusRow("ISF", FollowStatusFormat.currentVsScheduled(
@@ -134,14 +134,14 @@ private struct DeviceStatusTab: View {
                         current: s?.carbRatio,
                         scheduled: bgFetcher.lookupScheduleValue(bgFetcher.carbRatioSchedule),
                         valueFormatter: { String(format: "%.1f", $0) },
-                        suffix: " g/U"
+                        suffix: " g/E"
                     ))
                 }
             }
             Group {
-                StatusRow("Target", FollowStatusFormat.bgLike(target, units: units, withUnits: true))
+                StatusRow("Mål", FollowStatusFormat.bgLike(target, units: units, withUnits: true))
                 if s?.isOpenAPS == true {
-                    StatusRow("Eventual BG", FollowStatusFormat.bgLike(s?.eventualBG, units: units, withUnits: true))
+                    StatusRow("Prognos BG", FollowStatusFormat.bgLike(s?.eventualBG, units: units, withUnits: true))
                     if let mn = s?.minPredBG, let mx = s?.maxPredBG {
                         StatusRow("Min/Max", "\(FollowStatusFormat.bgLike(mn, units: units) ?? "—")/\(FollowStatusFormat.bgLike(mx, units: units) ?? "—")")
                     }
@@ -150,10 +150,10 @@ private struct DeviceStatusTab: View {
                     }
                 }
                 if recBolus != nil {
-                    StatusRow("Rec. Bolus", FollowStatusFormat.units(recBolus, decimals: 2, suffix: " U"))
+                    StatusRow("Rek. Bolus", FollowStatusFormat.units(recBolus, decimals: 2, suffix: " E"))
                 }
                 if s?.isOpenAPS == true, let req = s?.insulinReq {
-                    StatusRow("Req. Insulin", String(format: "%.2f U", req))
+                    StatusRow("Rek. Insulin", String(format: "%.2f E", req))
                 }
             }
         }
@@ -170,7 +170,7 @@ private struct DeviceStatusTab: View {
                     StatusRow("Override", oText)
                 }
                 if let tText = s?.tempTargetText, s?.tempTargetActive == true {
-                    StatusRow("Temp Target", tText)
+                    StatusRow("Tillf. mål", tText)
                 }
             }
         }
@@ -199,24 +199,24 @@ private struct DeviceStatusTab: View {
             || bgFetcher.pumpReservoir != nil
         if hasAny {
             VStack(alignment: .leading, spacing: 4) {
-                SectionHeader("Devices")
-                if let pb = bgFetcher.pumpBattery {
-                    StatusRow("Pump Battery", "\(pb)%")
-                }
+                SectionHeader("Hårdvara")
+                //if let pb = bgFetcher.pumpBattery {
+                //    StatusRow("Pump Battery", "\(pb)%")
+                //}
                 if let tb = bgFetcher.uploaderBattery {
-                    StatusRow("Trio Battery", "\(tb)%")
+                    StatusRow("Trio batteri", "\(tb)%")
                 }
                 if let d = bgFetcher.cannulaChangeDate {
-                    StatusRow("Cannula (CAGE)", FollowStatusFormat.age(d))
+                    StatusRow("Pump", FollowStatusFormat.age(d))
                 }
                 if let d = bgFetcher.sensorChangeDate {
-                    StatusRow("Sensor (SAGE)", FollowStatusFormat.age(d))
+                    StatusRow("Sensor", FollowStatusFormat.age(d))
                 }
                 if let d = bgFetcher.insulinChangeDate {
-                    StatusRow("Insulin (IAGE)", FollowStatusFormat.age(d))
+                    StatusRow("Insulin", FollowStatusFormat.age(d))
                 }
                 if let reservoir = bgFetcher.pumpReservoir {
-                    StatusRow("Reservoir", String(format: "%.0f U", reservoir))
+                    StatusRow("Reservoar", String(format: "%.0f E", reservoir))
                 }
             }
         }
@@ -227,12 +227,12 @@ private struct DeviceStatusTab: View {
         let tdd = bgFetcher.loopStatus?.tdd
         if bgFetcher.carbsToday != nil || tdd != nil {
             VStack(alignment: .leading, spacing: 4) {
-                SectionHeader("Today")
+                SectionHeader("Idag")
                 if let carbs = bgFetcher.carbsToday {
-                    StatusRow("Carbs", String(format: "%.0f g", carbs))
+                    StatusRow("Kolhydrater", String(format: "%.0f g", carbs))
                 }
                 if let tdd = tdd {
-                    StatusRow("TDD", String(format: "%.1f U", tdd))
+                    StatusRow("TDD", String(format: "%.1f E", tdd))
                 }
             }
         }
@@ -240,11 +240,11 @@ private struct DeviceStatusTab: View {
 
     private var updatedSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            SectionHeader("Updated")
+            SectionHeader("Uppdaterad")
             if let ts = bgFetcher.loopStatus?.timestamp {
-                StatusRow("Last loop", "\(FollowStatusFormat.clock(ts)) (\(FollowStatusFormat.relative(ts)))")
+                StatusRow("Loop", "\(FollowStatusFormat.clock(ts)) (\(FollowStatusFormat.relative(ts)))")
             }
-            StatusRow("Source", bgFetcher.activeSource.isEmpty ? "—" : bgFetcher.activeSource)
+            StatusRow("Källa", bgFetcher.activeSource.isEmpty ? "—" : bgFetcher.activeSource)
         }
     }
 }
@@ -261,16 +261,16 @@ private struct ProfileTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            scheduleSection(title: "Basal Rates", schedule: bgFetcher.basalSchedule) { value in
-                String(format: "%.2f U/hr", value)
+            scheduleSection(title: "Profilbasal", schedule: bgFetcher.basalSchedule) { value in
+                String(format: "%.2f E/h", value)
             }
             scheduleSection(title: "ISF", schedule: bgFetcher.isfSchedule) { value in
                 FollowStatusFormat.bgLike(value, units: units) ?? "—"
             }
-            scheduleSection(title: "Carb Ratios", schedule: bgFetcher.carbRatioSchedule) { value in
-                String(format: "%.1f g/U", value)
+            scheduleSection(title: "Insulinkvoter", schedule: bgFetcher.carbRatioSchedule) { value in
+                String(format: "%.1f g/E", value)
             }
-            scheduleSection(title: "Targets", schedule: bgFetcher.targetSchedule) { value in
+            scheduleSection(title: "Mål", schedule: bgFetcher.targetSchedule) { value in
                 FollowStatusFormat.bgLike(value, units: units, withUnits: true) ?? "—"
             }
         }
@@ -415,14 +415,14 @@ private enum FollowStatusFormat {
     /// "9:41 PM"
     static func clock(_ date: Date) -> String {
         let f = DateFormatter()
-        f.dateFormat = "h:mm a"
+        f.dateFormat = "HH:mm:ss"
         return f.string(from: date)
     }
 
     /// "now" / "1m" / "12m"
     static func relative(_ date: Date) -> String {
         let seconds = Int(Date().timeIntervalSince(date))
-        if seconds < 30 { return "now" }
+        if seconds < 30 { return "nu" }
         let minutes = seconds / 60
         if minutes < 60 { return "\(minutes)m" }
         let hours = minutes / 60
@@ -455,7 +455,7 @@ private enum FollowStatusFormat {
         calendar.timeZone = timezone
         guard let date = calendar.date(from: components) else { return "" }
         let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
+        formatter.dateFormat = "HH:mm"
         formatter.timeZone = timezone
         return formatter.string(from: date)
     }

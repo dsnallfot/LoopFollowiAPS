@@ -48,7 +48,7 @@ struct CrownConfirmView: View {
                             .font(.system(size: tapped ? 20 : 24))
                             .foregroundColor(tapped ? .blue : .gray.opacity(0.5))
                             .rotationEffect(.degrees(tapped ? progress / fullRotation * 360 : 0))
-                        Text(tapped ? "Scroll" : "Tap")
+                        Text(tapped ? "Scrolla" : "Klicka")
                             .font(.system(size: 10))
                             .foregroundColor(tapped ? .blue : .gray.opacity(0.5))
                     }
@@ -66,15 +66,15 @@ struct CrownConfirmView: View {
             // Instruction text — fixed height to prevent layout shifts
             Group {
                 if confirmed {
-                    Text("Sent!")
+                    Text("Sändes!")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.green)
                 } else if tapped {
-                    Text("Scroll crown \(label)")
+                    Text("Scrolla krona \(label)")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.primary)
                 } else {
-                    Text("Tap wheel \(label)")
+                    Text("Klicka hjul \(label)")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                 }

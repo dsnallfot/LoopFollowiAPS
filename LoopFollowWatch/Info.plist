@@ -27,6 +27,6 @@
 	<key>WKApplication</key>
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.$(unique_id).LoopFollow$(app_suffix)</string>
+	<string>com.RMSRR5SURS.LoopFollow</string>
 </dict>
 </plist>
