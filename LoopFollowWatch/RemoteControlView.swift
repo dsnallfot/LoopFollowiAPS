@@ -19,16 +19,16 @@ struct RemoteControlView: View {
         NavigationStack {
             LazyVGrid(columns: columns, spacing: 8) {
                 Button {
-                    router.activeDestination = .bolus
-                } label: {
-                    RemoteTile(icon: "drop.fill", label: "Bolus", color: .blue)
-                }
-                .buttonStyle(.plain)
-
-                Button {
                     router.activeDestination = .meal
                 } label: {
                     RemoteTile(icon: "fork.knife", label: "Måltid", color: .yellow)
+                }
+                .buttonStyle(.plain)
+                
+                Button {
+                    router.activeDestination = .bolus
+                } label: {
+                    RemoteTile(icon: "drop.fill", label: "Bolus", color: .blue)
                 }
                 .buttonStyle(.plain)
 
@@ -110,6 +110,6 @@ private struct RemoteTile: View {
                 }
             }
         )
-        .cornerRadius(6)
+        .cornerRadius(20)
     }
 }
