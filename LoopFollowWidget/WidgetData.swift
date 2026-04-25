@@ -26,7 +26,7 @@ struct WidgetData: Codable {
 
     /// App Group shared between the watch app and widget extension.
     /// Both targets must have this App Group in their entitlements.
-    static let appGroupID = "group.com.RMSRR5SURS.LoopFollow"
+    static let appGroupID = "group.com..LoopFollow"
 
     private static var sharedDefaults: UserDefaults {
         UserDefaults(suiteName: appGroupID) ?? .standard

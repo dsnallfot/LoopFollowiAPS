@@ -28,7 +28,7 @@ struct WidgetData: Codable {
     private static let storageKey = "widgetData"
 
     /// App Group shared between the watch app and widget extension.
-    static let appGroupID = "group.com.RMSRR5SURS.LoopFollow"
+    static let appGroupID = "group.com..LoopFollow"
 
     private static var sharedDefaults: UserDefaults {
         UserDefaults(suiteName: appGroupID) ?? .standard
@@ -88,6 +88,20 @@ class BGFetcher: ObservableObject {
     /// Carbs entered locally on the watch (e.g. from meal screen) not yet in remote COB.
     /// Set before navigating to the bolus screen; included in recommended bolus calculation.
     var pendingCarbs: Double = 0
+
+    /// Calculates a 5-minute normalized delta between two BG readings.
+    /// If readings are 5 minutes apart, this is the normal difference.
+    /// If one or more readings were missed, the difference is divided by the number of 5-minute slots.
+    private static func interpolatedDelta(currentBG: Int, currentTimestamp: Date, priorBG: Int?, priorTimestamp: Date?) -> Int? {
+        guard let priorBG = priorBG, let priorTimestamp = priorTimestamp else { return nil }
+
+        let elapsedSeconds = abs(currentTimestamp.timeIntervalSince(priorTimestamp))
+        guard elapsedSeconds > 0 else { return currentBG - priorBG }
+
+        let fiveMinuteSlots = max(1.0, elapsedSeconds / readingInterval)
+        let normalizedDelta = Double(currentBG - priorBG) / fiveMinuteSlots
+        return Int(normalizedDelta.rounded())
+    }
 
     // Treatment data for chart display
     @Published var treatments: [Treatment] = []
@@ -277,12 +291,14 @@ class BGFetcher: ObservableObject {
                 guard let bgValue = entry.bgValue else { continue }
                 let timestamp = Date(timeIntervalSince1970: entry.date / 1000)
                 let direction = entry.direction ?? ""
-                let delta: Int?
-                if index + 1 < entries.count, let priorBG = entries[index + 1].bgValue {
-                    delta = bgValue - priorBG
-                } else {
-                    delta = nil
-                }
+                let priorEntry = index + 1 < entries.count ? entries[index + 1] : nil
+                let priorTimestamp = priorEntry.map { Date(timeIntervalSince1970: $0.date / 1000) }
+                let delta = Self.interpolatedDelta(
+                    currentBG: bgValue,
+                    currentTimestamp: timestamp,
+                    priorBG: priorEntry?.bgValue,
+                    priorTimestamp: priorTimestamp
+                )
                 readings.append(BGReading(
                     bgValue: bgValue,
                     direction: BGReading.directionArrow(direction),
@@ -1393,12 +1409,14 @@ class BGFetcher: ObservableObject {
             let direction = trendIndex < trendTable.count ? trendTable[trendIndex] : "NONE"
             guard let timestamp = parseDexcomDate(wt) else { continue }
 
-            let delta: Int?
-            if index + 1 < sgvs.count, let nextGlucose = sgvs[index + 1]["Value"] as? Int {
-                delta = glucose - nextGlucose
-            } else {
-                delta = nil
-            }
+            let priorSGV = index + 1 < sgvs.count ? sgvs[index + 1] : nil
+            let priorTimestamp = (priorSGV?["WT"] as? String).flatMap { parseDexcomDate($0) }
+            let delta = Self.interpolatedDelta(
+                currentBG: glucose,
+                currentTimestamp: timestamp,
+                priorBG: priorSGV?["Value"] as? Int,
+                priorTimestamp: priorTimestamp
+            )
 
             readings.append(BGReading(
                 bgValue: glucose,
