@@ -44,6 +44,7 @@ struct BGComplicationWidget: Widget {
 @main
 struct LoopFollowWidgetBundle: WidgetBundle {
     var body: some Widget {
+        AppShortcutWidget()
         BGComplicationWidget()
         BolusShortcutWidget()
         MealShortcutWidget()

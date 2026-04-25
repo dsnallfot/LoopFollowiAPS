@@ -250,7 +250,7 @@ struct WatchComboView: View {
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 14)
-                                        .background(Color.orange.opacity(0.55))
+                                        .background(Color.pink.opacity(0.55))
                                         .cornerRadius(8)
                                     }
                                     .buttonStyle(.plain)

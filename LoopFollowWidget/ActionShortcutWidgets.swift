@@ -45,6 +45,36 @@ struct ActionShortcutView: View {
     }
 }
 
+struct AppShortcutView: View {
+    var body: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            Image("AppShortcutIcon")
+                .resizable()
+                .scaledToFit()
+                .padding(4)
+                .clipShape(Circle())
+        }
+    }
+}
+
+// MARK: - App Shortcut
+
+struct AppShortcutWidget: Widget {
+    let kind = "AppShortcut"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ActionTimelineProvider()) { _ in
+            AppShortcutView()
+                .containerBackground(.fill.tertiary, for: .widget)
+                .widgetURL(URL(string: "loopfollow://open"))
+        }
+        .configurationDisplayName("LoopFollow")
+        .description("Quick access to LoopFollow.")
+        .supportedFamilies([.accessoryCircular])
+    }
+}
+
 // MARK: - Bolus Shortcut
 
 struct BolusShortcutWidget: Widget {
@@ -73,7 +103,7 @@ struct MealShortcutWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
                 .widgetURL(URL(string: "loopfollow://meal"))
         }
-        .configurationDisplayName("Meal")
+        .configurationDisplayName("Måltid")
         .description("Quick access to meal entry.")
         .supportedFamilies([.accessoryCircular])
     }
@@ -107,7 +137,7 @@ struct TempTargetShortcutWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
                 .widgetURL(URL(string: "loopfollow://temptarget"))
         }
-        .configurationDisplayName("Temp Target")
+        .configurationDisplayName("Tillf. Mål")
         .description("Quick access to temp target selection.")
         .supportedFamilies([.accessoryCircular])
     }
