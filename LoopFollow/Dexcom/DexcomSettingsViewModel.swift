@@ -14,7 +14,9 @@ class DexcomSettingsViewModel: ObservableObject {
         willSet {
             if newValue != userName {
                 UserDefaultsRepository.shareUserName.value = newValue
-                PhoneSessionManager.shared.sendConfig()
+                if ObservableUserDefaults.shared.watchCommunicationEnabled.value {
+                    PhoneSessionManager.shared.sendConfig()
+                }
             }
         }
     }
@@ -22,7 +24,9 @@ class DexcomSettingsViewModel: ObservableObject {
         willSet {
             if newValue != password {
                 UserDefaultsRepository.sharePassword.value = newValue
-                PhoneSessionManager.shared.sendConfig()
+                if ObservableUserDefaults.shared.watchCommunicationEnabled.value {
+                    PhoneSessionManager.shared.sendConfig()
+                }
             }
         }
     }
@@ -30,7 +34,9 @@ class DexcomSettingsViewModel: ObservableObject {
         willSet {
             if newValue != server {
                 UserDefaultsRepository.shareServer.value = newValue
-                PhoneSessionManager.shared.sendConfig()
+                if ObservableUserDefaults.shared.watchCommunicationEnabled.value {
+                    PhoneSessionManager.shared.sendConfig()
+                }
             }
         }
     }

@@ -11,6 +11,7 @@ class PhoneSessionManager: NSObject, WCSessionDelegate {
     }
 
     func startSession() {
+        guard ObservableUserDefaults.shared.watchCommunicationEnabled.value else { return }
         guard WCSession.isSupported() else { return }
         WCSession.default.delegate = self
         WCSession.default.activate()
@@ -45,6 +46,7 @@ class PhoneSessionManager: NSObject, WCSessionDelegate {
     }
 
     func sendConfig() {
+        guard ObservableUserDefaults.shared.watchCommunicationEnabled.value else { return }
         guard WCSession.default.activationState == .activated else { return }
         let config = buildConfig()
         try? WCSession.default.updateApplicationContext(config)
@@ -58,7 +60,7 @@ class PhoneSessionManager: NSObject, WCSessionDelegate {
     // MARK: - WCSessionDelegate
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        if activationState == .activated {
+        if activationState == .activated, ObservableUserDefaults.shared.watchCommunicationEnabled.value {
             sendConfig()
         }
     }
@@ -66,25 +68,32 @@ class PhoneSessionManager: NSObject, WCSessionDelegate {
     func sessionDidBecomeInactive(_ session: WCSession) {}
 
     func sessionDidDeactivate(_ session: WCSession) {
-        WCSession.default.activate()
+        if ObservableUserDefaults.shared.watchCommunicationEnabled.value {
+            WCSession.default.activate()
+        }
     }
 
     // Re-send config when Watch becomes reachable (handles fresh install)
     func sessionReachabilityDidChange(_ session: WCSession) {
-        if session.isReachable {
+        if session.isReachable, ObservableUserDefaults.shared.watchCommunicationEnabled.value {
             sendConfig()
         }
     }
 
     // Handle Watch requesting config via applicationContext
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        if applicationContext["requestConfig"] != nil {
+        if applicationContext["requestConfig"] != nil, ObservableUserDefaults.shared.watchCommunicationEnabled.value {
             sendConfig()
         }
     }
 
     // Handle Watch requesting config via sendMessage (with reply)
     func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+        guard ObservableUserDefaults.shared.watchCommunicationEnabled.value else {
+            replyHandler([:])
+            return
+        }
+
         if message["requestConfig"] != nil {
             let config = buildConfig()
             replyHandler(config)
@@ -96,14 +105,14 @@ class PhoneSessionManager: NSObject, WCSessionDelegate {
     }
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-        if message["requestConfig"] != nil {
+        if message["requestConfig"] != nil, ObservableUserDefaults.shared.watchCommunicationEnabled.value {
             sendConfig()
         }
     }
 
     // Handle Watch requesting config via transferUserInfo
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
-        if userInfo["requestConfig"] != nil {
+        if userInfo["requestConfig"] != nil, ObservableUserDefaults.shared.watchCommunicationEnabled.value {
             sendConfig()
         }
     }

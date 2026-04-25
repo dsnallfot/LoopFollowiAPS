@@ -23,6 +23,17 @@ struct ContactSettingsView: View {
                 .ignoresSafeArea()
 
             Form {
+                Section(header: Text("Apple Watch App")) {
+                    Text("Aktivera kommunikation med Apple Watch App & Widget")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 4)
+
+                    Toggle("Aktivera Apple Watch", isOn: $viewModel.watchCommunicationEnabled)
+                        .toggleStyle(SwitchToggleStyle())
+                }
+                .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
+                
                 Section(header: Text("Kontaktintegration")) {
                     Text("Lägg till kontakter som heter '\(viewModel.contactName)' till din Apple Watch för att visa aktuellt BG och andra värden i realtid. Se till att ge appen full access till dina kontakter på telefonen när du tillfrågas.")
                         .font(.footnote)

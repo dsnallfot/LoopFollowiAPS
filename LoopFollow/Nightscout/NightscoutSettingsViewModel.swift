@@ -25,7 +25,9 @@ class NightscoutSettingsViewModel: ObservableObject {
             if newValue != nightscoutURL {
                 ObservableUserDefaults.shared.url.value = newValue
                 triggerCheckStatus()
-                PhoneSessionManager.shared.sendConfig()
+                if ObservableUserDefaults.shared.watchCommunicationEnabled.value {
+                    PhoneSessionManager.shared.sendConfig()
+                }
             }
         }
     }
@@ -34,7 +36,9 @@ class NightscoutSettingsViewModel: ObservableObject {
             if newValue != nightscoutToken {
                 UserDefaultsRepository.token.value = newValue
                 triggerCheckStatus()
-                PhoneSessionManager.shared.sendConfig()
+                if ObservableUserDefaults.shared.watchCommunicationEnabled.value {
+                    PhoneSessionManager.shared.sendConfig()
+                }
             }
         }
     }

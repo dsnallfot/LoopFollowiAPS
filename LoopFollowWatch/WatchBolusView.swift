@@ -236,11 +236,11 @@ struct WatchBolusView: View {
                 } else {
                     bgFetcher.pendingCarbs = 0
                     resultMessage = "Bolus skickades!"
-                    showCelebration = CelebrationOverlay.shouldCelebrate()
-                    WatchRemoteService.postLocalNotification(
-                        title: "Bolus skickades",
-                        body: String(format: "%.2fE bolus kommando skickades", confirmedAmount)
-                    )
+                    //showCelebration = CelebrationOverlay.shouldCelebrate()
+                    //WatchRemoteService.postLocalNotification(
+                    //    title: "Bolus skickades",
+                    //    body: String(format: "%.2fE bolus kommando skickades", confirmedAmount)
+                    //)
                     autoDismiss()
                 }
             } else {
@@ -270,18 +270,18 @@ struct WatchBolusView: View {
             if success {
                 if confirmedAmount > 0 {
                     resultMessage = "Bolus + Måltid\nskickades!"
-                    showCelebration = CelebrationOverlay.shouldCelebrate()
-                    WatchRemoteService.postLocalNotification(
-                        title: "Bolus + måltid skickades",
-                        body: String(format: "%.2fE bolus + %dg kolh", confirmedAmount, meal.carbs)
-                    )
+                    //showCelebration = CelebrationOverlay.shouldCelebrate()
+                    //WatchRemoteService.postLocalNotification(
+                    //    title: "Bolus + måltid skickades",
+                    //    body: String(format: "%.2fE bolus + %dg kolh", confirmedAmount, meal.carbs)
+                    //)
                 } else {
                     resultMessage = "Måltid skickades!"
-                    showCelebration = CelebrationOverlay.shouldCelebrate()
-                    WatchRemoteService.postLocalNotification(
-                        title: "Måltid skickades",
-                        body: "\(meal.carbs)g kh registrerades"
-                    )
+                    //showCelebration = CelebrationOverlay.shouldCelebrate()
+                    //WatchRemoteService.postLocalNotification(
+                    //    title: "Måltid skickades",
+                    //    body: "\(meal.carbs)g kh registrerades"
+                    //)
                 }
                 autoDismiss()
             } else {

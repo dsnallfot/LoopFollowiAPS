@@ -711,7 +711,9 @@ extension MainViewController {
                 
                 self.contactImageUpdater.updateContactImage(bgValue: bgTextStr, extra: extra, extra2: extra2, extra3: extra3, iob: iob, cob: cob, stale: deltaTime >= 6)//>= 12)
             }
-            PhoneSessionManager.shared.sendConfig()
+            if ObservableUserDefaults.shared.watchCommunicationEnabled.value {
+                PhoneSessionManager.shared.sendConfig()
+            }
         }
     }
     

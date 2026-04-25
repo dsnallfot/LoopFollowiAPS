@@ -181,7 +181,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
         case .appSettings:
             return appSettingsRows.count
         case .integrations:
-            // Bakgrundsaktivitet, Sensorbyten synk, Fjärrkommandon inställningar, Kalendertrick, Kontakttrick
+            // Bakgrundsaktivitet, Sensorbyten synk, Fjärrkommandon inställningar, Kalendertrick, Apple Watch
             return 5
         case .systemLog:
             // Se dagens logg, Dela logg
@@ -294,7 +294,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             case 1: cell.textLabel?.text = "Sensorbyten synk"
             case 2: cell.textLabel?.text = "Fjärrkommandon"
             case 3: cell.textLabel?.text = "Kalendertrick"
-            case 4: cell.textLabel?.text = "Kontakttrick"
+            case 4: cell.textLabel?.text = "Apple Watch"
             default: break
             }
             return cell
@@ -547,7 +547,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
                 controller.appStateController = appStateController
                 navigationController?.pushViewController(controller, animated: true)
             case 4:
-                // Kontakttrick
+                // Apple Watch
                 let controller = makeContactSettingsViewController()
                 navigationController?.pushViewController(controller, animated: true)
             default:
@@ -677,7 +677,7 @@ class SettingsViewController: ThemedViewController, NightscoutSettingsViewModelD
             .environment(\.colorScheme, isDark ? .dark : .light)
 
         let hostingController = UIHostingController(rootView: contactSettingsView)
-        hostingController.title = "Kontakttrick"
+        hostingController.title = "Apple Watch"
         hostingController.overrideUserInterfaceStyle = isDark ? .dark : self.traitCollection.userInterfaceStyle
         hostingController.hidesBottomBarWhenPushed = false
         return hostingController

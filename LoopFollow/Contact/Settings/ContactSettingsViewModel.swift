@@ -53,6 +53,18 @@ class ContactSettingsViewModel: ObservableObject {
                  triggerRefresh()
              }
          }
+    
+    @Published var watchCommunicationEnabled: Bool {
+        didSet {
+            storage.watchCommunicationEnabled.value = watchCommunicationEnabled
+            triggerRefresh()
+
+            if watchCommunicationEnabled {
+                PhoneSessionManager.shared.startSession()
+                PhoneSessionManager.shared.sendConfig()
+            }
+        }
+    }
 
     private let storage = ObservableUserDefaults.shared
     private var cancellables = Set<AnyCancellable>()
@@ -62,6 +74,7 @@ class ContactSettingsViewModel: ObservableObject {
         self.contactTrend = storage.contactTrend.value
         self.contactDelta = storage.contactDelta.value
         self.contactFifteenMinutes = storage.contactFifteenMinutes.value
+        self.watchCommunicationEnabled = storage.watchCommunicationEnabled.value
 
         storage.contactEnabled.$value
             .assign(to: &$contactEnabled)
@@ -74,6 +87,9 @@ class ContactSettingsViewModel: ObservableObject {
         
         storage.contactFifteenMinutes.$value
             .assign(to: &$contactFifteenMinutes)
+        
+        storage.watchCommunicationEnabled.$value
+            .assign(to: &$watchCommunicationEnabled)
     }
 
     private func triggerRefresh() {

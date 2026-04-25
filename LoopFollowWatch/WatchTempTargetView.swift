@@ -140,12 +140,12 @@ struct WatchTempTargetView: View {
     private func sendTempTarget() {
         WatchRemoteService.sendTempTarget(target: pendingTarget, duration: pendingDuration, config: config) { success, error in
             if success {
-                resultMessage = "Mål inställt!"
-                showCelebration = CelebrationOverlay.shouldCelebrate()
-                WatchRemoteService.postLocalNotification(
-                    title: "Tillf. mål inställt",
-                    body: "\(pendingTarget) mg/dL i \(pendingDuration)m"
-                )
+                resultMessage = "Tillf. mål skickades!"
+                //showCelebration = CelebrationOverlay.shouldCelebrate()
+                //WatchRemoteService.postLocalNotification(
+                //    title: "Tillf. mål inställt",
+                //    body: "\(pendingTarget) mg/dL i \(pendingDuration)m"
+                //)
                 autoDismiss()
             } else {
                 resultMessage = error ?? "Misslyckades"
@@ -158,11 +158,11 @@ struct WatchTempTargetView: View {
         WatchRemoteService.cancelTempTarget(config: config) { success, error in
             if success {
                 resultMessage = "Tillf. mål avbröts"
-                showCelebration = CelebrationOverlay.shouldCelebrate()
-                WatchRemoteService.postLocalNotification(
-                    title: "Tillf. mål avbröts",
-                    body: "Avbryt tillf. mål kommando skickades"
-                )
+                //showCelebration = CelebrationOverlay.shouldCelebrate()
+                //WatchRemoteService.postLocalNotification(
+                //    title: "Tillf. mål avbröts",
+                //    body: "Avbryt tillf. mål kommando skickades"
+                //)
                 autoDismiss()
             } else {
                 resultMessage = error ?? "Misslyckades"
@@ -338,11 +338,11 @@ private struct CustomTempTargetView: View {
         WatchRemoteService.sendTempTarget(target: pendingTarget, duration: pendingDuration, config: config) { success, error in
             if success {
                 resultMessage = "Mål inställt!"
-                showCelebration = CelebrationOverlay.shouldCelebrate()
-                WatchRemoteService.postLocalNotification(
-                    title: "Tillf mål inställt",
-                    body: "\(pendingTarget) mg/dL i \(pendingDuration)m"
-                )
+                //showCelebration = CelebrationOverlay.shouldCelebrate()
+                //WatchRemoteService.postLocalNotification(
+                //    title: "Tillf mål inställt",
+                //    body: "\(pendingTarget) mg/dL i \(pendingDuration)m"
+                //)
                 autoDismiss()
             } else {
                 resultMessage = error ?? "Misslyckades"

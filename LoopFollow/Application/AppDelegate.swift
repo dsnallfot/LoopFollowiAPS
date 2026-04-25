@@ -58,8 +58,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // Ensure VolumeButtonHandler is initialized so it can receive alarm notifications
         _ = VolumeButtonHandler.shared
-        
-        PhoneSessionManager.shared.startSession()
+        if ObservableUserDefaults.shared.watchCommunicationEnabled.value {
+            PhoneSessionManager.shared.startSession()
+        }
 
         // Post a Nightscout Note about app restart, debounced
         postLaunchNoteToNightscoutIfNeeded()

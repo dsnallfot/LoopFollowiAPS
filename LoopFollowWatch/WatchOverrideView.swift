@@ -140,12 +140,12 @@ struct WatchOverrideView: View {
     private func sendOverride(name: String) {
         WatchRemoteService.sendOverride(name: name, config: config) { success, error in
             if success {
-                resultMessage = "Override aktiverad!"
-                showCelebration = CelebrationOverlay.shouldCelebrate()
-                WatchRemoteService.postLocalNotification(
-                    title: "Override aktiverad",
-                    body: "\(name) kommando skickades"
-                )
+                resultMessage = "Override skickades!"
+                //showCelebration = CelebrationOverlay.shouldCelebrate()
+                //WatchRemoteService.postLocalNotification(
+                //    title: "Override aktiverad",
+                //    body: "\(name) kommando skickades"
+                //)
                 autoDismiss()
             } else {
                 resultMessage = error ?? "Misslyckades"
@@ -158,11 +158,11 @@ struct WatchOverrideView: View {
         WatchRemoteService.cancelOverride(config: config) { success, error in
             if success {
                 resultMessage = "Override avbröts"
-                showCelebration = CelebrationOverlay.shouldCelebrate()
-                WatchRemoteService.postLocalNotification(
-                    title: "Override avbröts",
-                    body: "Avbryt override kommando skickades"
-                )
+                //showCelebration = CelebrationOverlay.shouldCelebrate()
+                //WatchRemoteService.postLocalNotification(
+                //    title: "Override avbröts",
+                //    body: "Avbryt override kommando skickades"
+                //)
                 autoDismiss()
             } else {
                 resultMessage = error ?? "Misslyckades"
