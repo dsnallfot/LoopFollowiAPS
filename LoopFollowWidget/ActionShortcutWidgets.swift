@@ -49,11 +49,11 @@ struct AppShortcutView: View {
     var body: some View {
         ZStack {
             AccessoryWidgetBackground()
-            Image("AppShortcutIcon")
-                .resizable()
-                .scaledToFit()
-                .padding(4)
-                .clipShape(Circle())
+
+            Circle()
+                .stroke(Color.blue, lineWidth: 5)
+                .padding(7)
+                .widgetAccentable()
         }
     }
 }
