@@ -92,6 +92,9 @@ struct WatchConfig: Equatable {
     // Combo presets synced from iPhone
     var comboPresets: [WatchComboPreset]
 
+    // Controls whether BG complication timelines/background refresh should stay active.
+    var bgComplicationEnabled: Bool
+
     var hasDexcomCredentials: Bool {
         !dexUsername.isEmpty && !dexPassword.isEmpty
     }
@@ -140,6 +143,7 @@ struct WatchConfig: Equatable {
             "maxProtein": maxProtein,
             "maxFat": maxFat,
             "comboPresets": comboPresets.map { $0.toDictionary() },
+            "bgComplicationEnabled": bgComplicationEnabled,
         ]
     }
 
@@ -169,6 +173,7 @@ struct WatchConfig: Equatable {
         maxFat = dict["maxFat"] as? Double ?? 30.0
         let comboPresetDictionaries = dict["comboPresets"] as? [[String: Any]] ?? []
         comboPresets = comboPresetDictionaries.map { WatchComboPreset(from: $0) }
+        bgComplicationEnabled = dict["bgComplicationEnabled"] as? Bool ?? false
     }
 /*
     func saveToDefaults() {

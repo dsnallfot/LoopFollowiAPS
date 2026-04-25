@@ -31,6 +31,16 @@ struct ContactSettingsView: View {
 
                     Toggle("Aktivera Apple Watch", isOn: $viewModel.watchCommunicationEnabled)
                         .toggleStyle(SwitchToggleStyle())
+                    
+                    Toggle("Aktivera bakgrundsuppdatering", isOn: $viewModel.bgComplicationEnabled)
+                        .toggleStyle(SwitchToggleStyle())
+                        .disabled(!viewModel.watchCommunicationEnabled)
+                        .opacity(viewModel.watchCommunicationEnabled ? 1.0 : 0.5)
+                    Text("Bakgrundsuppdatering ger mer aggressiva uppdateringar vilket är bra om man använder en komplikation där man vill ha realtidsdata, men detta sker på bekostnad av batteritiden på klockan")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 4)
+                    
                 }
                 .listRowBackground(Color(UIColor.systemGray).opacity(0.15))
                 

@@ -724,13 +724,16 @@ class BGFetcher: ObservableObject {
             updatedAt: Date()
         )
         data.save()
-        WidgetCenter.shared.reloadTimelines(ofKind: "BGComplication")
 
-        // Re-arm the foreground timer and the background refresh chain based
-        // on the reading we just wrote, so the next fetch lands right after
-        // the next reading is expected on Nightscout.
+        // Re-arm the foreground timer while the app is open, so on-demand use still fetches normally.
         rearmForegroundTimer(after: bg.timestamp)
-        ExtensionDelegate.scheduleBackgroundRefresh()
+
+        // Only keep BG complication timelines/background refresh alive when that complication is enabled.
+        // If the user only uses the static app shortcut complication, avoid the background refresh chain.
+        if currentConfig?.bgComplicationEnabled == true {
+            WidgetCenter.shared.reloadTimelines(ofKind: "BGComplication")
+            ExtensionDelegate.scheduleBackgroundRefresh()
+        }
     }
 
     func lookupScheduleValue(_ schedule: [(timeAsSeconds: Double, value: Double)]) -> Double? {

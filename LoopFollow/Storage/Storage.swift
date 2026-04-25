@@ -34,6 +34,11 @@ class Storage {
     var webSocketEnabled = StorageValue<Bool>(key: "webSocketEnabled", defaultValue: false)
 
     var backgroundRefreshType = StorageValue<BackgroundRefreshType>(key: "backgroundRefreshType", defaultValue: .silentTune)
+    
+    var bgComplicationEnabled = StorageValue<Bool>(
+        key: "bgComplicationEnabled",
+        defaultValue: false
+    )
 
     var selectedBLEDevice = StorageValue<BLEDevice?>(key: "selectedBLEDevice", defaultValue: nil)
     

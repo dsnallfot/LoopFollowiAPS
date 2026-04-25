@@ -55,6 +55,7 @@ class PhoneSessionManager: NSObject, WCSessionDelegate {
             "maxProtein": Storage.shared.maxProtein.value.doubleValue(for: .gram()),
             "maxFat": Storage.shared.maxFat.value.doubleValue(for: .gram()),
             "comboPresets": comboPresets,
+            "bgComplicationEnabled": Storage.shared.bgComplicationEnabled.value,
         ]
     }
 

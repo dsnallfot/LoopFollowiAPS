@@ -66,7 +66,19 @@ class ContactSettingsViewModel: ObservableObject {
         }
     }
 
+    @Published var bgComplicationEnabled: Bool {
+        didSet {
+            appStorage.bgComplicationEnabled.value = bgComplicationEnabled
+            triggerRefresh()
+
+            if watchCommunicationEnabled {
+                PhoneSessionManager.shared.sendConfig()
+            }
+        }
+    }
+
     private let storage = ObservableUserDefaults.shared
+    private let appStorage = Storage.shared
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -75,6 +87,7 @@ class ContactSettingsViewModel: ObservableObject {
         self.contactDelta = storage.contactDelta.value
         self.contactFifteenMinutes = storage.contactFifteenMinutes.value
         self.watchCommunicationEnabled = storage.watchCommunicationEnabled.value
+        self.bgComplicationEnabled = appStorage.bgComplicationEnabled.value
 
         storage.contactEnabled.$value
             .assign(to: &$contactEnabled)
