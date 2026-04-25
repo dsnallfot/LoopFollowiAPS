@@ -138,7 +138,7 @@ class BGFetcher: ObservableObject {
     // cadence without tight-looping. The ceiling caps how long we'll wait when
     // a sensor reading is genuinely missing.
     private static let readingInterval: TimeInterval = 300
-    private static let uploadBuffer: TimeInterval = 10
+    private static let uploadBuffer: TimeInterval = 15//10
     private static let lateReadingPollFloor: TimeInterval = 30
     private static let readingGapCeiling: TimeInterval = 330
 
