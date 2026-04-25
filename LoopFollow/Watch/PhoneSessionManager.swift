@@ -18,7 +18,19 @@ class PhoneSessionManager: NSObject, WCSessionDelegate {
     }
 
     private func buildConfig() -> [String: Any] {
-        [
+        let comboPresets = Storage.shared.comboPresets.map { preset in
+            [
+                "id": preset.id.uuidString,
+                "name": preset.name,
+                "carbsGrams": preset.carbsGrams,
+                "proteinGrams": preset.proteinGrams,
+                "fatGrams": preset.fatGrams,
+                "bolusUnits": preset.bolusUnits,
+                "notes": preset.notes,
+                "overrideName": preset.overrideName ?? "",
+            ] as [String: Any]
+        }
+        return [
             "nsURL": ObservableUserDefaults.shared.url.value,
             "nsToken": UserDefaultsRepository.token.value,
             "dexUsername": UserDefaultsRepository.shareUserName.value,
@@ -42,6 +54,7 @@ class PhoneSessionManager: NSObject, WCSessionDelegate {
             "mealWithFatProtein": Storage.shared.mealWithFatProtein.value,
             "maxProtein": Storage.shared.maxProtein.value.doubleValue(for: .gram()),
             "maxFat": Storage.shared.maxFat.value.doubleValue(for: .gram()),
+            "comboPresets": comboPresets,
         ]
     }
 

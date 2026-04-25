@@ -1,7 +1,60 @@
 // LoopFollow
 // WatchConfig.swift
 
+
 import Foundation
+
+struct WatchComboPreset: Identifiable, Equatable, Hashable {
+    let id: String
+    let name: String
+    let carbsGrams: Int
+    let proteinGrams: Int
+    let fatGrams: Int
+    let bolusUnits: Double
+    let notes: String
+    let overrideName: String?
+
+    init(from dict: [String: Any]) {
+        id = dict["id"] as? String ?? UUID().uuidString
+        name = dict["name"] as? String ?? "Snabbval"
+        carbsGrams = WatchComboPreset.intValue(dict["carbsGrams"])
+        proteinGrams = WatchComboPreset.intValue(dict["proteinGrams"])
+        fatGrams = WatchComboPreset.intValue(dict["fatGrams"])
+        bolusUnits = WatchComboPreset.doubleValue(dict["bolusUnits"])
+        notes = dict["notes"] as? String ?? ""
+
+        let rawOverrideName = dict["overrideName"] as? String ?? ""
+        let trimmedOverrideName = rawOverrideName.trimmingCharacters(in: .whitespacesAndNewlines)
+        overrideName = trimmedOverrideName.isEmpty ? nil : trimmedOverrideName
+    }
+
+    func toDictionary() -> [String: Any] {
+        [
+            "id": id,
+            "name": name,
+            "carbsGrams": carbsGrams,
+            "proteinGrams": proteinGrams,
+            "fatGrams": fatGrams,
+            "bolusUnits": bolusUnits,
+            "notes": notes,
+            "overrideName": overrideName ?? "",
+        ]
+    }
+
+    private static func intValue(_ value: Any?) -> Int {
+        if let value = value as? Int { return value }
+        if let value = value as? Double { return Int(value) }
+        if let value = value as? String { return Int(value) ?? 0 }
+        return 0
+    }
+
+    private static func doubleValue(_ value: Any?) -> Double {
+        if let value = value as? Double { return value }
+        if let value = value as? Int { return Double(value) }
+        if let value = value as? String { return Double(value) ?? 0 }
+        return 0
+    }
+}
 
 struct WatchConfig: Equatable {
     var nsURL: String
@@ -35,6 +88,9 @@ struct WatchConfig: Equatable {
     var mealWithFatProtein: Bool
     var maxProtein: Double
     var maxFat: Double
+
+    // Combo presets synced from iPhone
+    var comboPresets: [WatchComboPreset]
 
     var hasDexcomCredentials: Bool {
         !dexUsername.isEmpty && !dexPassword.isEmpty
@@ -83,6 +139,7 @@ struct WatchConfig: Equatable {
             "mealWithFatProtein": mealWithFatProtein,
             "maxProtein": maxProtein,
             "maxFat": maxFat,
+            "comboPresets": comboPresets.map { $0.toDictionary() },
         ]
     }
 
@@ -110,6 +167,8 @@ struct WatchConfig: Equatable {
         mealWithFatProtein = dict["mealWithFatProtein"] as? Bool ?? false
         maxProtein = dict["maxProtein"] as? Double ?? 30.0
         maxFat = dict["maxFat"] as? Double ?? 30.0
+        let comboPresetDictionaries = dict["comboPresets"] as? [[String: Any]] ?? []
+        comboPresets = comboPresetDictionaries.map { WatchComboPreset(from: $0) }
     }
 /*
     func saveToDefaults() {

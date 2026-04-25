@@ -162,7 +162,7 @@ struct ComboView: View {
     private var sortedPresets: [ComboPreset] {
         presets.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
-    
+        
     private func loadPresetsFromStorage() {
         presets = storage.comboPresets.map { ComboPreset(storageEntry: $0) }
     }

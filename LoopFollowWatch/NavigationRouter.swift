@@ -8,7 +8,7 @@ import SwiftUI
 import Combine
 
 enum DeepLinkDestination: Hashable {
-    case bolus, meal, override, tempTarget
+    case bolus, meal, override, combo, tempTarget
 }
 
 class NavigationRouter: ObservableObject {
@@ -20,7 +20,7 @@ class NavigationRouter: ObservableObject {
     @Published var activeDestination: DeepLinkDestination?
 
     /// Parse a deep link URL and navigate to the appropriate screen.
-    /// URLs: loopfollow://open (main graph), loopfollow://bolus, loopfollow://meal, loopfollow://override, loopfollow://temptarget
+    /// URLs: loopfollow://open (main graph), loopfollow://bolus, loopfollow://meal, loopfollow://override, loopfollow://combo, loopfollow://temptarget
     func handle(_ url: URL) {
         guard url.scheme == "loopfollow" else { return }
 
@@ -31,6 +31,7 @@ class NavigationRouter: ObservableObject {
         case "bolus":      navigateTo(.bolus)
         case "meal":       navigateTo(.meal)
         case "override":   navigateTo(.override)
+        case "combo":      navigateTo(.combo)
         case "temptarget": navigateTo(.tempTarget)
         default:
             // "open" or unknown — stay on main graph (tab 0)

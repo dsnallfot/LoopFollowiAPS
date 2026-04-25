@@ -112,3 +112,20 @@ struct TempTargetShortcutWidget: Widget {
         .supportedFamilies([.accessoryCircular])
     }
 }
+
+// MARK: - Combo Shortcut
+
+struct ComboShortcutWidget: Widget {
+    let kind = "ComboShortcut"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ActionTimelineProvider()) { _ in
+            ActionShortcutView(systemImage: "plus.square.on.square", color: .pink)
+                .containerBackground(.fill.tertiary, for: .widget)
+                .widgetURL(URL(string: "loopfollow://combo"))
+        }
+        .configurationDisplayName("Snabbval")
+        .description("Quick access to combos.")
+        .supportedFamilies([.accessoryCircular])
+    }
+}

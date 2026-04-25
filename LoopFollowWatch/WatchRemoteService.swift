@@ -52,6 +52,7 @@ class WatchRemoteService {
         }
     }
 
+
     static func sendMeal(
         carbs: Int,
         protein: Int? = nil,
@@ -109,6 +110,84 @@ class WatchRemoteService {
             postNightscoutTreatment(body: body, config: config, completion: completion)
         default:
             completion(false, "Remote type not supported")
+        }
+    }
+
+    static func sendCombo(
+        carbs: Int? = nil,
+        protein: Int? = nil,
+        fat: Int? = nil,
+        bolusAmount: Double? = nil,
+        notes: String? = "⌚️",
+        entryTime: Date? = nil,
+        overrideName: String? = nil,
+        config: WatchConfig,
+        completion: @escaping (Bool, String?) -> Void
+    ) {
+        switch config.remoteType {
+        case "Trio Remote Control":
+            let hasNutrients = (carbs ?? 0) > 0 || (protein ?? 0) > 0 || (fat ?? 0) > 0
+            let hasBolus = (bolusAmount ?? 0) > 0
+            let hasOverride = overrideName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+
+            guard hasNutrients || hasBolus || hasOverride else {
+                completion(false, "No combo data provided. At least one of carbs, fat, protein, bolus, or override must be provided.")
+                return
+            }
+
+            let timestamp = entryTime ?? Date()
+            let scheduledTime = entryTime?.timeIntervalSince1970
+            let comboNotes = (notes?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ? notes : "⌚️"
+            let trimmedOverrideName = overrideName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let finalOverrideName = (trimmedOverrideName?.isEmpty == false) ? trimmedOverrideName : nil
+            let finalCarbs = (carbs ?? 0) > 0 ? carbs : nil
+            let finalProtein = (protein ?? 0) > 0 ? protein : nil
+            let finalFat = (fat ?? 0) > 0 ? fat : nil
+            let finalBolusAmount = (bolusAmount ?? 0) > 0 ? bolusAmount : nil
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss"
+
+            var alertLines = ["Remote snabbval"]
+            if let comboNotes = comboNotes {
+                alertLines.append(comboNotes)
+            }
+            if let finalCarbs = finalCarbs {
+                alertLines.append("Kolhydrater: \(finalCarbs) g")
+            }
+            if let finalFat = finalFat {
+                alertLines.append("Fett: \(finalFat) g")
+            }
+            if let finalProtein = finalProtein {
+                alertLines.append("Protein: \(finalProtein) g")
+            }
+            if let finalBolusAmount = finalBolusAmount {
+                alertLines.append(String(format: "Bolus: %.2f E", finalBolusAmount))
+            }
+            if let finalOverrideName = finalOverrideName {
+                alertLines.append("Override: \(finalOverrideName)")
+            }
+            alertLines.append("Tid: \(formatter.string(from: timestamp))")
+            alertLines.append("Inlagt av: \(config.trcUser)")
+
+            let alertString = Self.truncatedAlertString(alertLines)
+            let payload = TRCPayload(
+                aps: APSPayload(alert: alertString),
+                user: config.trcUser,
+                commandType: "combo",
+                bolusAmount: finalBolusAmount,
+                carbs: finalCarbs,
+                protein: finalProtein,
+                fat: finalFat,
+                notes: comboNotes,
+                sharedSecret: config.trcSharedSecret,
+                timestamp: Date().timeIntervalSince1970,
+                overrideName: finalOverrideName,
+                scheduledTime: scheduledTime
+            )
+            sendTRCCommand(payload: payload, config: config, completion: completion)
+        default:
+            completion(false, "Remote type not supported for combo")
         }
     }
 

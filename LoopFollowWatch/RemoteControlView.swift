@@ -40,9 +40,9 @@ struct RemoteControlView: View {
                 .buttonStyle(.plain)
 
                 Button {
-                    router.activeDestination = .tempTarget
+                    router.activeDestination = .combo
                 } label: {
-                    RemoteTile(icon: "target", label: "Tf. Mål", color: tempColor)
+                    RemoteTile(icon: "plus.square.on.square", label: "Snabbval", color: .pink)
                 }
                 .buttonStyle(.plain)
             }
@@ -64,6 +64,8 @@ struct RemoteControlView: View {
                     )
                 case .override:
                     WatchOverrideView(config: config, bgFetcher: bgFetcher)
+                case .combo:
+                    WatchComboView(config: config)
                 case .tempTarget:
                     WatchTempTargetView(config: config, bgFetcher: bgFetcher)
                 }
