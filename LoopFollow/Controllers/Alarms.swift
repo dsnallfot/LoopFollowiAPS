@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 import AVFoundation
 import CallKit
 
@@ -835,8 +836,15 @@ extension MainViewController {
                 snoozer.snoozeForMinuteLabel.isHidden = false
                 snoozer.snoozeForMinuteUnit.isHidden = false
             }
-
-            self.tabBarController?.selectedIndex = 2
+            // Auto-växla bara till snooze-vyn om appen inte redan används aktivt i förgrunden.
+            // Då stör vi inte användaren om hen redan klickar runt i appen, men appen kan ändå
+            // öppnas på snooze-vyn om ett larm triggas medan appen ligger i bakgrund/inaktivt läge.
+            let appIsActiveInForeground = UIApplication.shared.applicationState == .active
+            if UserDefaultsRepository.autoSwitchToSnoozeView.value,
+               !appIsActiveInForeground,
+               self.tabBarController?.selectedIndex != 2 {
+                self.tabBarController?.selectedIndex = 2
+            }
 
             if snooozedBGReadingTime != nil {
                 UserDefaultsRepository.snoozedBGReadingTime.value = snooozedBGReadingTime
