@@ -1577,6 +1577,7 @@ class AlarmViewModel {
         rows.append(.toggle(title: "Ignorera noll-glukos", isOn: UserDefaultsRepository.alertIgnoreZero.value, id: "alertIgnoreZero"))
         rows.append(.toggle(title: "Auto-Snooza CGM-start", isOn: UserDefaultsRepository.alertAutoSnoozeCGMStart.value, id: "alertAutoSnoozeCGMStart"))
         rows.append(.toggle(title: "Aktivera volymknapp-snooze", isOn: UserDefaultsRepository.enableVolumeButtonSnooze.value, id: "enableVolumeButtonSnooze"))
+        rows.append(.toggle(title: "Autoväxla till snoozevyn", isOn: UserDefaultsRepository.autoSwitchToSnoozeView.value, id: "autoSwitchToSnoozeView"))
         
         // --- Nattinställningar (Time Windows) ---
         // Eureka använde TimeInlineRow, vi mappar dem till .dateValue eller en dedikerad .timePicker om du har det
@@ -1796,6 +1797,9 @@ class AlarmViewModel {
             
         case "enableVolumeButtonSnooze":
             UserDefaultsRepository.enableVolumeButtonSnooze.value = value
+            
+        case "autoSwitchToSnoozeView":
+            UserDefaultsRepository.autoSwitchToSnoozeView.value = value
             
         default:
             break

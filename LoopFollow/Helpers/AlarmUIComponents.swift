@@ -70,6 +70,7 @@ class SettingStepperCell: UITableViewCell {
     static let reuseIdentifier = "SettingStepperCell"
     private let stepper = UIStepper()
     private let valueLabel = UILabel()
+    private var currentStep: Double = 1
     var onValueChanged: ((Double) -> Void)?
     
     private var currentUnit: String?
@@ -113,6 +114,7 @@ class SettingStepperCell: UITableViewCell {
             textLabel?.text = title
             self.currentTitle = title
             self.currentUnit = unit
+            self.currentStep = step
             
             stepper.minimumValue = min
             stepper.maximumValue = max
@@ -140,8 +142,9 @@ class SettingStepperCell: UITableViewCell {
                 // Fix för decimalfelet (0.8999...) och visning av %
                 let percentage = Int((value).rounded())
                 valueLabel.text = "\(percentage)%"
+            } else if currentStep < 1 {
+                valueLabel.text = String(format: "%.1f%@", value, unit)
             } else {
-                // Standardvisning för minuter etc (heltal)
                 valueLabel.text = "\(Int(value.rounded()))\(unit)"
             }
         }

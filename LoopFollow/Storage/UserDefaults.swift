@@ -190,6 +190,8 @@ class UserDefaultsRepository {
     
     static let enableVolumeButtonSnooze = UserDefaultsValue<Bool>(key: "enableVolumeButtonSnooze", default: true)
     
+    static let autoSwitchToSnoozeView = UserDefaultsValue<Bool>(key: "autoSwitchToSnoozeView", default: true)
+    
     static let alertCageInsertTime = UserDefaultsValue<TimeInterval>(key: "alertCageInsertTime", default: 0)
     static let alertSageInsertTime = UserDefaultsValue<TimeInterval>(key: "alertSageInsertTime", default: 0)
     
