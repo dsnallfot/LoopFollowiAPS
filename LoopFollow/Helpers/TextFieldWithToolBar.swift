@@ -26,6 +26,7 @@ public struct TextFieldWithToolBar: UIViewRepresentable {
     var minValue: HKQuantity?
     var maxValue: HKQuantity?
     var onValidationError: (String) -> Void
+    var nextToolbarAction: (() -> Void)?
 
     public init(
         quantity: Binding<HKQuantity>,
@@ -41,6 +42,7 @@ public struct TextFieldWithToolBar: UIViewRepresentable {
         allowDecimalSeparator: Bool = true,
         minValue: HKQuantity? = nil,
         maxValue: HKQuantity? = nil,
+        nextToolbarAction: (() -> Void)? = nil,
         onValidationError: @escaping (String) -> Void
     ) {
         _quantity = quantity
@@ -56,6 +58,7 @@ public struct TextFieldWithToolBar: UIViewRepresentable {
         self.allowDecimalSeparator = allowDecimalSeparator
         self.minValue = minValue
         self.maxValue = maxValue
+        self.nextToolbarAction = nextToolbarAction
         self.onValidationError = onValidationError
     }
 
@@ -95,12 +98,25 @@ public struct TextFieldWithToolBar: UIViewRepresentable {
             target: context.coordinator,
             action: #selector(Coordinator.clearText)
         )
-        toolbar.items = [clearButton, flexibleSpace, doneButton]
+
+        if nextToolbarAction != nil {
+            let nextButton = UIBarButtonItem(
+                image: UIImage(systemName: "forward.fill"),
+                style: .plain,
+                target: context.coordinator,
+                action: #selector(Coordinator.nextToolbarButtonTapped)
+            )
+            toolbar.items = [clearButton, flexibleSpace, nextButton, doneButton]
+        } else {
+            toolbar.items = [clearButton, flexibleSpace, doneButton]
+        }
+
         toolbar.sizeToFit()
         return toolbar
     }
 
     public func updateUIView(_ textField: UITextField, context: Context) {
+        context.coordinator.parent = self
         if !context.coordinator.isEditing {
             let newText = quantity.doubleValue(for: unit) == 0 ? "" : context.coordinator.format(quantity: quantity, for: unit)
             if textField.text != newText {
@@ -151,6 +167,12 @@ public struct TextFieldWithToolBar: UIViewRepresentable {
             DispatchQueue.main.async {
                 self.parent.quantity = HKQuantity(unit: self.unit, doubleValue: 0)
                 self.textField?.text = ""
+            }
+        }
+        
+        @objc fileprivate func nextToolbarButtonTapped() {
+            DispatchQueue.main.async {
+                self.parent.nextToolbarAction?()
             }
         }
 

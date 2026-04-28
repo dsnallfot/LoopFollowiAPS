@@ -20,6 +20,8 @@ struct HKQuantityInputView: View {
     @FocusState.Binding var isFocused: Bool
 
     var onValidationError: (String) -> Void
+    
+    var nextToolbarAction: (() -> Void)?
 
     var body: some View {
         HStack {
@@ -31,6 +33,7 @@ struct HKQuantityInputView: View {
                 unit: unit,
                 minValue: minValue,
                 maxValue: maxValue,
+                nextToolbarAction: nextToolbarAction,
                 onValidationError: onValidationError
             )
             .focused($isFocused)
