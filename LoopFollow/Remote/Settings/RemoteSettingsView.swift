@@ -200,6 +200,9 @@ struct RemoteSettingsView: View {
                     // Meal Section
                     Section(header: Text("Måltidsinställningar")) {
                         Toggle("Måltid med bolus", isOn: $viewModel.mealWithBolus)
+                        
+                            .toggleStyle(SwitchToggleStyle())
+                        Toggle("Avancerad bolusberäkning", isOn: $viewModel.showAdvancedBolusCalc)
                             .toggleStyle(SwitchToggleStyle())
 
                         Toggle("Måltid med Fett/Protein/Tid", isOn: $viewModel.mealWithFatProtein)

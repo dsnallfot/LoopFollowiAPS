@@ -65,6 +65,17 @@ class Storage {
     var sharedLatestBG = StorageValue<String>(key: "sharedLatestBG", defaultValue: "")
     var sharedLatestDirection = StorageValue<String>(key: "sharedLatestDirection", defaultValue: "")
     var sharedLatestDelta = StorageValue<String>(key: "sharedLatestDelta", defaultValue: "")
+    var sharedLatestTarget = StorageValue<Double>(key: "sharedLatestTarget", defaultValue: 0.0)
+
+    //För boluskalkylator
+    var sharedRawIOB = StorageValue<Double>(key: "sharedRawIOB", defaultValue: 0.0)
+    var sharedRawCOB = StorageValue<Double>(key: "sharedRawCOB", defaultValue: 0.0)
+    var sharedRawISF = StorageValue<Double>(key: "sharedRawISF", defaultValue: 0.0)
+    var sharedRawCarbReq = StorageValue<Double>(key: "sharedRawCarbReq", defaultValue: 0.0)
+    var sharedRawInsulinReq = StorageValue<Double>(key: "sharedRawInsulinReq", defaultValue: 0.0)
+    var sharedRawBG = StorageValue<Double>(key: "sharedRawBG", defaultValue: 0.0)
+    var sharedRawBG15MinTrend = StorageValue<Double>(key: "sharedRawBG15MinTrend", defaultValue: 0.0)
+    var showAdvancedBolusCalc = StorageValue<Bool>(key: "showAdvancedBolusCalc", defaultValue: false)
 
     // Persist latest Bluetooth heartbeat so UI can show a value immediately after app restart
     var lastBluetoothHeartbeatDate = StorageValue<Date?>(key: "lastBluetoothHeartbeatDate", defaultValue: nil)

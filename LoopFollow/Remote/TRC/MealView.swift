@@ -30,6 +30,10 @@ struct MealView: View {
     @ObservedObject private var maxBolus = Storage.shared.maxBolus
     @ObservedObject private var CRValue = Storage.shared.sharedCRValue
     
+    @ObservedObject private var showAdvancedBolusCalc = Storage.shared.showAdvancedBolusCalc
+
+    @State private var showBolusCalculationSheet: Bool = false
+    
     @FocusState private var carbsFieldIsFocused: Bool
     @FocusState private var proteinFieldIsFocused: Bool
     @FocusState private var fatFieldIsFocused: Bool
@@ -115,8 +119,18 @@ struct MealView: View {
                         
                         if mealWithBolus.value {
                             HStack(spacing: 8) {
-                                Text("CR: \(formattedCRValue) g/E")
-                                    .monospacedDigit()
+                                if showAdvancedBolusCalc.value {
+                                    Button {
+                                        showBolusCalculationSheet = true
+                                    } label: {
+                                        Image(systemName: "info.bubble.fill")
+                                    }
+                                    .disabled(mealBolusCalculation == nil)
+
+                                } else {
+                                    Text("CR: \(formattedCRValue) g/E")
+                                        .monospacedDigit()
+                                }
                                 
                                 Spacer()
 
@@ -136,6 +150,7 @@ struct MealView: View {
                             //.font(.subheadline)
                             .foregroundColor(Color(UIColor.insulin.withAlphaComponent(0.7)))
                             .fontWeight(.semibold)
+                            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
 
                             HKQuantityInputView(
                                 label: "Bolus",
@@ -214,11 +229,27 @@ struct MealView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 carbsFieldIsFocused = true
             }
-
+/*
             // Debug: Fetch sharedCRValue from DeviceStatusOpenAPS
             print("📊 sharedCRValue from DeviceStatusOpenAPS: \(CRValue.value)")
+
+            let storage = Storage.shared
+
+            print("📊 sharedRawMinPredBG: \(storage.sharedRawMinPredBG.value)")
+            print("📊 sharedRawIOB: \(storage.sharedRawIOB.value)")
+            print("📊 sharedRawCOB: \(storage.sharedRawCOB.value)")
+            print("📊 sharedRawISF: \(storage.sharedRawISF.value)")
+            print("📊 sharedRawCarbReq: \(storage.sharedRawCarbReq.value)")
+            print("📊 sharedRawInsulinReq: \(storage.sharedRawInsulinReq.value)")
+            print("📊 sharedRawBG: \(storage.sharedRawBG.value)")
+            print("📊 sharedRawBG15MinTrend: \(storage.sharedRawBG15MinTrend.value)")
+            print("📊 sharedLatestTarget (mmol/L): \(storage.sharedLatestTarget.value)")
+            printMealBolusCalculationDebug()
+            */
         }
         .onChange(of: carbs.doubleValue(for: .gram())) { _ in
+            //printMealBolusCalculationDebug()
+
             if isUsingCalculatedBolus {
                 bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: calculatedBolusValue)
             }
@@ -312,10 +343,35 @@ struct MealView: View {
                 return Alert(title: Text("Unknown Alert"))
             }
         }
+        .sheet(isPresented: $showBolusCalculationSheet) {
+            if let calculation = mealBolusCalculation {
+                MealBolusCalculationView(
+                    calculation: calculation,
+                    recommendedBolus: advancedCalculatedBolusValue
+                )
+            }
+        }
     }
     
     private enum MealInputField {
         case carbs, protein, fat, notes, bolus
+    }
+    
+    struct MealBolusCalculation {
+        let bg: Double
+        let target: Double
+        let isf: Double
+        let iob: Double
+        let cob: Double
+        let pendingCarbs: Double
+        let cr: Double
+        let delta: Double
+        let glucoseEffect: Double
+        let iobEffect: Double
+        let cobEffect: Double
+        let deltaEffect: Double
+        let fullBolus: Double
+        let recommendedBolus: Double
     }
 
     private var mealInputFocusOrder: [MealInputField] {
@@ -352,6 +408,79 @@ struct MealView: View {
             }
         }
     }
+    
+    private func floorToTwoDecimals(_ value: Double) -> Double {
+        floor(value * 100) / 100
+    }
+
+    private func floorToBolusStep(_ value: Double) -> Double {
+        let roundedToTwoDecimals = (value * 100).rounded() / 100
+        return max(0, floor(roundedToTwoDecimals * 20) / 20)
+    }
+
+    private var mealBolusCalculation: MealBolusCalculation? {
+        let storage = Storage.shared
+
+        let bg = storage.sharedRawBG.value
+        let target = storage.sharedLatestTarget.value
+        let isf = storage.sharedRawISF.value
+        let iob = storage.sharedRawIOB.value
+        let cob = storage.sharedRawCOB.value
+        let pendingCarbs = carbs.doubleValue(for: .gram())
+        let cr = parsedCRValue ?? 0.0
+        let delta = storage.sharedRawBG15MinTrend.value
+
+        guard bg > 0, target > 0, isf > 0, cr > 0 else { return nil }
+
+        let glucoseEffect = floorToTwoDecimals((bg - target) / isf)
+        let iobEffect = -iob
+        let totalCarbs = cob + pendingCarbs
+        let cobEffect = floorToTwoDecimals(totalCarbs / cr)
+        let deltaEffect = floorToTwoDecimals(delta / isf)
+        let fullBolus = glucoseEffect + iobEffect + cobEffect + deltaEffect
+        let recommendedBolus = floorToBolusStep(fullBolus)
+
+        return MealBolusCalculation(
+            bg: bg,
+            target: target,
+            isf: isf,
+            iob: iob,
+            cob: cob,
+            pendingCarbs: pendingCarbs,
+            cr: cr,
+            delta: delta,
+            glucoseEffect: glucoseEffect,
+            iobEffect: iobEffect,
+            cobEffect: cobEffect,
+            deltaEffect: deltaEffect,
+            fullBolus: fullBolus,
+            recommendedBolus: recommendedBolus
+        )
+    }
+/*
+    private func printMealBolusCalculationDebug() {
+        guard let calculation = mealBolusCalculation else {
+            print("🧮 Meal bolus calculation: saknar giltiga värden")
+            return
+        }
+
+        print("🧮 Meal bolus calculation")
+        print("🧮 bg: \(calculation.bg)")
+        print("🧮 target: \(calculation.target)")
+        print("🧮 isf: \(calculation.isf)")
+        print("🧮 iob: \(calculation.iob)")
+        print("🧮 cob: \(calculation.cob)")
+        print("🧮 pendingCarbs: \(calculation.pendingCarbs)")
+        print("🧮 cr: \(calculation.cr)")
+        print("🧮 delta: \(calculation.delta)")
+        print("🧮 glucoseEffect: \(calculation.glucoseEffect)")
+        print("🧮 iobEffect: \(calculation.iobEffect)")
+        print("🧮 cobEffect: \(calculation.cobEffect)")
+        print("🧮 deltaEffect: \(calculation.deltaEffect)")
+        print("🧮 fullBolus: \(calculation.fullBolus)")
+        print("🧮 recommendedBolus: \(calculation.recommendedBolus)")
+    }
+    */
 
     private var parsedCRValue: Double? {
         let normalized = CRValue.value.replacingOccurrences(of: ",", with: ".")
@@ -363,12 +492,24 @@ struct MealView: View {
         return String(format: "%.0f", parsedCRValue)
     }
 
-    private var calculatedBolusValue: Double {
+    private var simpleCalculatedBolusValue: Double {
         guard let parsedCRValue, parsedCRValue > 0 else { return 0.0 }
         let carbsValue = carbs.doubleValue(for: .gram())
         let raw = carbsValue / parsedCRValue
         let step = 0.05
         return floor(raw / step) * step
+    }
+
+    private var advancedCalculatedBolusValue: Double {
+        mealBolusCalculation?.recommendedBolus ?? 0.0
+    }
+
+    private var effectiveCalculatedBolusValue: Double {
+        showAdvancedBolusCalc.value ? advancedCalculatedBolusValue : simpleCalculatedBolusValue
+    }
+
+    private var calculatedBolusValue: Double {
+        effectiveCalculatedBolusValue
     }
 
     private var formattedCalculatedBolus: String {
@@ -609,5 +750,112 @@ private struct MealNotesTextField: UIViewRepresentable {
         @objc func nextButtonTapped() {
             parent.nextToolbarAction()
         }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct MealBolusCalculationView: View {
+    let calculation: MealView.MealBolusCalculation
+    let recommendedBolus: Double
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        ZStack {
+            ThemeBackground()
+                .ignoresSafeArea()
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    calcRow(
+                        label: "Glukos - Målglukos / ISF",
+                        detail: "(\(fmtInt(calculation.bg)) − \(fmtInt(calculation.target))) / \(fmtInt(calculation.isf))",
+                        result: calculation.glucoseEffect
+                    )
+                    
+                    calcRow(
+                        label: "IOB",
+                        detail: "\(fmt(calculation.iob))",
+                        result: calculation.iobEffect
+                    )
+                    
+                    calcRow(
+                        label: "COB + Nya kolhydrater / CR",
+                        detail: "(\(fmtInt(calculation.cob)) + \(fmtInt(calculation.pendingCarbs))) / \(fmtInt(calculation.cr))",
+                        result: calculation.cobEffect
+                    )
+                    
+                    calcRow(
+                        label: "15 minuters delta / ISF",
+                        detail: "\(fmtInt(calculation.delta)) / \(fmtInt(calculation.isf))",
+                        result: calculation.deltaEffect
+                    )
+                    
+                    Divider()
+                    
+                    summaryRow(label: "Beräknad bolus", value: "\(fmt(calculation.fullBolus)) E", color: calculation.fullBolus >= 0 ? .green : .red)
+                    summaryRow(label: "Avrundad beräkning", value: "\(fmt(recommendedBolus)) E", color: .blue)
+                }
+                .padding()
+            }
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .navigationTitle("Bolusberäkning")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Stäng") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+    private func calcRow(label: String, detail: String, result: Double) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.headline)
+                .foregroundColor(.secondary)
+
+            HStack {
+                Text(detail)
+                    .font(.system(.body, design: .rounded))
+                    .monospacedDigit()
+
+                Spacer()
+
+                Text("\(fmt(result)) E")
+                    .font(.system(.title3, design: .rounded).weight(.bold))
+                    .monospacedDigit()
+                    .foregroundColor(result >= 0 ? .green : .red)
+            }
+        }
+        .padding()
+        .background(Color(.systemGray).opacity(0.15))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
+
+    private func summaryRow(label: String, value: String, color: Color) -> some View {
+        HStack {
+            Text(label)
+                .font(.headline)
+            Spacer()
+            Text(value)
+                .font(.system(.title3, design: .rounded).weight(.bold))
+                .monospacedDigit()
+                .foregroundColor(color)
+        }
+        .padding()
+        .background(Color(.systemGray).opacity(0.15))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
+
+    private func fmt(_ value: Double) -> String {
+        String(format: "%.2f", value)
+    }
+
+    private func fmtInt(_ value: Double) -> String {
+        value == value.rounded() ? String(format: "%.0f", value) : String(format: "%.1f", value)
     }
 }

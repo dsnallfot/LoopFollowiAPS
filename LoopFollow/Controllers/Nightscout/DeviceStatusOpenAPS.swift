@@ -146,6 +146,7 @@ extension MainViewController {
             let isfInMmol = enactedISFValue * 0.0555 // Conversion factor for mmol/L
             let isfUnit = "mmol/L"
             storage.sharedLatestISF.value = String(format: "%.1f %@", isfInMmol, isfUnit)
+            storage.sharedRawISF.value = isfInMmol
 
             var determinedISFUnit: HKUnit = .milligramsPerDeciliter
             if enactedISFValue < 25 {
@@ -229,8 +230,8 @@ extension MainViewController {
         if let iobMetric = InsulinMetric(from: lastLoopRecord["iob"], key: "iob") {
             // Klassisk Loop/OpenAPS-IOB (dvs över profilbasal)
             infoManager.updateInfoData(type: .iob, value: iobMetric, unit: "E")
-            latestIOB = iobMetric
-            storage.sharedLatestIOB.value = String(format: "%.2f E", latestIOB?.value ?? 0.00)
+            storage.sharedLatestIOB.value = String(format: "%.2f E", iobMetric.value)
+            storage.sharedRawIOB.value = iobMetric.value
 
             // Beräkna teoretisk basal-IOB för nuvarande klockslag
             let profile = ProfileManager.shared
@@ -256,8 +257,8 @@ extension MainViewController {
             // COB
             if let cobMetric = CarbMetric(from: enactedOrSuggested, key: "COB") {
                 infoManager.updateInfoData(type: .cob, value: cobMetric, unit: "g")
-                latestCOB = cobMetric
-                storage.sharedLatestCOB.value = String(format: "%.0f g", latestCOB?.value ?? 0)
+                storage.sharedLatestCOB.value = String(format: "%.0f g", cobMetric.value)
+                storage.sharedRawCOB.value = cobMetric.value
             } else if let reasonString = enactedOrSuggested["reason"] as? String {
                 // Fallback: Extract COB from reason string
                 let cobPattern = "COB: (\\d+(?:\\.\\d+)?)"
@@ -495,9 +496,11 @@ extension MainViewController {
             infoManager.updateInfoData(type: .recBolus, value: insulinReqMetric, unit: unitForInfo)
             UserDefaultsRepository.deviceRecBolus.value = insulinReqMetric.value
             storage.sharedLatestInsulinReq.value = String(format: "%.2f E", insulinReqMetric.value)
+            storage.sharedRawInsulinReq.value = insulinReqMetric.value
         } else {
             UserDefaultsRepository.deviceRecBolus.value = 0
             storage.sharedLatestInsulinReq.value = "0 E"
+            storage.sharedRawInsulinReq.value = 0.0
             infoManager.setPriority(false, for: .recBolus)
         }
         
@@ -515,6 +518,7 @@ extension MainViewController {
 
             infoManager.updateInfoData(type: .carbReq, value: latestCarbReq, unit: unitForInfo)
             storage.sharedLatestCarbReq.value = "\(latestCarbReq) g"
+            storage.sharedRawCarbReq.value = adjustedCarbs
 
             LogManager.shared.log(
                 category: .deviceStatus,
@@ -526,7 +530,8 @@ extension MainViewController {
             let defaultCarbReq = "0"
             infoManager.updateInfoData(type: .carbReq, value: defaultCarbReq, unit: "g")
             infoManager.setPriority(false, for: .carbReq)
-            storage.sharedLatestCarbReq.value = "\(defaultCarbReq) g"
+            storage.sharedLatestCarbReq.value = "0 g"
+            storage.sharedRawCarbReq.value = 0.0
 
             LogManager.shared.log(
                 category: .deviceStatus,
@@ -628,17 +633,44 @@ extension MainViewController {
                 enactedTarget = HKQuantity(unit: targetUnit, doubleValue: enactedTargetValue)
             }
 
-            if let profileTargetHigh = profileTargetHigh, let enactedTarget = enactedTarget {
-                let profileTargetHighFormatted = Localizer.formatQuantity(profileTargetHigh)
-                let enactedTargetFormatted = Localizer.formatQuantity(enactedTarget)
+        if let profileTargetHigh = profileTargetHigh, let enactedTarget = enactedTarget {
+            let profileTargetHighFormatted = Localizer.formatQuantity(profileTargetHigh)
+            let enactedTargetFormatted = Localizer.formatQuantity(enactedTarget)
 
-                // Compare using formatted strings to avoid floating-point issues
-                if profileTargetHighFormatted != enactedTargetFormatted {
-                    infoManager.updateInfoData(type: .target, firstValue: profileTargetHigh, secondValue: enactedTarget, separator: .arrow, unit: "mmol/L")
-                } else {
-                    infoManager.updateInfoData(type: .target, value: profileTargetHigh, unit: "mmol/L")
-                }
+            let profileTargetHighValue = profileTargetHigh.doubleValue(for: .millimolesPerLiter)
+            let enactedTargetValue = enactedTarget.doubleValue(for: .millimolesPerLiter)
+
+            // Compare using formatted strings to avoid floating-point issues
+            if profileTargetHighFormatted != enactedTargetFormatted {
+                infoManager.updateInfoData(
+                    type: .target,
+                    firstValue: profileTargetHigh,
+                    secondValue: enactedTarget,
+                    separator: .arrow,
+                    unit: "mmol/L"
+                )
+
+                storage.sharedLatestTarget.value = enactedTargetValue
+            } else {
+                infoManager.updateInfoData(
+                    type: .target,
+                    value: profileTargetHigh,
+                    unit: "mmol/L"
+                )
+
+                storage.sharedLatestTarget.value = profileTargetHighValue
             }
+        } else if let profileTargetHigh = profileTargetHigh {
+            let profileTargetHighValue = profileTargetHigh.doubleValue(for: .millimolesPerLiter)
+
+            infoManager.updateInfoData(
+                type: .target,
+                value: profileTargetHigh,
+                unit: "mmol/L"
+            )
+
+            storage.sharedLatestTarget.value = profileTargetHighValue
+        }
 
             // TDD
             if let tddMetric = InsulinMetric(from: enactedOrSuggested, key: "TDD") {

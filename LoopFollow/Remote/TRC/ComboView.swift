@@ -216,6 +216,7 @@ private struct ComboEditorView: View {
     @FocusState private var proteinFieldIsFocused: Bool
     @FocusState private var fatFieldIsFocused: Bool
     @FocusState private var bolusFieldIsFocused: Bool
+    @State private var notesFieldIsFocused: Bool = false
 
     @State private var showAlert: Bool = false
     @State private var alertType: AlertType? = nil
@@ -227,6 +228,15 @@ private struct ComboEditorView: View {
 
     @State private var selectedOverride: ProfileManager.TrioOverride? = nil
     @State private var showOverridePicker: Bool = false
+
+    private enum ComboInputField {
+        case presetName
+        case carbs
+        case protein
+        case fat
+        case notes
+        case bolus
+    }
 
     enum AlertType {
         case confirmCombo
@@ -246,6 +256,10 @@ private struct ComboEditorView: View {
                         Section() {
                             TextField("Ange namn på snabbval", text: $presetName)
                                 .focused($presetNameFieldIsFocused)
+                                .submitLabel(.next)
+                                .onSubmit {
+                                    focusNextComboInput(after: .presetName)
+                                }
                         }
                         .listRowBackground(Color(.systemGray).opacity(0.15))
                     }
@@ -259,7 +273,9 @@ private struct ComboEditorView: View {
                             minValue: HKQuantity(unit: .gram(), doubleValue: 0),
                             maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                             isFocused: $carbsFieldIsFocused,
-                            onValidationError: { _ in }
+                            onValidationError: { _ in }, nextToolbarAction: {
+                                focusNextComboInput(after: .carbs)
+                            }
                         )
                         
                         if mealWithFatProtein.value {
@@ -271,7 +287,9 @@ private struct ComboEditorView: View {
                                 minValue: HKQuantity(unit: .gram(), doubleValue: 0),
                                 maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                                 isFocused: $proteinFieldIsFocused,
-                                onValidationError: { _ in }
+                                onValidationError: { _ in }, nextToolbarAction: {
+                                    focusNextComboInput(after: .protein)
+                                }
                             )
                             
                             HKQuantityInputView(
@@ -282,16 +300,23 @@ private struct ComboEditorView: View {
                                 minValue: HKQuantity(unit: .gram(), doubleValue: 0),
                                 maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
                                 isFocused: $fatFieldIsFocused,
-                                onValidationError: { _ in }
+                                onValidationError: { _ in }, nextToolbarAction: {
+                                    focusNextComboInput(after: .fat)
+                                }
                             )
                         }
                         
                         HStack {
                             Text("Anteckning")
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            TextField("Lägg till anteckning", text: $notes)
-                                .multilineTextAlignment(.trailing)
+
+                            ComboNotesTextField(
+                                text: $notes,
+                                isFocused: $notesFieldIsFocused,
+                                nextToolbarAction: {
+                                    focusNextComboInput(after: .notes)
+                                }
+                            )
                         }
                         
                         if mealWithBolus.value {
@@ -303,7 +328,9 @@ private struct ComboEditorView: View {
                                 minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
                                 maxValue: HKQuantity(unit: .internationalUnit(), doubleValue: 999),
                                 isFocused: $bolusFieldIsFocused,
-                                onValidationError: { _ in }
+                                onValidationError: { _ in }, nextToolbarAction: {
+                                    focusNextComboInput(after: .bolus)
+                                }
                             )
                         }
                     }
@@ -359,10 +386,7 @@ private struct ComboEditorView: View {
                         progressText: progressText,
                         isLoading: isLoading,
                         action: {
-                            carbsFieldIsFocused = false
-                            proteinFieldIsFocused = false
-                            fatFieldIsFocused = false
-                            bolusFieldIsFocused = false
+                            clearComboInputFocus()
 
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 guard carbs.doubleValue(for: .gram()) != 0 ||
@@ -401,6 +425,22 @@ private struct ComboEditorView: View {
                             dismiss()
                         }
                     }
+
+                    ToolbarItemGroup(placement: .keyboard) {
+                        if presetNameFieldIsFocused {
+                            Spacer()
+                            Button {
+                                focusNextComboInput(after: .presetName)
+                            } label: {
+                                Image(systemName: "forward.fill")
+                            }
+                            Button {
+                                presetNameFieldIsFocused = false
+                            } label: {
+                                Image(systemName: "keyboard.chevron.compact.down")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -420,11 +460,7 @@ private struct ComboEditorView: View {
                 isScheduling = false
             }
 
-            presetNameFieldIsFocused = false
-            carbsFieldIsFocused = false
-            proteinFieldIsFocused = false
-            fatFieldIsFocused = false
-            bolusFieldIsFocused = false
+            clearComboInputFocus()
 
             if mode == .createPreset {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -585,6 +621,66 @@ private struct ComboEditorView: View {
 
             case .none:
                 return Alert(title: Text("Unknown Alert"))
+            }
+        }
+    }
+
+    private var comboInputFocusOrder: [ComboInputField] {
+        var order: [ComboInputField] = []
+
+        if mode != .sendFromPreset {
+            order.append(.presetName)
+        }
+
+        order.append(.carbs)
+
+        if mealWithFatProtein.value {
+            order.append(.protein)
+            order.append(.fat)
+        }
+
+        order.append(.notes)
+
+        if mealWithBolus.value {
+            order.append(.bolus)
+        }
+
+        return order
+    }
+
+    private func clearComboInputFocus() {
+        presetNameFieldIsFocused = false
+        carbsFieldIsFocused = false
+        proteinFieldIsFocused = false
+        fatFieldIsFocused = false
+        bolusFieldIsFocused = false
+        notesFieldIsFocused = false
+    }
+
+    private func focusNextComboInput(after currentField: ComboInputField) {
+        let order = comboInputFocusOrder
+        guard let currentIndex = order.firstIndex(of: currentField) else { return }
+
+        let nextIndex = order.index(after: currentIndex) == order.endIndex
+            ? order.startIndex
+            : order.index(after: currentIndex)
+
+        clearComboInputFocus()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            switch order[nextIndex] {
+            case .presetName:
+                presetNameFieldIsFocused = true
+            case .carbs:
+                carbsFieldIsFocused = true
+            case .protein:
+                proteinFieldIsFocused = true
+            case .fat:
+                fatFieldIsFocused = true
+            case .notes:
+                notesFieldIsFocused = true
+            case .bolus:
+                bolusFieldIsFocused = true
             }
         }
     }
@@ -805,5 +901,100 @@ private struct ComboPreset: Identifiable, Equatable {
 
     static func == (lhs: ComboPreset, rhs: ComboPreset) -> Bool {
         lhs.id == rhs.id
+    }
+}
+
+
+@available(iOS 16.0, *)
+private struct ComboNotesTextField: UIViewRepresentable {
+    @Binding var text: String
+    @Binding var isFocused: Bool
+    let nextToolbarAction: () -> Void
+
+    func makeUIView(context: Context) -> UITextField {
+        let textField = UITextField()
+        textField.placeholder = "Lägg till anteckning"
+        textField.textAlignment = .right
+        textField.borderStyle = .none
+        textField.clearButtonMode = .whileEditing
+        textField.returnKeyType = .next
+        textField.delegate = context.coordinator
+        textField.inputAccessoryView = makeToolbar(for: textField, context: context)
+        return textField
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        context.coordinator.parent = self
+
+        if uiView.text != text {
+            uiView.text = text
+        }
+
+        if isFocused, !uiView.isFirstResponder {
+            DispatchQueue.main.async {
+                uiView.becomeFirstResponder()
+            }
+        } else if !isFocused, uiView.isFirstResponder {
+            DispatchQueue.main.async {
+                uiView.resignFirstResponder()
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    private func makeToolbar(for textField: UITextField, context: Context) -> UIToolbar {
+        let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 50))
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+
+        let nextButton = UIBarButtonItem(
+            image: UIImage(systemName: "forward.fill"),
+            style: .plain,
+            target: context.coordinator,
+            action: #selector(Coordinator.nextButtonTapped)
+        )
+
+        let doneButton = UIBarButtonItem(
+            image: UIImage(systemName: "keyboard.chevron.compact.down"),
+            style: .done,
+            target: textField,
+            action: #selector(UITextField.resignFirstResponder)
+        )
+
+        toolbar.items = [flexibleSpace, nextButton, doneButton]
+        toolbar.sizeToFit()
+        return toolbar
+    }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: ComboNotesTextField
+
+        init(parent: ComboNotesTextField) {
+            self.parent = parent
+        }
+
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            parent.isFocused = true
+        }
+
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            parent.text = textField.text ?? ""
+            parent.isFocused = false
+        }
+
+        func textFieldDidChangeSelection(_ textField: UITextField) {
+            parent.text = textField.text ?? ""
+        }
+
+        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            parent.nextToolbarAction()
+            return false
+        }
+
+        @objc func nextButtonTapped() {
+            parent.nextToolbarAction()
+        }
     }
 }

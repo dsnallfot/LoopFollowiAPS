@@ -60,7 +60,7 @@ struct CommandButtonView<Destination: View>: View {
             }
             .frame(maxWidth: .infinity, minHeight: 100)
             .padding()
-            .background(color.opacity(0.8))
+            .background(color.opacity(0.9))
             .foregroundColor(.white)
             .cornerRadius(30)
         }

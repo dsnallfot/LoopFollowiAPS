@@ -519,6 +519,29 @@ extension MainViewController {
             self.BGText.text = bgDisplay
             //Daniel: Added for visualization in remote meal info popup
             Storage.shared.sharedLatestBG.value = bgDisplay
+
+            if let rawBG = Double(bgDisplay.replacingOccurrences(of: ",", with: ".")) {
+                Storage.shared.sharedRawBG.value = rawBG
+            } else {
+                let fallbackRawBG = Double(bgValueMgdl) * GlucoseConversion.mgDlToMmolL
+                Storage.shared.sharedRawBG.value = fallbackRawBG
+            }
+
+            let target15MinAgo = latestBGEntry.date - (15 * 60)
+            let entryClosestTo15MinAgo = entries
+                .filter { $0.date <= latestBGEntry.date }
+                .min { first, second in
+                    abs(first.date - target15MinAgo) < abs(second.date - target15MinAgo)
+                }
+
+            if let entryClosestTo15MinAgo {
+                let latestBGMmol = Double(latestBGEntry.sgv) * GlucoseConversion.mgDlToMmolL
+                let previousBGMmol = Double(entryClosestTo15MinAgo.sgv) * GlucoseConversion.mgDlToMmolL
+                Storage.shared.sharedRawBG15MinTrend.value = latestBGMmol - previousBGMmol
+            } else {
+                Storage.shared.sharedRawBG15MinTrend.value = 0.0
+            }
+
             snoozerBG = bgDisplay
             self.setBGTextColor()
             // 🦄 Show/hide unicorn for exactly 5.5 mmol/L
