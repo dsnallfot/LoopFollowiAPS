@@ -781,7 +781,7 @@ private struct MealBolusCalculationView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     calcRow(
                         image: "1.circle.fill",
-                        label: "Glukos - Målglukos / ISF",
+                        label: "(Glukos - Målglukos) / ISF",
                         detail: "(\(fmtInt(calculation.bg)) − \(fmtInt(calculation.target))) / \(fmtInt(calculation.isf))",
                         result: calculation.glucoseEffect
                     )
@@ -795,14 +795,14 @@ private struct MealBolusCalculationView: View {
                     
                     calcRow(
                         image: "3.circle.fill",
-                        label: "COB + Nya kolhydrater / CR",
+                        label: "(COB + Måltid kh) / CR",
                         detail: "(\(fmtInt(calculation.cob)) + \(fmtInt(calculation.pendingCarbs))) / \(fmtInt(calculation.cr))",
                         result: calculation.cobEffect
                     )
                     
                     calcRow(
                         image: "4.circle.fill",
-                        label: "15 minuters delta / ISF",
+                        label: "15 min delta / ISF",
                         detail: "\(fmtInt(calculation.delta)) / \(fmtInt(calculation.isf))",
                         result: calculation.deltaEffect
                     )
@@ -814,7 +814,7 @@ private struct MealBolusCalculationView: View {
                     Button {
                         useRecommendedBolus()
                     } label: {
-                        summaryRowProminent(label: calculation.recommendedBolus > 0 ? "Förslag bolus" : "Ingen bolus krävs", value: "\(fmt(recommendedBolus)) E", color: calculation.recommendedBolus > 0 ? .primary : .gray, background: calculation.recommendedBolus > 0 ? Color(UIColor.insulin).opacity(0.9) : Color(.systemGray).opacity(0.4))
+                        summaryRowProminent(label: calculation.recommendedBolus > 0 ? " Förslag bolus" : " Ingen bolus krävs", value: "\(fmt(recommendedBolus)) E ", color: calculation.recommendedBolus > 0 ? .primary : .gray, background: calculation.recommendedBolus > 0 ? Color(UIColor.insulin).opacity(0.9) : Color(.systemGray).opacity(0.4))
                     }
                     .buttonStyle(.plain)
                     .disabled(recommendedBolus <= 0)
@@ -838,7 +838,7 @@ private struct MealBolusCalculationView: View {
 }
 
     private func calcRow(image: String, label: String, detail: String, result: Double) -> some View {
-        HStack {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Image(systemName: image)
                     .font(.subheadline)
@@ -875,7 +875,7 @@ private struct MealBolusCalculationView: View {
     }
 
     private func summaryRow(image: String, label: String, value: String, color: Color) -> some View {
-        HStack {
+        HStack(spacing: 12) {
             Image(systemName: image)
                 .font(.subheadline)
             Text(label)
