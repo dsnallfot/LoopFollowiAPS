@@ -230,6 +230,8 @@ extension MainViewController {
         if let iobMetric = InsulinMetric(from: lastLoopRecord["iob"], key: "iob") {
             // Klassisk Loop/OpenAPS-IOB (dvs över profilbasal)
             infoManager.updateInfoData(type: .iob, value: iobMetric, unit: "E")
+            // Till kontakttrick och notiser
+            latestIOB = iobMetric
             storage.sharedLatestIOB.value = String(format: "%.2f E", iobMetric.value)
             storage.sharedRawIOB.value = iobMetric.value
 
@@ -257,6 +259,8 @@ extension MainViewController {
             // COB
             if let cobMetric = CarbMetric(from: enactedOrSuggested, key: "COB") {
                 infoManager.updateInfoData(type: .cob, value: cobMetric, unit: "g")
+                // Till kontakttrick och notiser
+                latestCOB = cobMetric
                 storage.sharedLatestCOB.value = String(format: "%.0f g", cobMetric.value)
                 storage.sharedRawCOB.value = cobMetric.value
             } else if let reasonString = enactedOrSuggested["reason"] as? String {
