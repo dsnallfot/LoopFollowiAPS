@@ -347,7 +347,7 @@ private struct BolusCalcDetailView: View {
                 }
 
                 HStack {
-                    Text("Beräknad bolus")
+                    Text("Förslag bolus")
                         .font(.system(size: 11, weight: .semibold))
                     Spacer()
                     Text("\(fmt(recommended)) E")

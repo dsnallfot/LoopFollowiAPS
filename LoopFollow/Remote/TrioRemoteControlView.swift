@@ -62,7 +62,7 @@ struct CommandButtonView<Destination: View>: View {
             .padding()
             .background(color.opacity(0.9))
             .foregroundColor(.white)
-            .cornerRadius(30)
+            .cornerRadius(25)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -92,7 +92,7 @@ struct ShortcutButtonView: View {
             .padding()
             .background(color.opacity(0.8))
             .foregroundColor(.white)
-            .cornerRadius(30)
+            .cornerRadius(25)
         }
         .buttonStyle(PlainButtonStyle())
     }

@@ -127,7 +127,7 @@ struct MealView: View {
                                     Button {
                                         showBolusCalculationSheet = true
                                     } label: {
-                                        Image(systemName: "info.bubble.fill")
+                                        Image(systemName: "info.circle.fill")
                                     }
                                     .disabled(mealBolusCalculation == nil)
 
@@ -141,7 +141,7 @@ struct MealView: View {
                                 Button {
                                     toggleCalculatedBolus()
                                 } label: {
-                                    Text("Beräknad bolus:")
+                                    showAdvancedBolusCalc.value ? Text("Förslag bolus:") : Text("Beräknad bolus:")
                                     Text("\(formattedCalculatedBolus) E")
                                         .monospacedDigit()
                                     Image(systemName: isUsingCalculatedBolus ? "plus.app.fill" : "plus.app")
@@ -351,7 +351,10 @@ struct MealView: View {
             if let calculation = mealBolusCalculation {
                 MealBolusCalculationView(
                     calculation: calculation,
-                    recommendedBolus: advancedCalculatedBolusValue
+                    recommendedBolus: advancedCalculatedBolusValue,
+                    useRecommendedBolus: {
+                        applyCalculatedBolus()
+                    }
                 )
             }
         }
@@ -520,24 +523,29 @@ struct MealView: View {
         String(format: "%.2f", calculatedBolusValue)
     }
 
-    private func toggleCalculatedBolus() {
-        let shouldUseCalculatedBolus = !isUsingCalculatedBolus
+    private func applyCalculatedBolus() {
         let calculatedValue = calculatedBolusValue
-
-        if shouldUseCalculatedBolus {
-            guard calculatedValue > 0 else { return }
-        }
+        guard calculatedValue > 0 else { return }
 
         bolusFieldIsFocused = false
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            if shouldUseCalculatedBolus {
-                bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: calculatedValue)
-                isUsingCalculatedBolus = true
-            } else {
+            bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: calculatedValue)
+            isUsingCalculatedBolus = true
+            showBolusCalculationSheet = false
+        }
+    }
+
+    private func toggleCalculatedBolus() {
+        if isUsingCalculatedBolus {
+            bolusFieldIsFocused = false
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
                 isUsingCalculatedBolus = false
             }
+        } else {
+            applyCalculatedBolus()
         }
     }
 
@@ -761,6 +769,7 @@ private struct MealNotesTextField: UIViewRepresentable {
 private struct MealBolusCalculationView: View {
     let calculation: MealView.MealBolusCalculation
     let recommendedBolus: Double
+    let useRecommendedBolus: () -> Void
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -769,36 +778,46 @@ private struct MealBolusCalculationView: View {
                 .ignoresSafeArea()
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     calcRow(
+                        image: "1.circle.fill",
                         label: "Glukos - Målglukos / ISF",
                         detail: "(\(fmtInt(calculation.bg)) − \(fmtInt(calculation.target))) / \(fmtInt(calculation.isf))",
                         result: calculation.glucoseEffect
                     )
                     
                     calcRow(
+                        image: "2.circle.fill",
                         label: "IOB",
                         detail: "\(fmt(calculation.iob))",
                         result: calculation.iobEffect
                     )
                     
                     calcRow(
+                        image: "3.circle.fill",
                         label: "COB + Nya kolhydrater / CR",
                         detail: "(\(fmtInt(calculation.cob)) + \(fmtInt(calculation.pendingCarbs))) / \(fmtInt(calculation.cr))",
                         result: calculation.cobEffect
                     )
                     
                     calcRow(
+                        image: "4.circle.fill",
                         label: "15 minuters delta / ISF",
                         detail: "\(fmtInt(calculation.delta)) / \(fmtInt(calculation.isf))",
                         result: calculation.deltaEffect
                     )
                     
-                    summaryRow(label: "SUMMERAT", value: "\(fmt(calculation.fullBolus)) E", color: calculation.fullBolus >= 0 ? .green : .red)
+                    summaryRow(image: "equal.circle.fill", label: "Summerad beräkning", value: "\(fmt(calculation.fullBolus)) E", color: calculation.fullBolus >= 0 ? .green : .red)
                     
-                    Spacer()
+                    Spacer(minLength: 40)
                     
-                    summaryRowProminent(label: calculation.recommendedBolus > 0 ? "Beräknad bolus" : "Ingen bolus krävs", value: "\(fmt(recommendedBolus)) E", color: calculation.recommendedBolus > 0 ? .primary : .gray, background: calculation.recommendedBolus > 0 ? Color(UIColor.insulin).opacity(0.9) : Color(.systemGray).opacity(0.4))
+                    Button {
+                        useRecommendedBolus()
+                    } label: {
+                        summaryRowProminent(label: calculation.recommendedBolus > 0 ? "Förslag bolus" : "Ingen bolus krävs", value: "\(fmt(recommendedBolus)) E", color: calculation.recommendedBolus > 0 ? .primary : .gray, background: calculation.recommendedBolus > 0 ? Color(UIColor.insulin).opacity(0.9) : Color(.systemGray).opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(recommendedBolus <= 0)
                     
                 }
                 .padding()
@@ -818,19 +837,32 @@ private struct MealBolusCalculationView: View {
     }
 }
 
-    private func calcRow(label: String, detail: String, result: Double) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
-            HStack {
+    private func calcRow(image: String, label: String, detail: String, result: Double) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Image(systemName: image)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Text(" ")
+                    .font(.system(.headline).weight(.semibold))
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
                 Text(detail)
                     .font(.system(.headline).weight(.semibold))
                     .monospacedDigit()
-
-                Spacer()
-
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(" ")
+                    .font(.subheadline)
+                
                 Text("\(fmt(result)) E")
                     .font(.system(.headline).weight(.semibold))
                     .monospacedDigit()
@@ -839,11 +871,13 @@ private struct MealBolusCalculationView: View {
         }
         .padding()
         .background(Color(.systemGray).opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: 2))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
-    private func summaryRow(label: String, value: String, color: Color) -> some View {
+    private func summaryRow(image: String, label: String, value: String, color: Color) -> some View {
         HStack {
+            Image(systemName: image)
+                .font(.subheadline)
             Text(label)
                 .font(.system(.headline).weight(.semibold))
             Spacer()
@@ -853,8 +887,8 @@ private struct MealBolusCalculationView: View {
                 .font(.system(.headline).weight(.bold))
         }
         .padding()
-        .background(Color(.systemGray).opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: 2))
+        .background(Color(.systemGray).opacity(0.4))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
     private func summaryRowProminent(label: String, value: String, color: Color, background: Color) -> some View {
