@@ -769,7 +769,7 @@ private struct MealBolusCalculationView: View {
                 .ignoresSafeArea()
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 15) {
+                VStack(alignment: .leading, spacing: 2) {
                     calcRow(
                         label: "Glukos - Målglukos / ISF",
                         detail: "(\(fmtInt(calculation.bg)) − \(fmtInt(calculation.target))) / \(fmtInt(calculation.isf))",
@@ -794,7 +794,7 @@ private struct MealBolusCalculationView: View {
                         result: calculation.deltaEffect
                     )
                     
-                    summaryRow(label: "Summa", value: "\(fmt(calculation.fullBolus)) E", color: calculation.fullBolus >= 0 ? .green : .red)
+                    summaryRow(label: "SUMMERAT", value: "\(fmt(calculation.fullBolus)) E", color: calculation.fullBolus >= 0 ? .green : .red)
                     
                     Spacer()
                     
@@ -819,42 +819,42 @@ private struct MealBolusCalculationView: View {
 }
 
     private func calcRow(label: String, detail: String, result: Double) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(label)
-                .font(.headline)
+                .font(.subheadline)
                 .foregroundColor(.secondary)
 
             HStack {
                 Text(detail)
-                    .font(.system(.title3).weight(.semibold))
+                    .font(.system(.headline).weight(.semibold))
                     .monospacedDigit()
 
                 Spacer()
 
                 Text("\(fmt(result)) E")
-                    .font(.system(.title3).weight(.bold))
+                    .font(.system(.headline).weight(.semibold))
                     .monospacedDigit()
                     .foregroundColor(result >= 0 ? .green : .red)
             }
         }
         .padding()
         .background(Color(.systemGray).opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 2))
     }
 
     private func summaryRow(label: String, value: String, color: Color) -> some View {
         HStack {
             Text(label)
-                .font(.system(.title3).weight(.semibold))
+                .font(.system(.headline).weight(.semibold))
             Spacer()
             Text(value)
                 .monospacedDigit()
                 .foregroundColor(color)
-                .font(.system(.title3).weight(.bold))
+                .font(.system(.headline).weight(.bold))
         }
         .padding()
         .background(Color(.systemGray).opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 2))
     }
     
     private func summaryRowProminent(label: String, value: String, color: Color, background: Color) -> some View {
@@ -868,7 +868,7 @@ private struct MealBolusCalculationView: View {
         .padding()
         .foregroundColor(color)
         .background(background)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 30))
     }
 
     private func fmt(_ value: Double) -> String {

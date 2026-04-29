@@ -338,7 +338,7 @@ private struct BolusCalcDetailView: View {
                 Divider()
 
                 HStack {
-                    Text("Full bolus")
+                    Text("Summerat")
                         .font(.system(size: 11, weight: .semibold))
                     Spacer()
                     Text(fmt(calc.fullBolus))
