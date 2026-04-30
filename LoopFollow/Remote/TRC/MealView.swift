@@ -604,32 +604,54 @@ struct MealView: View {
         }
         
         let finalNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Remote" : notes
+        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
+        let mealBolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
 
-        pushNotificationManager.sendMealPushNotification(
-            carbs: carbs,
-            protein: protein,
-            fat: fat,
-            bolusAmount: bolusAmount,
-            notes: finalNotes,
-            scheduledTime: scheduledDate
-        ) { success, errorMessage in
-            DispatchQueue.main.async {
-                isLoading = false
-                if success {
-                    statusMessage = "Måltidskommando lyckades"
-                    carbs = HKQuantity(unit: .gram(), doubleValue: 0.0)
-                    protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
-                    fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
-                    notes = ""
-                    selectedTime = nil
-                    isScheduling = false
-                    alertType = .statusSuccess
-                } else {
-                    statusMessage = errorMessage ?? "Måltidskommando misslyckades!"
-                    alertType = .statusFailure
+        func sendMealPayload() {
+            pushNotificationManager.sendMealPushNotification(
+                carbs: carbs,
+                protein: protein,
+                fat: fat,
+                bolusAmount: mealBolusAmount,
+                notes: finalNotes,
+                scheduledTime: scheduledDate
+            ) { success, errorMessage in
+                DispatchQueue.main.async {
+                    isLoading = false
+                    if success {
+                        statusMessage = bolusValue > 0 ? "Bolus- och måltidskommando lyckades" : "Måltidskommando lyckades"
+                        carbs = HKQuantity(unit: .gram(), doubleValue: 0.0)
+                        protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
+                        fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
+                        bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
+                        notes = ""
+                        selectedTime = nil
+                        isScheduling = false
+                        alertType = .statusSuccess
+                    } else {
+                        statusMessage = errorMessage ?? "Måltidskommando misslyckades!"
+                        alertType = .statusFailure
+                    }
+                    showAlert = true
                 }
-                showAlert = true
             }
+        }
+
+        if bolusValue > 0 {
+            pushNotificationManager.sendBolusPushNotification(bolusAmount: bolusAmount) { success, errorMessage in
+                DispatchQueue.main.async {
+                    if success {
+                        sendMealPayload()
+                    } else {
+                        isLoading = false
+                        statusMessage = errorMessage ?? "Boluskommando misslyckades!"
+                        alertType = .statusFailure
+                        showAlert = true
+                    }
+                }
+            }
+        } else {
+            sendMealPayload()
         }
     }
 

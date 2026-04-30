@@ -787,29 +787,50 @@ private struct ComboEditorView: View {
         }
         
         let finalNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Remote" : notes
+        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
+        let comboBolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
 
-        pushNotificationManager.sendComboPushNotification(
-            carbs: carbs,
-            protein: protein,
-            fat: fat,
-            bolusAmount: bolusAmount,
-            notes: finalNotes,
-            scheduledTime: scheduledDate,
-            override: selectedOverride
-        ) { success, errorMessage in
-            DispatchQueue.main.async {
-                isLoading = false
+        func sendComboPayload() {
+            pushNotificationManager.sendComboPushNotification(
+                carbs: carbs,
+                protein: protein,
+                fat: fat,
+                bolusAmount: comboBolusAmount,
+                notes: finalNotes,
+                scheduledTime: scheduledDate,
+                override: selectedOverride
+            ) { success, errorMessage in
+                DispatchQueue.main.async {
+                    isLoading = false
 
-                if success {
-                    statusMessage = "Snabbvalskommando lyckades"
-                    alertType = .statusSuccess
-                } else {
-                    statusMessage = errorMessage ?? "Snabbvalskommando misslyckades!"
-                    alertType = .statusFailure
+                    if success {
+                        statusMessage = bolusValue > 0 ? "Bolus- och snabbvalskommando lyckades" : "Snabbvalskommando lyckades"
+                        alertType = .statusSuccess
+                    } else {
+                        statusMessage = errorMessage ?? "Snabbvalskommando misslyckades!"
+                        alertType = .statusFailure
+                    }
+
+                    showAlert = true
                 }
-
-                showAlert = true
             }
+        }
+
+        if bolusValue > 0 {
+            pushNotificationManager.sendBolusPushNotification(bolusAmount: bolusAmount) { success, errorMessage in
+                DispatchQueue.main.async {
+                    if success {
+                        sendComboPayload()
+                    } else {
+                        isLoading = false
+                        statusMessage = errorMessage ?? "Boluskommando misslyckades!"
+                        alertType = .statusFailure
+                        showAlert = true
+                    }
+                }
+            }
+        } else {
+            sendComboPayload()
         }
     }
 

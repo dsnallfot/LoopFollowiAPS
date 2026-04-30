@@ -203,9 +203,9 @@ class PushNotificationManager {
         if let protein = proteinValue {
             alertString += "\nProtein: \(protein) g"
         }
-        if let bolus = bolusAmountValue {
-            alertString += "\nBolus: \(bolus) E"
-        }
+        //if let bolus = bolusAmountValue {
+        //    alertString += "\nBolus: \(bolus) E"
+        //}
 
         alertString += "\nTid: \(timeString)"
         
@@ -289,9 +289,9 @@ class PushNotificationManager {
         if let protein = proteinValue {
             alertString += "\nProtein: \(protein) g"
         }
-        if let bolus = bolusAmountValue {
-            alertString += "\nBolus: \(bolus) E"
-        }
+        //if let bolus = bolusAmountValue {
+        //    alertString += "\nBolus: \(bolus) E"
+        //}
         if let overrideName = override?.name, !overrideName.isEmpty {
             alertString += "\nOverride: \(overrideName)"
         }
