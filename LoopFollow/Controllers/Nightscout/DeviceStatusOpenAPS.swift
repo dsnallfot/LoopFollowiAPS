@@ -185,10 +185,8 @@ extension MainViewController {
                     let nsString = reasonString as NSString
                     let minPredBGString = nsString.substring(with: match.range(at: 1))
                     if let minPredBG = Double(minPredBGString) {
-                        let formattedMinPredBGString = String(format: "%.1f", minPredBG)
-                        storage.sharedMinPredBG.value = minPredBG
-                        storage.sharedRawMinPredBG.value = formattedMinPredBGString
-                        //LogManager.shared.log(category: .deviceStatus, message: "Extracted MinPredBG from reason: \(formattedMinPredBGString)", isDebug: true)
+                        storage.sharedLatestMinPredBG.value = minPredBG
+                        storage.sharedRawMinPredBG.value = minPredBG
                     } else {
                         LogManager.shared.log(category: .deviceStatus, message: "Failed to convert extracted MinPredBG to Double: \(minPredBGString)", isDebug: true)
                     }
@@ -199,8 +197,8 @@ extension MainViewController {
                 // Fallback: Use UserDefaultsRepository.lowLine (already in correct units)
                 let fallbackMinPredBG = Double(UserDefaultsRepository.lowLine.value)  * 0.0555
                 let formattedFallbackMinPredBG = String(format: "%.1f", fallbackMinPredBG)
-                storage.sharedMinPredBG.value = fallbackMinPredBG
-                storage.sharedRawMinPredBG.value = formattedFallbackMinPredBG
+                storage.sharedLatestMinPredBG.value = fallbackMinPredBG
+                storage.sharedRawMinPredBG.value = fallbackMinPredBG
                 LogManager.shared.log(category: .deviceStatus, message: "Reason string not available, using fallback MinPredBG: \(formattedFallbackMinPredBG)", isDebug: true)
             }
 
@@ -586,10 +584,11 @@ extension MainViewController {
             let eventualBGFloatValue = Float(eventualBGValue) // Convert Double to Float for compatibility
             let eventualBGStringValue = String(describing: eventualBGValue) // Convert to String
             let formattedBGString = Localizer.toDisplayUnits(eventualBGStringValue).replacingOccurrences(of: ",", with: ".") // Format for display
+            let eventualBGMmolValue = Double(formattedBGString) ?? eventualBGValue * 0.0555
 
             // Update visualization for remote meal info popup
             latestEvBG = formattedBGString + " mmol/L"
-            storage.sharedRawEvBG.value = formattedBGString
+            storage.sharedRawEvBG.value = eventualBGMmolValue
             storage.sharedLatestEvBG.value = latestEvBG
 
             // Check if loop is inactive
@@ -654,7 +653,7 @@ extension MainViewController {
                     unit: "mmol/L"
                 )
 
-                storage.sharedLatestTarget.value = enactedTargetValue
+                storage.sharedRawTarget.value = enactedTargetValue
             } else {
                 infoManager.updateInfoData(
                     type: .target,
@@ -662,7 +661,7 @@ extension MainViewController {
                     unit: "mmol/L"
                 )
 
-                storage.sharedLatestTarget.value = profileTargetHighValue
+                storage.sharedRawTarget.value = profileTargetHighValue
             }
         } else if let profileTargetHigh = profileTargetHigh {
             let profileTargetHighValue = profileTargetHigh.doubleValue(for: .millimolesPerLiter)
@@ -673,7 +672,7 @@ extension MainViewController {
                 unit: "mmol/L"
             )
 
-            storage.sharedLatestTarget.value = profileTargetHighValue
+            storage.sharedRawTarget.value = profileTargetHighValue
         }
 
             // TDD

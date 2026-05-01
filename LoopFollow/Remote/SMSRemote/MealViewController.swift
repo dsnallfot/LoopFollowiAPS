@@ -116,11 +116,8 @@ class MealViewController: ThemedViewController, UITextFieldDelegate, TwilioReque
         CRValue.text = formattedCR == "0" ? "--" : formattedCR
         LogManager.shared.log(category: .remote, message: "CR: \(formattedCR) g/E", isDebug: true)
         
-        LogManager.shared.log(category: .remote, message: "MinPredBG: \(storage.sharedRawMinPredBG.value) mmol/L", isDebug: true)
-        
-        
         //MinPredBG & Low Threshold
-        let minPredBG = Decimal(storage.sharedMinPredBG.value)
+        let minPredBG = Decimal(storage.sharedLatestMinPredBG.value)
         let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
         
         // Format the MinPredBG value & low threshold to have one decimal place

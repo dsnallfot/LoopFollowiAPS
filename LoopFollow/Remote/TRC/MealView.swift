@@ -20,6 +20,9 @@ struct MealView: View {
     @State private var isUsingCalculatedBolus: Bool = false
     @State private var notes: String = ""
     
+    private let minPredBGThreshold: Double = 3.9
+    private let minEvBGThreshold: Double = 3.9
+    
     private let pushNotificationManager = PushNotificationManager()
     
     @ObservedObject private var maxCarbs = Storage.shared.maxCarbs
@@ -127,7 +130,7 @@ struct MealView: View {
                                     Button {
                                         showBolusCalculationSheet = true
                                     } label: {
-                                        Image(systemName: "info.circle.fill")
+                                        Image(systemName: advancedBolusCalcIconName)
                                     }
                                     .disabled(mealBolusCalculation == nil)
 
@@ -152,7 +155,7 @@ struct MealView: View {
                                 //.foregroundColor(.blue)
                             }
                             //.font(.subheadline)
-                            .foregroundColor(Color(UIColor.insulin.withAlphaComponent(0.7)))
+                            .foregroundColor(advancedBolusCalcRowColor)
                             .fontWeight(.semibold)
                             .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
 
@@ -240,6 +243,7 @@ struct MealView: View {
             let storage = Storage.shared
 
             print("📊 sharedRawMinPredBG: \(storage.sharedRawMinPredBG.value)")
+            print("📊 sharedRawEvBG: \(storage.sharedRawEvBG.value)")
             print("📊 sharedRawIOB: \(storage.sharedRawIOB.value)")
             print("📊 sharedRawCOB: \(storage.sharedRawCOB.value)")
             print("📊 sharedRawISF: \(storage.sharedRawISF.value)")
@@ -247,8 +251,8 @@ struct MealView: View {
             print("📊 sharedRawInsulinReq: \(storage.sharedRawInsulinReq.value)")
             print("📊 sharedRawBG: \(storage.sharedRawBG.value)")
             print("📊 sharedRawBG15MinTrend: \(storage.sharedRawBG15MinTrend.value)")
-            print("📊 sharedLatestTarget (mmol/L): \(storage.sharedLatestTarget.value)")
-            printMealBolusCalculationDebug()
+            print("📊 sharedRawTarget (mmol/L): \(storage.sharedRawTarget.value)")
+            //printMealBolusCalculationDebug()
             */
         }
         .onChange(of: carbs.doubleValue(for: .gram())) { _ in
@@ -352,6 +356,10 @@ struct MealView: View {
                 MealBolusCalculationView(
                     calculation: calculation,
                     recommendedBolus: advancedCalculatedBolusValue,
+                    minPredBG: Storage.shared.sharedRawMinPredBG.value,
+                    evBG: Storage.shared.sharedRawEvBG.value,
+                    minPredBGThreshold: minPredBGThreshold,
+                    minEvBGThreshold: minEvBGThreshold,
                     useRecommendedBolus: {
                         applyCalculatedBolus()
                     }
@@ -429,7 +437,7 @@ struct MealView: View {
         let storage = Storage.shared
 
         let bg = storage.sharedRawBG.value
-        let target = storage.sharedLatestTarget.value
+        let target = storage.sharedRawTarget.value
         let isf = storage.sharedRawISF.value
         let iob = storage.sharedRawIOB.value
         let cob = storage.sharedRawCOB.value
@@ -517,6 +525,38 @@ struct MealView: View {
 
     private var calculatedBolusValue: Double {
         effectiveCalculatedBolusValue
+    }
+
+    private var hasEvBGLowWarning: Bool {
+        Storage.shared.sharedRawEvBG.value < minEvBGThreshold
+    }
+
+    private var hasMinPredBGLowWarning: Bool {
+        Storage.shared.sharedRawMinPredBG.value < minPredBGThreshold
+    }
+
+    private var hasAnyBolusCalcWarning: Bool {
+        hasEvBGLowWarning || hasMinPredBGLowWarning
+    }
+
+    private var advancedBolusCalcIconName: String {
+        hasAnyBolusCalcWarning ? "exclamationmark.triangle.fill" : "info.circle.fill"
+    }
+
+    private var advancedBolusCalcRowColor: Color {
+        guard showAdvancedBolusCalc.value else {
+            return Color(UIColor.insulin.withAlphaComponent(0.7))
+        }
+
+        if hasEvBGLowWarning {
+            return Color.red.opacity(0.75)
+        }
+
+        if hasMinPredBGLowWarning {
+            return Color.orange.opacity(0.85)
+        }
+
+        return Color(UIColor.insulin.withAlphaComponent(0.7))
     }
 
     private var formattedCalculatedBolus: String {
@@ -791,6 +831,10 @@ private struct MealNotesTextField: UIViewRepresentable {
 private struct MealBolusCalculationView: View {
     let calculation: MealView.MealBolusCalculation
     let recommendedBolus: Double
+    let minPredBG: Double
+    let evBG: Double
+    let minPredBGThreshold: Double
+    let minEvBGThreshold: Double
     let useRecommendedBolus: () -> Void
     @Environment(\.dismiss) private var dismiss
     
@@ -830,13 +874,18 @@ private struct MealBolusCalculationView: View {
                     )
                     
                     summaryRow(image: "equal.circle.fill", label: "Summerad beräkning", value: "\(fmt(calculation.fullBolus)) E", color: calculation.fullBolus >= 0 ? .green : .red)
+
+                    if let warningMessage = bolusWarningMessage {
+                        bolusWarningRow(message: warningMessage, color: bolusWarningColor)
+                            .padding(.leading, 15)
+                    }
                     
                     Spacer(minLength: 40)
                     
                     Button {
                         useRecommendedBolus()
                     } label: {
-                        summaryRowProminent(label: calculation.recommendedBolus > 0 ? " Förslag bolus" : " Ingen bolus krävs", value: "\(fmt(recommendedBolus)) E ", color: calculation.recommendedBolus > 0 ? .primary : .gray, background: calculation.recommendedBolus > 0 ? Color(UIColor.insulin).opacity(0.9) : Color(.systemGray).opacity(0.4))
+                        summaryRowProminent(label: calculation.recommendedBolus > 0 ? " Förslag bolus" : " Ingen bolus krävs", value: "\(fmt(recommendedBolus)) E ", color: calculation.recommendedBolus > 0 ? .primary : .gray, background: recommendedBolusBackground)
                     }
                     .buttonStyle(.plain)
                     .disabled(recommendedBolus <= 0)
@@ -858,6 +907,61 @@ private struct MealBolusCalculationView: View {
         }
     }
 }
+
+    private var hasEvBGLowWarning: Bool {
+        evBG < minEvBGThreshold
+    }
+
+    private var hasMinPredBGLowWarning: Bool {
+        minPredBG < minPredBGThreshold
+    }
+
+    private var bolusWarningMessage: String? {
+        if hasEvBGLowWarning {
+            return "Den senaste prognosen visar att blodsockret är eller förväntas bli lågt (\(fmtOne(evBG)) mmol/L) inom kort.\n\nDet är troligtvis bäst att börja äta och avvakta en liten stund innan du ger en bolus till måltiden."
+        }
+
+        if hasMinPredBGLowWarning {
+            return "Den senaste prognosen visar att blodsockret väntas landa inom målområdet längre fram, men kan bli lågt (\(fmtOne(minPredBG)) mmol/L) innan det vänder upp igen."
+        }
+
+        return nil
+    }
+
+    private var bolusWarningColor: Color {
+        hasEvBGLowWarning ? .red : .orange
+    }
+
+    private var recommendedBolusBackground: Color {
+        if calculation.recommendedBolus <= 0 {
+            return Color(.systemGray).opacity(0.4)
+        }
+
+        if hasEvBGLowWarning {
+            return Color.red.opacity(0.9)
+        }
+
+        if hasMinPredBGLowWarning {
+            return Color.orange.opacity(0.9)
+        }
+
+        return Color(UIColor.insulin).opacity(0.9)
+    }
+
+    private func bolusWarningRow(message: String, color: Color) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.headline)
+                .foregroundColor(color)
+
+            Text(message)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(color)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 8)
+    }
 
     private func calcRow(image: String, label: String, detail: String, result: Double) -> some View {
         HStack(spacing: 12) {
@@ -929,6 +1033,10 @@ private struct MealBolusCalculationView: View {
 
     private func fmt(_ value: Double) -> String {
         String(format: "%.2f", value)
+    }
+
+    private func fmtOne(_ value: Double) -> String {
+        String(format: "%.1f", value)
     }
 
     private func fmtInt(_ value: Double) -> String {

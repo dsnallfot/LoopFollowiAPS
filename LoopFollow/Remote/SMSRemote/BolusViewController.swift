@@ -50,7 +50,7 @@ class BolusViewController: ThemedViewController, UITextFieldDelegate, TwilioRequ
         numberFormatter.maximumFractionDigits = 1
         
         //MinPredBG & Low Threshold
-        let minPredBG = Decimal(storage.sharedMinPredBG.value)
+        let minPredBG = Decimal(storage.sharedLatestMinPredBG.value)
         let lowThreshold = Decimal(Double(UserDefaultsRepository.lowLine.value) * 0.0555)
         
         // Format the MinPredBG value & low threshold to have one decimal place

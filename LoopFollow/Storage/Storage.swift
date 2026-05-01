@@ -51,9 +51,7 @@ class Storage {
     
     // Shared DeviceStatus / Remote Meal values
     var sharedCRValue = StorageValue<String>(key: "sharedCRValue", defaultValue: "")
-    var sharedRawEvBG = StorageValue<String>(key: "sharedRawEvBG", defaultValue: "")
-    var sharedRawMinPredBG = StorageValue<String>(key: "sharedRawMinPredBG", defaultValue: "")
-    var sharedMinPredBG = StorageValue<Double>(key: "sharedMinPredBG", defaultValue: 0.0)
+    var sharedLatestMinPredBG = StorageValue<Double>(key: "sharedLatestMinPredBG", defaultValue: 0.0)
     var sharedLatestIOB = StorageValue<String>(key: "sharedLatestIOB", defaultValue: "")
     var sharedLatestCOB = StorageValue<String>(key: "sharedLatestCOB", defaultValue: "")
     var sharedLatestISF = StorageValue<String>(key: "sharedLatestISF", defaultValue: "")
@@ -65,7 +63,6 @@ class Storage {
     var sharedLatestBG = StorageValue<String>(key: "sharedLatestBG", defaultValue: "")
     var sharedLatestDirection = StorageValue<String>(key: "sharedLatestDirection", defaultValue: "")
     var sharedLatestDelta = StorageValue<String>(key: "sharedLatestDelta", defaultValue: "")
-    var sharedLatestTarget = StorageValue<Double>(key: "sharedLatestTarget", defaultValue: 0.0)
 
     //För boluskalkylator
     var sharedRawIOB = StorageValue<Double>(key: "sharedRawIOB", defaultValue: 0.0)
@@ -75,6 +72,9 @@ class Storage {
     var sharedRawInsulinReq = StorageValue<Double>(key: "sharedRawInsulinReq", defaultValue: 0.0)
     var sharedRawBG = StorageValue<Double>(key: "sharedRawBG", defaultValue: 0.0)
     var sharedRawBG15MinTrend = StorageValue<Double>(key: "sharedRawBG15MinTrend", defaultValue: 0.0)
+    var sharedRawTarget = StorageValue<Double>(key: "sharedRawTarget", defaultValue: 0.0)
+    var sharedRawEvBG = StorageValue<Double>(key: "sharedRawEvBG", defaultValue: 0.0)
+    var sharedRawMinPredBG = StorageValue<Double>(key: "sharedRawMinPredBG", defaultValue: 0.0)
     var showAdvancedBolusCalc = StorageValue<Bool>(key: "showAdvancedBolusCalc", defaultValue: false)
 
     // Persist latest Bluetooth heartbeat so UI can show a value immediately after app restart
