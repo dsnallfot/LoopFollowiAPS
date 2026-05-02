@@ -221,7 +221,7 @@ struct MealView: View {
                 }
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
-                .navigationTitle("Måltid")
+                .navigationTitle("Måltid och Bolus")
                 .navigationBarTitleDisplayMode(.inline)
             }
         }
@@ -274,8 +274,12 @@ struct MealView: View {
                 let proteinAmount = protein.doubleValue(for: HKUnit.gram())
                 let fatAmount = fat.doubleValue(for: HKUnit.gram())
                 let bolusAmount = bolusAmount.doubleValue(for: .internationalUnit())
+                let isBolusOnly = bolusAmount > 0 && carbsAmount <= 0 && proteinAmount <= 0 && fatAmount <= 0
+                let confirmationTitle = isBolusOnly ? "Bekräfta bolus" : "Bekräfta måltid"
                 
-                var message = "Är du säker på att du vill skicka måltidsregistreringen"
+                var message = isBolusOnly
+                    ? "Är du säker på att du vill skicka bolusregistreringen"
+                    : "Är du säker på att du vill skicka måltidsregistreringen"
                 
                 if let selectedTime = selectedTime {
                     let timeFormatter = DateFormatter()
@@ -307,7 +311,7 @@ struct MealView: View {
                 }
                 
                 return Alert(
-                    title: Text("Bekräfta måltid"),
+                    title: Text(confirmationTitle),
                     message: Text(message),
                     primaryButton: .default(Text("Bekräfta"), action: {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

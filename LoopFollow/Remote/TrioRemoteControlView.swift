@@ -25,9 +25,9 @@ struct TrioRemoteControlView: View {
                     ]
                     
                     LazyVGrid(columns: columns, spacing: 16) {
-                        CommandButtonView(command: "Måltid", iconName: "fork.knife", destination: MealView(), color: Color(UIColor.carbs))
-                        CommandButtonView(command: "Bolus", iconName: "syringe", destination: BolusView(), color: Color(UIColor.insulin))
-                        CommandButtonView(command: "Tillfälliga mål", iconName: "scope", destination: TempTargetView(), color: .mint)
+                        CommandButtonView(command: "Måltid och Bolus", iconName: "fork.knife", destination: MealView(), color: Color(UIColor.insulin))
+                        //CommandButtonView(command: "Bolus", iconName: "syringe", destination: BolusView(), color: Color(UIColor.insulin))
+                        //CommandButtonView(command: "Tillfälliga mål", iconName: "scope", destination: TempTargetView(), color: .mint)
                         CommandButtonView(command: "Override", iconName: "slider.horizontal.3", destination: OverrideView(), color: .purple)
                         CommandButtonView(command: "Snabbval", iconName: "plus.square.on.square", destination: ComboView(), color: .pink)
                         ShortcutButtonView(command: "Hälsologgning", iconName: "list.clipboard", color: .gray)
