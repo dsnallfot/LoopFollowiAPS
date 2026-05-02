@@ -885,7 +885,7 @@ private struct MealBolusCalculationView: View {
                     Button {
                         useRecommendedBolus()
                     } label: {
-                        summaryRowProminent(label: calculation.recommendedBolus > 0 ? " Förslag bolus" : " Ingen bolus krävs", value: "\(fmt(recommendedBolus)) E ", color: calculation.recommendedBolus > 0 ? .primary : .gray, background: recommendedBolusBackground)
+                        summaryRowProminent(image: recommendedBolusImage, label: calculation.recommendedBolus > 0 ? " Förslag bolus" : " Ingen bolus krävs", value: "\(fmt(recommendedBolus)) E ", color: calculation.recommendedBolus > 0 ? .primary : .gray, background: recommendedBolusBackground)
                     }
                     .buttonStyle(.plain)
                     .disabled(recommendedBolus <= 0)
@@ -946,6 +946,22 @@ private struct MealBolusCalculationView: View {
         }
 
         return Color(UIColor.insulin).opacity(0.9)
+    }
+    
+    private var recommendedBolusImage: String {
+        if calculation.recommendedBolus <= 0 {
+            return "x.circle.fill"
+        }
+
+        if hasEvBGLowWarning {
+            return "exclamationmark.triangle.fill"
+        }
+
+        if hasMinPredBGLowWarning {
+            return "exclamationmark.triangle.fill"
+        }
+
+        return "checkmark.circle.fill"
     }
 
     private func bolusWarningRow(message: String, color: Color) -> some View {
@@ -1017,8 +1033,9 @@ private struct MealBolusCalculationView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
-    private func summaryRowProminent(label: String, value: String, color: Color, background: Color) -> some View {
+    private func summaryRowProminent(image: String, label: String, value: String, color: Color, background: Color) -> some View {
         HStack {
+            Image(systemName: image)
             Text(label)
             Spacer()
             Text(value)
