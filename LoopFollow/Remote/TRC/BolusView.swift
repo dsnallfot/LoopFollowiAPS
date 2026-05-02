@@ -146,6 +146,7 @@ struct BolusView: View {
     }
 
     private func sendBolus() {
+        guard !isLoading else { return }
         isLoading = true
 
         pushNotificationManager.sendBolusPushNotification(bolusAmount: bolusAmount) { success, errorMessage in

@@ -389,10 +389,8 @@ private struct ComboEditorView: View {
                             clearComboInputFocus()
 
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                guard carbs.doubleValue(for: .gram()) != 0 ||
-                                        protein.doubleValue(for: .gram()) != 0 ||
-                                        fat.doubleValue(for: .gram()) != 0 else {
-                                    handleValidationError("Du måste ange minst ett värde för kolhydrater, protein eller fett.")
+                                guard hasAnyComboPayload else {
+                                    handleValidationError("Du måste ange minst ett värde för kolhydrater, protein, fett, bolus eller välja en override.")
                                     return
                                 }
 
@@ -733,6 +731,24 @@ private struct ComboEditorView: View {
         return nil
     }
 
+    private var hasMealPayload: Bool {
+        carbs.doubleValue(for: .gram()) > 0 ||
+        protein.doubleValue(for: .gram()) > 0 ||
+        fat.doubleValue(for: .gram()) > 0
+    }
+
+    private var hasBolusPayload: Bool {
+        bolusAmount.doubleValue(for: .internationalUnit()) > 0
+    }
+
+    private var hasOverridePayload: Bool {
+        selectedOverride != nil
+    }
+
+    private var hasAnyComboPayload: Bool {
+        hasMealPayload || hasBolusPayload || hasOverridePayload
+    }
+
     private var primaryButtonTitle: String {
         buttonGuardrailMessage ?? defaultPrimaryButtonTitle
     }
@@ -769,6 +785,7 @@ private struct ComboEditorView: View {
     }
 
     private func sendComboCommand() {
+        guard !isLoading else { return }
         isLoading = true
 
         var scheduledDate: Date? = nil
@@ -787,51 +804,105 @@ private struct ComboEditorView: View {
         }
         
         let finalNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Remote" : notes
-        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
-        let comboBolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
+        let shouldSendBolusPayload = hasBolusPayload
+        let shouldSendOverridePayload = hasOverridePayload
+        let shouldSendMealPayload = hasMealPayload
+        let mealBolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
 
-        func sendComboPayload() {
-            pushNotificationManager.sendComboPushNotification(
+        func successStatusMessage() -> String {
+            switch (shouldSendBolusPayload, shouldSendOverridePayload, shouldSendMealPayload) {
+            case (true, true, true):
+                return "Bolus-, override- och måltidskommando lyckades"
+            case (true, true, false):
+                return "Bolus- och overridekommando lyckades"
+            case (true, false, true):
+                return "Bolus- och måltidskommando lyckades"
+            case (false, true, true):
+                return "Override- och måltidskommando lyckades"
+            case (true, false, false):
+                return "Boluskommando lyckades"
+            case (false, true, false):
+                return "Overridekommando lyckades"
+            case (false, false, true):
+                return "Måltidskommando lyckades"
+            case (false, false, false):
+                return "Inget kommando skickades"
+            }
+        }
+
+        func finishSuccessfulCommand() {
+            isLoading = false
+            statusMessage = successStatusMessage()
+            alertType = .statusSuccess
+            showAlert = true
+        }
+
+        func failCommand(_ message: String?) {
+            isLoading = false
+            statusMessage = message ?? "Snabbvalskommando misslyckades!"
+            alertType = .statusFailure
+            showAlert = true
+        }
+
+        func sendMealPayload() {
+            guard shouldSendMealPayload else {
+                finishSuccessfulCommand()
+                return
+            }
+
+            pushNotificationManager.sendMealPushNotification(
                 carbs: carbs,
                 protein: protein,
                 fat: fat,
-                bolusAmount: comboBolusAmount,
+                bolusAmount: mealBolusAmount,
                 notes: finalNotes,
-                scheduledTime: scheduledDate,
-                override: selectedOverride
+                scheduledTime: scheduledDate
             ) { success, errorMessage in
                 DispatchQueue.main.async {
-                    isLoading = false
-
                     if success {
-                        statusMessage = bolusValue > 0 ? "Bolus- och snabbvalskommando lyckades" : "Snabbvalskommando lyckades"
-                        alertType = .statusSuccess
+                        finishSuccessfulCommand()
                     } else {
-                        statusMessage = errorMessage ?? "Snabbvalskommando misslyckades!"
-                        alertType = .statusFailure
+                        failCommand(errorMessage ?? "Måltidskommando misslyckades!")
                     }
-
-                    showAlert = true
                 }
             }
         }
 
-        if bolusValue > 0 {
+        func sendOverridePayload() {
+            guard shouldSendOverridePayload, let selectedOverride else {
+                sendMealPayload()
+                return
+            }
+
+            pushNotificationManager.sendOverridePushNotification(override: selectedOverride) { success, errorMessage in
+                DispatchQueue.main.async {
+                    if success {
+                        sendMealPayload()
+                    } else {
+                        failCommand(errorMessage ?? "Overridekommando misslyckades!")
+                    }
+                }
+            }
+        }
+
+        func sendBolusPayload() {
+            guard shouldSendBolusPayload else {
+                sendOverridePayload()
+                return
+            }
+
             pushNotificationManager.sendBolusPushNotification(bolusAmount: bolusAmount) { success, errorMessage in
                 DispatchQueue.main.async {
                     if success {
-                        sendComboPayload()
+                        sendOverridePayload()
                     } else {
-                        isLoading = false
-                        statusMessage = errorMessage ?? "Boluskommando misslyckades!"
-                        alertType = .statusFailure
-                        showAlert = true
+                        failCommand(errorMessage ?? "Boluskommando misslyckades!")
                     }
                 }
             }
-        } else {
-            sendComboPayload()
         }
+
+        sendBolusPayload()
     }
 
     private func handleValidationError(_ message: String) {

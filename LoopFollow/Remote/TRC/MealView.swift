@@ -649,6 +649,7 @@ struct MealView: View {
     }
 
     private func sendMealCommand() {
+        guard !isLoading else { return }
         isLoading = true
 
         var scheduledDate: Date? = nil
