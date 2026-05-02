@@ -206,9 +206,7 @@ struct MealView: View {
                             clearMealInputFocus()
 
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                guard carbs.doubleValue(for: .gram()) != 0 ||
-                                        protein.doubleValue(for: .gram()) != 0 ||
-                                        fat.doubleValue(for: .gram()) != 0 else {
+                                guard hasMealPayload || hasBolusPayload else {
                                     return
                                 }
                                 if !showAlert {
@@ -615,9 +613,27 @@ struct MealView: View {
         return nil
     }
 
+    private var hasMealPayload: Bool {
+        carbs.doubleValue(for: .gram()) > 0 ||
+        protein.doubleValue(for: .gram()) > 0 ||
+        fat.doubleValue(for: .gram()) > 0
+    }
+
+    private var hasBolusPayload: Bool {
+        bolusAmount.doubleValue(for: .internationalUnit()) > 0
+    }
+
     private var defaultPrimaryButtonTitle: String {
-        let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
-        return bolusValue > 0 ? "Skicka Måltid och Bolus" : "Skicka Måltid"
+        switch (hasMealPayload, hasBolusPayload) {
+        case (true, true):
+            return "Skicka Måltid och Bolus"
+        case (true, false):
+            return "Skicka Måltid"
+        case (false, true):
+            return "Skicka Bolus"
+        case (false, false):
+            return "Skicka Måltid"
+        }
     }
 
     private var primaryButtonTitle: String {
@@ -645,9 +661,41 @@ struct MealView: View {
         
         let finalNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Remote" : notes
         let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
+        let shouldSendMealPayload = hasMealPayload
+        let shouldSendBolusPayload = bolusValue > 0
         let mealBolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
 
+        func finishSuccessfulCommand() {
+            isLoading = false
+
+            switch (shouldSendMealPayload, shouldSendBolusPayload) {
+            case (true, true):
+                statusMessage = "Bolus- och måltidskommando lyckades"
+            case (true, false):
+                statusMessage = "Måltidskommando lyckades"
+            case (false, true):
+                statusMessage = "Boluskommando lyckades"
+            case (false, false):
+                statusMessage = "Inget kommando skickades"
+            }
+
+            carbs = HKQuantity(unit: .gram(), doubleValue: 0.0)
+            protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
+            fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
+            bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
+            notes = ""
+            selectedTime = nil
+            isScheduling = false
+            alertType = .statusSuccess
+            showAlert = true
+        }
+
         func sendMealPayload() {
+            guard shouldSendMealPayload else {
+                finishSuccessfulCommand()
+                return
+            }
+
             pushNotificationManager.sendMealPushNotification(
                 carbs: carbs,
                 protein: protein,
@@ -657,27 +705,19 @@ struct MealView: View {
                 scheduledTime: scheduledDate
             ) { success, errorMessage in
                 DispatchQueue.main.async {
-                    isLoading = false
                     if success {
-                        statusMessage = bolusValue > 0 ? "Bolus- och måltidskommando lyckades" : "Måltidskommando lyckades"
-                        carbs = HKQuantity(unit: .gram(), doubleValue: 0.0)
-                        protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
-                        fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
-                        bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
-                        notes = ""
-                        selectedTime = nil
-                        isScheduling = false
-                        alertType = .statusSuccess
+                        finishSuccessfulCommand()
                     } else {
+                        isLoading = false
                         statusMessage = errorMessage ?? "Måltidskommando misslyckades!"
                         alertType = .statusFailure
+                        showAlert = true
                     }
-                    showAlert = true
                 }
             }
         }
 
-        if bolusValue > 0 {
+        if shouldSendBolusPayload {
             pushNotificationManager.sendBolusPushNotification(bolusAmount: bolusAmount) { success, errorMessage in
                 DispatchQueue.main.async {
                     if success {
@@ -861,7 +901,7 @@ private struct MealBolusCalculationView: View {
                     
                     calcRow(
                         image: "3.circle.fill",
-                        label: "(COB + Måltid kh) / CR",
+                        label: "(COB + Denna måltid kh) / CR",
                         detail: "(\(fmtInt(calculation.cob)) + \(fmtInt(calculation.pendingCarbs))) / \(fmtInt(calculation.cr))",
                         result: calculation.cobEffect
                     )
@@ -877,7 +917,7 @@ private struct MealBolusCalculationView: View {
 
                     if let warningMessage = bolusWarningMessage {
                         bolusWarningRow(message: warningMessage, color: bolusWarningColor)
-                            .padding(.leading, 15)
+                            .padding(.horizontal, 15)
                     }
                     
                     Spacer(minLength: 40)

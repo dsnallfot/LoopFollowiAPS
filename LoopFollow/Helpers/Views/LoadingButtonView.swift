@@ -32,6 +32,7 @@ struct LoadingButtonView: View {
                         }) {
                             Text(buttonText)
                                 .frame(maxWidth: .infinity)
+                                .font(.title3)
                                 .fontWeight(.semibold)
                         }
                         .buttonStyle(.glassProminent)
