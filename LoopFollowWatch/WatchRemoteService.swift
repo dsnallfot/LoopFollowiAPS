@@ -128,7 +128,9 @@ class WatchRemoteService {
         case "Trio Remote Control":
             let hasNutrients = (carbs ?? 0) > 0 || (protein ?? 0) > 0 || (fat ?? 0) > 0
             let hasBolus = (bolusAmount ?? 0) > 0
-            let hasOverride = overrideName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            let trimmedOverrideName = overrideName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let finalOverrideName = (trimmedOverrideName?.isEmpty == false) ? trimmedOverrideName : nil
+            let hasOverride = finalOverrideName != nil
 
             guard hasNutrients || hasBolus || hasOverride else {
                 completion(false, "No combo data provided. At least one of carbs, fat, protein, bolus, or override must be provided.")
@@ -138,54 +140,123 @@ class WatchRemoteService {
             let timestamp = entryTime ?? Date()
             let scheduledTime = entryTime?.timeIntervalSince1970
             let comboNotes = (notes?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ? notes : "⌚️"
-            let trimmedOverrideName = overrideName?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let finalOverrideName = (trimmedOverrideName?.isEmpty == false) ? trimmedOverrideName : nil
             let finalCarbs = (carbs ?? 0) > 0 ? carbs : nil
             let finalProtein = (protein ?? 0) > 0 ? protein : nil
             let finalFat = (fat ?? 0) > 0 ? fat : nil
             let finalBolusAmount = (bolusAmount ?? 0) > 0 ? bolusAmount : nil
 
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss"
+            func finishSuccess() {
+                completion(true, nil)
+            }
 
-            var alertLines = ["Remote snabbval"]
-            if let comboNotes = comboNotes {
-                alertLines.append(comboNotes)
+            func fail(_ message: String?) {
+                completion(false, message ?? "Snabbvalskommando misslyckades")
             }
-            if let finalCarbs = finalCarbs {
-                alertLines.append("Kolhydrater: \(finalCarbs) g")
-            }
-            if let finalFat = finalFat {
-                alertLines.append("Fett: \(finalFat) g")
-            }
-            if let finalProtein = finalProtein {
-                alertLines.append("Protein: \(finalProtein) g")
-            }
-            if let finalBolusAmount = finalBolusAmount {
-                alertLines.append(String(format: "Bolus: %.2f E", finalBolusAmount))
-            }
-            if let finalOverrideName = finalOverrideName {
-                alertLines.append("Override: \(finalOverrideName)")
-            }
-            alertLines.append("Tid: \(formatter.string(from: timestamp))")
-            alertLines.append("Inlagt av: \(config.trcUser)")
 
-            let alertString = Self.truncatedAlertString(alertLines)
-            let payload = TRCPayload(
-                aps: APSPayload(alert: alertString),
-                user: config.trcUser,
-                commandType: "combo",
-                bolusAmount: finalBolusAmount,
-                carbs: finalCarbs,
-                protein: finalProtein,
-                fat: finalFat,
-                notes: comboNotes,
-                sharedSecret: config.trcSharedSecret,
-                timestamp: Date().timeIntervalSince1970,
-                overrideName: finalOverrideName,
-                scheduledTime: scheduledTime
-            )
-            sendTRCCommand(payload: payload, config: config, completion: completion)
+            func sendMealPayload() {
+                guard hasNutrients else {
+                    finishSuccess()
+                    return
+                }
+
+                var alertLines = ["Remote måltid"]
+                if let comboNotes = comboNotes {
+                    alertLines.append(comboNotes)
+                }
+                if let finalCarbs = finalCarbs {
+                    alertLines.append("Kolhydrater: \(finalCarbs) g")
+                }
+                if let finalFat = finalFat {
+                    alertLines.append("Fett: \(finalFat) g")
+                }
+                if let finalProtein = finalProtein {
+                    alertLines.append("Protein: \(finalProtein) g")
+                }
+
+                let formatter = DateFormatter()
+                formatter.dateFormat = "HH:mm:ss"
+                alertLines.append("Tid: \(formatter.string(from: timestamp))")
+                alertLines.append("Inlagt av: \(config.trcUser)")
+
+                let payload = TRCPayload(
+                    aps: APSPayload(alert: Self.truncatedAlertString(alertLines)),
+                    user: config.trcUser,
+                    commandType: "meal",
+                    carbs: finalCarbs,
+                    protein: finalProtein,
+                    fat: finalFat,
+                    notes: comboNotes,
+                    sharedSecret: config.trcSharedSecret,
+                    timestamp: Date().timeIntervalSince1970,
+                    scheduledTime: scheduledTime
+                )
+
+                sendTRCCommand(payload: payload, config: config) { success, errorMessage in
+                    if success {
+                        finishSuccess()
+                    } else {
+                        fail(errorMessage ?? "Måltidskommando misslyckades")
+                    }
+                }
+            }
+
+            func sendOverridePayload() {
+                guard let finalOverrideName else {
+                    sendMealPayload()
+                    return
+                }
+
+                let payload = TRCPayload(
+                    aps: APSPayload(alert: Self.truncatedAlertString([
+                        "Remote Override",
+                        finalOverrideName,
+                        "Inlagt av: \(config.trcUser)",
+                    ])),
+                    user: config.trcUser,
+                    commandType: "start_override",
+                    sharedSecret: config.trcSharedSecret,
+                    timestamp: Date().timeIntervalSince1970,
+                    overrideName: finalOverrideName
+                )
+
+                sendTRCCommand(payload: payload, config: config) { success, errorMessage in
+                    if success {
+                        sendMealPayload()
+                    } else {
+                        fail(errorMessage ?? "Overridekommando misslyckades")
+                    }
+                }
+            }
+
+            func sendBolusPayload() {
+                guard let finalBolusAmount else {
+                    sendOverridePayload()
+                    return
+                }
+
+                let payload = TRCPayload(
+                    aps: APSPayload(alert: Self.truncatedAlertString([
+                        "Remote bolus",
+                        String(format: "Bolus: %.2f E", finalBolusAmount),
+                        "Inlagt av: \(config.trcUser)",
+                    ])),
+                    user: config.trcUser,
+                    commandType: "bolus",
+                    bolusAmount: finalBolusAmount,
+                    sharedSecret: config.trcSharedSecret,
+                    timestamp: Date().timeIntervalSince1970
+                )
+
+                sendTRCCommand(payload: payload, config: config) { success, errorMessage in
+                    if success {
+                        sendOverridePayload()
+                    } else {
+                        fail(errorMessage ?? "Boluskommando misslyckades")
+                    }
+                }
+            }
+
+            sendBolusPayload()
         default:
             completion(false, "Remote type not supported for combo")
         }
