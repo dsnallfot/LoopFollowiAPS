@@ -668,7 +668,9 @@ struct MealView: View {
         let bolusValue = bolusAmount.doubleValue(for: .internationalUnit())
         let shouldSendMealPayload = hasMealPayload
         let shouldSendBolusPayload = bolusValue > 0
-        let mealBolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
+        let mealBolusAmount = shouldSendMealPayload
+            ? bolusAmount
+            : HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
 
         func finishSuccessfulCommand() {
             isLoading = false
@@ -696,11 +698,6 @@ struct MealView: View {
         }
 
         func sendMealPayload() {
-            guard shouldSendMealPayload else {
-                finishSuccessfulCommand()
-                return
-            }
-
             pushNotificationManager.sendMealPushNotification(
                 carbs: carbs,
                 protein: protein,
@@ -722,11 +719,11 @@ struct MealView: View {
             }
         }
 
-        if shouldSendBolusPayload {
+        func sendBolusOnlyPayload() {
             pushNotificationManager.sendBolusPushNotification(bolusAmount: bolusAmount) { success, errorMessage in
                 DispatchQueue.main.async {
                     if success {
-                        sendMealPayload()
+                        finishSuccessfulCommand()
                     } else {
                         isLoading = false
                         statusMessage = errorMessage ?? "Boluskommando misslyckades!"
@@ -735,8 +732,14 @@ struct MealView: View {
                     }
                 }
             }
-        } else {
+        }
+
+        if shouldSendMealPayload {
             sendMealPayload()
+        } else if shouldSendBolusPayload {
+            sendBolusOnlyPayload()
+        } else {
+            finishSuccessfulCommand()
         }
     }
 
