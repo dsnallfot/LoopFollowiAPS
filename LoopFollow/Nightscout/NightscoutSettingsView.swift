@@ -66,11 +66,7 @@ struct NightscoutSettingsView: View {
                 NavigationStack {
                     ScrollView {
                         Text("""
-                        När funktionen är aktiverad upprätthåller LoopFollow en live-anslutning till Nightscout via WebSocket. Detta gör att uppdateringar (nya glukosvärden, behandlingar, enhetsstatus) kommer in inom några sekunder istället för att vänta på nästa uppdateringsintervall.
-
-                        Polling fortsätter med lägre frekvens som en säkerhetsåtgärd. Om WebSocket-anslutningen bryts återupptas normal polling omedelbart.
-
-                        Denna funktion kan påverka batteriförbrukningen. På WiFi är påverkan minimal. På mobildata kan anslutningen hindra radion från att gå ner i viloläge.
+                        När funktionen är aktiverad upprätthåller LoopFollow en live-anslutning till Nightscout via WebSocket när appen är öppen. Detta gör att uppdateringar (nya glukosvärden, behandlingar, enhetsstatus) kommer in inom några sekunder istället för att vänta på nästa uppdateringsintervall.
                         """)
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)

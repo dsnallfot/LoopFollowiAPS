@@ -1328,6 +1328,8 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         if Storage.shared.backgroundRefreshType.value != .none {
             BackgroundAlertManager.shared.startBackgroundAlert()
         }
+        
+        NightscoutSocketManager.shared.disconnect()
     }
     
     @objc func appCameToForeground() {
@@ -1343,7 +1345,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         }
 
         TaskScheduler.shared.checkTasksNow()
-        NightscoutSocketManager.shared.reconnectIfNeeded()
+        NightscoutSocketManager.shared.connectIfNeeded()
         
         checkAndNotifyVersionStatus()
         checkAppExpirationStatus()
