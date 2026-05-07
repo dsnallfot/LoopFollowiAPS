@@ -125,12 +125,12 @@ extension MainViewController {
 
             // If no data in the chosen scope, don't update the stats UI
             guard statsSourceData.count > 0 else {
-                statsLowPercent.text = "N/A"
-                statsInRangePercent.text = "N/A"
-                statsHighPercent.text = "N/A"
-                statsAvgBG.text = "N/A"
-                statsEstA1C.text = "N/A"
-                statsStdDev.text = "N/A"
+                statsLowPercent.text = "--"
+                statsInRangePercent.text = "--"
+                statsHighPercent.text = "--"
+                statsAvgBG.text = "--"
+                statsEstA1C.text = "--"
+                statsStdDev.text = "--"
 
                 // Clear pie
                 statsPieChart.data = nil
@@ -153,8 +153,8 @@ extension MainViewController {
             statsAvgBG.text = Localizer.toDisplayUnits(String(format:"%.0f", stats.avgBG)).replacingOccurrences(of: ",", with: ".")
 
             if UserDefaultsRepository.useIFCC.value {
-                // Keep legacy UI behavior: still show % for A1C as before (even if IFCC might ideally be mmol/mol)
-                statsEstA1C.text = String(format:"%.0f", stats.a1C) + "%"
+                // Keep legacy UI behavior: still show % for A1C as before
+                statsEstA1C.text = String(format:"%.0f", stats.a1C)
             } else {
                 statsEstA1C.text = String(format:"%.1f", stats.a1C) + "%"
             }
