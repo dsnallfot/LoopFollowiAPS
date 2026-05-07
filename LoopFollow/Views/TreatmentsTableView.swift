@@ -1493,8 +1493,10 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 return ("pause.circle.fill", .systemTeal.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("PumpResume") {
                 return ("play.circle.fill", .systemTeal.withAlphaComponent(0.75))
-            } else if let noteText = fullNote, noteText.contains("⚠️") || noteText.contains("⛔️") {
+            } else if let noteText = fullNote, noteText.contains("⚠️") {
                 return ("exclamationmark.triangle.fill", .systemYellow.withAlphaComponent(0.85))
+            } else if let noteText = fullNote, noteText.contains("⛔️") {
+                return ("exclamationmark.triangle.fill", .systemRed.withAlphaComponent(0.85))
             } else if let noteText = fullNote, noteText.contains("Meta Quest spel startades") || noteText.contains("Träning startades") {
                 return ("play.circle.fill", .systemGreen.withAlphaComponent(0.75))
             } else if let noteText = fullNote, noteText.contains("Meta Quest spel avslutades") || noteText.contains("Träning avslutades") {
@@ -1636,6 +1638,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 let resumePattern = "PumpResume"
                 let suspendPattern = "PumpSuspend"
                 let warningPattern = "⚠️ "
+                let urgentPattern = "⛔️ "
                 var modifiedNote = note
 
                 // Replace "PumpResume" with "Pump startades".
@@ -1650,9 +1653,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 }
                 
                 // Replace "⚠️ " with "".
-                if let suspendRegex = try? NSRegularExpression(pattern: warningPattern, options: []) {
+                if let warningRegex = try? NSRegularExpression(pattern: warningPattern, options: []) {
                     let range = NSRange(location: 0, length: modifiedNote.utf16.count)
-                    modifiedNote = suspendRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "")
+                    modifiedNote = warningRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "")
+                }
+                
+                // Replace "⛔️ " with "".
+                if let urgentRegex = try? NSRegularExpression(pattern: urgentPattern, options: []) {
+                    let range = NSRange(location: 0, length: modifiedNote.utf16.count)
+                    modifiedNote = urgentRegex.stringByReplacingMatches(in: modifiedNote, options: [], range: range, withTemplate: "")
                 }
 
                 let preview = previewNoteText(for: modifiedNote)
@@ -3351,9 +3360,12 @@ fileprivate final class NoteEditViewController: ThemedViewController {
         notesTextView.font = .preferredFont(forTextStyle: .body)
         notesTextView.backgroundColor = .label.withAlphaComponent(0.12)
         notesTextView.layer.cornerRadius = 18
-        notesTextView.textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
-        notesTextView.isScrollEnabled = false
-        notesTextView.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        notesTextView.textContainerInset = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        notesTextView.isScrollEnabled = true
+        notesTextView.alwaysBounceVertical = true
+        notesTextView.textContainer.lineBreakMode = .byWordWrapping
+        notesTextView.textContainer.widthTracksTextView = true
+        notesTextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 96).isActive = true
 
         datePicker.datePickerMode = .dateAndTime
         datePicker.preferredDatePickerStyle = .compact
@@ -3364,6 +3376,7 @@ fileprivate final class NoteEditViewController: ThemedViewController {
         contentStack.addArrangedSubview(notesTextView)
         contentStack.addArrangedSubview(dateLabel)
         contentStack.addArrangedSubview(datePicker)
+        notesTextView.widthAnchor.constraint(equalTo: contentStack.widthAnchor).isActive = true
         datePicker.setContentHuggingPriority(.required, for: .horizontal)
 
         NSLayoutConstraint.activate([
