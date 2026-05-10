@@ -1379,12 +1379,32 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         if traitCollection.userInterfaceStyle == .light {
             background.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.93)
         } else {
-            background.backgroundColor = UIColor(
+            let leftColor = UIColor(
                 red: 0.0 / 255.0,
                 green: 34.0 / 255.0,
                 blue: 60.0 / 255.0,
                 alpha: 0.93
             )
+            let rightColor = UIColor(
+                red: 0.0 / 255.0,
+                green: 15.0 / 255.0,
+                blue: 30.0 / 255.0,
+                alpha: 0.93
+            )
+            let gradientLayer = CAGradientLayer()
+            gradientLayer.colors = [
+                leftColor.cgColor,
+                rightColor.cgColor
+            ]
+
+            // vänster -> höger
+            gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
+            gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
+
+            // viktigt: använd overlayns slutliga storlek
+            gradientLayer.frame = view.bounds
+
+            background.layer.insertSublayer(gradientLayer, at: 0)
         }
 
         background.alpha = 0.0
