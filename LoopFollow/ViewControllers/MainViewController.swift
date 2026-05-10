@@ -49,6 +49,10 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     @IBOutlet weak var BGView: UIStackView!
     var refreshScrollView: UIScrollView!
 
+    private var infoTableExpandedOverlay: UITableView?
+    private var infoTableExpandedBackground: UIView?
+    private var infoTableExpandedConstraints: [NSLayoutConstraint] = []
+
     // MARK: - Easter egg (Clippy)
     // Toggle this from elsewhere in the app to show/hide the Clippy overlay.
     // For UI testing you can set this to true.
@@ -358,6 +362,11 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         infoTable.dataSource = self
         infoTable.tableFooterView = UIView(frame: .zero)
         infoTable.bounces = false
+        infoTable.isUserInteractionEnabled = true
+        let infoTableTapGesture = UITapGestureRecognizer(target: self, action: #selector(toggleInfoTableExpandedOverlay))
+        infoTableTapGesture.numberOfTapsRequired = 1
+        infoTableTapGesture.cancelsTouchesInView = false
+        infoTable.addGestureRecognizer(infoTableTapGesture)
         //infoTable.addBorder(toSide: .Left, withColor: UIColor.darkGray.cgColor, andThickness: 2)
         
         self.infoManager = InfoManager(tableView: infoTable)
@@ -1221,14 +1230,23 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             // Borde inte hända, men ger en minimal fallback
             return UITableViewCell(style: .value1, reuseIdentifier: "FallbackCell")
         }
-
+        
+        let isOverlayTable = tableView == infoTableExpandedOverlay
+        
         // InfoManager bryr sig bara om row, inte section
         let rowIndexPath = IndexPath(row: indexPath.row, section: 0)
-
+        
         if indexPath.section == 0 {
             // Prio-sektion → LabelCellPrio
-            let cell = tableView.dequeueReusableCell(withIdentifier: "LabelCellPrio", for: indexPath)
-
+            let cell: UITableViewCell
+            if isOverlayTable {
+                cell = UITableViewCell(style: .value1, reuseIdentifier: "LabelCellPrioOverlay")
+                cell.selectionStyle = .none
+                configureInfoOverlayCell(cell)
+            } else {
+                cell = tableView.dequeueReusableCell(withIdentifier: "LabelCellPrio", for: indexPath)
+            }
+            
             if let values = infoManager.priorityDataForIndexPath(rowIndexPath) {
                 cell.textLabel?.text = values.name
                 cell.detailTextLabel?.text = values.value
@@ -1236,7 +1254,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                 cell.textLabel?.text = ""
                 cell.detailTextLabel?.text = ""
             }
-
+            
             if let type = infoManager.infoTypeForPriorityRow(rowIndexPath) {
                 switch type {
                 default:
@@ -1244,15 +1262,15 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                     cell.detailTextLabel?.textColor = .label
                 }
             }
-
+            
             // Se till att själva cellen är transparent
             cell.backgroundColor = .clear
             cell.contentView.backgroundColor = .clear
-
+            
             // Lägg till (eller återanvänd) en highlight-view bakom innehållet
             let highlightTag = 999
             let highlightView: UIView
-
+            
             if let existing = cell.contentView.viewWithTag(highlightTag) {
                 highlightView = existing
             } else {
@@ -1260,7 +1278,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                 view.tag = highlightTag
                 view.translatesAutoresizingMaskIntoConstraints = false
                 cell.contentView.insertSubview(view, at: 0)
-
+                
                 NSLayoutConstraint.activate([
                     // inre bredd = samma som layoutmarginalerna (där dina “stödlinjer” är +6p)
                     view.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor, constant: -5),
@@ -1268,21 +1286,28 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                     view.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
                     view.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor)
                 ])
-
+                
                 highlightView = view
             }
-
+            
             // Rounded corners only on the leading (left) side for the red highlight
             highlightView.layer.cornerRadius = 5
             highlightView.layer.masksToBounds = true
-
+            
             highlightView.backgroundColor = UIColor.systemPurple.withAlphaComponent(0.35)
-
+            
             return cell
         } else {
             // Normal sektion → LabelCell
-            let cell = tableView.dequeueReusableCell(withIdentifier: "LabelCell", for: indexPath)
-
+            let cell: UITableViewCell
+            if isOverlayTable {
+                cell = UITableViewCell(style: .value1, reuseIdentifier: "LabelCellOverlay")
+                cell.selectionStyle = .none
+                configureInfoOverlayCell(cell)
+            } else {
+                cell = tableView.dequeueReusableCell(withIdentifier: "LabelCell", for: indexPath)
+            }
+            
             if let values = infoManager.dataForIndexPath(rowIndexPath) {
                 cell.textLabel?.text = values.name
                 cell.detailTextLabel?.text = values.value
@@ -1290,7 +1315,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                 cell.textLabel?.text = ""
                 cell.detailTextLabel?.text = ""
             }
-
+            
             if let type = infoManager.infoTypeForRow(rowIndexPath) {
                 switch type {
                 case .iob, .tdd:
@@ -1311,6 +1336,107 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             cell.backgroundColor = .clear
 
             return cell
+        }
+    }
+
+    private func configureInfoOverlayCell(_ cell: UITableViewCell) {
+        cell.textLabel?.font = UIFont.systemFont(ofSize: 15, weight: .regular)
+        cell.detailTextLabel?.font = UIFont.systemFont(ofSize: 15, weight: .regular)
+        cell.textLabel?.adjustsFontSizeToFitWidth = true
+        cell.detailTextLabel?.adjustsFontSizeToFitWidth = true
+        cell.textLabel?.minimumScaleFactor = 0.65
+        cell.detailTextLabel?.minimumScaleFactor = 0.65
+        cell.textLabel?.lineBreakMode = .byTruncatingTail
+        cell.detailTextLabel?.lineBreakMode = .byTruncatingTail
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+    }
+
+    @objc private func toggleInfoTableExpandedOverlay() {
+        if let overlay = infoTableExpandedOverlay {
+            NSLayoutConstraint.deactivate(infoTableExpandedConstraints)
+            infoTableExpandedConstraints.removeAll()
+
+            UIView.animate(withDuration: 0.18, animations: {
+                overlay.alpha = 0.0
+                self.infoTableExpandedBackground?.alpha = 0.0
+            }, completion: { _ in
+                overlay.removeFromSuperview()
+                self.infoTableExpandedBackground?.removeFromSuperview()
+                self.infoTableExpandedOverlay = nil
+                self.infoTableExpandedBackground = nil
+            })
+            return
+        }
+
+        view.layoutIfNeeded()
+
+        let background = UIView()
+        background.translatesAutoresizingMaskIntoConstraints = false
+
+        if traitCollection.userInterfaceStyle == .light {
+            background.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.93)
+        } else {
+            background.backgroundColor = UIColor(
+                red: 0.0 / 255.0,
+                green: 34.0 / 255.0,
+                blue: 60.0 / 255.0,
+                alpha: 0.93
+            )
+        }
+
+        background.alpha = 0.0
+
+        let overlay = UITableView(frame: .zero, style: .plain)
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        overlay.dataSource = self
+        overlay.delegate = nil
+        overlay.rowHeight = 20
+        overlay.estimatedRowHeight = 20
+        overlay.separatorStyle = infoTable.separatorStyle
+        overlay.separatorColor = infoTable.separatorColor
+        overlay.backgroundColor = .clear
+        overlay.tableFooterView = UIView(frame: .zero)
+        overlay.bounces = false
+        overlay.isScrollEnabled = false
+        overlay.layer.cornerRadius = 8
+        overlay.layer.masksToBounds = true
+
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(toggleInfoTableExpandedOverlay))
+        overlay.addGestureRecognizer(tapGesture)
+
+        view.addSubview(background)
+        view.addSubview(overlay)
+
+        infoTableExpandedBackground = background
+        infoTableExpandedOverlay = overlay
+
+        overlay.reloadData()
+        overlay.layoutIfNeeded()
+
+        let contentHeight = overlay.contentSize.height
+        let infoTableTopInView = infoTable.convert(infoTable.bounds, to: view).minY
+        let bottomPadding: CGFloat = 8
+        let availableHeight = max(0, view.bounds.height - view.safeAreaInsets.bottom - infoTableTopInView - bottomPadding)
+        let expandedHeight = min(contentHeight, availableHeight)
+
+        infoTableExpandedConstraints = [
+            background.leadingAnchor.constraint(equalTo: overlay.leadingAnchor),
+            background.trailingAnchor.constraint(equalTo: overlay.trailingAnchor),
+            background.topAnchor.constraint(equalTo: overlay.topAnchor),
+            background.bottomAnchor.constraint(equalTo: overlay.bottomAnchor),
+
+            overlay.leadingAnchor.constraint(equalTo: infoTable.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: 5),
+            overlay.topAnchor.constraint(equalTo: infoTable.topAnchor),
+            overlay.heightAnchor.constraint(equalToConstant: expandedHeight)
+        ]
+        NSLayoutConstraint.activate(infoTableExpandedConstraints)
+
+        overlay.alpha = 0.0
+        UIView.animate(withDuration: 0.18) {
+            background.alpha = 1.0
+            overlay.alpha = 1.0
         }
     }
 
