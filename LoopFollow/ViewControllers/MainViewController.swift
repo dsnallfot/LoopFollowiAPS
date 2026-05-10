@@ -369,7 +369,9 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         infoTable.addGestureRecognizer(infoTableTapGesture)
         //infoTable.addBorder(toSide: .Left, withColor: UIColor.darkGray.cgColor, andThickness: 2)
         
-        self.infoManager = InfoManager(tableView: infoTable)
+        self.infoManager = InfoManager(tableView: infoTable) { [weak self] in
+            self?.infoTableExpandedOverlay?.reloadData()
+        }
 
         smallGraphHeightConstraint.constant = CGFloat(UserDefaultsRepository.smallGraphHeight.value)
         self.view.layoutIfNeeded()

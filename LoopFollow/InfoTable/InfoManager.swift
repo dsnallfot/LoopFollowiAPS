@@ -13,20 +13,28 @@ import HealthKit
 class InfoManager {
         var tableData: [InfoData]
         weak var tableView: UITableView?
+        private let onReloadData: (() -> Void)?
 
         /// InfoTypes som ska visas i prio-sektionen (LabelCellPrio).
         /// Själva värdena ligger fortfarande i `tableData` – detta styr bara *var* de visas.
         private var priorityTypes: [InfoType] = []
 
-    init(tableView: UITableView) {
+    init(tableView: UITableView, onReloadData: (() -> Void)? = nil) {
         self.tableData = InfoType.allCases.map { InfoData(name: $0.name) }
         self.tableView = tableView
+        self.onReloadData = onReloadData
+
+    }
+    
+    private func reloadTables() {
+        tableView?.reloadData()
+        onReloadData?()
     }
 /*
     func updateInfoData(type: InfoType, value: String, unit: String? = nil) {
         let displayValue = unit != nil ? "\(value) \(unit!)" : value
         tableData[type.rawValue].value = displayValue
-        tableView?.reloadData()
+        reloadTables()
     }
 */
     func updateInfoData(type: InfoType, value: String? = nil, unit: String? = nil) {
@@ -44,7 +52,7 @@ class InfoManager {
         }
 
         tableData[type.rawValue].value = displayValue
-        tableView?.reloadData()
+        reloadTables()
     }
 
     func updateInfoData(type: InfoType, value: HKQuantity, unit: String? = nil) {
@@ -101,7 +109,7 @@ class InfoManager {
         } else {
             priorityTypes.removeAll { $0 == type }
         }
-        tableView?.reloadData()
+        reloadTables()
     }
     
     func clearInfoData(type: InfoType) {
@@ -115,7 +123,7 @@ class InfoManager {
         } else {
             tableData[type.rawValue].value = "--"
         }
-        tableView?.reloadData()
+        reloadTables()
     }
 
     func clearInfoData(types: [InfoType]) {
@@ -131,7 +139,7 @@ class InfoManager {
                 tableData[type.rawValue].value = "--"
             }
         }
-        tableView?.reloadData()
+        reloadTables()
     }
     
     func numberOfPriorityRows() -> Int {
