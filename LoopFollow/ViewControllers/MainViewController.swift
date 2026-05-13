@@ -1442,7 +1442,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                 x: 0,
                 y: 0,
                 width: view.bounds.width,
-                height: expandedHeight
+                height: expandedHeight + 8
             )
 
             background.layer.insertSublayer(gradientLayer, at: 0)
