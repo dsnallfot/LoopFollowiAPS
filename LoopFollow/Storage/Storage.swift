@@ -150,8 +150,14 @@ struct PumpChangeHistoryEntry: Codable, Equatable {
     /// Unix timestamp (seconds since 1970) for when the pump was changed.
     var date: TimeInterval
 
+    /// Optional note linked to the pump session, for example a critical pod failure note.
+    var notes: String?
+
+    /// Optional Unix timestamp (seconds since 1970) for when the linked note occurred.
+    var noteDate: TimeInterval?
+
     static func == (lhs: PumpChangeHistoryEntry, rhs: PumpChangeHistoryEntry) -> Bool {
-        return lhs.date == rhs.date
+        return lhs.date == rhs.date && lhs.notes == rhs.notes && lhs.noteDate == rhs.noteDate
     }
 }
 
@@ -194,6 +200,7 @@ struct SickDayHistoryEntry: Codable, Equatable {
 
 extension Notification.Name {
     static let sickDaysUpdated = Notification.Name("sickDaysUpdated")
+    static let pumpChangeHistoryUpdated = Notification.Name("pumpChangeHistoryUpdated")
 }
 
 struct ComboPresetEntry: Codable, Equatable, Identifiable {

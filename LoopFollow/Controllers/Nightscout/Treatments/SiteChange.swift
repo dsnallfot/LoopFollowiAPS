@@ -38,7 +38,7 @@ extension MainViewController {
                     let dot = DataStructs.timestampOnlyStruct(date: Double(dateTimeStamp), sgv: Int(18))
                     pumpChangeGraphData.append(dot)
                     
-                    let newEntry = PumpChangeHistoryEntry(date: dateTimeStamp)
+                    let newEntry = PumpChangeHistoryEntry(date: dateTimeStamp, notes: nil, noteDate: nil)
                     
                     // Prevent duplicates before saving
                     if !pumpChangeHistory.contains(where: { $0.date == newEntry.date }) {
@@ -52,7 +52,8 @@ extension MainViewController {
         
         // Save back to persistent storage if we have entries
         if !pumpChangeHistory.isEmpty {
-            Storage.shared.pumpChangeHistory = pumpChangeHistory
+            Storage.shared.pumpChangeHistory = pumpChangeHistory.sorted { $0.date > $1.date }
+            NotificationCenter.default.post(name: .pumpChangeHistoryUpdated, object: nil)
         }
         
         if UserDefaultsRepository.graphOtherTreatments.value {

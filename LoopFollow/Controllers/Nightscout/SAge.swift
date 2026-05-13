@@ -108,7 +108,7 @@ extension MainViewController {
                 // Add a negative sign for overdue time and set the status dot
                 let statusDot: String
 
-                if remainingSeconds < 0 {
+                if remainingSeconds < 43200 { //When 12h remains, indicate red, for saftey margin due to 203 errors
                     statusDot = "🔴"
                     infoManager.setPriority(true, for: .sage)
                 } else if remainingSeconds <= 86400 {

@@ -44,8 +44,23 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
         // Uppdatera bakgrunden efter att tabellen är på plats så att gradienten appliceras korrekt.
         updateBackgroundForCurrentMode()
 
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(pumpChangeHistoryUpdated),
+            name: .pumpChangeHistoryUpdated,
+            object: nil
+        )
+
         loadPumpHistoryFromStorage()
         fetchInitialPumpChangesIfNeeded()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: .pumpChangeHistoryUpdated, object: nil)
+    }
+
+    @objc private func pumpChangeHistoryUpdated() {
+        loadPumpHistoryFromStorage()
     }
 
     // MARK: - UI setup
@@ -262,7 +277,7 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
                 var merged = Storage.shared.pumpChangeHistory
                 for c in cageEntries {
                     guard let date = NightscoutUtils.parseDate(c.created_at) else { continue }
-                    let entry = PumpChangeHistoryEntry(date: date.timeIntervalSince1970)
+                    let entry = PumpChangeHistoryEntry(date: date.timeIntervalSince1970, notes: nil, noteDate: nil)
                     if !merged.contains(where: { $0.date == entry.date }) {
                         merged.append(entry)
                     }
@@ -326,7 +341,133 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
         let interval = max(0, endDate.timeIntervalSince(currentStart))
         let hours = Int(interval / 3600)
         let prefix = isOngoing ? "Pågående" : "Session"
-        return ("(\(prefix): \(hours) timmar)", hours, isOngoing)
+        let podFailureSuffix = current.notes?.localizedCaseInsensitiveContains("Kritiskt poddfel") == true ? " ⛔️" : ""
+        return ("(\(prefix): \(hours) h)\(podFailureSuffix)", hours, isOngoing)
+    }
+
+    private func presentPumpAnalysis(for entry: PumpChangeHistoryEntry, centeredAt analysisDate: Date, indexPath: IndexPath) {
+        let modalTitle = "Analys podd"
+
+        // Analysera 3h före och 3h efter vald tidpunkt.
+        let startDate = analysisDate.addingTimeInterval(-3 * 60 * 60)
+        let endDate = analysisDate.addingTimeInterval(3 * 60 * 60)
+
+        // Hitta MainViewController via tabbens root (samma mönster som i BGCheckView)
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+            let tabBar = window.rootViewController as? UITabBarController,
+            let tabViewControllers = tabBar.viewControllers
+        else {
+            tableView.deselectRow(at: indexPath, animated: true)
+            return
+        }
+
+        var mainVC: MainViewController?
+
+        for vc in tabViewControllers {
+            if let nav = vc as? UINavigationController {
+                if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
+                    mainVC = candidate
+                    break
+                }
+            } else if let candidate = vc as? MainViewController {
+                mainVC = candidate
+                break
+            }
+        }
+
+        guard let mainVC else {
+            tableView.deselectRow(at: indexPath, animated: true)
+            return
+        }
+
+        var events = mainVC.buildEventsForMealAnalysis()
+
+        // Säkerställ att just detta pumpbyte finns som "Site Change"-event.
+        // Om pumpChangeGraphData bara innehåller senaste bytet så lägger vi in det här manuellt
+        // så att en grå prick alltid ritas för raden du tryckt på.
+        let entryDate = Date(timeIntervalSince1970: entry.date)
+        let hasMatchingSiteChange = events.contains {
+            $0.eventType == "Site Change" &&
+            abs($0.date.timeIntervalSince(entryDate)) < 60  // inom 1 min från detta entry
+        }
+
+        if !hasMatchingSiteChange {
+            events.append(
+                Event(
+                    date: entryDate,
+                    eventType: "Site Change",
+                    amount: 0.0,
+                    foodType: nil
+                )
+            )
+        }
+
+        let analysisVC = MealAnalysisView(
+            events: events,
+            initialStart: startDate,
+            initialEnd: endDate,
+            modalWithTimestamp: true,
+            modalTitleString: modalTitle,
+            preSelectedSegment: 3
+        )
+
+        let nav = UINavigationController(rootViewController: analysisVC)
+        nav.modalPresentationStyle = .formSheet
+
+        // Gör modalen transparent så den blå gradienten syns bakom (samma som i showPumpSessionStats)
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+        nav.view.layer.backgroundColor = UIColor.clear.cgColor
+
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+
+        // Matcha aktuellt dark/light-läge
+        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
+
+        present(nav, animated: true) { [weak self] in
+            self?.tableView.deselectRow(at: indexPath, animated: true)
+        }
+    }
+
+    private func presentPodFailureAlert(for entry: PumpChangeHistoryEntry, indexPath: IndexPath) {
+        let note = entry.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let entryDate = Date(timeIntervalSince1970: entry.date)
+
+        let errorTime: String? = entry.noteDate.map { timestamp in
+            let df = DateFormatter()
+            df.locale = Locale(identifier: "sv_SE")
+            df.dateFormat = "HH:mm:ss"
+            return df.string(from: Date(timeIntervalSince1970: timestamp))
+        }
+
+        let alert = UIAlertController(
+            title: errorTime.map { "Poddfel \($0)" } ?? "Poddfel",
+            message: note,
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "Analys poddstart", style: .default) { [weak self] _ in
+            self?.presentPumpAnalysis(for: entry, centeredAt: entryDate, indexPath: indexPath)
+        })
+
+        if let noteDate = entry.noteDate {
+            let podEndDate = Date(timeIntervalSince1970: noteDate)
+            alert.addAction(UIAlertAction(title: "Analys poddslut", style: .default) { [weak self] _ in
+                self?.presentPumpAnalysis(for: entry, centeredAt: podEndDate, indexPath: indexPath)
+            })
+        }
+
+        alert.addAction(UIAlertAction(title: "Avbryt", style: .cancel) { [weak self] _ in
+            self?.tableView.deselectRow(at: indexPath, animated: true)
+        })
+
+        present(alert, animated: true)
     }
 
     // MARK: - UITableViewDataSource
@@ -405,94 +546,13 @@ class PumpHistoryViewController: ThemedViewController, UITableViewDataSource, UI
     // MARK: - UITableViewDelegate
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // Datum för själva pumpbytet
         let entry = pumpHistory[indexPath.row]
         let entryDate = Date(timeIntervalSince1970: entry.date)
-        let modalTitle = "Analys podd"
 
-        // Analysera 3h före och 3h efter pumpbytet
-        let startDate = entryDate.addingTimeInterval(-3 * 60 * 60)
-        let endDate = entryDate.addingTimeInterval(3 * 60 * 60)
-
-        // Hitta MainViewController via tabbens root (samma mönster som i BGCheckView)
-        guard
-            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
-            let tabBar = window.rootViewController as? UITabBarController,
-            let tabViewControllers = tabBar.viewControllers
-        else {
-            tableView.deselectRow(at: indexPath, animated: true)
-            return
-        }
-
-        var mainVC: MainViewController?
-
-        for vc in tabViewControllers {
-            if let nav = vc as? UINavigationController {
-                if let candidate = nav.viewControllers.first(where: { $0 is MainViewController }) as? MainViewController {
-                    mainVC = candidate
-                    break
-                }
-            } else if let candidate = vc as? MainViewController {
-                mainVC = candidate
-                break
-            }
-        }
-
-        guard let mainVC else {
-            tableView.deselectRow(at: indexPath, animated: true)
-            return
-        }
-
-        var events = mainVC.buildEventsForMealAnalysis()
-
-        // Säkerställ att just detta pumpbyte finns som "Site Change"-event.
-        // Om pumpChangeGraphData bara innehåller senaste bytet så lägger vi in det här manuellt
-        // så att en grå prick alltid ritas för raden du tryckt på.
-        let hasMatchingSiteChange = events.contains {
-            $0.eventType == "Site Change" &&
-            abs($0.date.timeIntervalSince(entryDate)) < 60  // inom 1 min från detta entry
-        }
-
-        if !hasMatchingSiteChange {
-            events.append(
-                Event(
-                    date: entryDate,
-                    eventType: "Site Change",
-                    amount: 0.0,
-                    foodType: nil
-                )
-            )
-        }
-
-        let analysisVC = MealAnalysisView(
-            events: events,
-            initialStart: startDate,
-            initialEnd: endDate,
-            modalWithTimestamp: true,
-            modalTitleString: modalTitle,
-            preSelectedSegment: 3
-        )
-
-        let nav = UINavigationController(rootViewController: analysisVC)
-        nav.modalPresentationStyle = .formSheet
-
-        // Gör modalen transparent så den blå gradienten syns bakom (samma som i showPumpSessionStats)
-        nav.view.backgroundColor = .clear
-        nav.view.isOpaque = false
-        nav.view.layer.backgroundColor = UIColor.clear.cgColor
-
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        nav.navigationBar.standardAppearance = appearance
-        nav.navigationBar.scrollEdgeAppearance = appearance
-        nav.navigationBar.compactAppearance = appearance
-
-        // Matcha aktuellt dark/light-läge
-        nav.overrideUserInterfaceStyle = self.traitCollection.userInterfaceStyle
-
-        present(nav, animated: true) { [weak self] in
-            self?.tableView.deselectRow(at: indexPath, animated: true)
+        if entry.notes?.localizedCaseInsensitiveContains("Kritiskt poddfel") == true {
+            presentPodFailureAlert(for: entry, indexPath: indexPath)
+        } else {
+            presentPumpAnalysis(for: entry, centeredAt: entryDate, indexPath: indexPath)
         }
     }
 
