@@ -213,6 +213,43 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         // Table wants newest first
         return rows.sorted { $0.date > $1.date }
     }
+    
+    private func isSuspectedCompressionLow(entry: BGEntry) -> Bool {
+        let compressionLowDropMultiplier: Double = 2.0
+
+        let lowThresholdMmol = Double(UserDefaultsRepository.alertLowBG.value) * GlucoseConversion.mgDlToMmolL
+        guard entry.mmol <= lowThresholdMmol else { return false }
+
+        let sourceEntries: [BGEntry]
+        switch dataMode {
+        case .allValues:
+            sourceEntries = allValuesDayEntries
+        case .nsOnly:
+            sourceEntries = nsOnlyDayEntries
+        case .sensorErrors:
+            return false
+        }
+
+        let entriesAsc = sourceEntries.sorted { $0.date < $1.date }
+        guard let index = entriesAsc.firstIndex(where: { abs($0.date.timeIntervalSince(entry.date)) < 1.0 }),
+              index >= 3 else {
+            return false
+        }
+
+        let currentMgdl = entriesAsc[index].mmol / GlucoseConversion.mgDlToMmolL
+        let previousMgdl1 = entriesAsc[index - 1].mmol / GlucoseConversion.mgDlToMmolL
+        let previousMgdl2 = entriesAsc[index - 2].mmol / GlucoseConversion.mgDlToMmolL
+        let previousMgdl3 = entriesAsc[index - 3].mmol / GlucoseConversion.mgDlToMmolL
+
+        let lastDelta = currentMgdl - previousMgdl1
+        let previousDelta1 = previousMgdl1 - previousMgdl2
+        let previousDelta2 = previousMgdl2 - previousMgdl3
+        let previousMaxMagnitude = max(abs(previousDelta1), abs(previousDelta2))
+
+        return lastDelta < 0
+            && previousMaxMagnitude > 0
+            && abs(lastDelta) >= previousMaxMagnitude * compressionLowDropMultiplier
+    }
 
     /// Determines which rows are shown when the filter button (line.3.horizontal.decrease.circle) is enabled.
     /// Includes:
@@ -237,6 +274,8 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             if abs(entry.mmol - 6.7) < 0.02 { return true }
             // 🎯 target = exactly target mmol/L
             if abs(entry.mmol - targetMmol) < 0.02 { return true }
+            // 🗜️ suspected compression low
+            if isSuspectedCompressionLow(entry: entry) { return true }
             // 🆘 Very low marker ~2.2 mmol/L
             if abs(entry.mmol - 2.2) < 0.04 { return true }
             // ⚠️ Very high marker ~22.2 mmol/L
@@ -1218,6 +1257,8 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
                 cell.textLabel?.text = valueString + " 👐"
             } else if abs(entry.mmol - targetMmol) < 0.02 {
                 cell.textLabel?.text = valueString + " 🎯"
+            } else if isSuspectedCompressionLow(entry: entry) {
+                cell.textLabel?.text = valueString + " 🗜️"
             } else if abs(entry.mmol - 2.2) < 0.04 {
                 cell.textLabel?.text = valueString + " 🆘"
             } else if abs(entry.mmol - 22.2) < 0.04 {
