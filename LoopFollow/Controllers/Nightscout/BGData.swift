@@ -438,6 +438,36 @@ extension MainViewController {
         }
     }
     
+    private func isSuspectedCompressionLow(entries: [ShareGlucoseData], index: Int) -> Bool {
+        let compressionLowDropMultiplier: Double = 2.0
+
+        guard index >= 3, index < entries.count else { return false }
+
+        // Only flag compression drops if the current value is below target.
+        // ShareGlucoseData.sgv is already mg/dL, and targetLine is stored in mg/dL.
+        let targetMgdl = Double(UserDefaultsRepository.targetLine.value)
+        let currentMgdl = Double(entries[index].sgv)
+        guard currentMgdl <= targetMgdl else { return false }
+
+        let previousMgdl1 = Double(entries[index - 1].sgv)
+        let previousMgdl2 = Double(entries[index - 2].sgv)
+        let previousMgdl3 = Double(entries[index - 3].sgv)
+
+        let lastDelta = currentMgdl - previousMgdl1
+        let previousDelta1 = previousMgdl1 - previousMgdl2
+        let previousDelta2 = previousMgdl2 - previousMgdl3
+        let previousMaxMagnitude = max(abs(previousDelta1), abs(previousDelta2))
+
+        // Require at least ~0.5 mmol/L drop (~9 mg/dL).
+        guard abs(lastDelta) >= 9 else {
+            return false
+        }
+
+        return lastDelta < 0
+            && previousMaxMagnitude > 0
+            && abs(lastDelta) >= previousMaxMagnitude * compressionLowDropMultiplier
+    }
+    
     // NS BG Data Front end updater
     func viewUpdateNSBG(sourceName: String) {
         DispatchQueue.main.async {
@@ -456,6 +486,7 @@ extension MainViewController {
             let latestBGEntry = entries[latestEntryIndex]
             let latestBG = latestBGEntry.sgv
             let lastBGTime = latestBGEntry.date
+            let isSuspectedCompressionLow = self.isSuspectedCompressionLow(entries: entries, index: latestEntryIndex)
 
             var priorBGEntry: ShareGlucoseData?
             var priorBG: Int?
@@ -573,7 +604,11 @@ extension MainViewController {
                 }
 
                 var formattedDelta = self.latestDeltaString.replacingOccurrences(of: ",", with: ".")
-                if deltaWasInterpolated { formattedDelta += "*" }
+                if deltaWasInterpolated {
+                    formattedDelta += "*"
+                } else if isSuspectedCompressionLow {
+                    formattedDelta += "🗜️"
+                }
 
                 // Daniel: Added for visualization in remote meal info popup
                 Storage.shared.sharedLatestDelta.value = formattedDelta
@@ -640,6 +675,7 @@ extension MainViewController {
                 .replacingOccurrences(of: ",", with: ".")
                 .replacingOccurrences(of: "+", with: "")// Remove leading plus sign if present
                 .replacingOccurrences(of: "*", with: "")// Remove * sign if present
+                .replacingOccurrences(of: "🗜️", with: "")// Remove 🗜️ sign if present
             // Convert to Double
             let bgValue = Double(cleanedBGTextStr)
             let deltaBGValue = Double(cleanedSnoozerDelta)

@@ -217,8 +217,9 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
     private func isSuspectedCompressionLow(entry: BGEntry) -> Bool {
         let compressionLowDropMultiplier: Double = 2.0
 
-        let lowThresholdMmol = Double(UserDefaultsRepository.alertLowBG.value) * GlucoseConversion.mgDlToMmolL
-        guard entry.mmol <= lowThresholdMmol else { return false }
+        // Only show compression-drops if they are below target
+        let targetMmol = Double(UserDefaultsRepository.targetLine.value) * GlucoseConversion.mgDlToMmolL
+        guard entry.mmol <= targetMmol else { return false }
 
         let sourceEntries: [BGEntry]
         switch dataMode {
@@ -245,6 +246,11 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         let previousDelta1 = previousMgdl1 - previousMgdl2
         let previousDelta2 = previousMgdl2 - previousMgdl3
         let previousMaxMagnitude = max(abs(previousDelta1), abs(previousDelta2))
+
+        // Require at least ~0.5 mmol/L drop (~9 mg/dL)
+        guard abs(lastDelta) >= 9 else {
+            return false
+        }
 
         return lastDelta < 0
             && previousMaxMagnitude > 0
