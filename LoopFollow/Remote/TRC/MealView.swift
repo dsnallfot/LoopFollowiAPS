@@ -412,17 +412,23 @@ struct MealView: View {
         let nextIndex = order.index(after: currentIndex) == order.endIndex
             ? order.startIndex
             : order.index(after: currentIndex)
+        let nextField = order[nextIndex]
 
-        clearMealInputFocus()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            switch order[nextIndex] {
-            case .carbs: carbsFieldIsFocused = true
-            case .protein: proteinFieldIsFocused = true
-            case .fat: fatFieldIsFocused = true
-            case .notes: notesFieldIsFocused = true
-            case .bolus: bolusFieldIsFocused = true
-            }
+        // Vid toolbar-navigering ska vi inte manuellt nolla det nuvarande fältets
+        // fokusflagga. Då kan UIKit hinna resigna tangentbordets text-input-session
+        // innan nästa fält blir first responder, vilket ger keyboard-flimmer och
+        // RTIInputSystemClient-varningar i Xcode-loggen.
+        switch nextField {
+        case .carbs:
+            carbsFieldIsFocused = true
+        case .protein:
+            proteinFieldIsFocused = true
+        case .fat:
+            fatFieldIsFocused = true
+        case .notes:
+            notesFieldIsFocused = true
+        case .bolus:
+            bolusFieldIsFocused = true
         }
     }
     
@@ -794,6 +800,15 @@ private struct MealNotesTextField: UIViewRepresentable {
         textField.borderStyle = .none
         textField.clearButtonMode = .whileEditing
         textField.returnKeyType = .next
+        textField.autocorrectionType = .no
+        textField.autocapitalizationType = .none
+        textField.spellCheckingType = .no
+        textField.smartQuotesType = .no
+        textField.smartDashesType = .no
+        textField.smartInsertDeleteType = .no
+        textField.textContentType = .none
+        textField.inputAssistantItem.leadingBarButtonGroups = []
+        textField.inputAssistantItem.trailingBarButtonGroups = []
         textField.delegate = context.coordinator
         textField.inputAccessoryView = makeToolbar(for: textField, context: context)
         return textField
