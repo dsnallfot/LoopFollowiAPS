@@ -36,6 +36,21 @@ struct MealView: View {
     @ObservedObject private var showAdvancedBolusCalc = Storage.shared.showAdvancedBolusCalc
 
     @State private var showBolusCalculationSheet: Bool = false
+
+    private var mealWithFatProteinBinding: Binding<Bool> {
+        Binding(
+            get: { mealWithFatProtein.value },
+            set: { newValue in
+                mealWithFatProtein.value = newValue
+                if !newValue {
+                    protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
+                    fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
+                    isScheduling = false
+                    selectedTime = nil
+                }
+            }
+        )
+    }
     
     @FocusState private var carbsFieldIsFocused: Bool
     @FocusState private var proteinFieldIsFocused: Bool
@@ -64,138 +79,148 @@ struct MealView: View {
                 .ignoresSafeArea()
             VStack {
                 Form {
-                    Section() {
-                        HKQuantityInputView(
-                            label: "Kolhydrater",
-                            quantity: $carbs,
-                            unit: .gram(),
-                            maxLength: 4,
-                            minValue: HKQuantity(unit: .gram(), doubleValue: 0),
-                            maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
-                            isFocused: $carbsFieldIsFocused,
-                            onValidationError: { _ in },
-                            nextToolbarAction: {
-                                focusNextMealInput(after: .carbs)
-                            },
-                        )
-                        
-                        if mealWithFatProtein.value {
+                    if #available(iOS 17.0, *) {
+                        Section() {
                             HKQuantityInputView(
-                                label: "Protein",
-                                quantity: $protein,
+                                label: "Kolhydrater",
+                                quantity: $carbs,
                                 unit: .gram(),
                                 maxLength: 4,
                                 minValue: HKQuantity(unit: .gram(), doubleValue: 0),
                                 maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
-                                isFocused: $proteinFieldIsFocused,
+                                isFocused: $carbsFieldIsFocused,
                                 onValidationError: { _ in },
                                 nextToolbarAction: {
-                                    focusNextMealInput(after: .protein)
+                                    focusNextMealInput(after: .carbs)
                                 },
                             )
                             
-                            HKQuantityInputView(
-                                label: "Fett",
-                                quantity: $fat,
-                                unit: .gram(),
-                                maxLength: 4,
-                                minValue: HKQuantity(unit: .gram(), doubleValue: 0),
-                                maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
-                                isFocused: $fatFieldIsFocused,
-                                onValidationError: { _ in },
-                                nextToolbarAction: {
-                                    focusNextMealInput(after: .fat)
-                                },
-                            )
-                        }
-                        HStack {
-                            Text("Anteckning")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            MealNotesTextField(
-                                text: $notes,
-                                isFocused: $notesFieldIsFocused,
-                                nextToolbarAction: {
-                                    focusNextMealInput(after: .notes)
-                                }
-                            )
-                        }
-                    }
-                    .listRowBackground(Color(.systemGray).opacity(0.15))
-                    Section() {
-                        
-                        if mealWithBolus.value {
-                            HStack(spacing: 8) {
-                                if showAdvancedBolusCalc.value {
-                                    Button {
-                                        showBolusCalculationSheet = true
-                                    } label: {
-                                        Image(systemName: advancedBolusCalcIconName)
-                                    }
-                                    .disabled(mealBolusCalculation == nil)
-
-                                } else {
-                                    Text("CR: \(formattedCRValue) g/E")
-                                        .monospacedDigit()
-                                }
+                            if mealWithFatProtein.value {
+                                HKQuantityInputView(
+                                    label: "Protein",
+                                    quantity: $protein,
+                                    unit: .gram(),
+                                    maxLength: 4,
+                                    minValue: HKQuantity(unit: .gram(), doubleValue: 0),
+                                    maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
+                                    isFocused: $proteinFieldIsFocused,
+                                    onValidationError: { _ in },
+                                    nextToolbarAction: {
+                                        focusNextMealInput(after: .protein)
+                                    },
+                                )
                                 
-                                Spacer()
-
-                                Button {
-                                    toggleCalculatedBolus()
-                                } label: {
-                                    showAdvancedBolusCalc.value ? Text("Förslag bolus:") : Text("Beräknad bolus:")
-                                    Text("\(formattedCalculatedBolus) E")
-                                        .monospacedDigit()
-                                    Image(systemName: isUsingCalculatedBolus ? "plus.app.fill" : "plus.app")
-                                        //.fontWeight(.semibold)
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(calculatedBolusValue <= 0)
-                                //.foregroundColor(.blue)
+                                HKQuantityInputView(
+                                    label: "Fett",
+                                    quantity: $fat,
+                                    unit: .gram(),
+                                    maxLength: 4,
+                                    minValue: HKQuantity(unit: .gram(), doubleValue: 0),
+                                    maxValue: HKQuantity(unit: .gram(), doubleValue: 9999),
+                                    isFocused: $fatFieldIsFocused,
+                                    onValidationError: { _ in },
+                                    nextToolbarAction: {
+                                        focusNextMealInput(after: .fat)
+                                    },
+                                )
                             }
-                            //.font(.subheadline)
-                            .foregroundColor(advancedBolusCalcRowColor)
-                            .fontWeight(.semibold)
-                            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
-
-                            HKQuantityInputView(
-                                label: "Bolus",
-                                quantity: $bolusAmount,
-                                unit: .internationalUnit(),
-                                maxLength: 4,
-                                minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
-                                maxValue: HKQuantity(unit: .internationalUnit(), doubleValue: 999),
-                                isFocused: $bolusFieldIsFocused,
-                                onValidationError: { _ in },
-                                nextToolbarAction: {
-                                    focusNextMealInput(after: .bolus)
-                                },
-                            )
+                            HStack {
+                                Text("Anteckning")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                
+                                MealNotesTextField(
+                                    text: $notes,
+                                    isFocused: $notesFieldIsFocused,
+                                    nextToolbarAction: {
+                                        focusNextMealInput(after: .notes)
+                                    }
+                                )
+                            }
                         }
+                        .listRowBackground(Color(.systemGray).opacity(0.15))
+                        .listSectionSpacing(.compact)
                     }
-                    .listRowBackground(Color(.systemGray).opacity(0.15))
+                    
+                    if #available(iOS 17.0, *) {
+                        Section() {
+                            
+                            if mealWithBolus.value {
+                                HStack(spacing: 8) {
+                                    if showAdvancedBolusCalc.value {
+                                        Button {
+                                            showBolusCalculationSheet = true
+                                        } label: {
+                                            Image(systemName: advancedBolusCalcIconName)
+                                        }
+                                        .disabled(mealBolusCalculation == nil)
+                                        
+                                    } else {
+                                        Text("CR: \(formattedCRValue) g/E")
+                                            .monospacedDigit()
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Button {
+                                        toggleCalculatedBolus()
+                                    } label: {
+                                        showAdvancedBolusCalc.value ? Text("Förslag bolus:") : Text("Beräknad bolus:")
+                                        Text("\(formattedCalculatedBolus) E")
+                                            .monospacedDigit()
+                                        Image(systemName: isUsingCalculatedBolus ? "plus.app.fill" : "plus.app")
+                                        //.fontWeight(.semibold)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(calculatedBolusValue <= 0)
+                                    //.foregroundColor(.blue)
+                                }
+                                //.font(.subheadline)
+                                .foregroundColor(advancedBolusCalcRowColor)
+                                .fontWeight(.semibold)
+                                .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+                                
+                                HKQuantityInputView(
+                                    label: "Bolus",
+                                    quantity: $bolusAmount,
+                                    unit: .internationalUnit(),
+                                    maxLength: 4,
+                                    minValue: HKQuantity(unit: .internationalUnit(), doubleValue: 0.05),
+                                    maxValue: HKQuantity(unit: .internationalUnit(), doubleValue: 999),
+                                    isFocused: $bolusFieldIsFocused,
+                                    onValidationError: { _ in },
+                                    nextToolbarAction: {
+                                        focusNextMealInput(after: .bolus)
+                                    },
+                                )
+                            }
+                        }
+                        .listRowBackground(Color(.systemGray).opacity(0.15))
+                        .listSectionSpacing(.compact)
+                    }
                     
                     if mealWithFatProtein.value {
-                    Section() {
-                        Toggle("Schemalägg till senare", isOn: $isScheduling)
-                        if isScheduling {
-                            DatePicker(
-                                "Välj tid",
-                                selection: Binding(
-                                    get: { self.selectedTime ?? Date() },
-                                    set: { self.selectedTime = $0 }
-                                ),
-                                displayedComponents: .hourAndMinute
-                            )
-                            .datePickerStyle(CompactDatePickerStyle())
-                            
-                            if bolusAmount.doubleValue(for: .internationalUnit()) > 0 {
-                                Text("OBS! Denna måltid schemaläggs, men bolusen ges omgående!")
+                        if #available(iOS 17.0, *) {
+                            Section() {
+                                Toggle("Schemalägg till senare", isOn: $isScheduling)
+                                if isScheduling {
+                                    DatePicker(
+                                        "Välj tid",
+                                        selection: Binding(
+                                            get: { self.selectedTime ?? Date() },
+                                            set: { self.selectedTime = $0 }
+                                        ),
+                                        displayedComponents: .hourAndMinute
+                                    )
+                                    .datePickerStyle(CompactDatePickerStyle())
+                                    
+                                    if bolusAmount.doubleValue(for: .internationalUnit()) > 0 {
+                                        Text("OBS! Denna måltid schemaläggs, men bolusen ges omgående!")
+                                    }
+                                }
                             }
+                            .listRowBackground(Color(.systemGray).opacity(0.15))
+                            .listSectionSpacing(.compact)
                         }
-                    }
-                    .listRowBackground(Color(.systemGray).opacity(0.15))
                 }
                     
                     LoadingButtonView(
@@ -223,6 +248,16 @@ struct MealView: View {
                 .background(Color.clear)
                 .navigationTitle("Måltid och Bolus")
                 .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            mealWithFatProteinBinding.wrappedValue.toggle()
+                        } label: {
+                            Image(systemName: mealWithFatProtein.value ? "text.badge.minus" : "text.badge.plus")
+                        }
+                        .accessibilityLabel(mealWithFatProtein.value ? "Dölj fett, protein och schemaläggning" : "Visa fett, protein och schemaläggning")
+                    }
+                }
             }
         }
         .onAppear {
