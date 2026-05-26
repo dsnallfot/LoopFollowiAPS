@@ -41,6 +41,7 @@ extension MainViewController {
                 }
                 TaskScheduler.shared.rescheduleTask(id: .treatments, to: Date().addingTimeInterval(interval))
         
-                TaskScheduler.shared.rescheduleTask(id: .alarmCheck, to: Date().addingTimeInterval(3))
+                self.alarmTaskAction(reason: .treatments)
+                TaskScheduler.shared.rescheduleTask(id: .alarmCheck, to: Date().addingTimeInterval(30))
     }
 }

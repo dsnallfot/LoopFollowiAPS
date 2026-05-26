@@ -44,10 +44,10 @@ class AlarmSound {
     
     fileprivate func startAlarmPlayingForTimer(time: TimeInterval) {
         AlarmSound.alarmPlayingForTimer = Timer.scheduledTimer(timeInterval: time,
-                                     target: self,
-                                     selector: #selector(AlarmSound.alarmPlayingForTimerDidEnd(_:)),
-                                     userInfo: nil,
-                                     repeats: true)
+                                                               target: self,
+                                                               selector: #selector(AlarmSound.alarmPlayingForTimerDidEnd(_:)),
+                                                               userInfo: nil,
+                                                               repeats: true)
     }
     
     @objc func alarmPlayingForTimerDidEnd(_ timer:Timer) {
@@ -99,12 +99,14 @@ class AlarmSound {
             self.audioPlayer = try AVAudioPlayer(contentsOf: self.soundURL)
             self.audioPlayer!.delegate = self.audioPlayerDelegate
             /*
-            try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))*/
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
-            try AVAudioSession.sharedInstance().setActive(true)
+             try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))*/
+            //try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
+            //try AVAudioSession.sharedInstance().setActive(true)
+            
+            activateAudioSessionWithFallback()
             
             self.audioPlayer?.numberOfLoops = 0
-
+            
             if !self.audioPlayer!.prepareToPlay() {
                 LogManager.shared.log(category: .alarm, message: "AlarmSound - audio player failed preparing to play")
             }
@@ -129,15 +131,16 @@ class AlarmSound {
         guard !self.isPlaying else {
             return
         }
-
-        enableAudio()
-
+        
+        //enableAudio()
+        
         do {
             self.audioPlayer = try AVAudioPlayer(contentsOf: self.soundURL)
             self.audioPlayer!.delegate = self.audioPlayerDelegate
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
+            //try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
             /*try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))*/
-            try AVAudioSession.sharedInstance().setActive(true)
+            //try AVAudioSession.sharedInstance().setActive(true)
+            activateAudioSessionWithFallback()
             
             // Play endless loops
             self.audioPlayer!.numberOfLoops = numLoops
@@ -153,8 +156,9 @@ class AlarmSound {
             
             if self.audioPlayer!.play() {
                 if !self.isPlaying {
-                    LogManager.shared.log(category: .alarm, message: "AlarmSound - not playing after calling play")
-                    LogManager.shared.log(category: .alarm, message: "AlarmSound - rate value: \(audioPlayer!.rate)")
+                    //LogManager.shared.log(category: .alarm, message: "AlarmSound - not playing after calling play")
+                    //LogManager.shared.log(category: .alarm, message: "AlarmSound - rate value: \(audioPlayer!.rate)")
+                    LogManager.shared.log(category: .alarm, message: "AlarmSound - not playing after calling play (rate \(audioPlayer!.rate))")
                 } else {
                     Observable.shared.alarmSoundPlaying.value = true
                 }
@@ -182,8 +186,10 @@ class AlarmSound {
             self.audioPlayer = try AVAudioPlayer(contentsOf: self.soundURL)
             self.audioPlayer!.delegate = self.audioPlayerDelegate
             
-            try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))
-            try AVAudioSession.sharedInstance().setActive(true)
+            //try AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category(rawValue: convertFromAVAudioSessionCategory(AVAudioSession.Category.playback)))
+            //try AVAudioSession.sharedInstance().setActive(true)
+            
+            activateAudioSessionWithFallback()
             
             // Play endless loops
             self.audioPlayer!.numberOfLoops = 2
@@ -209,13 +215,13 @@ class AlarmSound {
             
             
             MPVolumeView.setVolume(1.0)
-           
+            
             
         } catch let error {
             LogManager.shared.log(category: .alarm, message: "Terminate AlarmSound - unable to play sound; error: \(error)")
         }
     }
-
+    
     
     fileprivate static func restoreSystemOutputVolume() {
         
@@ -224,7 +230,7 @@ class AlarmSound {
         }
         
         // cancel any volume change observations
-       // self.volumeChangeDetector.isActive = false
+        // self.volumeChangeDetector.isActive = false
         
         // restore system output volume with its value before overriding it
         if let volumeBeforeOverride = self.systemOutputVolumeBeforeOverride {
@@ -233,16 +239,47 @@ class AlarmSound {
         
         self.systemOutputVolumeBeforeOverride = nil
     }
-
-    fileprivate static func enableAudio() {
-        do {
-            //try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)
-            try AVAudioSession.sharedInstance().setActive(true)
-            LogManager.shared.log(category: .alarm, message: "Audio session configured for alarm playback")
-        } catch {
-            LogManager.shared.log(category: .general, message: "Enable audio error: \(error)")
+    /*
+     fileprivate static func enableAudio() {
+     do {
+     //try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: []) // TEST
+     try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)
+     try AVAudioSession.sharedInstance().setActive(true)
+     LogManager.shared.log(category: .alarm, message: "Audio session configured for alarm playback")
+     } catch {
+     LogManager.shared.log(category: .general, message: "Enable audio error: \(error)")
+     }
+     }*/
+    
+    // Background activation of a non-mixable .playback session is denied by iOS
+    // (cannotInterruptOthers, 560557684) unless the app is already actively playing
+    // audio. In foreground, or with Silent Tune holding a mixable session alive,
+    // options: [] succeeds and lets the alarm dominate other audio. For
+    // Bluetooth-heartbeat users with no Silent Tune we skip [] (it would always
+    // be denied) and ladder through mixable options so activation is still
+    // permitted from background. Each attempt is logged so we can see in the
+    // field which fallback (if any) the user landed on.
+    fileprivate static func activateAudioSessionWithFallback() {
+        let isBackgroundWithoutSilentTune = UIApplication.shared.applicationState == .background
+        && Storage.shared.backgroundRefreshType.value != .silentTune
+        
+        let dominate: (label: String, options: AVAudioSession.CategoryOptions) = ("[]", [])
+        let duck: (label: String, options: AVAudioSession.CategoryOptions) = (".duckOthers", .duckOthers)
+        let mix: (label: String, options: AVAudioSession.CategoryOptions) = (".mixWithOthers", .mixWithOthers)
+        
+        let candidates = isBackgroundWithoutSilentTune ? [duck, mix] : [dominate, duck, mix]
+        for candidate in candidates {
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: candidate.options)
+                try AVAudioSession.sharedInstance().setActive(true)
+                LogManager.shared.log(category: .alarm, message: "AlarmSound - audio session active (options: \(candidate.label))")
+                return
+            } catch {
+                let nsError = error as NSError
+                LogManager.shared.log(category: .alarm, message: "AlarmSound - audio session activation failed (options: \(candidate.label)) [code \(nsError.code)]: \(error.localizedDescription)")
+            }
         }
+        LogManager.shared.log(category: .alarm, message: "AlarmSound - all audio session option fallbacks exhausted")
     }
 }
 

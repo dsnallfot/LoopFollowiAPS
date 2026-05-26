@@ -22,6 +22,8 @@ extension MainViewController {
         scheduleStatsPrefetchTask()
         scheduleNSOnlyGlucosePrefetchTask()
         scheduleMonthlyArchiveTask()
+        
+        LogManager.shared.log(category: .taskScheduler, message: "scheduleAllTasks ran", isDebug: true, isTempDebug: true)
     }
 
     /// Schedules a nightly stats prefetch using StatsDataService.

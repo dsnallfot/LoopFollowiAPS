@@ -382,7 +382,8 @@ extension MainViewController {
                     } else {
                         interval = 310 - secondsAgo
                         
-                        TaskScheduler.shared.rescheduleTask(id: .alarmCheck, to: Date().addingTimeInterval(3))
+                        self.alarmTaskAction(reason: .deviceStatus)
+                        TaskScheduler.shared.rescheduleTask(id: .alarmCheck, to: Date().addingTimeInterval(30))
                     }
 
                     if NightscoutSocketManager.shared.connectionState == .authenticated {
