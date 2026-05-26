@@ -79,6 +79,10 @@ class Storage {
 
     // Persist latest Bluetooth heartbeat so UI can show a value immediately after app restart
     var lastBluetoothHeartbeatDate = StorageValue<Date?>(key: "lastBluetoothHeartbeatDate", defaultValue: nil)
+    
+    // Bluetooth ping tracking
+    var bluetoothPingCurrentDate = StorageValue<String?>(key: "bluetoothPingCurrentDate", defaultValue: nil)
+    var bluetoothPingCurrentCount = StorageValue<Int>(key: "bluetoothPingCurrentCount", defaultValue: 0)
 
     // Statistics display preferences
     var showGMI = StorageValue<Bool>(key: "showGMI", defaultValue: true)
@@ -176,6 +180,18 @@ struct AlarmHistoryEntry: Codable, Equatable {
     }
 }
 
+struct BluetoothPingDailyHistoryEntry: Codable, Equatable {
+    /// Local calendar day in yyyy-MM-dd format
+    var date: String
+
+    /// Number of Bluetooth heartbeats received during that day
+    var count: Int
+
+    static func == (lhs: BluetoothPingDailyHistoryEntry, rhs: BluetoothPingDailyHistoryEntry) -> Bool {
+        return lhs.date == rhs.date && lhs.count == rhs.count
+    }
+}
+
 struct ClippyDailyTargetHistoryEntry: Codable, Equatable {
     /// Unix timestamp (seconds since 1970) for when the daily target was reached.
     var date: TimeInterval
@@ -259,6 +275,95 @@ extension UserProfileEntry {
 }
 
 extension Storage {
+    // MARK: - Bluetooth ping daily history
+
+    var bluetoothPingDailyHistory: [BluetoothPingDailyHistoryEntry] {
+        get {
+            guard let storedData = UserDefaults.standard.data(forKey: "bluetoothPingDailyHistory") else {
+                return []
+            }
+
+            do {
+                return try JSONDecoder().decode([BluetoothPingDailyHistoryEntry].self, from: storedData)
+            } catch {
+                LogManager.shared.log(
+                    category: .bluetooth,
+                    message: "Failed to decode bluetoothPingDailyHistory, resetting: \(error)"
+                )
+
+                UserDefaults.standard.removeObject(forKey: "bluetoothPingDailyHistory")
+                return []
+            }
+        }
+
+        set {
+            do {
+                let encoded = try JSONEncoder().encode(newValue)
+                UserDefaults.standard.set(encoded, forKey: "bluetoothPingDailyHistory")
+            } catch {
+                LogManager.shared.log(
+                    category: .bluetooth,
+                    message: "Failed to encode bluetoothPingDailyHistory: \(error)"
+                )
+            }
+        }
+    }
+
+    func recordBluetoothPing(date: Date = Date(), maxDays: Int = 90) {
+        let dayString = Storage.bluetoothPingDayFormatter.string(from: date)
+
+        // Första körningen
+        if bluetoothPingCurrentDate.value == nil {
+            bluetoothPingCurrentDate.value = dayString
+            bluetoothPingCurrentCount.value = 0
+        }
+
+        // Ny dag -> skriv gårdagens statistik
+        if bluetoothPingCurrentDate.value != dayString {
+            finalizeBluetoothPingCurrentDay(maxDays: maxDays)
+
+            bluetoothPingCurrentDate.value = dayString
+            bluetoothPingCurrentCount.value = 0
+        }
+
+        bluetoothPingCurrentCount.value += 1
+        lastBluetoothHeartbeatDate.value = date
+    }
+
+    private func finalizeBluetoothPingCurrentDay(maxDays: Int = 90) {
+        guard let currentDate = bluetoothPingCurrentDate.value else { return }
+
+        let currentCount = bluetoothPingCurrentCount.value
+
+        var history = bluetoothPingDailyHistory
+
+        // Ersätt ev befintlig post för samma dag
+        history.removeAll { $0.date == currentDate }
+
+        history.append(
+            BluetoothPingDailyHistoryEntry(
+                date: currentDate,
+                count: currentCount
+            )
+        )
+
+        // Behåll endast senaste X dagar
+        if history.count > maxDays {
+            history = Array(history.suffix(maxDays))
+        }
+
+        bluetoothPingDailyHistory = history.sorted { $0.date < $1.date }
+    }
+
+    private static let bluetoothPingDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+    
+    //Sensor start notes
     var sensorStartNotes: [SensorStartHistoryEntry] {
         get {
             guard let storedData = UserDefaults.standard.data(forKey: "sensorStartNotes") else {

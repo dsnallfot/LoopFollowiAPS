@@ -288,6 +288,8 @@ extension BLEManager: BluetoothDeviceDelegate {
     func heartBeat() {
         LogManager.shared.log(category: .bluetooth, message: "Bluetooth ping received")
         
+        Storage.shared.recordBluetoothPing()
+        
         guard let device = activeDevice else { return }
         
         // Ensure background alerts are armed on every heartbeat when background refresh is active.

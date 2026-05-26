@@ -566,8 +566,48 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
                 NotificationCenter.default.removeObserver(token)
             }
     }
+
+    private func expectedBluetoothHeartbeatsToday(now: Date = Date()) -> Int {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: now)
+        let elapsedSeconds = max(0, now.timeIntervalSince(startOfToday))
+        let expectedSoFar = Int(elapsedSeconds / 300.0)
+        return min(288, max(0, expectedSoFar))
+    }
+
+    private func updateBluetoothPingHealthInfo(now: Date = Date()) {
+        let todayFormatter = DateFormatter()
+        todayFormatter.calendar = Calendar(identifier: .gregorian)
+        todayFormatter.locale = Locale(identifier: "en_US_POSIX")
+        todayFormatter.dateFormat = "yyyy-MM-dd"
+
+        let todayString = todayFormatter.string(from: now)
+        let count = Storage.shared.bluetoothPingCurrentDate.value == todayString
+            ? Storage.shared.bluetoothPingCurrentCount.value
+            : 0
+        let expected = expectedBluetoothHeartbeatsToday(now: now)
+
+        let ratio = expected > 0 ? Double(count) / Double(expected) : 0.0
+        let emoji: String
+        let isPriority: Bool
+
+        if ratio > 0.95 {
+            emoji = "🟢"
+            isPriority = false
+        } else if ratio >= 0.85 {
+            emoji = "🟡"
+            isPriority = true
+        } else {
+            emoji = "🔴"
+            isPriority = true
+        }
+
+        infoManager.updateInfoData(type: .btPingHealth, value: "\(count)/\(expected) \(emoji)")
+        infoManager.setPriority(isPriority, for: .btPingHealth)
+    }
     /// Updates the Bluetooth ping info display in the info table.
     @objc private func updateBluetoothHeartbeatInfo() {
+        updateBluetoothPingHealthInfo()
         // BLEManager may not have a heartbeat immediately after app restart.
         // Fall back to the last persisted heartbeat until a fresh ping arrives.
         let liveHeartbeatDate = BLEManager.shared.lastHeartbeatDate

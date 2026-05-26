@@ -13,6 +13,7 @@ import Charts
 struct LogView: View {
     @ObservedObject var viewModel = LogViewModel()
     @State private var isChartPresented: Bool = false
+    @State private var isHeartbeatPresented: Bool = false
     @Environment(\.dismiss) private var dismiss
     
     /// Används när vyn ligger i UIKit-nav/modal
@@ -87,7 +88,7 @@ struct LogView: View {
             .background(Color.clear)
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 Button(action: {
                     viewModel.searchResultsIsHighlighted.toggle()
                 }) {
@@ -96,15 +97,22 @@ struct LogView: View {
                           : "line.3.horizontal.decrease.circle")
                 }
                 .foregroundColor(viewModel.searchResultsIsHighlighted ? .blue : .primary)
-            }
 
-            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button(action: {
+                    isHeartbeatPresented = true
+                }) {
+                    Image(systemName: "bolt.heart")
+                }
+                .accessibilityLabel("Bluetooth heartbeats")
+                
                 Button(action: {
                     isChartPresented = true
                 }) {
                     Image(systemName: "chart.bar.xaxis.ascending")
                 }
                 .accessibilityLabel("chart")
+
+                
             }
         }
         .onAppear {
@@ -140,11 +148,434 @@ struct LogView: View {
                 series: series
             )
         }
+        .sheet(isPresented: $isHeartbeatPresented) {
+            HeartbeatView()
+                .presentationBackground(
+                    LinearGradient(
+                        colors: ThemedViewController.themeGradientColors(intensity: 1.0).map { Color($0) },
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+        }
     }
 
 }
 
 @available(iOS 16.0, *)
+private struct HeartbeatView: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UINavigationController {
+        let vc = HeartbeatStatsViewController()
+        let nav = UINavigationController(rootViewController: vc)
+        
+        // Gör navigation controllern helt transparent så att sheet-bakgrunden syns igenom
+        nav.view.backgroundColor = .clear
+        nav.view.isOpaque = false
+
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        nav.navigationBar.standardAppearance = appearance
+        nav.navigationBar.scrollEdgeAppearance = appearance
+        nav.navigationBar.compactAppearance = appearance
+        
+        vc.view.backgroundColor = .clear
+        vc.view.isOpaque = false
+
+        return nav
+    }
+
+    func updateUIViewController(_ uiViewController: UINavigationController, context: Context) { }
+}
+
+@available(iOS 16.0, *)
+private final class HeartbeatStatsViewController: ThemedTableViewController {
+
+    private struct DayValue {
+        let date: Date
+        let dateString: String
+        let count: Int
+    }
+
+    private enum PeriodOption: CaseIterable {
+        case d1, d7, d14, d30, d90
+
+        var days: Int {
+            switch self {
+            case .d1:  return 1
+            case .d7:  return 7
+            case .d14: return 14
+            case .d30: return 30
+            case .d90: return 90
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .d1:  return "1 d"
+            case .d7:  return "7 d"
+            case .d14: return "14 d"
+            case .d30: return "30 d"
+            case .d90: return "90 d"
+            }
+        }
+    }
+
+    private enum StatRow: Int, CaseIterable {
+        case today
+        case average
+        case bestDay
+        case worstDay
+
+        var label: String {
+            switch self {
+            case .today:   return "Heartbeats idag"
+            case .average: return "Medel per dag"
+            case .bestDay: return "Bästa dag"
+            case .worstDay: return "Sämsta dag"
+            }
+        }
+    }
+
+    private let expectedPerDay = 288
+    private var selectedPeriod: PeriodOption = .d7
+    private var selectedValues: [DayValue] = []
+
+    private lazy var periodControl: UISegmentedControl = {
+        let items = PeriodOption.allCases.map { $0.title }
+        let sc = UISegmentedControl(items: items)
+        sc.selectedSegmentIndex = PeriodOption.allCases.firstIndex(of: selectedPeriod) ?? 1
+        sc.addTarget(self, action: #selector(periodChanged(_:)), for: .valueChanged)
+        return sc
+    }()
+
+    private let chartView: BarChartView = {
+        let v = BarChartView()
+        v.legend.enabled = false
+        v.chartDescription.enabled = false
+        v.rightAxis.enabled = false
+        v.minOffset = 8
+        v.pinchZoomEnabled = false
+        v.doubleTapToZoomEnabled = true
+        v.scaleXEnabled = true
+        v.scaleYEnabled = false
+        v.dragEnabled = true
+        v.highlightPerTapEnabled = false
+        v.highlightPerDragEnabled = false
+        v.drawMarkers = false
+        v.maxVisibleCount = 1000000
+        return v
+    }()
+
+    private let numberFormatter: NumberFormatter = {
+        let nf = NumberFormatter()
+        nf.locale = Locale(identifier: "sv_SE")
+        nf.minimumFractionDigits = 0
+        nf.maximumFractionDigits = 1
+        return nf
+    }()
+
+    private let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
+    private let axisDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "sv_SE")
+        formatter.dateFormat = "dd/MM"
+        return formatter
+    }()
+
+    init() {
+        super.init(style: .insetGrouped)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+    
+    // 🟩 Tvingar tabellen att förbli helt transparent
+        override func updateBackgroundForCurrentMode() {
+            view.backgroundColor = .clear
+            tableView.backgroundColor = .clear
+            tableView.backgroundView = nil
+            tableView.isOpaque = false
+        }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+                
+        updateBackgroundForCurrentMode()
+        title = "Heartbeats"
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Klar",
+            style: .plain,
+            target: self,
+            action: #selector(dismissSelf)
+        )
+
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "HeartbeatStatCell")
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = nil
+        tableView.isOpaque = false
+        tableView.layer.backgroundColor = UIColor.clear.cgColor
+
+        tableView.contentInsetAdjustmentBehavior = .automatic
+
+        setupChartHeader()
+        applyPeriod(selectedPeriod)
+    }
+
+    private func setupChartHeader() {
+        let container = UIView()
+        container.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 340)
+        container.backgroundColor = .clear
+        //container.isOpaque = false
+
+        chartView.backgroundColor = .clear
+        periodControl.backgroundColor = .clear
+
+        container.addSubview(periodControl)
+        container.addSubview(chartView)
+
+        periodControl.translatesAutoresizingMaskIntoConstraints = false
+        chartView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            periodControl.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            periodControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            periodControl.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+
+            chartView.topAnchor.constraint(equalTo: periodControl.bottomAnchor, constant: 16),
+            chartView.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            chartView.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            chartView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -24)
+        ])
+
+        tableView.tableHeaderView = container
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let header = tableView.tableHeaderView {
+            let targetSize = CGSize(width: tableView.bounds.width, height: 340)
+            if header.frame.size != targetSize {
+                header.frame.size = targetSize
+                tableView.tableHeaderView = header
+            }
+        }
+    }
+
+    @objc private func periodChanged(_ sender: UISegmentedControl) {
+        let index = sender.selectedSegmentIndex
+        guard index >= 0 && index < PeriodOption.allCases.count else { return }
+        applyPeriod(PeriodOption.allCases[index])
+    }
+
+    private func applyPeriod(_ period: PeriodOption) {
+        selectedPeriod = period
+        selectedValues = buildValues(daysBack: period.days)
+        loadChartData()
+        tableView.reloadData()
+    }
+
+    private func buildValues(daysBack: Int) -> [DayValue] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let historyByDate = Dictionary(
+            uniqueKeysWithValues: Storage.shared.bluetoothPingDailyHistory.map { ($0.date, $0.count) }
+        )
+
+        let currentDateString = Storage.shared.bluetoothPingCurrentDate.value
+        let currentCount = Storage.shared.bluetoothPingCurrentCount.value
+
+        var values: [DayValue] = []
+        values.reserveCapacity(daysBack)
+
+        for offset in stride(from: daysBack - 1, through: 0, by: -1) {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            let dateString = dayFormatter.string(from: day)
+            let storedCount = historyByDate[dateString] ?? 0
+            let count = (dateString == currentDateString) ? currentCount : storedCount
+            values.append(DayValue(date: day, dateString: dateString, count: count))
+        }
+
+        return values
+    }
+
+    private func loadChartData() {
+        guard !selectedValues.isEmpty else {
+            chartView.data = nil
+            chartView.setNeedsDisplay()
+            return
+        }
+
+        let entries = selectedValues.enumerated().map { idx, value in
+            BarChartDataEntry(x: Double(idx), y: Double(value.count))
+        }
+
+        let dataSet = BarChartDataSet(entries: entries, label: "")
+        dataSet.setColor(.systemTeal.withAlphaComponent(0.7))
+        dataSet.drawValuesEnabled = false
+        dataSet.barBorderColor = .black
+        dataSet.barBorderWidth = 0.5
+
+        let data = BarChartData(dataSet: dataSet)
+        chartView.data = data
+        chartView.autoScaleMinMaxEnabled = false
+        chartView.notifyDataSetChanged()
+
+        chartView.drawGridBackgroundEnabled = true
+        chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
+
+        let labels = selectedValues.map { axisDateFormatter.string(from: $0.date) }
+        let xAxis = chartView.xAxis
+        xAxis.labelPosition = .bottom
+        xAxis.granularity = 1
+        xAxis.granularityEnabled = true
+        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
+        xAxis.setLabelCount(min(6, labels.count), force: false)
+
+        let yAxis = chartView.leftAxis
+        yAxis.axisMinimum = 0
+        yAxis.axisMaximum = Double(expectedPerDay)
+        yAxis.granularity = 24
+        yAxis.granularityEnabled = true
+        yAxis.valueFormatter = DefaultAxisValueFormatter { value, _ in
+            String(format: "%.0f st", value)
+        }
+
+        let gridLineColor = UIColor.lightGray.withAlphaComponent(0.5)
+        xAxis.gridColor = gridLineColor
+        xAxis.gridLineWidth = 0.5
+        xAxis.gridLineDashLengths = [2, 2]
+
+        yAxis.gridColor = gridLineColor
+        yAxis.gridLineWidth = 0.5
+        yAxis.gridLineDashLengths = [2, 2]
+
+        chartView.rightAxis.enabled = false
+        chartView.setNeedsDisplay()
+    }
+
+    private func valueText(for row: StatRow) -> String {
+        guard !selectedValues.isEmpty else { return "–" }
+
+        switch row {
+        case .today:
+            let todayString = dayFormatter.string(from: Date())
+            let todayCount = Storage.shared.bluetoothPingCurrentDate.value == todayString
+                ? Storage.shared.bluetoothPingCurrentCount.value
+                : 0
+            let expected = expectedHeartbeats(for: Date())
+            return countExpectedPercentText(count: todayCount, expected: expected)
+
+        case .average:
+            let activeValues = selectedValues.filter { $0.count > 0 }
+            guard !activeValues.isEmpty else { return "–" }
+
+            let totalCount = activeValues.reduce(0) { $0 + $1.count }
+            let totalExpected = activeValues.reduce(0) { $0 + expectedHeartbeats(for: $1.date) }
+            let dayCount = activeValues.count
+
+            let averageCount = Int((Double(totalCount) / Double(dayCount)).rounded())
+            let averageExpected = Int((Double(totalExpected) / Double(dayCount)).rounded())
+            return countExpectedPercentText(count: averageCount, expected: averageExpected)
+
+        case .bestDay:
+            let activeValues = selectedValues.filter { $0.count > 0 }
+            guard let best = activeValues.max(by: { successRatio(for: $0) < successRatio(for: $1) }) else { return "–" }
+            return dayValueText(best)
+
+        case .worstDay:
+            let activeValues = selectedValues.filter { $0.count > 0 }
+            guard let worst = activeValues.min(by: { successRatio(for: $0) < successRatio(for: $1) }) else { return "–" }
+            return dayValueText(worst)
+        }
+    }
+
+    private func expectedHeartbeats(for date: Date) -> Int {
+        let calendar = Calendar.current
+        let day = calendar.startOfDay(for: date)
+        let today = calendar.startOfDay(for: Date())
+
+        guard calendar.isDate(day, inSameDayAs: today) else {
+            return expectedPerDay
+        }
+
+        let elapsedSeconds = max(0, Date().timeIntervalSince(today))
+        let expectedSoFar = Int(elapsedSeconds / 300.0)
+        return min(expectedPerDay, max(0, expectedSoFar))
+    }
+
+    private func successRatio(for value: DayValue) -> Double {
+        let expected = expectedHeartbeats(for: value.date)
+        guard expected > 0 else { return 0 }
+        return Double(value.count) / Double(expected)
+    }
+
+    private func percentText(count: Int, expected: Int) -> String {
+        guard expected > 0 else { return "0%" }
+        let percent = (Double(count) / Double(expected)) * 100.0
+        return String(format: "%.0f%%", percent)
+    }
+
+    private func countExpectedPercentText(count: Int, expected: Int) -> String {
+        return "\(count) av \(expected) (\(percentText(count: count, expected: expected)))"
+    }
+
+    private func dayValueText(_ value: DayValue) -> String {
+        let expected = expectedHeartbeats(for: value.date)
+        return "\(value.dateString)  \(value.count) st (\(percentText(count: value.count, expected: expected)))"
+    }
+
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return StatRow.allCases.count
+    }
+
+    override func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: "HeartbeatStatCell")
+        cell.selectionStyle = .none
+
+        // Match TrioRestartsStatsViewController: transparent cell with a subtle
+        // rounded grouped-section background so the statistics table is framed.
+        cell.backgroundColor = .clear
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundView = nil
+        if #available(iOS 14.0, *) {
+            var bg = UIBackgroundConfiguration.clear()
+            bg.backgroundColor = .systemGray.withAlphaComponent(0.15)
+            cell.backgroundConfiguration = bg
+        }
+        cell.textLabel?.backgroundColor = .clear
+        cell.detailTextLabel?.backgroundColor = .clear
+        cell.textLabel?.textColor = .label
+        cell.detailTextLabel?.textColor = .secondaryLabel
+        cell.detailTextLabel?.font = .monospacedDigitSystemFont(ofSize: 17, weight: .regular)
+
+        let row = StatRow.allCases[indexPath.row]
+        cell.textLabel?.text = row.label
+        cell.detailTextLabel?.text = valueText(for: row)
+
+        return cell
+    }
+}
 private struct LogViewChart: View {
     let title: String
     let allLogEntries: [LogEntry]
@@ -331,71 +762,75 @@ private struct LogViewChart: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                ThemeBackground()
-                    .ignoresSafeArea()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    let anyPoints = pointsBySeries.contains(where: { !$0.points.isEmpty })
-
-                    if !anyPoints {
-                        Text("Inga matchande loggrader att plotta.")
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                    } else {
-                        ScatterLogChartView(series: pointsBySeries)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 480)
-                            .padding(.horizontal)
-                        HStack{
-                            Spacer()
-                            Text("Y-axel: minut i timmen (0–60)   •   X-axel: 00:00 → 24:00 (idag)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .padding(.leading, 8)
-                                .padding(.bottom, 20)
-                            Spacer()
-                        }
-                        Text("Systemstatus idag")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
+        if #available(iOS 16.0, *) {
+            NavigationStack {
+                ZStack {
+                    ThemeBackground()
+                        .ignoresSafeArea()
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        let anyPoints = pointsBySeries.contains(where: { !$0.points.isEmpty })
                         
-                        // Tabell med special-statistik
-                        VStack(spacing: 4) {
-                            ForEach(specialStatsRows) { row in
-                                HStack {
-                                    Text(row.label)
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                                    Text(row.value)
-                                        .font(.body)
-                                        .monospacedDigit()
-                                        .foregroundColor(.primary)
-                                        .frame(alignment: .trailing)
-                                }
+                        if !anyPoints {
+                            Text("Inga matchande loggrader att plotta.")
+                                .foregroundColor(.secondary)
                                 .padding(.horizontal)
+                        } else {
+                            ScatterLogChartView(series: pointsBySeries)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 480)
+                                .padding(.horizontal)
+                            HStack{
+                                Spacer()
+                                Text("Y-axel: minut i timmen (0–60)   •   X-axel: 00:00 → 24:00 (idag)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .padding(.leading, 8)
+                                    .padding(.bottom, 20)
+                                Spacer()
+                            }
+                            Text("Systemstatus idag")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal)
+                            
+                            // Tabell med special-statistik
+                            VStack(spacing: 4) {
+                                ForEach(specialStatsRows) { row in
+                                    HStack {
+                                        Text(row.label)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                        
+                                        Text(row.value)
+                                            .font(.body)
+                                            .monospacedDigit()
+                                            .foregroundColor(.primary)
+                                            .frame(alignment: .trailing)
+                                    }
+                                    .padding(.horizontal)
+                                }
                             }
                         }
+                        
+                        Spacer(minLength: 0)
                     }
-
-                    Spacer(minLength: 0)
+                    .background(Color.clear)
                 }
-                .background(Color.clear)
-            }
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Klar") {
-                        dismiss()
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Klar") {
+                            dismiss()
+                        }
                     }
                 }
             }
+        } else {
+            // Fallback on earlier versions
         }
     }
 }
