@@ -50,15 +50,17 @@ class RileyLinkHeartbeatBluetoothDevice: BluetoothDevice {
 
     /// Handle connection event
     override func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        // Trigger heartbeat before `super`, for consistency with Dexcom handling.
+        // This keeps the heartbeat/task chain as early as possible while the app is
+        // still awake from the BLE event.
+        self.bluetoothDeviceDelegate?.heartBeat(source: "didConnect")
+
         super.centralManager(central, didConnect: peripheral)
 
         self.peripheralDevice = peripheral // Store reference
         LogManager.shared.log(category: .bluetooth, message: "✅ Connected to RileyLink, discovering services...", isDebug: true)
 
         peripheral.discoverServices([CBUUID_Service_RileyLink, CBUUID_Service_Battery])
-        
-        // Ensure `heartBeat()` always triggers immediately
-        self.bluetoothDeviceDelegate?.heartBeat(source: "didConnect")
     }
 
     /// Discover characteristics for each service

@@ -28,8 +28,11 @@ class DexcomHeartbeatBluetoothDevice: BluetoothDevice {
     }
 
     override func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        super.centralManager(central, didDisconnectPeripheral: peripheral, error: error)
+        // Kör heartbeat innan super, eftersom super avslutar backgroundTask.
+        // Annars kan iOS frysa appen mellan disconnect-loggen och heartbeat/task-kedjan.
         self.bluetoothDeviceDelegate?.heartBeat(source: "didDisconnectPeripheral")
+
+        super.centralManager(central, didDisconnectPeripheral: peripheral, error: error)
     }
 
     override func expectedHeartbeatInterval() -> TimeInterval? {
