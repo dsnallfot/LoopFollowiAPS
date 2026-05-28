@@ -29,7 +29,7 @@ class DexcomHeartbeatBluetoothDevice: BluetoothDevice {
 
     override func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         super.centralManager(central, didDisconnectPeripheral: peripheral, error: error)
-        self.bluetoothDeviceDelegate?.heartBeat()
+        self.bluetoothDeviceDelegate?.heartBeat(source: "didDisconnectPeripheral")
     }
 
     override func expectedHeartbeatInterval() -> TimeInterval? {

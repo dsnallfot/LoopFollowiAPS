@@ -14,5 +14,11 @@ protocol BluetoothDeviceDelegate: AnyObject {
 
     func didDisconnectFrom(bluetoothDevice: BluetoothDevice)
 
-    func heartBeat()
+    func heartBeat(source: String)
+}
+
+extension BluetoothDeviceDelegate {
+    func heartBeat() {
+        heartBeat(source: "unknown")
+    }
 }

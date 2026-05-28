@@ -377,7 +377,7 @@ class BluetoothDevice: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate 
                 isTempDebug: true
             )
 
-            bluetoothDeviceDelegate?.heartBeat()
+            bluetoothDeviceDelegate?.heartBeat(source: "didUpdateValue")
         }
     }
 

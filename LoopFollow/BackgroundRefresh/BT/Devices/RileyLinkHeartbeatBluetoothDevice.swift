@@ -58,7 +58,7 @@ class RileyLinkHeartbeatBluetoothDevice: BluetoothDevice {
         peripheral.discoverServices([CBUUID_Service_RileyLink, CBUUID_Service_Battery])
         
         // Ensure `heartBeat()` always triggers immediately
-        self.bluetoothDeviceDelegate?.heartBeat()
+        self.bluetoothDeviceDelegate?.heartBeat(source: "didConnect")
     }
 
     /// Discover characteristics for each service
@@ -102,7 +102,7 @@ class RileyLinkHeartbeatBluetoothDevice: BluetoothDevice {
         }
         
         // Ensure `heartBeat()` always triggers, even if battery wasn't updated
-        self.bluetoothDeviceDelegate?.heartBeat()
+        self.bluetoothDeviceDelegate?.heartBeat(source: "didUpdateValue")
     }
 
     /// Public method to manually request battery level (called by BLEManager)

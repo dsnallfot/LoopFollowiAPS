@@ -23,6 +23,12 @@ class BLEManager: NSObject, ObservableObject {
     var firstHeartbeat: Bool = false
     var firstHeartbeatTime: Date?
 
+    /// Prevents the same BLE wake/connect/disconnect cycle from being counted twice.
+    /// Dexcom can trigger `heartBeat()` both from characteristic updates and disconnect callbacks
+    /// within a few seconds of each other.
+    private let heartbeatDedupeInterval: TimeInterval = 60
+    private var lastAcceptedHeartbeatDate: Date?
+
     // Throttle for offset debug logging (per device)
     private var lastOffsetLogTimestamp: [UUID: Date] = [:]
     private var lastOffsetLogSignature: [UUID: String] = [:]
@@ -85,6 +91,7 @@ class BLEManager: NSObject, ObservableObject {
             device.lastHeartbeatTime = nil
             firstHeartbeat = false
             firstHeartbeatTime = nil
+            lastAcceptedHeartbeatDate = nil
         }
 
         if clearSelection {
@@ -285,10 +292,25 @@ extension BLEManager: BluetoothDeviceDelegate {
         }
     }
 
-    func heartBeat() {
-        LogManager.shared.log(category: .bluetooth, message: "Bluetooth ping received")
+    func heartBeat(source: String) {
+        let now = Date()
+
+        if let lastAcceptedHeartbeatDate,
+           now.timeIntervalSince(lastAcceptedHeartbeatDate) < heartbeatDedupeInterval {
+            LogManager.shared.log(
+                category: .bluetooth,
+                message: "Bluetooth ping ignored as duplicate within \(Int(heartbeatDedupeInterval)) seconds, source=\(source)",
+                isDebug: true,
+                isTempDebug: true
+            )
+            return
+        }
+
+        lastAcceptedHeartbeatDate = now
+
+        LogManager.shared.log(category: .bluetooth, message: "Bluetooth ping received, source=\(source)")
         
-        Storage.shared.recordBluetoothPing()
+        Storage.shared.recordBluetoothPing(date: now)
         
         guard let device = activeDevice else { return }
         
@@ -310,7 +332,6 @@ extension BLEManager: BluetoothDeviceDelegate {
             }
         }
 
-        let now = Date()
         guard let expectedInterval = device.expectedHeartbeatInterval() else {
             LogManager.shared.log(category: .bluetooth, message: "Heartbeat triggered")
             device.lastHeartbeatTime = now

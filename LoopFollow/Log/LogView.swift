@@ -93,10 +93,10 @@ struct LogView: View {
                     viewModel.searchResultsIsHighlighted.toggle()
                 }) {
                     Image(systemName: viewModel.searchResultsIsHighlighted
-                          ? "line.3.horizontal.decrease.circle.fill"
-                          : "line.3.horizontal.decrease.circle")
+                          ? "line.3.horizontal.decrease.circle"
+                          : "line.3.horizontal.decrease.circle.fill")
                 }
-                .foregroundColor(viewModel.searchResultsIsHighlighted ? .blue : .primary)
+                .foregroundColor(viewModel.searchResultsIsHighlighted ? .primary : .blue)
 
                 Button(action: {
                     isHeartbeatPresented = true
@@ -190,7 +190,7 @@ private struct HeartbeatView: UIViewControllerRepresentable {
 @available(iOS 16.0, *)
 private final class HeartbeatStatsViewController: ThemedTableViewController {
 
-    private struct DayValue {
+    fileprivate struct DayValue {
         let date: Date
         let dateString: String
         let count: Int
@@ -259,9 +259,9 @@ private final class HeartbeatStatsViewController: ThemedTableViewController {
         v.scaleXEnabled = true
         v.scaleYEnabled = false
         v.dragEnabled = true
-        v.highlightPerTapEnabled = false
+        v.highlightPerTapEnabled = true
         v.highlightPerDragEnabled = false
-        v.drawMarkers = false
+        v.drawMarkers = true
         v.maxVisibleCount = 1000000
         return v
     }()
@@ -420,7 +420,11 @@ private final class HeartbeatStatsViewController: ThemedTableViewController {
         }
 
         let entries = selectedValues.enumerated().map { idx, value in
-            BarChartDataEntry(x: Double(idx), y: Double(value.count))
+            BarChartDataEntry(
+                x: Double(idx),
+                y: Double(value.count),
+                data: value as AnyObject
+            )
         }
 
         let dataSet = BarChartDataSet(entries: entries, label: "")
@@ -433,6 +437,17 @@ private final class HeartbeatStatsViewController: ThemedTableViewController {
         chartView.data = data
         chartView.autoScaleMinMaxEnabled = false
         chartView.notifyDataSetChanged()
+
+        let marker = HeartbeatBarMarkerView(
+            expectedProvider: { [weak self] value in
+                self?.expectedHeartbeats(for: value.date) ?? 288
+            },
+            percentProvider: { [weak self] count, expected in
+                self?.percentText(count: count, expected: expected) ?? "0%"
+            }
+        )
+        marker.chartView = chartView
+        chartView.marker = marker
 
         chartView.drawGridBackgroundEnabled = true
         chartView.gridBackgroundColor = NSUIColor.systemBackground.withAlphaComponent(0.5)
@@ -574,6 +589,95 @@ private final class HeartbeatStatsViewController: ThemedTableViewController {
         cell.detailTextLabel?.text = valueText(for: row)
 
         return cell
+    }
+}
+
+
+@available(iOS 16.0, *)
+private final class HeartbeatBarMarkerView: MarkerView {
+    private let expectedProvider: (HeartbeatStatsViewController.DayValue) -> Int
+    private let percentProvider: (Int, Int) -> String
+
+    private let dateLabel = UILabel()
+    private let valueLabel = UILabel()
+    private let stackView = UIStackView()
+    private let contentInsets = UIEdgeInsets(top: 7, left: 10, bottom: 7, right: 10)
+
+    init(
+        expectedProvider: @escaping (HeartbeatStatsViewController.DayValue) -> Int,
+        percentProvider: @escaping (Int, Int) -> String
+    ) {
+        self.expectedProvider = expectedProvider
+        self.percentProvider = percentProvider
+        super.init(frame: .zero)
+
+        backgroundColor = UIColor.secondarySystemBackground.withAlphaComponent(0.95)
+        layer.cornerRadius = 10
+        layer.borderWidth = 0.5
+        layer.borderColor = UIColor.separator.cgColor
+        clipsToBounds = true
+
+        dateLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        dateLabel.textColor = .label
+        dateLabel.textAlignment = .center
+
+        valueLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
+        valueLabel.textColor = .secondaryLabel
+        valueLabel.textAlignment = .center
+
+        stackView.axis = .vertical
+        stackView.alignment = .center
+        stackView.spacing = 2
+        stackView.addArrangedSubview(dateLabel)
+        stackView.addArrangedSubview(valueLabel)
+        addSubview(stackView)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        stackView.frame = bounds.inset(by: contentInsets)
+    }
+
+    override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
+        guard let value = entry.data as? HeartbeatStatsViewController.DayValue else {
+            dateLabel.text = ""
+            valueLabel.text = ""
+            return
+        }
+
+        let expected = expectedProvider(value)
+        dateLabel.text = value.dateString
+        valueLabel.text = "\(value.count) av \(expected) (\(percentProvider(value.count, expected)))"
+
+        let fittingSize = stackView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+        frame.size = CGSize(
+            width: fittingSize.width + contentInsets.left + contentInsets.right,
+            height: fittingSize.height + contentInsets.top + contentInsets.bottom
+        )
+    }
+
+    override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
+        guard let chartView else {
+            return CGPoint(x: -bounds.width / 2, y: -bounds.height - 8)
+        }
+
+        var offset = CGPoint(x: -bounds.width / 2, y: -bounds.height - 10)
+
+        if point.x + offset.x < 8 {
+            offset.x = 8 - point.x
+        } else if point.x + offset.x + bounds.width > chartView.bounds.width - 8 {
+            offset.x = chartView.bounds.width - 8 - point.x - bounds.width
+        }
+
+        if point.y + offset.y < 8 {
+            offset.y = 10
+        }
+
+        return offset
     }
 }
 private struct LogViewChart: View {

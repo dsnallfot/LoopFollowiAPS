@@ -183,7 +183,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     // Check Alarms Timer
     // Don't check within 1 minute of alarm triggering to give the snoozer time to save data
     var checkAlarmTimer = Timer()
-    var checkAlarmInterval: TimeInterval = 30.0
+    var checkAlarmInterval: TimeInterval = 60.0
     var graphNowTimer = Timer()
 
     var lastCalendarWriteAttemptTime: TimeInterval = 0
