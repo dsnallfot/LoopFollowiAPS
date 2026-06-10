@@ -231,8 +231,12 @@ extension MainViewController {
                     
                     // Determine battery status dot based on battery percentage
                     let batteryStatus: String
-                    if isCharging {
+                    if isCharging && upbat >= 50 {
                         batteryStatus = " ⚡"
+                        infoManager.setPriority(false, for: .battery)
+                    } else if isCharging {
+                        batteryStatus = " ⚡"
+                        infoManager.setPriority(true, for: .battery)
                     } else if upbat >= 50 {
                         batteryStatus = " 🟢"
                         infoManager.setPriority(false, for: .battery)
