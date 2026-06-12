@@ -578,7 +578,7 @@ extension MainViewController {
             self.setBGTextColor()
             // 🦄 Show/hide unicorn for exactly 5.5 mmol/L
             self.updateUnicornVisibility(forBGDisplayString: bgDisplay)
-            self.update67HandsVisibility(forBGDisplayString: bgDisplay)
+            //self.update67HandsVisibility(forBGDisplayString: bgDisplay)
             self.updateTargetLogoVisibility(forBGDisplayString: bgDisplay)
             
             // Direction handling
@@ -810,6 +810,7 @@ extension MainViewController {
             self.unicornLabel.alpha = shouldShow ? 0.5 : 0.0
         }
     }
+    /*
     /// Shows the 6–7 hands image behind BGView when BG is exactly 6.7 mmol/L
     fileprivate func update67HandsVisibility(forBGDisplayString bg: String) {
         let shouldShow = (bg == "6.7")
@@ -817,6 +818,7 @@ extension MainViewController {
             self.hands67ImageView.alpha = shouldShow ? 0.4 : 0.0
         }
     }
+     */
     /// Shows the target logo image behind BGView when BG is exactly at target mmol/L,
     /// except when target is 5.5 or 6.7 (those are reserved for unicorn / 67-hands).
     fileprivate func updateTargetLogoVisibility(forBGDisplayString bg: String) {

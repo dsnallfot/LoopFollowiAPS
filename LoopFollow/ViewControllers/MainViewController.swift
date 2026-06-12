@@ -127,7 +127,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         label.alpha = 0.0 // hidden by default
         return label
     }()
-    
+    /*
     // 🤲 6–7 hands overlay behind BGView contents
     let hands67ImageView: UIImageView = {
         let iv = UIImageView()
@@ -137,7 +137,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         iv.alpha = 0.0
         return iv
     }()
-    
+    */
     // target logo overlay behind BGView contents
     let targetLogoImageView: UIImageView = {
         let iv2 = UIImageView()
@@ -517,6 +517,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             unicornLabel.centerXAnchor.constraint(equalTo: BGView.centerXAnchor),
             unicornLabel.centerYAnchor.constraint(equalTo: BGView.centerYAnchor)
         ])
+        /*
         // 🤲 Setup 6–7 hands overlay behind BGView content (deepest layer)
         BGView.insertSubview(hands67ImageView, at: 0)
         NSLayoutConstraint.activate([
@@ -525,6 +526,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
             hands67ImageView.widthAnchor.constraint(equalTo: BGView.widthAnchor, multiplier: 0.95),
             hands67ImageView.heightAnchor.constraint(equalTo: BGView.heightAnchor, multiplier: 0.95)
         ])
+         */
         // 🎯 Setup target logo overlay behind BGView content (deepest layer)
         BGView.insertSubview(targetLogoImageView, at: 0)
         NSLayoutConstraint.activate([
