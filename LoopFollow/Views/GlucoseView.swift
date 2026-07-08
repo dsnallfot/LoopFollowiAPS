@@ -277,7 +277,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             // 🦄 Unicorn = exactly 5.5 mmol/L (≈ 100 mg/dL)
             if abs(entry.mmol - 5.5) < 0.02 { return true }
             // 👐 hands = exactly 6.7 mmol/L
-            if abs(entry.mmol - 6.7) < 0.02 { return true }
+            //if abs(entry.mmol - 6.7) < 0.02 { return true }
             // 🎯 target = exactly target mmol/L
             if abs(entry.mmol - targetMmol) < 0.02 { return true }
             // 🗜️ suspected compression low
@@ -1259,8 +1259,8 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
             
             if abs(entry.mmol - 5.5) < 0.02 {
                 cell.textLabel?.text = valueString + " 🦄"
-            } else if abs(entry.mmol - 6.7) < 0.02 {
-                cell.textLabel?.text = valueString + " 👐"
+            //} else if abs(entry.mmol - 6.7) < 0.02 {
+            //    cell.textLabel?.text = valueString + " 👐"
             } else if abs(entry.mmol - targetMmol) < 0.02 {
                 cell.textLabel?.text = valueString + " 🎯"
             } else if isSuspectedCompressionLow(entry: entry) {

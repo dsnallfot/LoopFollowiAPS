@@ -264,10 +264,11 @@ class AlarmSound {
         && Storage.shared.backgroundRefreshType.value != .silentTune
         
         let dominate: (label: String, options: AVAudioSession.CategoryOptions) = ("[]", [])
-        let duck: (label: String, options: AVAudioSession.CategoryOptions) = (".duckOthers", .duckOthers)
+        //let duck: (label: String, options: AVAudioSession.CategoryOptions) = (".duckOthers", .duckOthers)
         let mix: (label: String, options: AVAudioSession.CategoryOptions) = (".mixWithOthers", .mixWithOthers)
         
-        let candidates = isBackgroundWithoutSilentTune ? [duck, mix] : [dominate, duck, mix]
+        let candidates = isBackgroundWithoutSilentTune ? [mix] : [dominate, mix]
+        //let candidates = isBackgroundWithoutSilentTune ? [duck, mix] : [dominate, duck, mix]
         for candidate in candidates {
             do {
                 try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: candidate.options)

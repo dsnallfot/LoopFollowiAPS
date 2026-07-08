@@ -38,7 +38,7 @@ class ContactImageUpdater: NSObject {
         return .iobCob
     }
 
-    func updateContactImage(bgValue: String, extra: String, extra2: String, extra3: String, iob: String, cob: String, stale: Bool) {
+    func updateContactImage(bgValue: String, extra: String, extra2: String, extra3: String, iob: String, cob: String, stale: Bool, lastBGTime: TimeInterval?) {
         queue.async {
             guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
                 LogManager.shared.log(category: .contact, message: "Access to contacts is not authorized.")
@@ -49,21 +49,21 @@ class ContactImageUpdater: NSObject {
             
             // Update the main contact image with `bgValue` and `extra` (box3 = true)
             self.updateOrCreateContactImage(
-                imageData: self.generateContactImage(bgValue: bgValue, extra: extra, stale: stale, box3: true)?.pngData(),
+                imageData: self.generateContactImage(bgValue: bgValue, extra: extra, stale: stale, box3: true, lastBGTime: lastBGTime)?.pngData(),
                 contactName: "\(bundleDisplayName) - BG",
                 box3: true
             )
             
             // Update the secondary contact image with `extra2` (box3 = false)
             self.updateOrCreateContactImage(
-                imageData: self.generateContactImage(bgValue: extra2, extra: extra3, stale: stale, box3: false)?.pngData(),
+                imageData: self.generateContactImage(bgValue: extra2, extra: extra3, stale: stale, box3: false, lastBGTime: lastBGTime)?.pngData(),
                 contactName: "\(bundleDisplayName) - 15min",
                 box3: false
             )
             
             // Update the third contact image with `iob & cob` (box3 = false)
             self.updateOrCreateContactImage(
-                imageData: self.generateContactImage(bgValue: iob, extra: cob, stale: stale, box3: false)?.pngData(),
+                imageData: self.generateContactImage(bgValue: iob, extra: cob, stale: stale, box3: false, lastBGTime: lastBGTime)?.pngData(),
                 contactName: "\(bundleDisplayName) - IOB COB",
                 box3: false
             )
@@ -223,7 +223,7 @@ class ContactImageUpdater: NSObject {
         }
     }
     
-    private func generateContactImage(bgValue: String, extra: String, stale: Bool, box3: Bool) -> UIImage? {
+    private func generateContactImage(bgValue: String, extra: String, stale: Bool, box3: Bool, lastBGTime: TimeInterval?) -> UIImage? {
         let size = CGSize(width: 300, height: 300)
         let padding: CGFloat = 0 // Padding for all rects
         let paddingHeight: CGFloat = size.height * 0.1 // Empty padding rect height
@@ -289,7 +289,8 @@ class ContactImageUpdater: NSObject {
         if box3 {
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm"
-            let timestampString = formatter.string(from: Date())
+            let timestampDate = lastBGTime.map { Date(timeIntervalSince1970: $0) } ?? Date()
+            let timestampString = formatter.string(from: timestampDate)
             var timestampAttributes: [NSAttributedString.Key: Any] = [
                 .foregroundColor: UIColor.white,
                 .paragraphStyle: paragraphStyle
