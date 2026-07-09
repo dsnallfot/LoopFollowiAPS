@@ -97,6 +97,7 @@ class AggregatedStatsViewModel: ObservableObject {
         startDate: Date? = nil,
         endDate: Date? = nil,
         forceReload: Bool = false,
+        backfillDays: Int? = nil,
         completion: @escaping () -> Void = {}
     ) {
         applyPeriodSettings(days)
@@ -121,6 +122,7 @@ class AggregatedStatsViewModel: ObservableObject {
 
         if shouldForceReload {
             dataService.reloadAllData(
+                backfillDays: backfillDays,
                 onProgress: {},
                 completion: {
                     self.calculateStats()

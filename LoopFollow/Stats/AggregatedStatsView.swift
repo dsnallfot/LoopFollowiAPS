@@ -192,6 +192,12 @@ struct AggregatedStatsView: View {
                             }) {
                                 Image(systemName: "arrow.clockwise")
                             }
+                            .simultaneousGesture(
+                                LongPressGesture(minimumDuration: 0.5)
+                                    .onEnded { _ in
+                                        refreshIfNeeded(forceReload: true, overrideThrottle: true, backfillDays: 91)
+                                    }
+                            )
                         }
                     }
                     
@@ -369,7 +375,7 @@ struct AggregatedStatsView: View {
         selectedPeriod == 0 || selectedPeriod == 1
     }
 
-    private func refreshIfNeeded(forceReload: Bool, overrideThrottle: Bool = false) {
+    private func refreshIfNeeded(forceReload: Bool, overrideThrottle: Bool = false, backfillDays: Int? = nil) {
         // Prevent overlapping reloads from rapid taps/period switching
         guard !isLoadingData else { return }
 
@@ -399,7 +405,8 @@ struct AggregatedStatsView: View {
                 selectedPeriod,
                 startDate: useStart,
                 endDate: useEnd,
-                forceReload: shouldForce
+                forceReload: shouldForce,
+                backfillDays: backfillDays
             ) {
                 isLoadingData = false
             }

@@ -407,12 +407,18 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         // så är vi i modalt läge. När vi är pushade från SettingsVC är vi inte root.
         let isModalRoot = navigationController?.viewControllers.first === self
 
-        let reload = UIBarButtonItem(
-            image: UIImage(systemName: "arrow.clockwise"),
-            style: .plain,
-            target: self,
-            action: #selector(refreshButtonTapped)
-        )
+        let reloadImage = UIImage(systemName: "arrow.clockwise")
+        let reloadButtonView = UIButton(type: .system)
+        reloadButtonView.setImage(reloadImage, for: .normal)
+        reloadButtonView.tintColor = .label
+        reloadButtonView.addTarget(self, action: #selector(refreshButtonTapped), for: .touchUpInside)
+        reloadButtonView.frame = CGRect(x: 0, y: 0, width: 32, height: 32)
+        reloadButtonView.accessibilityLabel = "Uppdatera glukos"
+
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(refreshButtonLongPressed(_:)))
+        reloadButtonView.addGestureRecognizer(longPress)
+
+        let reload = UIBarButtonItem(customView: reloadButtonView)
         self.reloadButton = reload
 
         if isModalRoot {
@@ -485,6 +491,18 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         Task {
             await backfillLastDays(backfillDays)
             DispatchQueue.main.async {
+                self.loadBG(for: self.selectedDate)
+            }
+        }
+    }
+
+    @objc private func refreshButtonLongPressed(_ recognizer: UILongPressGestureRecognizer) {
+        guard recognizer.state == .began else { return }
+
+        showRefreshIndicator()
+        Task {
+            await backfillLastDays(initialBackfillDays)
+            await MainActor.run {
                 self.loadBG(for: self.selectedDate)
             }
         }
@@ -819,7 +837,7 @@ final class GlucoseView: ThemedViewController, UITableViewDataSource, UITableVie
         let indicatorItem = UIBarButtonItem(customView: ind)
 
         if var items = navigationItem.leftBarButtonItems {
-            if let idx = items.firstIndex(of: reloadButton) {
+            if let idx = items.firstIndex(where: { $0 === reloadButton }) {
                 items[idx] = indicatorItem
                 navigationItem.leftBarButtonItems = items
             }

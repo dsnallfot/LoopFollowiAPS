@@ -13,7 +13,7 @@ class StatsDataFetcher {
         self.mainViewController = mainViewController
     }
 
-    func fetchBGData(days: Int, completion: @escaping () -> Void) {
+    func fetchBGData(days: Int, forceFullReloadWindow: Bool = false, completion: @escaping () -> Void) {
         guard let mainVC = mainViewController, IsNightscoutEnabled() else {
             completion()
             return
@@ -59,11 +59,16 @@ class StatsDataFetcher {
                     let now = Date().timeIntervalSince1970
                     let horizonDays = self.maxCachedDays
                     let horizonCutoff = now - horizonDays * 24 * 60 * 60
-                    let reloadCutoff = now - self.reloadWindowDays * 24 * 60 * 60
+                    let requestedWindowDays = min(Double(days), horizonDays)
+                    let reloadWindowDays = forceFullReloadWindow ? requestedWindowDays : self.reloadWindowDays
+                    let reloadCutoff = now - reloadWindowDays * 24 * 60 * 60
 
                     // Keep only data within [now - horizonDays)
                     mainVC.statsBGData.removeAll { $0.date < horizonCutoff }
 
+                    // Normal refreshes still replace only the rolling 48h reload window.
+                    // A full requested-window replacement is only used when explicitly requested,
+                    // e.g. long-press backfill from AggregatedStatsView.
                     // IMPORTANT: For the recent reload window, replace data rather than only appending.
                     // This prevents duplicates when overlapping refetches happen and allows corrected SGVs to update.
                     mainVC.statsBGData.removeAll { $0.date >= reloadCutoff }

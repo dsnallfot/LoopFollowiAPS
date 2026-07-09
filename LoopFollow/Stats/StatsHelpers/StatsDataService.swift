@@ -709,16 +709,26 @@ class StatsDataService {
         }
     }
     
-    /// Tvinga omladdning av BG + treatments från Nightscout för nuvarande period (daysToAnalyze).
-    /// Används av "Ladda om"-knappen för att garantera att senaste data hämtas.
-    func reloadAllData(onProgress: @escaping () -> Void, completion: @escaping () -> Void) {
-        // För omladdning vill vi endast hämta de senaste 48 timmarna från Nightscout.
-        let recentDays = 2
+    /// Tvinga omladdning av BG + treatments från Nightscout.
+    /// Normal reload hämtar bara de senaste 48 timmarna.
+    /// Vid explicit backfill, t.ex. långtryck i AggregatedStatsView, hämtas valt antal dagar
+    /// och BG-cachens replacement window utökas till hela det begärda fönstret.
+    func reloadAllData(backfillDays: Int? = nil, onProgress: @escaping () -> Void, completion: @escaping () -> Void) {
+        let daysToFetch = max(1, min(backfillDays ?? 2, maxStatsDays))
+        let forceFullReloadWindow = backfillDays != nil
 
-        dataFetcher.fetchBGData(days: recentDays) {
+        clearBGCache()
+
+        LogManager.shared.log(
+            category: .analysis,
+            message: "StatsDataService - reloadAllData daysToFetch=\(daysToFetch), forceFullReloadWindow=\(forceFullReloadWindow)",
+            isDebug: true
+        )
+
+        dataFetcher.fetchBGData(days: daysToFetch, forceFullReloadWindow: forceFullReloadWindow) {
             DispatchQueue.main.async {
                 onProgress()
-                self.dataFetcher.fetchTreatmentsData(days: recentDays) {
+                self.dataFetcher.fetchTreatmentsData(days: daysToFetch) {
                     DispatchQueue.main.async {
                         onProgress()
                         if let mainVC = self.mainViewController {
