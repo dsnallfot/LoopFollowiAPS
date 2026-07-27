@@ -72,6 +72,8 @@
 		657BB13C2F3605D9009E2667 /* ActiveAlarmsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657BB13B2F3605D5009E2667 /* ActiveAlarmsViewController.swift */; };
 		6582C4B72ED23B4F0047658C /* GlucoseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6582C4B62ED23B490047658C /* GlucoseView.swift */; };
 		659AC6832D7C594D0069FC7C /* TreatmentsTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */; };
+		65A50B4D3016EEAD004125FA /* DBSizeTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A50B4C3016EEA5004125FA /* DBSizeTask.swift */; };
+		65A50B4F3016EF7B004125FA /* DBSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A50B4E3016EF78004125FA /* DBSize.swift */; };
 		65AD37922F7022F300F942A8 /* Training.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65AD37912F7022F000F942A8 /* Training.swift */; };
 		65B347812F97B861001CA945 /* WarningEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B347802F97B85C001CA945 /* WarningEvent.swift */; };
 		65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B3E5C22D3FC36500622194 /* Twilio.swift */; };
@@ -468,6 +470,8 @@
 		657BB13B2F3605D5009E2667 /* ActiveAlarmsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAlarmsViewController.swift; sourceTree = "<group>"; };
 		6582C4B62ED23B490047658C /* GlucoseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseView.swift; sourceTree = "<group>"; };
 		659AC6822D7C59430069FC7C /* TreatmentsTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreatmentsTableView.swift; sourceTree = "<group>"; };
+		65A50B4C3016EEA5004125FA /* DBSizeTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSizeTask.swift; sourceTree = "<group>"; };
+		65A50B4E3016EF78004125FA /* DBSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSize.swift; sourceTree = "<group>"; };
 		65AD37912F7022F000F942A8 /* Training.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Training.swift; sourceTree = "<group>"; };
 		65B347802F97B85C001CA945 /* WarningEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WarningEvent.swift; sourceTree = "<group>"; };
 		65B3E5C22D3FC36500622194 /* Twilio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Twilio.swift; sourceTree = "<group>"; };
@@ -1126,6 +1130,7 @@
 			isa = PBXGroup;
 			children = (
 				DD493AEA2ACF2761009A6922 /* Treatments */,
+				65A50B4E3016EF78004125FA /* DBSize.swift */,
 				DD493ADE2ACF22BB009A6922 /* SAge.swift */,
 				DD493AE02ACF22FE009A6922 /* Profile.swift */,
 				DD493AE22ACF2358009A6922 /* CAge.swift */,
@@ -1186,6 +1191,7 @@
 		DDEF503D2D32753A00999A5D /* Task */ = {
 			isa = PBXGroup;
 			children = (
+				65A50B4C3016EEA5004125FA /* DBSizeTask.swift */,
 				DD9ACA0F2D34128600415D8A /* Task.swift */,
 				DD9ACA0D2D340BFE00415D8A /* AlarmTask.swift */,
 				DD9ACA0B2D33BB8400415D8A /* CalendarTask.swift */,
@@ -1892,6 +1898,7 @@
 				DD4878202C7DAF890048F05C /* PushMessage.swift in Sources */,
 				65B3E5C32D3FC36500622194 /* Twilio.swift in Sources */,
 				FC7CE59F248D8D23001F83B8 /* SnoozeViewController.swift in Sources */,
+				65A50B4F3016EF7B004125FA /* DBSize.swift in Sources */,
 				65EBBB512DA5520B00212D5C /* TrioOrefViewModel.swift in Sources */,
 				DDF6999B2C5AA32E0058A8D9 /* TempTargetPreset.swift in Sources */,
 				DD9ACA0E2D340BFF00415D8A /* AlarmTask.swift in Sources */,
@@ -2086,6 +2093,7 @@
 				651C9D4A2ED5D3A50077D40A /* AGPGraphView.swift in Sources */,
 				FCA2DDE62501095000254A8C /* Timers.swift in Sources */,
 				DD2C2E512D3B8B0C006413A5 /* NightscoutSettingsViewModel.swift in Sources */,
+				65A50B4D3016EEAD004125FA /* DBSizeTask.swift in Sources */,
 				653A8D9A2F33F37E0026A491 /* SoundSelectionViewController.swift in Sources */,
 				DD9ED0C82D355244000D2A63 /* LogViewModel.swift in Sources */,
 				DDFF3D892D1429AB00BF9D9E /* BackgroundRefreshType.swift in Sources */,
@@ -2149,7 +2157,7 @@
 				CODE_SIGN_ENTITLEMENTS = LoopFollowWatch/LoopFollowWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = RMSRR5SURS;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2164,7 +2172,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.watch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -2191,7 +2199,7 @@
 				CODE_SIGN_ENTITLEMENTS = LoopFollowWatch/LoopFollowWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = RMSRR5SURS;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2206,7 +2214,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.watch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -2232,7 +2240,7 @@
 				CODE_SIGN_ENTITLEMENTS = LoopFollowWidget/LoopFollowWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = RMSRR5SURS;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -2255,7 +2263,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.watch.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow.watch.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
@@ -2284,7 +2292,7 @@
 				CODE_SIGN_ENTITLEMENTS = LoopFollowWidget/LoopFollowWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = RMSRR5SURS;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -2307,7 +2315,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow.watch.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow.watch.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
@@ -2447,13 +2455,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "LoopFollow/Loop Follow.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = RMSRR5SURS;
 				INFOPLIST_FILE = LoopFollow/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow;
 				PRODUCT_NAME = "Loop Follow";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
@@ -2468,13 +2476,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "LoopFollow/Loop Follow.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = RMSRR5SURS;
 				INFOPLIST_FILE = LoopFollow/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com..LoopFollow;
+				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow;
 				PRODUCT_NAME = "Loop Follow";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;

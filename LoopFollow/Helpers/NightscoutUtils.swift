@@ -47,6 +47,7 @@ class NightscoutUtils {
         case treatments
         case deviceStatus
         case iage = "Insulin Change"
+        case dbSize
 
         var endpoint: String {
             switch self {
@@ -58,6 +59,8 @@ class NightscoutUtils {
                 return "/api/v1/profile/current.json"
             case .deviceStatus:
                 return "/api/v1/devicestatus.json"
+            case .dbSize:
+                return "/api/v2/properties/dbsize"
             }
         }
     }

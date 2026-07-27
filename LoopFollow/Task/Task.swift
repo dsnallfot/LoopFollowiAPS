@@ -18,6 +18,7 @@ extension MainViewController {
         scheduleMinAgoTask()
         scheduleCalendarTask()
         scheduleAlarmTask()
+        scheduleDBSizeTask()
         scheduleCacheTask()
         scheduleStatsPrefetchTask()
         scheduleNSOnlyGlucosePrefetchTask()

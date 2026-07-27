@@ -18,6 +18,7 @@ class Observable {
     var overrideSmbMinutes = ObservableValue<Double?>(default: nil)
     var overrideUamMinutes = ObservableValue<Double?>(default: nil)
     var overrideSmbIsOff = ObservableValue<Bool?>(default: nil)
+    var dbSizePercentage = ObservableValue<Double?>(default: nil)
     
     var alarmSoundPlaying = ObservableValue<Bool>(default: false)
 

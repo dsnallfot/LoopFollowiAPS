@@ -21,6 +21,7 @@ enum TaskID: CaseIterable {
     case minAgoUpdate
     case calendarWrite
     case alarmCheck
+    case dbSize
     case cacheFill
     case statsPrefetch
     case nsOnlyGlucosePrefetch
