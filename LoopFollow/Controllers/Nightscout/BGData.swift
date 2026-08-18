@@ -15,6 +15,26 @@ fileprivate var bgFetchStartedAt: Date? = nil
 
 extension MainViewController {
     // Dex Share Web Call
+    private func updateDexcomShareStatus(success: Bool) {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "sv_SE")
+        formatter.timeZone = .current
+        formatter.dateFormat = "HH:mm:ss"
+
+        let timestamp = formatter.string(from: Date())
+        let status = "\(timestamp) \(success ? "🟢" : "🔴")"
+
+        DispatchQueue.main.async {
+            self.infoManager.updateInfoData(
+                type: .dexcomShareStatus,
+                value: status
+            )
+            self.infoManager.setPriority(
+                !success,
+                for: .dexcomShareStatus
+            )
+        }
+    }
     func webLoadDexShare() {
         let now = Date()
         
@@ -59,6 +79,7 @@ extension MainViewController {
             )
             
             if let error = err {
+                self.updateDexcomShareStatus(success: false)
                 LogManager.shared.log(
                     category: .dexcom,
                     message: "Error fetching Dexcom data: \(error.localizedDescription)",
@@ -70,6 +91,7 @@ extension MainViewController {
             }
             
             guard let data = result else {
+                self.updateDexcomShareStatus(success: false)
                 LogManager.shared.log(
                     category: .dexcom,
                     message: "Received nil data from Dexcom",
@@ -79,6 +101,19 @@ extension MainViewController {
                 self.webLoadNSBGData(fromDexFallback: true)
                 return
             }
+            
+            guard !data.isEmpty else {
+                self.updateDexcomShareStatus(success: false)
+                LogManager.shared.log(
+                    category: .dexcom,
+                    message: "Dexcom Share returned an empty result",
+                    limitIdentifier: "Dexcom Share returned an empty result"
+                )
+                self.webLoadNSBGData(fromDexFallback: true)
+                return
+            }
+
+            self.updateDexcomShareStatus(success: true)
             
             // If Dex data is old, load from NS instead
             let latestDate = data[0].date
