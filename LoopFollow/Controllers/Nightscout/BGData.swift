@@ -563,6 +563,14 @@ extension MainViewController {
             
             self.updateServerText(with: sourceName)
             
+            self.updateServerText(with: sourceName)
+
+            self.infoManager.updateInfoData(
+                type: .bgDataSource,
+                value: sourceName
+            )
+            self.infoManager.setPriority(false, for: .bgDataSource)
+            
             var snoozerBG = ""
             var snoozerDirection = ""
             var snoozerDelta = ""

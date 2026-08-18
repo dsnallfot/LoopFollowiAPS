@@ -9,7 +9,7 @@
 import Foundation
 
 enum InfoType: Int, CaseIterable {
-    case iob, cob, basal, override, battery, pump, sage, cage, recBolus, minMax, carbsToday, autosens, profile, target, isf, carbRatio, updated, tdd, iage, carbReq, af, smbRatio, pumpStatus, smbStatus, SMBUAMmin, autosensMinMax, maxSMB, overridePercentage, bgi, dev, totIob, btPing, btPingHealth, sensorStatus, sensorTrend, tirNeeded, dbSize, websocket, dexcomShareStatus
+    case iob, cob, basal, override, battery, pump, sage, cage, recBolus, minMax, carbsToday, autosens, profile, target, isf, carbRatio, updated, tdd, iage, carbReq, af, smbRatio, pumpStatus, smbStatus, SMBUAMmin, autosensMinMax, maxSMB, overridePercentage, bgi, dev, totIob, btPing, btPingHealth, sensorStatus, sensorTrend, tirNeeded, dbSize, websocket, dexcomShareStatus, bgDataSource
 
     var name: String {
         switch self {
@@ -52,6 +52,7 @@ enum InfoType: Int, CaseIterable {
         case .dbSize: return "Mongo DB"
         case .websocket: return "NS Websocket"
         case .dexcomShareStatus: return "Dexcom share"
+        case .bgDataSource: return "BG källa"
         }
     }
 
