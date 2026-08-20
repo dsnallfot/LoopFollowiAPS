@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 100;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -381,25 +381,21 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		6532662A2F9A102E00B5EABC /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
+			dstSubfolder = Product;
 			files = (
 				653266292F9A102E00B5EABC /* LoopFollowWatch.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		653266972F9A124600B5EABC /* Embed App Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "";
-			dstSubfolderSpec = 13;
+			dstSubfolder = PlugIns;
 			files = (
 				653266922F9A124600B5EABC /* LoopFollowWidget.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -765,14 +761,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		65F7DFDC2F9A1857009FF7EE /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		65F7DFDC2F9A1857009FF7EE /* Exceptions for "LoopFollowWatch" folder in "LoopFollowWatch" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 6532661E2F9A102C00B5EABC /* LoopFollowWatch */;
 		};
-		65F7DFDD2F9A1892009FF7EE /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		65F7DFDD2F9A1892009FF7EE /* Exceptions for "LoopFollowWidget" folder in "LoopFollowWidget" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -782,28 +778,37 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		653266202F9A102C00B5EABC /* LoopFollowWatch */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (65F7DFDC2F9A1857009FF7EE /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = LoopFollowWatch; sourceTree = "<group>"; };
-		653266862F9A124400B5EABC /* LoopFollowWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (65F7DFDD2F9A1892009FF7EE /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = LoopFollowWidget; sourceTree = "<group>"; };
+		653266202F9A102C00B5EABC /* LoopFollowWatch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				65F7DFDC2F9A1857009FF7EE /* Exceptions for "LoopFollowWatch" folder in "LoopFollowWatch" target */,
+			);
+			path = LoopFollowWatch;
+			sourceTree = "<group>";
+		};
+		653266862F9A124400B5EABC /* LoopFollowWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				65F7DFDD2F9A1892009FF7EE /* Exceptions for "LoopFollowWidget" folder in "LoopFollowWidget" target */,
+			);
+			path = LoopFollowWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		6532661C2F9A102C00B5EABC /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		6532667E2F9A124400B5EABC /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FC9788112485969B00A7906C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				FCFEEC9E2486E68E00402A7F /* WebKit.framework in Frameworks */,
 				3F1335F351590E573D8E6962 /* Pods_LoopFollow.framework in Frameworks */,
@@ -811,7 +816,6 @@
 				65FF0D502F8DAC36000F1DC0 /* SocketIO in Frameworks */,
 				655DF79B2F44CDBB0085EC78 /* ZIPFoundation in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -1555,8 +1559,6 @@
 				653266202F9A102C00B5EABC /* LoopFollowWatch */,
 			);
 			name = LoopFollowWatch;
-			packageProductDependencies = (
-			);
 			productName = "LoopFollowWatch Watch App";
 			productReference = 6532661F2F9A102C00B5EABC /* LoopFollowWatch.app */;
 			productType = "com.apple.product-type.application";
@@ -1571,14 +1573,10 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				653266862F9A124400B5EABC /* LoopFollowWidget */,
 			);
 			name = LoopFollowWidget;
-			packageProductDependencies = (
-			);
 			productName = LoopFollowWidgetExtension;
 			productReference = 653266812F9A124400B5EABC /* LoopFollowWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -1632,7 +1630,6 @@
 				};
 			};
 			buildConfigurationList = FC97880F2485969B00A7906C /* Build configuration list for PBXProject "LoopFollow" */;
-			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -1645,6 +1642,7 @@
 				655DF7992F44CDBB0085EC78 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				65FF0D4E2F8DAC36000F1DC0 /* XCRemoteSwiftPackageReference "socket" */,
 			);
+			preferredProjectObjectVersion = 100;
 			productRefGroup = FC9788152485969B00A7906C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1659,21 +1657,16 @@
 /* Begin PBXResourcesBuildPhase section */
 		6532661D2F9A102C00B5EABC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		6532667F2F9A124400B5EABC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FC9788122485969B00A7906C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				FC7CE51C248ABE37001F83B8 /* Sci-Fi_Spaceship_Warm_Up.caf in Resources */,
 				FC7CE526248ABE37001F83B8 /* Sci-Fi_Alarm_Loop_3.caf in Resources */,
@@ -1799,92 +1792,74 @@
 				FC7CE553248ABE37001F83B8 /* Sci-Fi_Eerie_Alarm.caf in Resources */,
 				FC7CE56A248ABE37001F83B8 /* Cartoon_Siren.caf in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		04DA71CCA0280FA5FA2DF7A6 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks.sh\"\n";
+			shellScript = (
+				"\"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks.sh\"",
+				"",
+			);
 			showEnvVarsInLog = 0;
 		};
 		B038D39450A1F9A97D2B8BA4 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
 			inputPaths = (
 				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
 				"${PODS_ROOT}/Manifest.lock",
 			);
 			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
 			outputPaths = (
 				"$(DERIVED_FILE_DIR)/Pods-LoopFollow-checkManifestLockResult.txt",
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = (
+				"diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null",
+				"if [ $? != 0 ] ; then",
+				"    # print error to STDERR",
+				"    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2",
+				"    exit 1",
+				"fi",
+				"# This output is used by Xcode 'outputs' to avoid re-running this script phase.",
+				"echo \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"",
+				"",
+			);
 			showEnvVarsInLog = 0;
 		};
 		DDB0AF532BB1AA0900AFA48B /* Capture Build Details */ = {
 			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
 			name = "Capture Build Details";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Scripts/capture-build-details.sh\"\n";
+			shellScript = (
+				"\"${SRCROOT}/Scripts/capture-build-details.sh\"",
+				"",
+			);
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		6532661B2F9A102C00B5EABC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		6532667D2F9A124400B5EABC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FC9788102485969B00A7906C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				DD5334292C6166A500062F9D /* InfoDisplaySettingsView.swift in Sources */,
 				FCC68850248935D800A0279D /* AlarmViewController.swift in Sources */,
@@ -2109,7 +2084,6 @@
 				6574FFFA2ED8689E00DEF7D0 /* StatsTrendCalculator.swift in Sources */,
 				65FF0D4B2F8DA821000F1DC0 /* NightscoutSocketDataHandler.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -2146,7 +2120,7 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		6532662B2F9A102E00B5EABC /* Debug */ = {
+		6532662B2F9A102E00B5EABC /* Debug configuration for PBXNativeTarget "LoopFollowWatch" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -2157,7 +2131,7 @@
 				CODE_SIGN_ENTITLEMENTS = LoopFollowWatch/LoopFollowWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RMSRR5SURS;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2172,7 +2146,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow.watch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xxx.LoopFollow.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -2188,7 +2162,7 @@
 			};
 			name = Debug;
 		};
-		6532662C2F9A102E00B5EABC /* Release */ = {
+		6532662C2F9A102E00B5EABC /* Release configuration for PBXNativeTarget "LoopFollowWatch" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -2199,7 +2173,7 @@
 				CODE_SIGN_ENTITLEMENTS = LoopFollowWatch/LoopFollowWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RMSRR5SURS;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2214,7 +2188,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow.watch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xxx.LoopFollow.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -2229,7 +2203,7 @@
 			};
 			name = Release;
 		};
-		653266952F9A124600B5EABC /* Debug */ = {
+		653266952F9A124600B5EABC /* Debug configuration for PBXNativeTarget "LoopFollowWidget" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -2240,7 +2214,7 @@
 				CODE_SIGN_ENTITLEMENTS = LoopFollowWidget/LoopFollowWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RMSRR5SURS;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -2263,7 +2237,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow.watch.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xxx.LoopFollow.watch.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
@@ -2281,7 +2255,7 @@
 			};
 			name = Debug;
 		};
-		653266962F9A124600B5EABC /* Release */ = {
+		653266962F9A124600B5EABC /* Release configuration for PBXNativeTarget "LoopFollowWidget" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -2292,7 +2266,7 @@
 				CODE_SIGN_ENTITLEMENTS = LoopFollowWidget/LoopFollowWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RMSRR5SURS;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -2315,7 +2289,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow.watch.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xxx.LoopFollow.watch.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
@@ -2332,7 +2306,7 @@
 			};
 			name = Release;
 		};
-		FC97882B2485969C00A7906C /* Debug */ = {
+		FC97882B2485969C00A7906C /* Debug configuration for PBXProject "LoopFollow" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = FC5A5C3C2497B229009C550E /* Config.xcconfig */;
 			buildSettings = {
@@ -2393,7 +2367,7 @@
 			};
 			name = Debug;
 		};
-		FC97882C2485969C00A7906C /* Release */ = {
+		FC97882C2485969C00A7906C /* Release configuration for PBXProject "LoopFollow" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = FC5A5C3C2497B229009C550E /* Config.xcconfig */;
 			buildSettings = {
@@ -2448,20 +2422,21 @@
 			};
 			name = Release;
 		};
-		FC97882E2485969C00A7906C /* Debug */ = {
+		FC97882E2485969C00A7906C /* Debug configuration for PBXNativeTarget "LoopFollow" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = ECA3EFB4037410B4973BB632 /* Pods-LoopFollow.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "LoopFollow/Loop Follow.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = RMSRR5SURS;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = LoopFollow/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xxx.LoopFollow;
 				PRODUCT_NAME = "Loop Follow";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
@@ -2469,20 +2444,21 @@
 			};
 			name = Debug;
 		};
-		FC97882F2485969C00A7906C /* Release */ = {
+		FC97882F2485969C00A7906C /* Release configuration for PBXNativeTarget "LoopFollow" */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 059B0FA59AABFE72FE13DDDA /* Pods-LoopFollow.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "LoopFollow/Loop Follow.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = RMSRR5SURS;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = LoopFollow/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.RMSRR5SURS.LoopFollow;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xxx.LoopFollow;
 				PRODUCT_NAME = "Loop Follow";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
@@ -2496,37 +2472,33 @@
 		6532662D2F9A102E00B5EABC /* Build configuration list for PBXNativeTarget "LoopFollowWatch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				6532662B2F9A102E00B5EABC /* Debug */,
-				6532662C2F9A102E00B5EABC /* Release */,
+				6532662B2F9A102E00B5EABC /* Debug configuration for PBXNativeTarget "LoopFollowWatch" */,
+				6532662C2F9A102E00B5EABC /* Release configuration for PBXNativeTarget "LoopFollowWatch" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		653266942F9A124600B5EABC /* Build configuration list for PBXNativeTarget "LoopFollowWidget" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				653266952F9A124600B5EABC /* Debug */,
-				653266962F9A124600B5EABC /* Release */,
+				653266952F9A124600B5EABC /* Debug configuration for PBXNativeTarget "LoopFollowWidget" */,
+				653266962F9A124600B5EABC /* Release configuration for PBXNativeTarget "LoopFollowWidget" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		FC97880F2485969B00A7906C /* Build configuration list for PBXProject "LoopFollow" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				FC97882B2485969C00A7906C /* Debug */,
-				FC97882C2485969C00A7906C /* Release */,
+				FC97882B2485969C00A7906C /* Debug configuration for PBXProject "LoopFollow" */,
+				FC97882C2485969C00A7906C /* Release configuration for PBXProject "LoopFollow" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		FC97882D2485969C00A7906C /* Build configuration list for PBXNativeTarget "LoopFollow" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				FC97882E2485969C00A7906C /* Debug */,
-				FC97882F2485969C00A7906C /* Release */,
+				FC97882E2485969C00A7906C /* Debug configuration for PBXNativeTarget "LoopFollow" */,
+				FC97882F2485969C00A7906C /* Release configuration for PBXNativeTarget "LoopFollow" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
