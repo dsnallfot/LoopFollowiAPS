@@ -28,7 +28,18 @@ struct WidgetData: Codable {
     private static let storageKey = "widgetData"
 
     /// App Group shared between the watch app and widget extension.
-    static let appGroupID = "group.com..LoopFollow"
+    static var appGroupID: String {
+        guard let identifier = Bundle.main.object(
+            forInfoDictionaryKey: "AppGroupIdentifier"
+        ) as? String,
+            !identifier.isEmpty
+        else {
+            assertionFailure("Missing AppGroupIdentifier in Info.plist")
+            return "group.com.LoopFollow"
+        }
+
+        return identifier
+    }
 
     private static var sharedDefaults: UserDefaults {
         UserDefaults(suiteName: appGroupID) ?? .standard

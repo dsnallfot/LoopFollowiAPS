@@ -10,6 +10,8 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>AppGroupIdentifier</key>
+    <string>group.com.$(unique_id).LoopFollow$(app_suffix)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -26,7 +28,7 @@
 	</array>
 	<key>WKApplication</key>
 	<true/>
-	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.RMSRR5SURS.LoopFollow</string>
+    <key>WKCompanionAppBundleIdentifier</key>
+    <string>com.$(unique_id).LoopFollow$(app_suffix)</string>
 </dict>
 </plist>
