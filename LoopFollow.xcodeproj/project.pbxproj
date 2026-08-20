@@ -1806,10 +1806,7 @@
 				"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			shellPath = /bin/sh;
-			shellScript = (
-				"\"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks.sh\"",
-				"",
-			);
+            shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		B038D39450A1F9A97D2B8BA4 /* [CP] Check Pods Manifest.lock */ = {
@@ -1823,27 +1820,27 @@
 				"$(DERIVED_FILE_DIR)/Pods-LoopFollow-checkManifestLockResult.txt",
 			);
 			shellPath = /bin/sh;
-			shellScript = (
-				"diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null",
-				"if [ $? != 0 ] ; then",
-				"    # print error to STDERR",
-				"    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2",
-				"    exit 1",
-				"fi",
-				"# This output is used by Xcode 'outputs' to avoid re-running this script phase.",
-				"echo \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"",
-				"",
-			);
+            shellScript = (
+                "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null",
+                "if [ $? != 0 ] ; then",
+                "    # print error to STDERR",
+                "    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2",
+                "    exit 1",
+                "fi",
+                "# This output is used by Xcode 'outputs' to avoid re-running this script phase.",
+                "echo \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"",
+                "",
+            );
 			showEnvVarsInLog = 0;
 		};
 		DDB0AF532BB1AA0900AFA48B /* Capture Build Details */ = {
 			isa = PBXShellScriptBuildPhase;
 			name = "Capture Build Details";
 			shellPath = /bin/sh;
-			shellScript = (
-				"\"${SRCROOT}/Scripts/capture-build-details.sh\"",
-				"",
-			);
+            shellScript = (
+                "\"${SRCROOT}/Scripts/capture-build-details.sh\"",
+                "",
+            );
 		};
 /* End PBXShellScriptBuildPhase section */
 
