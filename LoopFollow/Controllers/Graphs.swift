@@ -1120,7 +1120,7 @@ extension MainViewController {
         COBlinePrediction.colors = [NSUIColor.systemPurple]
         COBlinePrediction.drawCircleHoleEnabled = true
         COBlinePrediction.axisDependency = YAxis.AxisDependency.right
-        COBlinePrediction.highlightEnabled = true
+        COBlinePrediction.highlightEnabled = false
         COBlinePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
@@ -1144,7 +1144,7 @@ extension MainViewController {
         IOBlinePrediction.colors = [NSUIColor.systemPurple]
         IOBlinePrediction.drawCircleHoleEnabled = true
         IOBlinePrediction.axisDependency = YAxis.AxisDependency.right
-        IOBlinePrediction.highlightEnabled = true
+        IOBlinePrediction.highlightEnabled = false
         IOBlinePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
@@ -1168,7 +1168,7 @@ extension MainViewController {
         UAMlinePrediction.colors = [NSUIColor.systemPurple]
         UAMlinePrediction.drawCircleHoleEnabled = true
         UAMlinePrediction.axisDependency = YAxis.AxisDependency.right
-        UAMlinePrediction.highlightEnabled = true
+        UAMlinePrediction.highlightEnabled = false
         UAMlinePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {
@@ -1192,7 +1192,7 @@ extension MainViewController {
         ZTlinePrediction.colors = [NSUIColor.systemPurple]
         ZTlinePrediction.drawCircleHoleEnabled = true
         ZTlinePrediction.axisDependency = YAxis.AxisDependency.right
-        ZTlinePrediction.highlightEnabled = true
+        ZTlinePrediction.highlightEnabled = false
         ZTlinePrediction.drawValuesEnabled = false
         
         if UserDefaultsRepository.showLines.value {

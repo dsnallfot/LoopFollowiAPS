@@ -468,8 +468,19 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         
         statsStack.isUserInteractionEnabled = true
 
-        let tapGestureStats = UITapGestureRecognizer(target: self, action: #selector(showStatsFromStack))
+        let tapGestureStats = UITapGestureRecognizer(
+            target: self,
+            action: #selector(showStatsFromStack)
+        )
         statsStack.addGestureRecognizer(tapGestureStats)
+
+        statsPieChart.isUserInteractionEnabled = true
+
+        let tapGesturePieChart = UITapGestureRecognizer(
+            target: self,
+            action: #selector(showStatsFromStack)
+        )
+        statsPieChart.addGestureRecognizer(tapGesturePieChart)
 
         let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleStatsStackSwipeLeft(_:)))
         swipeLeft.direction = .left
