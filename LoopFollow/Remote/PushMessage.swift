@@ -25,6 +25,7 @@ struct PushMessage: Encodable {
     var user: String
     var commandType: TRCCommandType
     var bolusAmount: Decimal?
+    var glucose: Decimal?
     var target: Int?
     var duration: Int?
     var carbs: Int?
@@ -41,6 +42,7 @@ struct PushMessage: Encodable {
         case user
         case commandType = "command_type"
         case bolusAmount = "bolus_amount"
+        case glucose
         case target
         case duration
         case carbs
@@ -59,6 +61,7 @@ struct PushMessage: Encodable {
         try container.encode(user, forKey: .user)
         try container.encode(commandType.rawValue, forKey: .commandType)
         try container.encode(bolusAmount, forKey: .bolusAmount)
+        try container.encode(glucose, forKey: .glucose)
         try container.encode(target, forKey: .target)
         try container.encode(duration, forKey: .duration)
         try container.encode(carbs, forKey: .carbs)

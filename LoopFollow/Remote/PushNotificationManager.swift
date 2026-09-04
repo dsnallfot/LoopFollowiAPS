@@ -88,6 +88,41 @@ class PushNotificationManager {
 
         sendPushNotification(message: message, completion: completion)
     }
+    
+    func sendManualGlucosePushNotification(
+        glucose: HKQuantity,
+        completion: @escaping (Bool, String?) -> Void
+    ) {
+        let mmolValue = glucose.doubleValue(
+            for: HKUnit(from: "mmol/L")
+        )
+
+        let mgDlValue = mmolValue * GlucoseConversion.mmolToMgDl
+        let glucoseDecimal = Decimal(mgDlValue)
+
+        var alertString = "Remote blodsocker"
+        alertString += "\nBlodsocker: \(String(format: "%.1f", mmolValue)) mmol/L"
+        alertString += "\nInlagt av: \(user)"
+
+        if alertString.count > 200 {
+            alertString = String(alertString.prefix(200)) + "…"
+        }
+
+        let message = PushMessage(
+            aps: .init(alert: alertString),
+            user: user,
+            commandType: .glucose,
+            bolusAmount: nil,
+            glucose: glucoseDecimal,
+            sharedSecret: sharedSecret,
+            timestamp: Date().timeIntervalSince1970
+        )
+
+        sendPushNotification(
+            message: message,
+            completion: completion
+        )
+    }
 
     func sendTempTargetPushNotification(target: HKQuantity, duration: HKQuantity, completion: @escaping (Bool, String?) -> Void) {
         let targetValue = Int(target.doubleValue(for: HKUnit.milligramsPerDeciliter))

@@ -79,7 +79,7 @@ public struct TextFieldWithToolBar: UIViewRepresentable {
         textField.delegate = context.coordinator
         textField.text = quantity.doubleValue(for: unit) == 0 ? "" : context.coordinator.format(quantity: quantity, for: unit)
         textField.placeholder = formattedPlaceholder(for: unit)
-        textField.keyboardType = unit.preferredFractionDigits == 0 ? .numberPad : .decimalPad
+        textField.keyboardType = allowDecimalSeparator ? .decimalPad : .numberPad
         return textField
     }
 
@@ -126,7 +126,7 @@ public struct TextFieldWithToolBar: UIViewRepresentable {
 
         textField.textColor = textColor
         textField.textAlignment = textAlignment
-        textField.keyboardType = unit.preferredFractionDigits == 0 ? .numberPad : .decimalPad
+        textField.keyboardType = allowDecimalSeparator ? .decimalPad : .numberPad
         textField.autocapitalizationType = autocapitalizationType
         textField.autocorrectionType = autocorrectionType
 

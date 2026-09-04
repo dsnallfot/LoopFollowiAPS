@@ -3,7 +3,6 @@
 //  LoopFollow
 //
 //  Created by Jonas Björkert on 2024-09-17.
-
 //
 
 import Foundation
@@ -20,6 +19,7 @@ struct HKQuantityInputView: View {
     @FocusState.Binding var isFocused: Bool
 
     var onValidationError: (String) -> Void
+    var allowDecimalSeparator: Bool = true
     
     var nextToolbarAction: (() -> Void)?
 
@@ -27,16 +27,19 @@ struct HKQuantityInputView: View {
         HStack {
             Text(label)
             Spacer()
+            
             TextFieldWithToolBar(
                 quantity: $quantity,
                 maxLength: maxLength,
                 unit: unit,
+                allowDecimalSeparator: allowDecimalSeparator,
                 minValue: minValue,
                 maxValue: maxValue,
                 nextToolbarAction: nextToolbarAction,
                 onValidationError: onValidationError
             )
             .focused($isFocused)
+            
             Text(unit.localizedShortUnitString)
                 .foregroundColor(.secondary)
         }

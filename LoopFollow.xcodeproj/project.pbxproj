@@ -58,6 +58,7 @@
 		6545DD2B2D6F03A0007B0D70 /* LineChartWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */; };
 		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
+		6551A843304AEAF0002094F6 /* ManualGlucoseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6551A842304AEAEA002094F6 /* ManualGlucoseView.swift */; };
 		655B23052EDE2A420092DBDE /* AddManualPumpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */; };
 		655B23072EDE2A640092DBDE /* PumpHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23062EDE2A610092DBDE /* PumpHistoryView.swift */; };
 		655DF7982F41EFB30085EC78 /* AlarmStatsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655DF7972F41EFB00085EC78 /* AlarmStatsViewController.swift */; };
@@ -453,6 +454,7 @@
 		6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineChartWrapper.swift; sourceTree = "<group>"; };
 		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
+		6551A842304AEAEA002094F6 /* ManualGlucoseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualGlucoseView.swift; sourceTree = "<group>"; };
 		655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddManualPumpView.swift; sourceTree = "<group>"; };
 		655B23062EDE2A610092DBDE /* PumpHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PumpHistoryView.swift; sourceTree = "<group>"; };
 		655DF7972F41EFB00085EC78 /* AlarmStatsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmStatsViewController.swift; sourceTree = "<group>"; };
@@ -1071,6 +1073,7 @@
 		DD4878112C7B74F90048F05C /* TRC */ = {
 			isa = PBXGroup;
 			children = (
+				6551A842304AEAEA002094F6 /* ManualGlucoseView.swift */,
 				65FF0D512F8FD1CD000F1DC0 /* ComboView.swift */,
 				DD4878122C7B750D0048F05C /* TempTargetView.swift */,
 				DD4878142C7B75230048F05C /* MealView.swift */,
@@ -1806,7 +1809,10 @@
 				"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			shellPath = /bin/sh;
-            shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks.sh\"\n";
+			shellScript = (
+				"\"${PODS_ROOT}/Target Support Files/Pods-LoopFollow/Pods-LoopFollow-frameworks.sh\"",
+				"",
+			);
 			showEnvVarsInLog = 0;
 		};
 		B038D39450A1F9A97D2B8BA4 /* [CP] Check Pods Manifest.lock */ = {
@@ -1820,27 +1826,27 @@
 				"$(DERIVED_FILE_DIR)/Pods-LoopFollow-checkManifestLockResult.txt",
 			);
 			shellPath = /bin/sh;
-            shellScript = (
-                "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null",
-                "if [ $? != 0 ] ; then",
-                "    # print error to STDERR",
-                "    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2",
-                "    exit 1",
-                "fi",
-                "# This output is used by Xcode 'outputs' to avoid re-running this script phase.",
-                "echo \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"",
-                "",
-            );
+			shellScript = (
+				"diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null",
+				"if [ $? != 0 ] ; then",
+				"    # print error to STDERR",
+				"    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2",
+				"    exit 1",
+				"fi",
+				"# This output is used by Xcode 'outputs' to avoid re-running this script phase.",
+				"echo \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"",
+				"",
+			);
 			showEnvVarsInLog = 0;
 		};
 		DDB0AF532BB1AA0900AFA48B /* Capture Build Details */ = {
 			isa = PBXShellScriptBuildPhase;
 			name = "Capture Build Details";
 			shellPath = /bin/sh;
-            shellScript = (
-                "\"${SRCROOT}/Scripts/capture-build-details.sh\"",
-                "",
-            );
+			shellScript = (
+				"\"${SRCROOT}/Scripts/capture-build-details.sh\"",
+				"",
+			);
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -2051,6 +2057,7 @@
 				DD2C2E542D3C37DC006413A5 /* DexcomSettingsViewModel.swift in Sources */,
 				FCE537BC249A4D7D00F80BF8 /* carbBolusArrays.swift in Sources */,
 				DD5334232C60ED3600062F9D /* IAge.swift in Sources */,
+				6551A843304AEAF0002094F6 /* ManualGlucoseView.swift in Sources */,
 				FCD2A27D24C9D044009F7B7B /* Globals.swift in Sources */,
 				DD0C0C642C45A59400DBADDF /* HKUnit+Extensions.swift in Sources */,
 				DDCF979A24C14DB4002C9752 /* WatchSettingsViewController.swift in Sources */,
