@@ -1848,7 +1848,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             // Retrieve remote type from Storage.
             let remoteType = Storage.shared.remoteType.value
 
-            // If the treatment is a Carb Correction, present remote-delete options for SMS or TRC.
+            // Offer remote meal deletion via SMS or TRC, and glucose deletion via TRC.
             if treatment.eventType == "Carb Correction",
                let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty,
                remoteType == .sms {
@@ -1892,18 +1892,21 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     completionHandler(false)
                 }))
                 self.present(alert, animated: true, completion: nil)
-            } else if treatment.eventType == "Carb Correction",
-                      let foodType = treatment.rawData["foodType"] as? String, !foodType.isEmpty,
-                      remoteType == .trc {
+            } else if remoteType == .trc,
+                      treatment.eventType == "BG Check" ||
+                      (treatment.eventType == "Carb Correction" &&
+                       !(treatment.rawData["foodType"] as? String ?? "").isEmpty) {
+                let isGlucose = treatment.eventType == "BG Check"
+                let entryName = isGlucose ? "blodsockervärdet" : "måltiden"
                 let alert = UIAlertController(
-                    title: "Radera måltid?",
-                    message: "\nVälj om du vill: \n\n• Radera måltiden i Trio (vilket också raderar den i Nightscout) \n\n• Radera endast måltiden i Nightscout (vilket INTE raderar den i Trio!)",
+                    title: isGlucose ? "Radera blodsockervärde?" : "Radera måltid?",
+                    message: "\nVälj om du vill: \n\n• Radera \(entryName) i Trio (vilket också raderar den i Nightscout) \n\n• Radera endast \(entryName) i Nightscout (vilket INTE raderar den i Trio!)",
                     preferredStyle: .alert
                 )
 
                 alert.addAction(UIAlertAction(title: "Trio & Nightscout", style: .default, handler: { _ in
                     let pushNotificationManager = PushNotificationManager()
-                    pushNotificationManager.sendDeleteMealPushNotification(mealDate: treatment.timestamp) { success, errorMessage in
+                    let completion: (Bool, String?) -> Void = { success, errorMessage in
                         DispatchQueue.main.async {
                             let resultAlert = UIAlertController(
                                 title: "Status",
@@ -1913,6 +1916,11 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                             resultAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             self.present(resultAlert, animated: true, completion: nil)
                         }
+                    }
+                    if isGlucose {
+                        pushNotificationManager.sendDeleteGlucosePushNotification(glucoseDate: treatment.timestamp, completion: completion)
+                    } else {
+                        pushNotificationManager.sendDeleteMealPushNotification(mealDate: treatment.timestamp, completion: completion)
                     }
                     completionHandler(true)
                 }))
@@ -2000,7 +2008,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         }
         
         // Edit actions for updating duration on Exercise (Override) treatments
-        // and editing note text for Note treatments, and editing glucose for BG Check.
+        // and editing note text for Note treatments.
         var actions: [UIContextualAction] = [deleteAction]
 
         if treatment.eventType == "Exercise" {
@@ -2240,15 +2248,6 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
             actions = [deleteAction, editNoteAction]*/
 
-        } else if treatment.eventType == "BG Check" {
-            let editBGAction = UIContextualAction(style: .normal, title: nil) { (_, _, completionHandler) in
-                self.presentEditBGCheckViewController(for: treatment, completionHandler: completionHandler)
-            }
-            
-            editBGAction.image = UIImage(systemName: "pencil")
-            editBGAction.backgroundColor = .systemBlue
-            
-            actions = [deleteAction, editBGAction]
         }
 
         // Set the trashcan SF Symbol and customize appearance.

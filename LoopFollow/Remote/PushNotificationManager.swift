@@ -91,8 +91,18 @@ class PushNotificationManager {
     
     func sendManualGlucosePushNotification(
         glucose: HKQuantity,
+        scheduledTime: Date? = nil,
         completion: @escaping (Bool, String?) -> Void
     ) {
+        let now = Date()
+        if let scheduledTime = scheduledTime {
+            guard scheduledTime >= Calendar.current.startOfDay(for: now),
+                  scheduledTime <= now else {
+                completion(false, "Välj en tid under dagens datum som inte ligger i framtiden.")
+                return
+            }
+        }
+
         let mmolValue = glucose.doubleValue(
             for: HKUnit(from: "mmol/L")
         )
@@ -115,7 +125,8 @@ class PushNotificationManager {
             bolusAmount: nil,
             glucose: glucoseDecimal,
             sharedSecret: sharedSecret,
-            timestamp: Date().timeIntervalSince1970
+            timestamp: now.timeIntervalSince1970,
+            scheduledTime: scheduledTime?.timeIntervalSince1970
         )
 
         sendPushNotification(
@@ -174,6 +185,22 @@ class PushNotificationManager {
             sharedSecret: sharedSecret,
             timestamp: Date().timeIntervalSince1970,
             scheduledTime: mealDate.timeIntervalSince1970
+        )
+
+        sendPushNotification(message: message, completion: completion)
+    }
+
+    func sendDeleteGlucosePushNotification(
+        glucoseDate: Date,
+        completion: @escaping (Bool, String?) -> Void
+    ) {
+        let message = PushMessage(
+            aps: .init(alert: "Remote radera blodsockervärde mottagen"),
+            user: user,
+            commandType: .deleteGlucose,
+            sharedSecret: sharedSecret,
+            timestamp: Date().timeIntervalSince1970,
+            scheduledTime: glucoseDate.timeIntervalSince1970
         )
 
         sendPushNotification(message: message, completion: completion)

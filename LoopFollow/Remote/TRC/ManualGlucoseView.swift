@@ -19,6 +19,7 @@ struct ManualGlucoseView: View {
     @State private var alertType: AlertType? = nil
     @State private var alertMessage: String? = nil
     @State private var isLoading = false
+    @State private var scheduledDate = Date()
     @State private var statusMessage: String? = nil
 
     enum AlertType {
@@ -52,6 +53,15 @@ struct ManualGlucoseView: View {
                             isFocused: $manualGlucoseFieldIsFocused,
                             onValidationError: { _ in }
                         )
+
+                        DatePicker(
+                            "Tid",
+                            selection: $scheduledDate,
+                            in: availableTimeRange,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .datePickerStyle(.compact)
+                        .environment(\.locale, Locale(identifier: "sv_SE"))
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
 
@@ -94,7 +104,7 @@ struct ManualGlucoseView: View {
                 return Alert(
                     title: Text("Bekräfta blodsocker"),
                     message: Text(
-                        "Är du säker på att du vill skicka \(manualGlucose.doubleValue(for: HKUnit(from: "mmol/L")), specifier: "%.1f") mmol/L?"
+                        "Är du säker på att du vill skicka \(manualGlucose.doubleValue(for: HKUnit(from: "mmol/L")), specifier: "%.1f") mmol/L kl. \(formattedScheduledTime)?"
                     ),
                     primaryButton: .default(Text("Bekräfta"), action: {
                         sendManualGlucose()
@@ -135,6 +145,17 @@ struct ManualGlucoseView: View {
         "Skicka blodsocker"
     }
 
+    private var availableTimeRange: ClosedRange<Date> {
+        let now = Date()
+        return Calendar.current.startOfDay(for: now)...now
+    }
+
+    private var formattedScheduledTime: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: scheduledDate)
+    }
+
     private var isButtonDisabled: Bool {
         isLoading ||
         manualGlucose.doubleValue(
@@ -148,7 +169,8 @@ struct ManualGlucoseView: View {
         isLoading = true
 
         pushNotificationManager.sendManualGlucosePushNotification(
-            glucose: manualGlucose
+            glucose: manualGlucose,
+            scheduledTime: scheduledDate
         ) { success, errorMessage in
 
             DispatchQueue.main.async {

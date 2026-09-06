@@ -15,6 +15,7 @@ enum TRCCommandType: String {
     case cancelTempTarget = "cancel_temp_target"
     case meal = "meal"
     case deleteMeal = "deleteMeal"
+    case deleteGlucose = "deleteGlucose"
     case combo = "combo"
     case startOverride = "start_override"
     case cancelOverride = "cancel_override"
