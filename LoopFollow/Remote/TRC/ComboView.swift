@@ -224,7 +224,6 @@ private struct ComboEditorView: View {
     @State private var isLoading: Bool = false
     @State private var statusMessage: String? = nil
     @State private var selectedTime: Date? = nil
-    @State private var isScheduling: Bool = false
 
     @State private var selectedOverride: ProfileManager.TrioOverride? = nil
     @State private var showOverridePicker: Bool = false
@@ -358,28 +357,24 @@ private struct ComboEditorView: View {
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
                     
-                    if mealWithFatProtein.value {
+                    //if mealWithFatProtein.value {
                     Section() {
-                        Toggle("Schemalägg till senare", isOn: $isScheduling)
-                        
-                        if isScheduling {
-                            DatePicker(
-                                "Välj tid",
-                                selection: Binding(
-                                    get: { self.selectedTime ?? Date() },
-                                    set: { self.selectedTime = $0 }
-                                ),
-                                displayedComponents: .hourAndMinute
-                            )
-                            .datePickerStyle(CompactDatePickerStyle())
-                            
-                            if bolusAmount.doubleValue(for: .internationalUnit()) > 0 {
-                                Text("OBS! Denna måltid schemaläggs, men overriden aktiveras och bolusen ges omgående!")
-                            }
+                        DatePicker(
+                            "Tid",
+                            selection: Binding(
+                                get: { self.selectedTime ?? Date() },
+                                set: { self.selectedTime = $0 }
+                            ),
+                            displayedComponents: .hourAndMinute
+                        )
+                        .datePickerStyle(CompactDatePickerStyle())
+
+                        if selectedTime != nil && (bolusAmount.doubleValue(for: .internationalUnit()) > 0 || selectedOverride != nil) {
+                            Text("OBS! Tiden gäller måltiden. Overriden aktiveras och bolusen ges omgående!")
                         }
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
-                }
+                //}
 
                     LoadingButtonView(
                         buttonText: primaryButtonTitle,
@@ -455,7 +450,6 @@ private struct ComboEditorView: View {
                 }
             } else {
                 selectedTime = nil
-                isScheduling = false
             }
 
             clearComboInputFocus()
@@ -789,7 +783,7 @@ private struct ComboEditorView: View {
         isLoading = true
 
         var scheduledDate: Date? = nil
-        if isScheduling, let selectedTime = selectedTime {
+        if let selectedTime = selectedTime {
             let calendar = Calendar.current
             let now = Date()
             let selectedDateComponents = calendar.dateComponents([.hour, .minute], from: selectedTime)

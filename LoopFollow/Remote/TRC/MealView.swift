@@ -45,7 +45,6 @@ struct MealView: View {
                 if !newValue {
                     protein = HKQuantity(unit: .gram(), doubleValue: 0.0)
                     fat = HKQuantity(unit: .gram(), doubleValue: 0.0)
-                    isScheduling = false
                     selectedTime = nil
                 }
             }
@@ -64,7 +63,6 @@ struct MealView: View {
     @State private var isLoading: Bool = false
     @State private var statusMessage: String? = nil
     @State private var selectedTime: Date? = nil
-    @State private var isScheduling: Bool = false
     
     enum AlertType {
         case confirmMeal
@@ -198,30 +196,27 @@ struct MealView: View {
                         .listSectionSpacing(.compact)
                     }
                     
-                    if mealWithFatProtein.value {
+                    //if mealWithFatProtein.value {
                         if #available(iOS 17.0, *) {
                             Section() {
-                                Toggle("Schemalägg till senare", isOn: $isScheduling)
-                                if isScheduling {
-                                    DatePicker(
-                                        "Välj tid",
-                                        selection: Binding(
-                                            get: { self.selectedTime ?? Date() },
-                                            set: { self.selectedTime = $0 }
-                                        ),
-                                        displayedComponents: .hourAndMinute
-                                    )
-                                    .datePickerStyle(CompactDatePickerStyle())
-                                    
-                                    if bolusAmount.doubleValue(for: .internationalUnit()) > 0 {
-                                        Text("OBS! Denna måltid schemaläggs, men bolusen ges omgående!")
-                                    }
+                                DatePicker(
+                                    "Tid",
+                                    selection: Binding(
+                                        get: { self.selectedTime ?? Date() },
+                                        set: { self.selectedTime = $0 }
+                                    ),
+                                    displayedComponents: .hourAndMinute
+                                )
+                                .datePickerStyle(CompactDatePickerStyle())
+
+                                if selectedTime != nil && bolusAmount.doubleValue(for: .internationalUnit()) > 0 {
+                                    Text("OBS! Tiden gäller måltiden. Bolusen ges omgående!")
                                 }
                             }
                             .listRowBackground(Color(.systemGray).opacity(0.15))
                             .listSectionSpacing(.compact)
                         }
-                }
+                //}
                     
                     LoadingButtonView(
                         buttonText: primaryButtonTitle,
@@ -255,14 +250,13 @@ struct MealView: View {
                         } label: {
                             Image(systemName: mealWithFatProtein.value ? "text.badge.minus" : "text.badge.plus")
                         }
-                        .accessibilityLabel(mealWithFatProtein.value ? "Dölj fett, protein och schemaläggning" : "Visa fett, protein och schemaläggning")
+                        .accessibilityLabel(mealWithFatProtein.value ? "Dölj fett, protein och tid" : "Visa fett, protein och tid")
                     }
                 }
             }
         }
         .onAppear {
             selectedTime = nil
-            isScheduling = false
 
             clearMealInputFocus()
 
@@ -694,7 +688,7 @@ struct MealView: View {
         isLoading = true
 
         var scheduledDate: Date? = nil
-        if isScheduling, let selectedTime = selectedTime {
+        if let selectedTime = selectedTime {
             let calendar = Calendar.current
             let now = Date()
             let selectedDateComponents = calendar.dateComponents([.hour, .minute], from: selectedTime)
@@ -733,7 +727,6 @@ struct MealView: View {
             bolusAmount = HKQuantity(unit: .internationalUnit(), doubleValue: 0.0)
             notes = ""
             selectedTime = nil
-            isScheduling = false
             alertType = .statusSuccess
             showAlert = true
         }
