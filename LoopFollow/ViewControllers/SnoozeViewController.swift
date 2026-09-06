@@ -13,6 +13,9 @@ import SwiftUI
 
 //class SnoozeViewController: ThemedViewController, UNUserNotificationCenterDelegate { // Använd inte blå gradient för snooze-vyn eftersom den blir för ljus på natten
 class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
+    private(set) var activeAlarmLabel: String?
+    private var activeSnoozeValue: Double = 0
+
     var appStateController: AppStateController?
     var snoozeTabItem: UITabBarItem = UITabBarItem()
     var mainTabItem: UITabBarItem = UITabBarItem()
@@ -70,28 +73,39 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     @IBOutlet weak var AlarmsButton: UIButton!
     
     @IBAction func SnoozeButton(_ sender: Any) {
+        guard let label = activeAlarmLabel else { return }
+        snoozeAlarm(label: label, value: snoozeForMinuteStepper.value)
+    }
+
+    private func snoozeAlarm(label: String, value: Double) {
+        loadViewIfNeeded()
+        setSnoozeTime(label: label, value: value)
+        let mainVC = tabBarController?.viewControllers?.first as? MainViewController
+        mainVC?.cancelPendingAlarm(label: label)
+        let center = UNUserNotificationCenter.current()
+        let identifier = Self.alarmNotificationID(label)
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        LogManager.shared.log(category: .alarm, message: "Snoozed alarm: \(label), duration value: \(value)")
+        // An older notification must never stop or hide a different active alarm.
+        guard activeAlarmLabel == label else { return }
+        activeAlarmLabel = nil
+        mainVC?.alarmPlayingTimer?.invalidate()
+        mainVC?.alarmPlayingTimer = nil
+        if let mainVC = mainVC { mainVC.startCheckAlarmTimer(time: mainVC.checkAlarmInterval) }
         AlarmSound.stop()
-        
-        guard let mainVC = self.tabBarController!.viewControllers?[0] as? MainViewController else { return }
-        mainVC.startCheckAlarmTimer(time: mainVC.checkAlarmInterval)
-        
-        let tabBarControllerItems = self.tabBarController?.tabBar.items
-        if let arrayOfTabBarItems = tabBarControllerItems as! AnyObject as? NSArray{
-            snoozeTabItem = arrayOfTabBarItems[2] as! UITabBarItem
-            
-        }
-        
-        
-        setSnoozeTime()
         AlertLabel.isHidden = true
         SnoozeButton.isHidden = true
         clockLabel.isHidden = false
         snoozeForMinuteStepper.isHidden = true
         snoozeForMinuteLabel.isHidden = true
         snoozeForMinuteUnit.isHidden = true
-        
     }
-    
+
+    private static func alarmNotificationID(_ label: String) -> String {
+        return "alarm." + label
+    }
+
     @IBAction func snoozeForMinuteValChanged(_ sender: UIStepper) {
         snoozeForMinuteLabel.text = Int(sender.value).description
     }
@@ -130,8 +144,11 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         clockLabel.text = formatter.string(from: Date())
     }
     
-    func updateDisplayWhenTriggered(bgVal: String, directionVal: String, deltaVal: String, minAgoVal: String, alertLabelVal: String, latestIOB: String, latestCOB: String) {
+    func updateDisplayWhenTriggered(bgVal: String, directionVal: String, deltaVal: String, minAgoVal: String, alertLabelVal: String, latestIOB: String, latestCOB: String, snoozeValue: Double = 0) {
         loadViewIfNeeded()
+        activeAlarmLabel = alertLabelVal == "none" ? nil : alertLabelVal
+        activeSnoozeValue = snoozeValue
+        snoozeForMinuteStepper.value = snoozeValue
 
         // Replace commas with periods in bgVal and deltaVal
         let bgValWithPeriod = bgVal.replacingOccurrences(of: ",", with: ".")
@@ -188,9 +205,13 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
         // See if we can use .Critcal
         // See if we should use this method instead of direct sound player
         content.sound = .default
+        if activeAlarmLabel == alertLabelVal {
+            content.userInfo = ["alarmLabel": alertLabelVal, "snoozeValue": activeSnoozeValue]
+        }
         
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        let identifier = activeAlarmLabel == alertLabelVal ? Self.alarmNotificationID(alertLabelVal) : UUID().uuidString
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
         
         let action = UNNotificationAction(identifier: "snooze", title: "Snooze", options: [])
@@ -199,142 +220,146 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        if response.actionIdentifier == "snooze" {
-            SnoozeButton(self)
+        DispatchQueue.main.async {
+            defer { completionHandler() }
+            guard response.actionIdentifier == "snooze" else { return }
+            let info = response.notification.request.content.userInfo
+            guard let label = info["alarmLabel"] as? String,
+                  let value = info["snoozeValue"] as? Double else { return }
+            self.snoozeAlarm(label: label, value: value)
         }
     }
-    
-    func setSnoozeTime() {
-        guard let alarms = ViewControllerManager.shared.alarmViewController else { return }
 
-        let snoozeDuration = TimeInterval(snoozeForMinuteStepper.value * 60)
-        let longSnoozeDuration = TimeInterval(snoozeForMinuteStepper.value * 60 * 60)
+    func setSnoozeTime(label: String, value: Double) {
+        let alarms = ViewControllerManager.shared.alarmViewController
+        let snoozeDuration = TimeInterval(value * 60)
+        let longSnoozeDuration = TimeInterval(value * 60 * 60)
         let currentDate = Date()
 
-        switch AlarmSound.whichAlarm {
+        switch label {
         case "⚠️ Tillfällig varning":
             UserDefaultsRepository.alertTemporaryActive.value = false
-            alarms.reloadIsSnoozed(key: "alertTemporaryActive", value: false)
+            alarms?.reloadIsSnoozed(key: "alertTemporaryActive", value: false)
 
         case "🆘 Akut lågt!",
              "🆘 Akut lågt! (Comp. low?)":
             UserDefaultsRepository.alertUrgentLowIsSnoozed.value = true
             UserDefaultsRepository.alertUrgentLowSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertUrgentLowIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertUrgentLowSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertUrgentLowIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertUrgentLowSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "🔴 Lågt socker",
              "🔴 Lågt socker (Comp. low?)":
             UserDefaultsRepository.alertLowIsSnoozed.value = true
             UserDefaultsRepository.alertLowSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertLowIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertLowSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertLowIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertLowSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⚠️ Snart akut låg!",
              "⚠️ Snart akut låg! (Comp. low?)":
             UserDefaultsRepository.alertUrgentLowIsSnoozed.value = true
             UserDefaultsRepository.alertUrgentLowSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertUrgentLowIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertUrgentLowSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertUrgentLowIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertUrgentLowSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "🟣 Högt socker":
             UserDefaultsRepository.alertHighIsSnoozed.value = true
             UserDefaultsRepository.alertHighSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertHighIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertHighSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertHighIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertHighSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⚠️ Akut högt!":
             UserDefaultsRepository.alertUrgentHighIsSnoozed.value = true
             UserDefaultsRepository.alertUrgentHighSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertUrgentHighIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertUrgentHighSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertUrgentHighIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertUrgentHighSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⏬ Sjunker snabbt":
             UserDefaultsRepository.alertFastDropIsSnoozed.value = true
             UserDefaultsRepository.alertFastDropSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertFastDropIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertFastDropSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertFastDropIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertFastDropSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⏫ Stiger snabbt":
             UserDefaultsRepository.alertFastRiseIsSnoozed.value = true
             UserDefaultsRepository.alertFastRiseSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertFastRiseIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertFastRiseSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertFastRiseIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertFastRiseSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⚠️ Inga värden":
             UserDefaultsRepository.alertMissedReadingIsSnoozed.value = true
             UserDefaultsRepository.alertMissedReadingSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertMissedReadingIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertMissedReadingSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertMissedReadingIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertMissedReadingSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⏰ Påminnelse sensorbyte":
             UserDefaultsRepository.alertSAGEIsSnoozed.value = true
             UserDefaultsRepository.alertSAGESnoozedTime.value = currentDate.addingTimeInterval(longSnoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertSAGEIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertSAGESnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertSAGEIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertSAGESnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
 
         case "⏰ Påminnelse pumpbyte":
             UserDefaultsRepository.alertCAGEIsSnoozed.value = true
             UserDefaultsRepository.alertCAGESnoozedTime.value = currentDate.addingTimeInterval(longSnoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertCAGEIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertCAGESnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertCAGEIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertCAGESnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
 
         case "❌ Loop ej aktiv!":
             UserDefaultsRepository.alertNotLoopingIsSnoozed.value = true
             UserDefaultsRepository.alertNotLoopingSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertNotLoopingIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertNotLoopingSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertNotLoopingIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertNotLoopingSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⚠️ Missad måltidsbolus":
             UserDefaultsRepository.alertMissedBolusIsSnoozed.value = true
             UserDefaultsRepository.alertMissedBolusSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertMissedBolusIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertMissedBolusSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertMissedBolusIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertMissedBolusSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⚠️ Låg insulinnivå":
             UserDefaultsRepository.alertPumpIsSnoozed.value = true
             UserDefaultsRepository.alertPumpSnoozedTime.value = currentDate.addingTimeInterval(longSnoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertPumpIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertPumpSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertPumpIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertPumpSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
 
         case "💉 IOB Varning":
             UserDefaultsRepository.alertIOBIsSnoozed.value = true
             UserDefaultsRepository.alertIOBSnoozedTime.value = currentDate.addingTimeInterval(longSnoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertIOBIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertIOBSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertIOBIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertIOBSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
 
         case "🥨 COB Varning":
             UserDefaultsRepository.alertCOBIsSnoozed.value = true
             UserDefaultsRepository.alertCOBSnoozedTime.value = currentDate.addingTimeInterval(longSnoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertCOBIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertCOBSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertCOBIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertCOBSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
 
         case "🪫 Låg batterinivå":
             UserDefaultsRepository.alertBatteryIsSnoozed.value = true
             UserDefaultsRepository.alertBatterySnoozedTime.value = currentDate.addingTimeInterval(longSnoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertBatteryIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertBatterySnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertBatteryIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertBatterySnoozedTime", setNil: false, value: currentDate.addingTimeInterval(longSnoozeDuration))
 
         case "👉 Rek. Bolus":
             UserDefaultsRepository.alertRecBolusIsSnoozed.value = true
             UserDefaultsRepository.alertRecBolusSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertRecBolusIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertRecBolusSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertRecBolusIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertRecBolusSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "▶️ Temp Target Start":
             UserDefaultsRepository.alertTempTargetStartIsSnoozed.value = true
             UserDefaultsRepository.alertTempTargetStartSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertTempTargetStartIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertTempTargetStartSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertTempTargetStartIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertTempTargetStartSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         case "⏹️ Temp Target End":
             UserDefaultsRepository.alertTempTargetEndIsSnoozed.value = true
             UserDefaultsRepository.alertTempTargetEndSnoozedTime.value = currentDate.addingTimeInterval(snoozeDuration)
-            alarms.reloadIsSnoozed(key: "alertTempTargetEndIsSnoozed", value: true)
-            alarms.reloadSnoozeTime(key: "alertTempTargetEndSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
+            alarms?.reloadIsSnoozed(key: "alertTempTargetEndIsSnoozed", value: true)
+            alarms?.reloadSnoozeTime(key: "alertTempTargetEndSnoozedTime", setNil: false, value: currentDate.addingTimeInterval(snoozeDuration))
 
         default:
-            LogManager.shared.log(category: .alarm, message: "Unhandled alarm: \(AlarmSound.whichAlarm)")
+            LogManager.shared.log(category: .alarm, message: "Unhandled alarm: \(label)")
         }
     }
 
@@ -660,19 +685,11 @@ class SnoozeViewController: UIViewController, UNUserNotificationCenterDelegate {
     }
     
     @objc private func handleVolumeButtonAlarmStopped() {
-        DispatchQueue.main.async {
-            self.loadViewIfNeeded() // säkerställ outlets
-            self.setSnoozeTime()
-            self.AlertLabel.isHidden = true
-            self.SnoozeButton.isHidden = true
-            self.clockLabel.isHidden = false
-            self.snoozeForMinuteStepper.isHidden = true
-            self.snoozeForMinuteLabel.isHidden = true
-            self.snoozeForMinuteUnit.isHidden = true
-        }
-        LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing alarm with volume button done and Snoozer UI updated")
+        // VolumeButtonHandler posts on the main queue; persist snooze immediately.
+        guard let label = activeAlarmLabel else { return }
+        snoozeAlarm(label: label, value: snoozeForMinuteStepper.value)
     }
-    
+
     private func setupSwipeUpToStatus() {
         let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeUpToStatus(_:)))
         swipeUp.direction = .up

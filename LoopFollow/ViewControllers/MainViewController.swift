@@ -182,6 +182,10 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     
     // Check Alarms Timer
     // Don't check within 1 minute of alarm triggering to give the snoozer time to save data
+    var pendingAlarmStart: DispatchWorkItem?
+    var pendingAlarmLabel: String?
+    var pendingAlarmID: UUID?
+    var alarmPlayingTimer: Timer?
     var checkAlarmTimer = Timer()
     var checkAlarmInterval: TimeInterval = 60.0
     var graphNowTimer = Timer()
@@ -1899,7 +1903,15 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        
+        // General notifications can make this controller the notification delegate.
+        DispatchQueue.main.async {
+            if response.actionIdentifier == "snooze",
+               let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController {
+                snoozer.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
+            } else {
+                completionHandler()
+            }
+        }
     }
     
     // User has scrolled the chart

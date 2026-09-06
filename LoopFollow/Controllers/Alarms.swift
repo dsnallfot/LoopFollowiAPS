@@ -11,79 +11,65 @@ import UIKit
 import AVFoundation
 import CallKit
 
-fileprivate var alarmTriggerPending = false
-fileprivate var alarmTriggerPendingResetWorkItem: DispatchWorkItem?
-fileprivate let alarmTriggerPendingFallbackTimeout: TimeInterval = 8.0
-
 extension MainViewController {
-    private func acquireAlarmTriggerPendingLock() -> Bool {
-        if Thread.isMainThread {
-            return acquireAlarmTriggerPendingLockOnMain()
-        }
-        
-        var acquired = false
-        DispatchQueue.main.sync {
-            acquired = acquireAlarmTriggerPendingLockOnMain()
-        }
-        return acquired
+    // All alarm checks and snooze actions are serialized on the main queue.
+    func cancelPendingAlarm(label: String) {
+        guard pendingAlarmLabel == label else { return }
+        pendingAlarmStart?.cancel()
+        pendingAlarmStart = nil
+        pendingAlarmLabel = nil
+        pendingAlarmID = nil
+        LogManager.shared.log(category: .alarm, message: "Cancelled pending alarm: \(label)")
     }
-    
-    private func acquireAlarmTriggerPendingLockOnMain() -> Bool {
-        guard !alarmTriggerPending else {
-            LogManager.shared.log(
-                category: .alarm,
-                message: "Skipped alarm trigger because another alarm is already pending.",
-                isDebug: false
-            )
-            return false
-        }
-        
-        alarmTriggerPending = true
-        
-        alarmTriggerPendingResetWorkItem?.cancel()
-        let resetWorkItem = DispatchWorkItem {
-            alarmTriggerPending = false
-            alarmTriggerPendingResetWorkItem = nil
-            LogManager.shared.log(
-                category: .alarm,
-                message: "Released stale alarm pending lock via fallback timeout.",
-                isDebug: false
-            )
-        }
-        alarmTriggerPendingResetWorkItem = resetWorkItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + alarmTriggerPendingFallbackTimeout, execute: resetWorkItem)
-        
-        LogManager.shared.log(
-            category: .alarm,
-            message: "Acquired alarm pending lock.",
-            isDebug: true
-        )
-        
-        return true
-    }
-    
-    private func releaseAlarmTriggerPendingLock() {
-        let releaseBlock = {
-            alarmTriggerPendingResetWorkItem?.cancel()
-            alarmTriggerPendingResetWorkItem = nil
-            
-            if alarmTriggerPending {
-                LogManager.shared.log(
-                    category: .alarm,
-                    message: "Released alarm pending lock.",
-                    isDebug: true
-                )
-            }
-            
-            alarmTriggerPending = false
-        }
-        
-        if Thread.isMainThread {
-            releaseBlock()
-        } else {
-            DispatchQueue.main.async(execute: releaseBlock)
+
+    func isAlarmSnoozed(label: String) -> Bool {
+        if UserDefaultsRepository.alertSnoozeAllIsSnoozed.value { return true }
+        switch label {
+        case "🆘 Akut lågt!",
+             "🆘 Akut lågt! (Comp. low?)":
+            return UserDefaultsRepository.alertUrgentLowIsSnoozed.value
+        case "🔴 Lågt socker",
+             "🔴 Lågt socker (Comp. low?)":
+            return UserDefaultsRepository.alertLowIsSnoozed.value
+        case "⚠️ Snart akut låg!",
+             "⚠️ Snart akut låg! (Comp. low?)":
+            return UserDefaultsRepository.alertUrgentLowIsSnoozed.value
+        case "🟣 Högt socker":
+            return UserDefaultsRepository.alertHighIsSnoozed.value
+        case "⚠️ Akut högt!":
+            return UserDefaultsRepository.alertUrgentHighIsSnoozed.value
+        case "⏬ Sjunker snabbt":
+            return UserDefaultsRepository.alertFastDropIsSnoozed.value
+        case "⏫ Stiger snabbt":
+            return UserDefaultsRepository.alertFastRiseIsSnoozed.value
+        case "⚠️ Inga värden":
+            return UserDefaultsRepository.alertMissedReadingIsSnoozed.value
+        case "⏰ Påminnelse sensorbyte":
+            return UserDefaultsRepository.alertSAGEIsSnoozed.value
+        case "⏰ Påminnelse pumpbyte":
+            return UserDefaultsRepository.alertCAGEIsSnoozed.value
+        case "❌ Loop ej aktiv!":
+            return UserDefaultsRepository.alertNotLoopingIsSnoozed.value
+        case "⚠️ Missad måltidsbolus":
+            return UserDefaultsRepository.alertMissedBolusIsSnoozed.value
+        case "⚠️ Låg insulinnivå":
+            return UserDefaultsRepository.alertPumpIsSnoozed.value
+        case "💉 IOB Varning":
+            return UserDefaultsRepository.alertIOBIsSnoozed.value
+        case "🥨 COB Varning":
+            return UserDefaultsRepository.alertCOBIsSnoozed.value
+        case "🪫 Låg batterinivå":
+            return UserDefaultsRepository.alertBatteryIsSnoozed.value
+        case "👉 Rek. Bolus":
+            return UserDefaultsRepository.alertRecBolusIsSnoozed.value
+        case "▶️ Temp Target Start":
+            return UserDefaultsRepository.alertTempTargetStartIsSnoozed.value
+        case "⏹️ Temp Target End":
+            return UserDefaultsRepository.alertTempTargetEndIsSnoozed.value
+        default: return false
         }
     }
+
     func checkBGAlarms(bgs: [ShareGlucoseData]) {
         // Don't check or fire alarms within 1 minute of prior alarm
         LogManager.shared.log(category: .taskScheduler, message: "checkBGAlarms ran", isDebug: true, isTempDebug: true)
@@ -817,27 +803,30 @@ extension MainViewController {
     }
     
     func triggerAlarm(sound: String, snooozedBGReadingTime: TimeInterval?, overrideVolume: Bool, numLoops: Int, snoozeTime: Int = 0, snoozeIncrement: Int = 5, audio: Bool = true, latestIOB: String, latestCOB: String, unit: String) {
-        guard acquireAlarmTriggerPendingLock() else { return }
-        // Small delay to allow latestDirectionString / latestDeltaString
-        // to settle (e.g. Dex -> Nightscout update race)
-        let delay: TimeInterval = 2.0
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self = self else {
-                DispatchQueue.main.async {
-                    alarmTriggerPending = false
-                    alarmTriggerPendingResetWorkItem?.cancel()
-                    alarmTriggerPendingResetWorkItem = nil
-                }
+        let alarmLabel = AlarmSound.whichAlarm
+        guard pendingAlarmStart == nil else { return }
+        let id = UUID()
+        pendingAlarmID = id
+        pendingAlarmLabel = alarmLabel
+        // Keep the data-settling delay, but make the queued start cancellable.
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self, self.pendingAlarmID == id else { return }
+            defer {
+                self.pendingAlarmStart = nil
+                self.pendingAlarmLabel = nil
+                self.pendingAlarmID = nil
+            }
+            guard !self.isAlarmSnoozed(label: alarmLabel) else {
+                LogManager.shared.log(category: .alarm, message: "Skipped snoozed alarm: \(alarmLabel)")
                 return
             }
-            
-            LogManager.shared.log(category: .alarm, message: "Alarm triggered: \(AlarmSound.whichAlarm)")
+            AlarmSound.whichAlarm = alarmLabel
+            LogManager.shared.log(category: .alarm, message: "Alarm triggered: \(alarmLabel)")
             
             // Persist alarm trigger so we can visualize frequency and types later
             Storage.shared.appendAlarmHistory(
-                alarmLabel: AlarmSound.whichAlarm,
-                message: "Alarm triggered: \(AlarmSound.whichAlarm)",
+                alarmLabel: alarmLabel,
+                message: "Alarm triggered: \(alarmLabel)",
                 date: Date().timeIntervalSince1970
             )
             
@@ -847,7 +836,6 @@ extension MainViewController {
             }
             
             guard let snoozer = self.tabBarController?.viewControllers?[2] as? SnoozeViewController else {
-                self.releaseAlarmTriggerPendingLock()
                 return
             }
             
@@ -856,9 +844,10 @@ extension MainViewController {
                 directionVal: self.latestDirectionString,
                 deltaVal: self.latestDeltaString,
                 minAgoVal: self.latestMinAgoString,
-                alertLabelVal: AlarmSound.whichAlarm,
+                alertLabelVal: alarmLabel,
                 latestIOB: latestIOB,
-                latestCOB: latestCOB
+                latestCOB: latestCOB,
+                snoozeValue: Double(snoozeTime)
             )
             
             snoozer.SnoozeButton.isHidden = false
@@ -901,13 +890,16 @@ extension MainViewController {
             if timerLength < 10 { timerLength = 290 }
             
             self.startAlarmPlayingTimer(time: timerLength)
-            self.releaseAlarmTriggerPendingLock()
         }
+        pendingAlarmStart = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: work)
     }
     
     func stopAlarmAtNextReading(){
         LogManager.shared.log(category: .alarm, message: "Alarms reset and snooze button hidden until triggered again", isTempDebug: true)
         
+        alarmPlayingTimer?.invalidate()
+        alarmPlayingTimer = nil
         AlarmSound.whichAlarm = "none"
         guard let snoozer = self.tabBarController!.viewControllers?[2] as? SnoozeViewController else { return }
         let iobString = latestIOB?.formattedValue() ?? "--"

@@ -120,6 +120,11 @@ class VolumeButtonHandler: NSObject {
     }
 
     private func snoozeActiveAlarm() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in self?.snoozeActiveAlarm() }
+            return
+        }
+        guard AlarmSound.isPlaying else { return }
         LogManager.shared.log(category: .volumeButtonSnooze, message: "Snoozing alarm")
 
         lastVolumeButtonPressTime = Date()

@@ -32,6 +32,7 @@ extension MainViewController {
     // End function needs nothing done
     func startCheckAlarmTimer(time: TimeInterval = 60) {
         
+        checkAlarmTimer.invalidate()
         checkAlarmTimer = Timer.scheduledTimer(timeInterval: time,
                                                target: self,
                                                selector: #selector(MainViewController.checkAlarmTimerDidEnd(_:)),
@@ -45,7 +46,8 @@ extension MainViewController {
     // Cancel and reset the playing alarm if it has not been snoozed after 4 min 50 seconds.
     // This allows the next BG reading to either start the timer going or not fire if the situation has been resolved
     func startAlarmPlayingTimer(time: TimeInterval = 290) {
-        let alarmPlayingTimer = Timer.scheduledTimer(timeInterval: time,
+        alarmPlayingTimer?.invalidate()
+        alarmPlayingTimer = Timer.scheduledTimer(timeInterval: time,
                                            target: self,
                                            selector: #selector(MainViewController.alarmPlayingTimerDidEnd(_:)),
                                            userInfo: nil,
@@ -53,6 +55,7 @@ extension MainViewController {
     }
     
     @objc func alarmPlayingTimerDidEnd(_ timer: Timer) {
+        guard timer === alarmPlayingTimer else { return }
         // Oavsett om ljudet fortfarande spelar eller inte vill vi:
         // - nollställa whichAlarm
         // - uppdatera Snooze-vyn
