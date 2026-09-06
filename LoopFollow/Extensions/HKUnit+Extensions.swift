@@ -24,7 +24,7 @@ extension HKUnit {
             return 0
         case .milligramsPerDeciliter:
             return 0
-        case .millimolesPerLiter:
+        case .millimolesPerLiter, HKUnit(from: "mmol/L"):
             return 1
         case .internationalUnit():
             return 2
