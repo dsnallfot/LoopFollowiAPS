@@ -103,6 +103,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     private let tableView = UITableView()
     /// Flattened cache of all loaded treatments (kept mostly for existing logic)
     private var treatments: [Treatment] = []
+    private var pendingShortcutDeletion: Treatment?
 
     private struct TreatmentDaySection {
         let date: Date
@@ -1867,14 +1868,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                         completionHandler(false)
                         return
                     }
+                    completionHandler(true)
+                    self.applyLocalTreatmentDeletion(treatment)
                     NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
                         switch result {
                         case .success(_):
-                            DispatchQueue.main.async {
-                                self.applyLocalTreatmentDeletion(treatment)
-                            }
+                            break
                         case .failure(let error):
                             DispatchQueue.main.async {
+                                self.restoreLocalTreatment(treatment)
                                 let failureAlert = UIAlertController(
                                     title: "Kunde inte radera!",
                                     message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
@@ -1884,7 +1886,6 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                             }
                             LogManager.shared.log(category: .treatments, message: "Failed to delete treatment: \(error.localizedDescription)", isDebug: true)
                         }
-                        completionHandler(true)
                     }
                 }))
 
@@ -1905,9 +1906,14 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 )
 
                 alert.addAction(UIAlertAction(title: "Trio & Nightscout", style: .default, handler: { _ in
+                    completionHandler(true)
+                    self.applyLocalTreatmentDeletion(treatment)
                     let pushNotificationManager = PushNotificationManager()
                     let completion: (Bool, String?) -> Void = { success, errorMessage in
                         DispatchQueue.main.async {
+                            if !success {
+                                self.restoreLocalTreatment(treatment)
+                            }
                             let resultAlert = UIAlertController(
                                 title: "Status",
                                 message: success ? "Raderingskommando skickades" : (errorMessage ?? "Raderingskommando misslyckades"),
@@ -1922,7 +1928,6 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                     } else {
                         pushNotificationManager.sendDeleteMealPushNotification(mealDate: treatment.timestamp, completion: completion)
                     }
-                    completionHandler(true)
                 }))
 
                 alert.addAction(UIAlertAction(title: "Endast Nightscout", style: .destructive, handler: { _ in
@@ -1930,14 +1935,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                         completionHandler(false)
                         return
                     }
+                    completionHandler(true)
+                    self.applyLocalTreatmentDeletion(treatment)
                     NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
                         switch result {
                         case .success(_):
-                            DispatchQueue.main.async {
-                                self.applyLocalTreatmentDeletion(treatment)
-                            }
+                            break
                         case .failure(let error):
                             DispatchQueue.main.async {
+                                self.restoreLocalTreatment(treatment)
                                 let failureAlert = UIAlertController(
                                     title: "Kunde inte radera!",
                                     message: "Kontrollera att du har skrivåtkomst i din Nightscout token",
@@ -1947,7 +1953,6 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                             }
                             LogManager.shared.log(category: .treatments, message: "Failed to delete treatment: \(error.localizedDescription)", isDebug: true)
                         }
-                        completionHandler(true)
                     }
                 }))
 
@@ -1984,14 +1989,15 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                         completionHandler(false)
                         return
                     }
+                    completionHandler(true)
+                    self.applyLocalTreatmentDeletion(treatment)
                     NightscoutUtils.executeDeleteRequest(treatmentId: treatmentId) { result in
                         switch result {
                         case .success(_):
-                            DispatchQueue.main.async {
-                                self.applyLocalTreatmentDeletion(treatment)
-                            }
+                            break
                         case .failure(let error):
                             DispatchQueue.main.async {
+                                self.restoreLocalTreatment(treatment)
                                 let failureAlert = UIAlertController(
                                     title: "Kunde inte radera!",
                                     message: "\nKontrollera att du har skrivåtkomst i din Nightscout token",
@@ -2000,7 +2006,6 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                                 self.present(failureAlert, animated: true, completion: nil)
                             }
                         }
-                        completionHandler(true)
                     }
                 }))
                 self.present(alert, animated: true, completion: nil)
@@ -2289,10 +2294,10 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             let combinedString = "Remote Delete\nKolhydrater: \(carbsValue)g\nDatum: \(formattedDate)\nInlagt av: \(name)\nSecret: \(secret)\nSkickades: \(formattedTimestamp)"
             
             // Send the remote command.
-            sendRemoteDeleteCommand(combinedString: combinedString)
+            sendRemoteDeleteCommand(combinedString: combinedString, treatment: treatment)
         }
 
-    private func sendRemoteDeleteCommand(combinedString: String) {
+    private func sendRemoteDeleteCommand(combinedString: String, treatment: Treatment) {
         // Retrieve the method from user defaults.
         let method = UserDefaultsRepository.method.value
         
@@ -2316,17 +2321,25 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             
             let urlString = "shortcuts://x-callback-url/run-shortcut?name=Remote%20Delete&input=text&text=\(encodedString)&x-success=\(successEncoded)&x-error=\(errorEncoded)&x-cancel=\(cancelEncoded)"
             if let url = URL(string: urlString) {
-                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                pendingShortcutDeletion = treatment
+                applyLocalTreatmentDeletion(treatment)
+                UIApplication.shared.open(url, options: [:]) { opened in
+                    if !opened {
+                        DispatchQueue.main.async {
+                            self.finishShortcutDeletion(success: false)
+                        }
+                    }
+                }
             }
             LogManager.shared.log(category: .treatments, message: "Waiting for shortcut completion...", isDebug: true)
         } else {
             // For SMS API, first show a confirmation alert with authentication.
-            showRemoteDeleteConfirmationAlert(combinedString: combinedString)
+            showRemoteDeleteConfirmationAlert(combinedString: combinedString, treatment: treatment)
         }
     }
 
     /// Presents a confirmation alert for SMS deletion. If the user selects "Ja", we authenticate first.
-    private func showRemoteDeleteConfirmationAlert(combinedString: String) {
+    private func showRemoteDeleteConfirmationAlert(combinedString: String, treatment: Treatment) {
         let confirmationAlert = UIAlertController(
             title: "Bekräfta radering",
             message: "\nÄr du säker på att du vill radera måltiden i Trio?",
@@ -2335,7 +2348,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         confirmationAlert.addAction(UIAlertAction(title: "Radera", style: .destructive, handler: { _ in
             // Authenticate with biometrics; on success, send the command.
             self.authenticateWithBiometrics {
-                self.sendRemoteDeleteCommandInternal(combinedString: combinedString)
+                self.sendRemoteDeleteCommandInternal(combinedString: combinedString, treatment: treatment)
             }
         }))
         
@@ -2347,7 +2360,8 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     }
 
     /// Actually sends the remote delete command via Twilio (SMS API).
-    private func sendRemoteDeleteCommandInternal(combinedString: String) {
+    private func sendRemoteDeleteCommandInternal(combinedString: String, treatment: Treatment) {
+        applyLocalTreatmentDeletion(treatment)
         twilioRequest(combinedString: combinedString) { result in
             switch result {
             case .success:
@@ -2358,6 +2372,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
             case .failure(let error):
                 AudioServicesPlaySystemSound(SystemSoundID(1053))
                 DispatchQueue.main.async {
+                    self.restoreLocalTreatment(treatment)
                     self.showAlert(title: "Fel", message: error.localizedDescription) { }
                 }
             }
@@ -2411,7 +2426,16 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
 
     // MARK: - Shortcut Callback Handlers (without dismissing the view)
 
+    private func finishShortcutDeletion(success: Bool) {
+        guard let treatment = pendingShortcutDeletion else { return }
+        pendingShortcutDeletion = nil
+        if !success {
+            restoreLocalTreatment(treatment)
+        }
+    }
+
     @objc private func handleShortcutSuccess() {
+        finishShortcutDeletion(success: true)
         LogManager.shared.log(category: .treatments, message: "Shortcut succeeded", isDebug: true)
         AudioServicesPlaySystemSound(SystemSoundID(1322))
         showAlert(title: NSLocalizedString("Lyckades", comment: "Lyckades"),
@@ -2420,6 +2444,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     }
 
     @objc private func handleShortcutError() {
+        finishShortcutDeletion(success: false)
         LogManager.shared.log(category: .treatments, message: "Shortcut failed, showing error alert...", isDebug: true)
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Misslyckades", comment: "Misslyckades"),
@@ -2428,6 +2453,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     }
 
     @objc private func handleShortcutCancel() {
+        finishShortcutDeletion(success: false)
         LogManager.shared.log(category: .treatments, message: "Shortcut was cancelled, showing cancellation alert...", isDebug: true)
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Avbröts", comment: "Avbröts"),
@@ -2436,6 +2462,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
     }
 
     @objc private func handleShortcutPasscode() {
+        finishShortcutDeletion(success: false)
         LogManager.shared.log(category: .treatments, message: "Shortcut was cancelled due to wrong passcode, showing passcode alert...", isDebug: true)
         AudioServicesPlaySystemSound(SystemSoundID(1053))
         showAlert(title: NSLocalizedString("Fel lösenkod", comment: "Fel lösenkod"),
@@ -3094,25 +3121,39 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
         return formatted
     }
     
-    private func applyLocalTreatmentDeletion(_ treatment: Treatment) {
-        if let index = treatments.firstIndex(where: { $0.documentId == treatment.documentId }) {
-            treatments.remove(at: index)
-        } else {
-            treatments.removeAll {
-                $0.timestamp == treatment.timestamp &&
-                $0.eventType == treatment.eventType &&
-                $0.documentId == treatment.documentId
-            }
+    private func matchesTreatment(_ candidate: Treatment, _ treatment: Treatment) -> Bool {
+        if let id = treatment.documentId {
+            return candidate.documentId == id
         }
+        return candidate.documentId == nil &&
+            candidate.timestamp == treatment.timestamp &&
+            candidate.eventType == treatment.eventType
+    }
 
+    private func applyLocalTreatmentDeletion(_ treatment: Treatment) {
+        for index in daySections.indices {
+            daySections[index].treatments.removeAll { matchesTreatment($0, treatment) }
+        }
+        rebuildTreatmentsFlatCache()
         removeTreatmentFromCache(treatment)
-        refreshTableKeepingSelectionIfNeeded()
         tableView.reloadData()
         updateDuplicateIndicator()
     }
-    
-    /// Remove a treatment that has just been deleted in Nightscout from the
-    /// local NightscoutCache so duplicates don’t re-appear after an app restart.
+
+    private func restoreLocalTreatment(_ treatment: Treatment) {
+        NightscoutCache.upsertTreatment(from: treatment.rawData)
+        if let index = daySectionIndex(for: treatment.timestamp) {
+            if !daySections[index].treatments.contains(where: { matchesTreatment($0, treatment) }) {
+                daySections[index].treatments.append(treatment)
+                daySections[index].treatments.sort { $0.timestamp > $1.timestamp }
+            }
+            rebuildTreatmentsFlatCache()
+            tableView.reloadData()
+            updateDuplicateIndicator()
+        }
+    }
+
+    /// Remove the treatment from the local cache while remote deletion is processed.
     private func removeTreatmentFromCache(_ treatment: Treatment) {
         let possibleDates: [Date] = {
             if let rawCreatedAt = treatment.rawData["created_at"] as? String {
