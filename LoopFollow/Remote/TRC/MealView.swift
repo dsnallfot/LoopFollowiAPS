@@ -208,9 +208,14 @@ struct MealView: View {
                                     displayedComponents: .hourAndMinute
                                 )
                                 .datePickerStyle(CompactDatePickerStyle())
+                                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
 
                                 if selectedTime != nil && bolusAmount.doubleValue(for: .internationalUnit()) > 0 {
-                                    Text("OBS! Tiden gäller måltiden. Bolusen ges omgående!")
+                                    HStack {
+                                        Image(systemName: "info.circle")
+                                        Text("Tiden gäller måltiden. Bolusen ges omgående!")
+                                    }
+                                        .font(.caption2)
                                 }
                             }
                             .listRowBackground(Color(.systemGray).opacity(0.15))

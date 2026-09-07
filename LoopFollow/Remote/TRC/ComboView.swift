@@ -368,9 +368,14 @@ private struct ComboEditorView: View {
                             displayedComponents: .hourAndMinute
                         )
                         .datePickerStyle(CompactDatePickerStyle())
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
 
                         if selectedTime != nil && (bolusAmount.doubleValue(for: .internationalUnit()) > 0 || selectedOverride != nil) {
-                            Text("OBS! Tiden gäller måltiden. Overriden aktiveras och bolusen ges omgående!")
+                            HStack {
+                                Image(systemName: "info.circle")
+                                Text("Tiden gäller måltiden. Overriden aktiveras och bolusen ges omgående!")
+                            }
+                                .font(.caption2)
                         }
                     }
                     .listRowBackground(Color(.systemGray).opacity(0.15))
