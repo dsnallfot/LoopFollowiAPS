@@ -9,6 +9,38 @@
 import Foundation
 import SwiftJWT
 import HealthKit
+import UserNotifications
+
+enum MealBolusReminder {
+    static let identifier = "loopfollow.meal-bolus-reminder"
+
+    // Called only after APNs accepts a remote registration. A new qualifying
+    // meal replaces the pending reminder, measured from sending (not meal time).
+    static func registrationSent(_ message: PushMessage) {
+        let center = UNUserNotificationCenter.current()
+        if let bolus = message.bolusAmount, bolus != 0 {
+            center.removePendingNotificationRequests(withIdentifiers: [identifier])
+            return
+        }
+
+        guard message.commandType == .meal || message.commandType == .combo,
+              [message.carbs, message.fat, message.protein].contains(where: { ($0 ?? 0) > 0 }),
+              message.notes?.contains("🍬") != true else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Läge för mer bolus?"
+        content.body = "Det är 30 minuter sedan en måltid registrerades utan bolus, om sockret börjat stiga nu så kanske en extra bolus behövs?"
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 30 * 60, repeats: false)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        center.add(request) { error in
+            if let error = error {
+                LogManager.shared.log(category: .remote, message: "Failed to schedule meal bolus reminder: \(error.localizedDescription)")
+            }
+        }
+    }
+}
 
 struct APNsJWTClaims: Claims {
     let iss: String
@@ -523,6 +555,7 @@ class PushNotificationManager {
 
                     switch httpResponse.statusCode {
                     case 200:
+                        MealBolusReminder.registrationSent(message)
                         completion(true, nil)
                     case 400:
                         completion(false, "Bad request. The request was invalid or malformed. \(responseBodyMessage)")

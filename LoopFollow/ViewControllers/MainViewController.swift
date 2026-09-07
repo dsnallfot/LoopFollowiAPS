@@ -1914,6 +1914,12 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         }
     }
     
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler(notification.request.identifier == MealBolusReminder.identifier ? [.banner, .sound] : [])
+    }
+
     // User has scrolled the chart
     func chartTranslated(_ chartView: ChartViewBase, dX: CGFloat, dY: CGFloat) {
         let isViewingLatestData = abs(BGChart.highestVisibleX - BGChart.chartXMax) < 0.001

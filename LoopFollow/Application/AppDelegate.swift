@@ -268,6 +268,6 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void)
     {
-        completionHandler(.alert)
+        completionHandler(notification.request.identifier == MealBolusReminder.identifier ? [.banner, .sound] : .alert)
     }
 }
