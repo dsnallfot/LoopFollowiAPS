@@ -133,6 +133,13 @@ extension MainViewController {
             Observable.shared.overrideSmbIsOff.value = nil
         }
     }
+    
+    private static let restartDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "d MMM HH:mm:ss"
+        return formatter
+    }()
         
     // NS Device Status Response Processor
     func updateDeviceStatusDisplay(jsonDeviceStatus: [[String:AnyObject]]) {
@@ -268,6 +275,42 @@ extension MainViewController {
 
                 // Extract the "additional" dictionary for SMB/UAM minutes and Autosens Min/Max.
                 let additionalInfo = lastDeviceStatus?["additional"] as? [String: AnyObject]
+                
+                // Runtime diagnostics from Trio.
+                if let additional = additionalInfo {
+
+                    // Latest and maximum memory usage.
+                    if let memoryLatest = additional["memoryUsageLatest"] as? NSNumber,
+                       let memoryMax = additional["memoryUsageMax"] as? NSNumber {
+
+                        let memoryLatestString = String(
+                            format: "%.0f(%.0f) MiB",
+                            memoryLatest.doubleValue,
+                            memoryMax.doubleValue
+                        )
+
+                        infoManager.updateInfoData(
+                            type: .memoryLatest,
+                            value: memoryLatestString
+                        )
+                    }
+
+                    // Latest Trio restart / session start.
+                    if let latestRestart = additional["latestRestart"] as? NSNumber {
+                        let restartDate = Date(
+                            timeIntervalSince1970: latestRestart.doubleValue
+                        )
+
+                        let latestRestartString = Self.restartDateFormatter.string(
+                            from: restartDate
+                        )
+
+                        infoManager.updateInfoData(
+                            type: .latestRestart,
+                            value: latestRestartString
+                        )
+                    }
+                }
                 
                 // SMB/UAM minutes.
                 if let overrideSmb = Observable.shared.overrideSmbMinutes.value,
