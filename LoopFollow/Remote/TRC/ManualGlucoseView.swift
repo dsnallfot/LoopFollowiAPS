@@ -92,6 +92,7 @@ struct ManualGlucoseView: View {
         .navigationTitle("Blodsocker")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            scheduledDate = Date()
             manualGlucoseFieldIsFocused = false
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
