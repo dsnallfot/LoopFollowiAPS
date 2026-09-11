@@ -454,7 +454,12 @@ class WatchRemoteService {
         request.setValue("bearer \(jwt)", forHTTPHeaderField: "authorization")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
         request.setValue("10", forHTTPHeaderField: "apns-priority")
-        request.setValue("300", forHTTPHeaderField: "apns-expiration")
+        //request.setValue("300", forHTTPHeaderField: "apns-expiration")
+        let expiration = Int(payload.timestamp + 300)
+        request.setValue(
+            String(expiration),
+            forHTTPHeaderField: "apns-expiration"
+        )
         request.setValue(config.trcBundleId, forHTTPHeaderField: "apns-topic")
         request.setValue("alert", forHTTPHeaderField: "apns-push-type")
         request.httpBody = try? JSONEncoder().encode(payload)
