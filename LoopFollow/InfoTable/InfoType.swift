@@ -54,7 +54,7 @@ enum InfoType: Int, CaseIterable {
         case .dexcomShareStatus: return "Dexcom share"
         case .bgDataSource: return "BG källa"
         case .memoryLatest: return "Trio RAM(max)"
-        case .latestRestart: return "Trio boot"
+        case .latestRestart: return "Trio upptid"
         }
     }
 

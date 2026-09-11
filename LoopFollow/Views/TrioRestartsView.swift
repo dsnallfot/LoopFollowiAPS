@@ -827,12 +827,19 @@ final class TrioRestartsStatsViewController: ThemedTableViewController {
     private var totalRestarts: Int { selectedCounts.reduce(0, +) }
     private var maxRestartsPerDay: Int { selectedCounts.max() ?? 0 }
 
-    /// Longest streak without restarts, measured as the max time gap (in hours) between two consecutive restarts within the selected period.
-    private func longestGapWithoutRestartsHours() -> Int? {
-        guard selectedRestartDates.count >= 2 else { return nil }
-        var best: TimeInterval = 0
-        for i in 1..<selectedRestartDates.count {
-            let gap = selectedRestartDates[i].timeIntervalSince(selectedRestartDates[i - 1])
+    /// Longest completed or ongoing streak within the selected period, in whole hours.
+    private func longestGapWithoutRestartsHours(now: Date = Date()) -> Int? {
+        guard let firstDay = selectedDays.first,
+              let latestRestart = allRestartDates.filter({ $0 <= now }).max() else { return nil }
+
+        // Include the ongoing streak, even if the latest restart predates the selected period.
+        let periodStart = Calendar.current.startOfDay(for: firstDay)
+        let currentStreakStart = max(latestRestart, periodStart)
+        var best = max(0, now.timeIntervalSince(currentStreakStart))
+
+        let restarts = selectedRestartDates.filter { $0 <= now }
+        for (previous, next) in zip(restarts, restarts.dropFirst()) {
+            let gap = next.timeIntervalSince(previous)
             if gap > best { best = gap }
         }
         return Int(best / 3600.0)

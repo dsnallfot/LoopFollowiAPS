@@ -134,13 +134,6 @@ extension MainViewController {
         }
     }
     
-    private static let restartDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "d MMM HH:mm:ss"
-        return formatter
-    }()
-        
     // NS Device Status Response Processor
     func updateDeviceStatusDisplay(jsonDeviceStatus: [[String:AnyObject]]) {
         infoManager.clearInfoData(types: [.iob, .cob, .override, .battery, .pump, .target, .isf, .carbRatio, .updated, .recBolus, .tdd])
@@ -301,19 +294,20 @@ extension MainViewController {
                         )
                     }
 
-                    // Latest Trio restart / session start.
+                    // Uptime since the latest Trio restart / session start.
                     if let latestRestart = additional["latestRestart"] as? NSNumber {
-                        let restartDate = Date(
-                            timeIntervalSince1970: latestRestart.doubleValue
-                        )
-
-                        let latestRestartString = Self.restartDateFormatter.string(
-                            from: restartDate
-                        )
+                        let elapsedSeconds = max(0, Date().timeIntervalSince1970 - latestRestart.doubleValue)
+                        let totalMinutes = Int(elapsedSeconds / 60)
+                        let days = totalMinutes / (24 * 60)
+                        let hours = (totalMinutes / 60) % 24
+                        let minutes = totalMinutes % 60
+                        let uptimeString = days > 0
+                            ? "\(days)d \(hours)h \(minutes)m"
+                            : "\(hours)h \(minutes)m"
 
                         infoManager.updateInfoData(
                             type: .latestRestart,
-                            value: latestRestartString
+                            value: uptimeString
                         )
                     }
                 }
