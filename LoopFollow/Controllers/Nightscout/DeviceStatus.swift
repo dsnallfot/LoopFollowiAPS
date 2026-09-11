@@ -231,6 +231,16 @@ extension MainViewController {
                 let pumpStatusString = "\(formattedTime) \(pumpStatus)"
                 infoManager.updateInfoData(type: .pumpStatus, value: pumpStatusString)
                 
+                // Share the deviceStatus timestamp across local battery and memory history.
+                // Prefer the deviceStatus created_at timestamp when available.
+                let sampleTime: TimeInterval
+                if let createdAtString = lastDeviceStatus?["created_at"] as? String,
+                   let createdAtDate = formatter.date(from: createdAtString) {
+                    sampleTime = createdAtDate.timeIntervalSince1970
+                } else {
+                    sampleTime = Date().timeIntervalSince1970
+                }
+
                 // Update uploader battery status if available.
                 if let uploader = lastDeviceStatus?["uploader"] as? [String: AnyObject],
                    let upbat = uploader["battery"] as? Double {
@@ -259,15 +269,6 @@ extension MainViewController {
                     infoManager.updateInfoData(type: .battery, value: batteryDisplay)
                     UserDefaultsRepository.deviceBatteryLevel.value = upbat
 
-                    // Persist battery history locally (best-effort) so we can visualize it over time.
-                    // Prefer the deviceStatus created_at timestamp when available.
-                    let sampleTime: TimeInterval
-                    if let createdAtString = lastDeviceStatus?["created_at"] as? String,
-                       let createdAtDate = formatter.date(from: createdAtString) {
-                        sampleTime = createdAtDate.timeIntervalSince1970
-                    } else {
-                        sampleTime = Date().timeIntervalSince1970
-                    }
                     BatteryCache.appendSample(timestamp: sampleTime, batteryPercent: upbat, isCharging: isCharging)
                 }
                 // Call updateOverrideObservables() before processing SMB/UAM info.
@@ -278,6 +279,11 @@ extension MainViewController {
                 
                 // Runtime diagnostics from Trio.
                 if let additional = additionalInfo {
+
+                    // Persist the latest reading even when memoryUsageMax is absent.
+                    if let memoryLatest = additional["memoryUsageLatest"] as? NSNumber {
+                        MemoryCache.appendSample(timestamp: sampleTime, memoryMiB: memoryLatest.doubleValue)
+                    }
 
                     // Latest and maximum memory usage.
                     if let memoryLatest = additional["memoryUsageLatest"] as? NSNumber,

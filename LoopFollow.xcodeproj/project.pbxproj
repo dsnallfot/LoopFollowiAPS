@@ -58,6 +58,7 @@
 		6545DD2B2D6F03A0007B0D70 /* LineChartWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */; };
 		654B9C812D6B55DC00095D89 /* TrioPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */; };
 		654B9C832D6B588D00095D89 /* TrioPreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */; };
+		654C042E3053840300EA8C12 /* MemoryLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654C042D305383FC00EA8C12 /* MemoryLogView.swift */; };
 		6551A843304AEAF0002094F6 /* ManualGlucoseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6551A842304AEAEA002094F6 /* ManualGlucoseView.swift */; };
 		655B23052EDE2A420092DBDE /* AddManualPumpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */; };
 		655B23072EDE2A640092DBDE /* PumpHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655B23062EDE2A610092DBDE /* PumpHistoryView.swift */; };
@@ -454,6 +455,7 @@
 		6545DD2A2D6F0396007B0D70 /* LineChartWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineChartWrapper.swift; sourceTree = "<group>"; };
 		654B9C802D6B55D500095D89 /* TrioPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesView.swift; sourceTree = "<group>"; };
 		654B9C822D6B588600095D89 /* TrioPreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrioPreferencesViewModel.swift; sourceTree = "<group>"; };
+		654C042D305383FC00EA8C12 /* MemoryLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryLogView.swift; sourceTree = "<group>"; };
 		6551A842304AEAEA002094F6 /* ManualGlucoseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualGlucoseView.swift; sourceTree = "<group>"; };
 		655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddManualPumpView.swift; sourceTree = "<group>"; };
 		655B23062EDE2A610092DBDE /* PumpHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PumpHistoryView.swift; sourceTree = "<group>"; };
@@ -825,6 +827,7 @@
 		650A60712EE0D17A00EF4C93 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				654C042D305383FC00EA8C12 /* MemoryLogView.swift */,
 				657BB13B2F3605D5009E2667 /* ActiveAlarmsViewController.swift */,
 				655B23042EDE2A3F0092DBDE /* AddManualPumpView.swift */,
 				6540EF952D7DD4C5008BC98D /* AddManualSensorNoteView.swift */,
@@ -1996,6 +1999,7 @@
 				DDAD162F2D2EF9830084BE10 /* RileyLinkHeartbeatBluetoothDevice.swift in Sources */,
 				6539A4E72EF1BBF200913601 /* TrioRestartsView.swift in Sources */,
 				FC97881C2485969B00A7906C /* MainViewController.swift in Sources */,
+				654C042E3053840300EA8C12 /* MemoryLogView.swift in Sources */,
 				DD6A935E2BFA6FA2003FFB8E /* DeviceStatusOpenAPS.swift in Sources */,
 				65AD37922F7022F300F942A8 /* Training.swift in Sources */,
 				DD493AD52ACF2109009A6922 /* ResumePump.swift in Sources */,
