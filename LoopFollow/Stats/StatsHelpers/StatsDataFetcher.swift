@@ -61,7 +61,7 @@ class StatsDataFetcher {
                     let horizonCutoff = now - horizonDays * 24 * 60 * 60
                     let requestedWindowDays = min(Double(days), horizonDays)
                     let reloadWindowDays = forceFullReloadWindow ? requestedWindowDays : self.reloadWindowDays
-                    let reloadCutoff = now - reloadWindowDays * 24 * 60 * 60
+                    let reloadCutoff = now - min(Double(days), reloadWindowDays) * 24 * 60 * 60
 
                     // Keep only data within [now - horizonDays)
                     mainVC.statsBGData.removeAll { $0.date < horizonCutoff }
@@ -122,7 +122,7 @@ class StatsDataFetcher {
         NightscoutUtils.executeDynamicRequest(eventType: .treatments, parameters: parameters) { (result: Result<Any, Error>) in
             switch result {
             case let .success(data):
-                if let entries = data as? [[String: AnyObject]] {
+                if let entries = data as? [[String: AnyObject]], entries.count < estimatedCount {
                     DispatchQueue.main.async {
                         self.fetchAndMergeBolusData(entries: entries, days: days, mainVC: mainVC)
                         self.fetchAndMergeSMBData(entries: entries, days: days, mainVC: mainVC)
@@ -149,7 +149,7 @@ class StatsDataFetcher {
         let now = Date().timeIntervalSince1970
         let horizonDays = maxCachedDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
-        let reloadCutoff = now - reloadWindowDays * 24 * 60 * 60
+        let reloadCutoff = now - min(Double(days), reloadWindowDays) * 24 * 60 * 60
 
         var bgCheckEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -160,7 +160,7 @@ class StatsDataFetcher {
         }
 
         // Behåll bara data inom [now - horizonDays)
-        mainVC.statsBGCheckData.removeAll { $0 < horizonCutoff }
+        mainVC.statsBGCheckData.removeAll { $0 < horizonCutoff || $0 >= reloadCutoff }
 
         let existingDates = Set(mainVC.statsBGCheckData.map { Int($0) })
 
@@ -186,7 +186,7 @@ class StatsDataFetcher {
         let now = Date().timeIntervalSince1970
         let horizonDays = maxCachedDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
-        let reloadCutoff = now - reloadWindowDays * 24 * 60 * 60
+        let reloadCutoff = now - min(Double(days), reloadWindowDays) * 24 * 60 * 60
 
         var bolusEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -202,7 +202,7 @@ class StatsDataFetcher {
         }
 
         // Behåll bara data inom [now - horizonDays)
-        mainVC.statsBolusData.removeAll { $0.date < horizonCutoff }
+        mainVC.statsBolusData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
 
         let existingDates = Set(mainVC.statsBolusData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -240,7 +240,7 @@ class StatsDataFetcher {
         let now = Date().timeIntervalSince1970
         let horizonDays = maxCachedDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
-        let reloadCutoff = now - reloadWindowDays * 24 * 60 * 60
+        let reloadCutoff = now - min(Double(days), reloadWindowDays) * 24 * 60 * 60
 
         var smbEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -255,7 +255,7 @@ class StatsDataFetcher {
         }
 
         // Behåll bara data inom [now - horizonDays)
-        mainVC.statsSMBData.removeAll { $0.date < horizonCutoff }
+        mainVC.statsSMBData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
 
         let existingDates = Set(mainVC.statsSMBData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -292,7 +292,7 @@ class StatsDataFetcher {
         let now = Date().timeIntervalSince1970
         let horizonDays = maxCachedDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
-        let reloadCutoff = now - reloadWindowDays * 24 * 60 * 60
+        let reloadCutoff = now - min(Double(days), reloadWindowDays) * 24 * 60 * 60
 
         var carbEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -303,7 +303,7 @@ class StatsDataFetcher {
         }
 
         // Behåll bara data inom [now - horizonDays), och aldrig framtida datapunkter
-        mainVC.statsCarbData.removeAll { $0.date < horizonCutoff || $0.date > now }
+        mainVC.statsCarbData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
 
         let existingDates = Set(mainVC.statsCarbData.map { Int($0.date) })
         var lastFoundIndex = 0
@@ -367,7 +367,7 @@ class StatsDataFetcher {
         let now = Date().timeIntervalSince1970
         let horizonDays = maxCachedDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
-        let reloadCutoff = now - reloadWindowDays * 24 * 60 * 60
+        let reloadCutoff = now - min(Double(days), reloadWindowDays) * 24 * 60 * 60
 
         var basalEntries: [[String: AnyObject]] = []
         for entry in entries {
@@ -378,7 +378,7 @@ class StatsDataFetcher {
         }
 
         // Behåll bara data inom [now - horizonDays)
-        mainVC.statsBasalData.removeAll { $0.date < horizonCutoff }
+        mainVC.statsBasalData.removeAll { $0.date < horizonCutoff || $0.date >= reloadCutoff }
 
         let existingDates = Set(mainVC.statsBasalData.map { Int($0.date) })
         var tempArray = basalEntries

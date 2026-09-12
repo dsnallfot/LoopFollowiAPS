@@ -12,12 +12,12 @@ import ZIPFoundation
 // MARK: - Minimal JSON structs you already know from Nightscout
 // • Add/remove fields as you need; only timestamp + value are mandatory.
 
-struct SGVJSON: Codable {
+struct SGVJSON: Codable, Equatable {
     let date: TimeInterval       // epoch ms or sec – feed what you store
     let sgv:  Int
 }
 
-struct TreatmentJSON: Codable {
+struct TreatmentJSON: Codable, Equatable {
     let _id:        String
     let created_at: Date
     let eventType:  String
@@ -93,7 +93,7 @@ struct TreatmentJSON: Codable {
 }
 
 // One day’s payload on disk
-struct DayPayload: Codable {
+struct DayPayload: Codable, Equatable {
     var sgv:        [SGVJSON]
     var treatments: [TreatmentJSON]
 }
@@ -101,6 +101,9 @@ struct DayPayload: Codable {
 // MARK: - Disk cache helper
 
 final class NightscoutCache {
+    // Protect the entire read/merge/write transaction, including BG vs treatments.
+    private static let diskLock = NSRecursiveLock()
+
 
     // Number of days to keep in cache (x * 24 hours back from now)
     static var retentionDays = 91
@@ -150,8 +153,16 @@ final class NightscoutCache {
 
     /// Save/overwrite one complete calendar day worth of data.
     static func writeDay(date: Date, sgv: [SGVJSON], treatments: [TreatmentJSON]) throws {
+        diskLock.lock()
+        defer { diskLock.unlock() }
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let payload = DayPayload(sgv: sgv, treatments: treatments)
+        let payload = DayPayload(
+            sgv: normalizeAndDedupeSGV(sgv),
+            treatments: treatments.sorted {
+                $0.created_at == $1.created_at ? $0._id < $1._id : $0.created_at < $1.created_at
+            }
+        )
+        if let existing = try? readDay(date), existing == payload { return }
         let data = try JSONEncoder().encode(payload)
         try data.write(to: fileURL(for: date), options: .atomic)
     }
@@ -159,6 +170,8 @@ final class NightscoutCache {
     /// Delete cached files older than `retentionDays` calendar days.
     /// Uses startOfDay in the current calendar to avoid off‑by‑one errors due to time-of-day/UTC.
     static func purgeOldFiles() {
+        diskLock.lock()
+        defer { diskLock.unlock() }
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: Date())
         // Oldest day we want to keep = todayStart - (retentionDays - 1) days
@@ -285,6 +298,8 @@ final class NightscoutCache {
     /// Merge a batch of SGVJSON entries into the per‑day cache files.
     /// - Note: Best‑effort only; errors are silently ignored.
     static func mergeSGVBatch(_ batch: [SGVJSON]) {
+        diskLock.lock()
+        defer { diskLock.unlock() }
         guard !batch.isEmpty else { return }
 
         let cal = Calendar.current
@@ -298,16 +313,10 @@ final class NightscoutCache {
 
         for (day, newItems) in perDay {
             do {
-                var payload: DayPayload
-                if let existing = try? readDay(day) {
-                    payload = existing
-                    // Remove any existing SGV with the same timestamp as in the new items
-                    let newTimestamps = Set(newItems.map { $0.date })
-                    payload.sgv.removeAll { newTimestamps.contains($0.date) }
-                    payload.sgv.append(contentsOf: newItems)
-                } else {
-                    payload = DayPayload(sgv: newItems, treatments: [])
-                }
+                var payload = try readDayOrEmpty(day)
+                let newTimestamps = Set(newItems.map { $0.date })
+                payload.sgv.removeAll { newTimestamps.contains($0.date) }
+                payload.sgv.append(contentsOf: newItems)
 
                 // Keep SGVs sorted by time, oldest first
                 payload.sgv.sort { $0.date < $1.date }
@@ -343,13 +352,25 @@ final class NightscoutCache {
     }
 
     static func readDay(_ date: Date) throws -> DayPayload {
+        diskLock.lock()
+        defer { diskLock.unlock() }
         let url = fileURL(for: date)
         let data = try Data(contentsOf: url)
         return try JSONDecoder().decode(DayPayload.self, from: data)
     }
     
+    /// Only a missing file is empty. Do not overwrite an unreadable/corrupt day.
+    private static func readDayOrEmpty(_ date: Date) throws -> DayPayload {
+        guard FileManager.default.fileExists(atPath: fileURL(for: date).path) else {
+            return DayPayload(sgv: [], treatments: [])
+        }
+        return try readDay(date)
+    }
+
     /// Refresh cached treatments within a time window by **deleting** cached treatments in that window and then inserting the given entries for that window.
     static func refreshTreatmentsWindow(from start: Date, to end: Date, entries: [[String: Any]]) {
+        diskLock.lock()
+        defer { diskLock.unlock() }
         let treatments = entries.compactMap { TreatmentJSON(dict: $0) }
             .filter { $0.created_at >= start && $0.created_at <= end }
 
@@ -361,7 +382,7 @@ final class NightscoutCache {
 
         while day <= lastDay {
             do {
-                var payload = (try? readDay(day)) ?? DayPayload(sgv: [], treatments: [])
+                var payload = try readDayOrEmpty(day)
 
                 // Remove treatments in the payload that lie between start and end inclusive
                 payload.treatments.removeAll { $0.created_at >= start && $0.created_at <= end }
@@ -387,27 +408,35 @@ final class NightscoutCache {
     /// Insert or replace a single treatment in the cache based on its Nightscout dictionary.
     /// If the day file exists, the treatment with the same _id is replaced; otherwise a new day file is created.
     static func upsertTreatment(from dict: [String: Any]) {
-        guard let tjson = TreatmentJSON(dict: dict) else { return }
-        let day = Calendar.current.startOfDay(for: tjson.created_at)
+        upsertTreatments(from: [dict])
+    }
 
-        do {
-            var payload: DayPayload
-            if let existing = try? readDay(day) {
-                payload = existing
-                // Remove any previous treatment with the same _id
-                payload.treatments.removeAll { $0._id == tjson._id }
-                payload.treatments.append(tjson)
-                payload.treatments.sort { $0.created_at < $1.created_at }
-            } else {
-                payload = DayPayload(sgv: [], treatments: [tjson])
+    /// Merge a complete batch, preserving older records absent from a partial response.
+    /// Each affected day is written at most once, and only if its content changed.
+    static func upsertTreatments(from entries: [[String: Any]]) {
+        diskLock.lock()
+        defer { diskLock.unlock() }
+        let grouped = Dictionary(grouping: entries.compactMap { TreatmentJSON(dict: $0) }) {
+            Calendar.current.startOfDay(for: $0.created_at)
+        }
+        for (day, incoming) in grouped {
+            do {
+                var payload = try readDayOrEmpty(day)
+                let incomingIDs = Set(incoming.map { $0._id })
+                payload.treatments.removeAll { incomingIDs.contains($0._id) }
+                var byID: [String: TreatmentJSON] = [:]
+                for treatment in incoming { byID[treatment._id] = treatment }
+                payload.treatments.append(contentsOf: byID.values)
+                try writeDay(date: day, sgv: payload.sgv, treatments: payload.treatments)
+                refreshSickDayCache(for: day, treatments: payload.treatments)
+            } catch {
+                LogManager.shared.log(category: .nightscout,
+                    message: "Treatment cache write failed: \(error.localizedDescription)",
+                    limitIdentifier: "treatment-cache-write")
             }
-
-            try writeDay(date: day, sgv: payload.sgv, treatments: payload.treatments)
-            refreshSickDayCache(for: day, treatments: payload.treatments)
-        } catch {
-            // Silently ignore cache write errors; cache is best-effort only.
         }
     }
+
 }
 
 // MARK: - Battery history cache (local only, built incrementally from deviceStatus)

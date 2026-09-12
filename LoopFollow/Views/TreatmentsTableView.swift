@@ -979,9 +979,7 @@ class TreatmentsTableView: ThemedViewController, UITableViewDataSource, UITableV
                 case .success(let raw):
                     if let entries = raw as? [[String: AnyObject]] {
                         // Upsert:a samtliga treatments i cache. upsertTreatment bör hantera dubletter via _id.
-                        for entry in entries {
-                            NightscoutCache.upsertTreatment(from: entry)
-                        }
+                        NightscoutCache.upsertTreatments(from: entries.map { $0 as [String: Any] })
                         
                         // Ladda om aktuell dag från cache (om användaren står på en dag inom fönstret).
                         self.loadTreatments(for: self.selectedDate)

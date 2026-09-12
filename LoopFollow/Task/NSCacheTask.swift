@@ -148,10 +148,7 @@ extension MainViewController {
                 }
 
                 let sgvJSON = cleaned.map { SGVJSON(date: $0.date, sgv: $0.sgv) }
-                let existingTreatments = (try? NightscoutCache.readDay(start).treatments) ?? []
-                try? NightscoutCache.writeDay(date: start,
-                                              sgv: sgvJSON,
-                                              treatments: existingTreatments)
+                NightscoutCache.mergeSGVBatch(sgvJSON)
             case .failure(let error):
                 LogManager.shared.log(
                     category: .taskScheduler,
@@ -196,18 +193,13 @@ extension MainViewController {
             switch result {
             case .success(let data):
                 if let entries = data as? [[String: AnyObject]] {
-                    // Uppdatera appens behandlingstillstånd på main-tråden som tidigare
-                    DispatchQueue.main.async {
-                        self.updateTreatments(entries: entries)
-                    }
+                    // Historical cache fill must not replace the live graph's current window.
                     
                     // Skriv samma behandlingsdata till NightscoutCache i bakgrunden.
                     // Detta gör att TreatmentsTableView (och andra vyer som läser via NightscoutCache)
                     // får löpande uppdaterade 90-dagarsfiler utan extra nattliga fetchar.
                     DispatchQueue.global(qos: .utility).async {
-                        for entry in entries {
-                            NightscoutCache.upsertTreatment(from: entry as [String: Any])
-                        }
+                        NightscoutCache.upsertTreatments(from: entries.map { $0 as [String: Any] })
                         // Rensa gamla filer efter att vi lagt till nya entries (best-effort).
                         NightscoutCache.purgeOldFiles()
 

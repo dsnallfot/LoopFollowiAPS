@@ -62,9 +62,18 @@ extension MainViewController {
             switch result {
             case .success(let data):
                 if let entries = data as? [[String: AnyObject]] {
+                    // A capped response is not an authoritative snapshot: never infer deletions from it.
+                    guard entries.count < estimatedCount else {
+                        isTreatmentsFetchInProgress = false
+                        treatmentsFetchStartedAt = nil
+                        LogManager.shared.log(category: .nightscout,
+                            message: "Treatments response reached its limit; keeping current data to avoid false deletions.",
+                            limitIdentifier: "treatments-response-capped")
+                        return
+                    }
                     // Uppdatera appens behandlingstillstånd på main-tråden som tidigare
                     DispatchQueue.main.async {
-                        self.updateTreatments(entries: entries)
+                        self.updateTreatments(entries: entries, replacingRecentSince: now.addingTimeInterval(-24 * 60 * 60))
                     }
                     
                     // Skriv samma behandlingsdata till NightscoutCache i bakgrunden.
@@ -76,7 +85,7 @@ extension MainViewController {
 
                             // Always overwrite the latest 24 hours in cache so edited/deleted/reposted
                             // treatments (same timestamp, changed duration/notes, etc.) never linger.
-                            let last24hStart = max(startDate, endDate.addingTimeInterval(-24 * 60 * 60))
+                            let last24hStart = max(startDate, now.addingTimeInterval(-24 * 60 * 60))
 
                             // 1) Hard refresh (delete + replace) for last 24 hours
                             NightscoutCache.refreshTreatmentsWindow(
@@ -87,20 +96,17 @@ extension MainViewController {
 
                             // 2) Best-effort upsert for older treatments (do NOT delete older cache content)
                             // This prevents accidental data loss if Nightscout doesn't return the full window.
-                            for entry in entries {
-                                if let iso = entry["created_at"] as? String,
-                                   let createdAt = NightscoutUtils.parseDate(iso),
-                                   createdAt < last24hStart {
-                                    NightscoutCache.upsertTreatment(from: entry as [String: Any])
-                                }
+                            let olderEntries = entries.filter { entry in
+                                guard let iso = entry["created_at"] as? String,
+                                      let createdAt = NightscoutUtils.parseDate(iso) else { return false }
+                                return createdAt < last24hStart
                             }
+                            NightscoutCache.upsertTreatments(from: olderEntries.map { $0 as [String: Any] })
 
                             NightscoutCache.purgeOldFiles()
                         } else {
                             // Fallback: if parsing fails, keep previous behavior (best-effort upsert)
-                            for entry in entries {
-                                NightscoutCache.upsertTreatment(from: entry as [String: Any])
-                            }
+                            NightscoutCache.upsertTreatments(from: entries.map { $0 as [String: Any] })
                             NightscoutCache.purgeOldFiles()
                         }
                     }
@@ -118,7 +124,7 @@ extension MainViewController {
     }
     
     // Process and split out treatments to individual tasks
-    func updateTreatments(entries: [[String:AnyObject]]) {
+    func updateTreatments(entries: [[String:AnyObject]], replacingRecentSince: Date? = nil) {
         
         var tempBasal: [[String:AnyObject]] = []
         var bolus: [[String:AnyObject]] = []
@@ -323,7 +329,7 @@ extension MainViewController {
         }
 
         // Synka statistik-arrayerna med de senaste behandlingsdatan och spara cache
-        self.stats_syncTreatmentsFromLive()
+        self.stats_syncTreatmentsFromLive(replacingRecentSince: replacingRecentSince)
         self.updateStats()
         self.stats_saveToCache()
         NotificationCenter.default.post(name: .treatmentsUpdated, object: nil)

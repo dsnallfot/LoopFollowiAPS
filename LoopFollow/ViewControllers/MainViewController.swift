@@ -427,6 +427,7 @@ class MainViewController: ThemedViewController, UITableViewDataSource, ChartView
         // setup display for NS vs Dex
         showHideNSDetails()
         
+        stats_loadFromCacheIfAvailable()
         scheduleAllTasks()
         setupNightscoutSocket()
 

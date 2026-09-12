@@ -220,6 +220,13 @@ class NightscoutUtils {
                 return
             }
 
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200..<300).contains(httpResponse.statusCode) else {
+                // Error responses must never become authoritative empty treatment snapshots.
+                DispatchQueue.main.async { completion(.failure(NightscoutError.networkError)) }
+                return
+            }
+
             guard let data = data else {
                 LogManager.shared.log(
                     category: .nightscout,

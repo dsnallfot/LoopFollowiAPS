@@ -8,15 +8,22 @@ import Foundation
 // Lagrar upp till 90 dagar och används för att minska Nightscout-förfrågningar.
 final class StatsCacheManager {
     static let shared = StatsCacheManager()
-    private init() {}
+    private let root: URL
+    private let diskLock = NSRecursiveLock()
+    private weak var loadedController: MainViewController?
+    private var daysOnDisk: [Int: Cache]?
 
-    private struct CachedBolus: Codable {
+    init(directory: URL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]) {
+        root = directory
+    }
+
+    private struct CachedBolus: Codable, Equatable {
         let value: Double
         let date: Double
         let sgv: Int
     }
 
-    private struct CachedCarb: Codable {
+    private struct CachedCarb: Codable, Equatable {
         let value: Double
         let date: Double
         let sgv: Int
@@ -26,18 +33,18 @@ final class StatsCacheManager {
         let protein: Double
     }
 
-    private struct CachedBasal: Codable {
+    private struct CachedBasal: Codable, Equatable {
         let basalRate: Double
         let date: Double
     }
 
-    private struct CachedBG: Codable {
+    private struct CachedBG: Codable, Equatable {
         let sgv: Int
         let date: Double
         let direction: String?
     }
 
-    private struct CachedBGCheck: Codable {
+    private struct CachedBGCheck: Codable, Equatable {
         let date: Double
     }
 
@@ -51,18 +58,114 @@ final class StatsCacheManager {
         let basal: [CachedBasal]
     }
 
-    private var cacheURL: URL {
+    private var cacheURL: URL { root.appendingPathComponent("StatsCache.json") }
+    private var daysURL: URL { root.appendingPathComponent("StatsCacheDays-v1", isDirectory: true) }
+    private var markerURL: URL { daysURL.appendingPathComponent("_complete") }
+
+    private func dayURL(_ day: Int, in directory: URL) -> URL {
+        directory.appendingPathComponent("day-\(day).json")
+    }
+
+    // UTC buckets keep filenames stable when the phone changes timezone.
+    private func splitDays(_ cache: Cache) -> [Int: Cache] {
+        func key(_ date: Double) -> Int { Int(floor(date / 86400)) }
+        let bg = Dictionary(grouping: cache.bg) { key($0.date) }
+        let checks = Dictionary(grouping: cache.bgChecks) { key($0.date) }
+        let bolus = Dictionary(grouping: cache.bolus) { key($0.date) }
+        let smb = Dictionary(grouping: cache.smb) { key($0.date) }
+        let carbs = Dictionary(grouping: cache.carbs) { key($0.date) }
+        let basal = Dictionary(grouping: cache.basal) { key($0.date) }
+        let keys = Set(bg.keys).union(checks.keys).union(bolus.keys)
+            .union(smb.keys).union(carbs.keys).union(basal.keys)
+        return Dictionary(uniqueKeysWithValues: keys.map { day in
+            (day, Cache(lastUpdated: cache.lastUpdated, bg: bg[day] ?? [],
+                        bgChecks: checks[day] ?? [], bolus: bolus[day] ?? [],
+                        smb: smb[day] ?? [], carbs: carbs[day] ?? [], basal: basal[day] ?? []))
+        })
+    }
+
+    private func readCache() throws -> Cache {
+        if daysOnDisk == nil {
+            if FileManager.default.fileExists(atPath: markerURL.path) {
+                var days: [Int: Cache] = [:]
+                for url in try FileManager.default.contentsOfDirectory(at: daysURL, includingPropertiesForKeys: nil)
+                    where url.pathExtension == "json" {
+                    let cache = try JSONDecoder().decode(Cache.self, from: Data(contentsOf: url))
+                    // A corrupt day is an error, never an invitation to resurrect the legacy cache.
+                    guard let day = Int(url.deletingPathExtension().lastPathComponent.replacingOccurrences(of: "day-", with: "")) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                    days[day] = cache
+                }
+                daysOnDisk = days
+            } else if FileManager.default.fileExists(atPath: cacheURL.path) {
+                daysOnDisk = splitDays(try JSONDecoder().decode(Cache.self, from: Data(contentsOf: cacheURL)))
+            } else {
+                daysOnDisk = [:]
+            }
+        }
+        let days = (daysOnDisk ?? [:]).sorted { $0.key < $1.key }.map { $0.value }
+        return Cache(lastUpdated: days.map { $0.lastUpdated }.max() ?? Date(),
+                     bg: days.flatMap { $0.bg }, bgChecks: days.flatMap { $0.bgChecks },
+                     bolus: days.flatMap { $0.bolus }, smb: days.flatMap { $0.smb },
+                     carbs: days.flatMap { $0.carbs }, basal: days.flatMap { $0.basal })
+    }
+
+    private func sameContent(_ lhs: Cache, _ rhs: Cache) -> Bool {
+        lhs.bg == rhs.bg && lhs.bgChecks == rhs.bgChecks && lhs.bolus == rhs.bolus &&
+        lhs.smb == rhs.smb && lhs.carbs == rhs.carbs && lhs.basal == rhs.basal
+    }
+
+    /// Persist synchronously before the background execution opportunity ends.
+    /// Atomic per-day writes; migration becomes visible only when the entire directory is ready.
+    private func writeCache(_ cache: Cache) throws {
         let fm = FileManager.default
-        let dir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        return dir.appendingPathComponent("StatsCache.json")
+        let days = splitDays(cache)
+        let encoder = JSONEncoder()
+        var writtenBytes = 0
+        var writtenDays = 0
+        if !fm.fileExists(atPath: markerURL.path) {
+            let staging = root.appendingPathComponent("StatsCacheMigration-" + UUID().uuidString)
+            try fm.createDirectory(at: staging, withIntermediateDirectories: true)
+            defer { try? fm.removeItem(at: staging) }
+            for (day, payload) in days {
+                let data = try encoder.encode(payload)
+                try data.write(to: dayURL(day, in: staging), options: .atomic)
+                writtenBytes += data.count
+                writtenDays += 1
+            }
+            try Data("1".utf8).write(to: staging.appendingPathComponent("_complete"), options: .atomic)
+            try fm.moveItem(at: staging, to: daysURL)
+            // Leave StatsCache.json untouched as a rollback copy. Never read it after migration.
+            daysOnDisk = days
+        } else {
+            for (day, payload) in days {
+                let url = dayURL(day, in: daysURL)
+                if let old = daysOnDisk?[day], sameContent(old, payload), fm.fileExists(atPath: url.path) { continue }
+                let data = try encoder.encode(payload)
+                try data.write(to: url, options: .atomic)
+                daysOnDisk?[day] = payload
+                writtenBytes += data.count
+                writtenDays += 1
+            }
+            for day in Set((daysOnDisk ?? [:]).keys).subtracting(days.keys) {
+                let url = dayURL(day, in: daysURL)
+                if fm.fileExists(atPath: url.path) { try fm.removeItem(at: url) }
+                daysOnDisk?.removeValue(forKey: day)
+            }
+        }
+        LogManager.shared.log(category: .analysis,
+            message: "Stats cache: wrote \(writtenDays) days / \(writtenBytes) bytes; retained \(days.count) days",
+            isDebug: true, limitIdentifier: "stats-cache-writes")
     }
 
     /// Läs in cache från disk och applicera på MainViewController (endast de senaste 90 dagarna).
     func loadInto(mainVC: MainViewController) {
+        diskLock.lock()
+        defer { diskLock.unlock() }
+        guard loadedController !== mainVC else { return }
         do {
-            let data = try Data(contentsOf: cacheURL)
-            let decoder = JSONDecoder()
-            let cache = try decoder.decode(Cache.self, from: data)
+            let cache = try readCache()
 
             let now = Date()
             let cutoff = now.addingTimeInterval(-91 * 24 * 60 * 60).timeIntervalSince1970
@@ -111,6 +214,7 @@ final class StatsCacheManager {
             
             // Spara senaste uppdateringstid från cachen
             mainVC.statsCacheLastUpdated = cache.lastUpdated
+            loadedController = mainVC
             
             LogManager.shared.log(
                 category: .analysis,
@@ -118,23 +222,20 @@ final class StatsCacheManager {
                 isDebug: true
             )
         } catch {
-            // Ingen cache ännu eller så gick det fel att läsa – ignoreras tyst.
-            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - no cache loaded (\(error.localizedDescription))", isDebug: true)
+            LogManager.shared.log(category: .analysis,
+                message: "Stats cache could not be loaded; preserving files: \(error.localizedDescription)",
+                limitIdentifier: "stats-cache-load-failed")
         }
     }
 
-    /// Spara aktuella stats-arrayer från MainViewController till disk (endast de senaste 90 dagarna).
-    ///
-    /// Viktigt:
-    ///  • Vi MERGAR alltid mot befintlig cache om den finns, så att en tillfällig 24h-fetch
-    ///    inte kan skriva över ett tidigare 30–90-dagarsfönster.
-    ///  • För treatments (bolus/SMB/kolhydrater/basal/BG-checks) behandlas de senaste 24 timmarna
-    ///    som en "sanningskälla" från Nightscout – vi slänger cache-data i det fönstret och ersätter
-    ///    med ny snapshot varje gång, för att fånga raderade/ändrade events.
+    /// MainViewController owns the cumulative history, loaded once before any fetch.
+    /// Never merge deleted records back from yesterday's disk snapshot.
     func saveFrom(mainVC: MainViewController) {
+        diskLock.lock()
+        defer { diskLock.unlock() }
+        guard loadedController === mainVC else { return }
         let now = Date()
         let horizonCutoff = now.addingTimeInterval(-91 * 24 * 60 * 60).timeIntervalSince1970
-        let recentCutoff = now.addingTimeInterval(-24 * 60 * 60).timeIntervalSince1970
 
         // 1) Bygg upp "nya" arrayer från MainViewController (begränsade till 90 dagar bakåt)
         let newBG = mainVC.statsBGData
@@ -171,87 +272,34 @@ final class StatsCacheManager {
             .filter { $0.date >= horizonCutoff }
             .map { CachedBasal(basalRate: $0.basalRate, date: $0.date) }
 
-        // Om ALL ny data är tom, spara inte – skriv inte över en ev. befintlig cache
-        // med en helt tom snapshot.
-        if newBG.isEmpty && newBGChecks.isEmpty && newBolus.isEmpty && newSMB.isEmpty && newCarbs.isEmpty && newBasal.isEmpty {
-            LogManager.shared.log(
-                category: .analysis,
-                message: "StatsCacheManager - skipping save (all stats arrays are empty)",
-                isDebug: true
-            )
-            return
-        }
-
-        // 2) Läs in befintlig cache om den finns, så vi kan MERGA 24h-fönster in i ett
-        // redan uppbyggt 30–90-dagarsfönster.
-        var existingCache: Cache?
+        let cache = Cache(lastUpdated: now,
+                          bg: newBG.sorted { $0.date < $1.date },
+                          bgChecks: newBGChecks.sorted { $0.date < $1.date },
+                          bolus: newBolus.sorted { $0.date < $1.date },
+                          smb: newSMB.sorted { $0.date < $1.date },
+                          carbs: newCarbs.sorted { $0.date < $1.date },
+                          basal: newBasal.sorted { $0.date < $1.date })
         do {
-            let data = try Data(contentsOf: cacheURL)
-            let decoder = JSONDecoder()
-            existingCache = try decoder.decode(Cache.self, from: data)
+            try writeCache(cache)
+            mainVC.statsCacheLastUpdated = now
         } catch {
-            existingCache = nil
-        }
-
-        // 3) Slå ihop gammal och ny data per timestamp.
-        //    • BG: klassisk merge, ny data vinner, behåll upp till 90 dagar.
-        //    • Treatments/BG-checks: behåll gammal historik äldre än 24h, men ersätt
-        //      allt inom de senaste 24h med ny snapshot.
-        let mergedBG = mergeBG(old: existingCache?.bg ?? [], new: newBG, horizonCutoff: horizonCutoff)
-        let mergedBGChecks = mergeBGChecks(old: existingCache?.bgChecks ?? [], new: newBGChecks, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
-        let mergedBolus = mergeBolus(old: existingCache?.bolus ?? [], new: newBolus, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
-        let mergedSMB = mergeBolus(old: existingCache?.smb ?? [], new: newSMB, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
-        let mergedCarbs = mergeCarbs(old: existingCache?.carbs ?? [], new: newCarbs, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
-        let mergedBasal = mergeBasal(old: existingCache?.basal ?? [], new: newBasal, horizonCutoff: horizonCutoff, recentCutoff: recentCutoff)
-
-        let cache = Cache(
-            lastUpdated: now,
-            bg: mergedBG,
-            bgChecks: mergedBGChecks,
-            bolus: mergedBolus,
-            smb: mergedSMB,
-            carbs: mergedCarbs,
-            basal: mergedBasal
-        )
-
-        do {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted]
-            let data = try encoder.encode(cache)
-            try data.write(to: cacheURL, options: [.atomic])
-            
-            // Uppdatera senast-uppdaterad-tid i MainViewController
-                mainVC.statsCacheLastUpdated = now
-            
-            LogManager.shared.log(
-                category: .analysis,
-                message: "StatsCacheManager - cache saved: bg=\(mergedBG.count), bgChecks=\(mergedBGChecks.count), bolus=\(mergedBolus.count), smb=\(mergedSMB.count), carbs=\(mergedCarbs.count), basal=\(mergedBasal.count)",
-                isDebug: true
-            )
-        } catch {
-            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - failed to save cache: \(error.localizedDescription)", isDebug: true)
+            LogManager.shared.log(category: .analysis,
+                message: "Stats cache save failed: \(error.localizedDescription)",
+                limitIdentifier: "stats-cache-write-failed")
         }
     }
-    
+
     /// Export a month-scoped StatsCache.json to the given destination URL.
-    /// Filters the existing StatsCache.json down to the provided interval.
+    /// Reads the daily cache (or legacy cache before migration) and filters to the interval.
     /// Best-effort only: if no cache exists or decoding fails, nothing is written.
     func exportMonthStatsCache(interval: DateInterval, destinationURL: URL) {
-        // Read existing StatsCache.json
-        let data: Data
-        do {
-            data = try Data(contentsOf: cacheURL)
-        } catch {
-            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - exportMonthStatsCache: no source cache to export", isDebug: true)
-            return
-        }
-
-        let decoder = JSONDecoder()
+        diskLock.lock()
+        defer { diskLock.unlock() }
         let existing: Cache
         do {
-            existing = try decoder.decode(Cache.self, from: data)
+            existing = try readCache()
         } catch {
-            LogManager.shared.log(category: .analysis, message: "StatsCacheManager - exportMonthStatsCache: decode failed (\(error.localizedDescription))", isDebug: true)
+            LogManager.shared.log(category: .analysis, message: "Stats cache export failed: \(error.localizedDescription)")
             return
         }
 
@@ -289,108 +337,6 @@ final class StatsCacheManager {
         }
     }
 
-    // MARK: - Merge helpers
-
-    /// Slår ihop BG från befintlig cache och ny snapshot. Ny data vinner på samma timestamp.
-    private func mergeBG(old: [CachedBG], new: [CachedBG], horizonCutoff: Double) -> [CachedBG] {
-        var dict: [Int: CachedBG] = [:]
-
-        // Behåll upp till 90 dagar från befintlig cache
-        for item in old where item.date >= horizonCutoff {
-            dict[Int(item.date)] = item
-        }
-        // Mergas in med ny data (vinner vid krock)
-        for item in new where item.date >= horizonCutoff {
-            dict[Int(item.date)] = item
-        }
-
-        return dict.values.sorted { $0.date < $1.date }
-    }
-
-    /// Slår ihop BG-kontroller från befintlig cache och ny snapshot.
-    /// Äldre än 24h: behåll cache + lägg till ev. nya.
-    /// Senaste 24h: byggs helt från ny snapshot.
-    private func mergeBGChecks(old: [CachedBGCheck], new: [CachedBGCheck], horizonCutoff: Double, recentCutoff: Double) -> [CachedBGCheck] {
-        var set: Set<Int> = []
-        var merged: [CachedBGCheck] = []
-
-        // Behåll bara äldre än 24h men inom 90-dagarsfönstret från cache
-        for item in old where item.date >= horizonCutoff && item.date < recentCutoff {
-            let key = Int(item.date)
-            if !set.contains(key) {
-                set.insert(key)
-                merged.append(item)
-            }
-        }
-
-        // Lägg till all ny data inom 90 dagar (inklusive senaste 24h)
-        for item in new where item.date >= horizonCutoff {
-            let key = Int(item.date)
-            if !set.contains(key) {
-                set.insert(key)
-                merged.append(item)
-            }
-        }
-
-        return merged.sorted { $0.date < $1.date }
-    }
-
-    /// Slår ihop bolus/SMB-data (samma struktur) från befintlig cache och ny snapshot.
-    /// Äldre än 24h: behåll cache + lägg till ev. nya.
-    /// Senaste 24h: byggs helt från ny snapshot.
-    private func mergeBolus(old: [CachedBolus], new: [CachedBolus], horizonCutoff: Double, recentCutoff: Double) -> [CachedBolus] {
-        var dict: [Int: CachedBolus] = [:]
-
-        // Behåll bara äldre än 24h men inom 90-dagarsfönstret från cache
-        for item in old where item.date >= horizonCutoff && item.date < recentCutoff {
-            dict[Int(item.date)] = item
-        }
-
-        // Lägg till all ny data inom 90 dagar (inklusive senaste 24h)
-        for item in new where item.date >= horizonCutoff {
-            dict[Int(item.date)] = item // ny data vinner vid krock
-        }
-
-        return dict.values.sorted { $0.date < $1.date }
-    }
-
-    /// Slår ihop kolhydratdata från befintlig cache och ny snapshot.
-    /// Äldre än 24h: behåll cache + lägg till ev. nya.
-    /// Senaste 24h: byggs helt från ny snapshot.
-    private func mergeCarbs(old: [CachedCarb], new: [CachedCarb], horizonCutoff: Double, recentCutoff: Double) -> [CachedCarb] {
-        var dict: [Int: CachedCarb] = [:]
-
-        // Behåll bara äldre än 24h men inom 90-dagarsfönstret från cache
-        for item in old where item.date >= horizonCutoff && item.date < recentCutoff {
-            dict[Int(item.date)] = item
-        }
-
-        // Lägg till all ny data inom 90 dagar (inklusive senaste 24h)
-        for item in new where item.date >= horizonCutoff {
-            dict[Int(item.date)] = item
-        }
-
-        return dict.values.sorted { $0.date < $1.date }
-    }
-
-    /// Slår ihop basaldata från befintlig cache och ny snapshot.
-    /// Äldre än 24h: behåll cache + lägg till ev. nya.
-    /// Senaste 24h: byggs helt från ny snapshot.
-    private func mergeBasal(old: [CachedBasal], new: [CachedBasal], horizonCutoff: Double, recentCutoff: Double) -> [CachedBasal] {
-        var dict: [Int: CachedBasal] = [:]
-
-        // Behåll bara äldre än 24h men inom 90-dagarsfönstret från cache
-        for item in old where item.date >= horizonCutoff && item.date < recentCutoff {
-            dict[Int(item.date)] = item
-        }
-
-        // Lägg till all ny data inom 90 dagar (inklusive senaste 24h)
-        for item in new where item.date >= horizonCutoff {
-            dict[Int(item.date)] = item
-        }
-
-        return dict.values.sorted { $0.date < $1.date }
-    }
 }
 
 extension MainViewController {
@@ -412,36 +358,24 @@ extension MainViewController {
         // 1. Trimma bort riktigt gammal historik (äldre än 90 dagar)
         statsBGData.removeAll { $0.date < horizonCutoff }
 
-        // 2. Börja med befintlig historik inom fönstret
-        var merged: [ShareGlucoseData] = statsBGData
-
-        // De-dupe keys by 5-minute buckets to avoid double-counting between NS + live sources.
-        // Use rounded bucket to be robust to small timestamp jitter.
-        var existingBuckets = Set(merged.map { Int(($0.date / 300.0).rounded()) })
-
-        // 3. Lägg till live-BG från huvudgrafen inom [horizonCutoff, now]
-        for reading in bgData {
-            let t = reading.date
-            if t < horizonCutoff || t > now { continue }
-
-            let bucket = Int(((t) / 300.0).rounded())
-            if !existingBuckets.contains(bucket) {
-                merged.append(reading)
-                existingBuckets.insert(bucket)
-            }
+        // Incoming live values win, including corrections at an existing timestamp.
+        // Keep the existing five-minute de-duplication between NS and live sources.
+        var byBucket: [Int: ShareGlucoseData] = [:]
+        for reading in statsBGData { byBucket[Int((reading.date / 300).rounded())] = reading }
+        for reading in bgData where reading.date >= horizonCutoff && reading.date <= now {
+            byBucket[Int((reading.date / 300).rounded())] = reading
         }
-
-        merged.sort { $0.date < $1.date }
-        statsBGData = merged
+        statsBGData = byBucket.values.sorted { $0.date < $1.date }
     }
 
-    func stats_syncTreatmentsFromLive() {
+    func stats_syncTreatmentsFromLive(replacingRecentSince: Date? = nil) {
         let now = Date().timeIntervalSince1970
         let horizonDays: Double = 91          // ska matcha StatsDataFetcher.maxCachedDays
         let horizonCutoff = now - horizonDays * 24 * 60 * 60
+        let replacementStart = replacingRecentSince?.timeIntervalSince1970 ?? .infinity
 
         // MARK: Bolus
-        statsBolusData.removeAll { $0.date < horizonCutoff }
+        statsBolusData.removeAll { $0.date < horizonCutoff || ($0.date >= replacementStart && $0.date <= now) }
         var mergedBolus = statsBolusData
         var existingBolus = Set(mergedBolus.map { Int($0.date) })
 
@@ -459,7 +393,7 @@ extension MainViewController {
         statsBolusData = mergedBolus
 
         // MARK: SMB
-        statsSMBData.removeAll { $0.date < horizonCutoff }
+        statsSMBData.removeAll { $0.date < horizonCutoff || ($0.date >= replacementStart && $0.date <= now) }
         var mergedSMB = statsSMBData
         var existingSMB = Set(mergedSMB.map { Int($0.date) })
 
@@ -477,7 +411,7 @@ extension MainViewController {
         statsSMBData = mergedSMB
 
         // MARK: Carbs
-        statsCarbData.removeAll { $0.date < horizonCutoff || $0.date > now }
+        statsCarbData.removeAll { $0.date < horizonCutoff || $0.date > now || $0.date >= replacementStart }
         var mergedCarbs = statsCarbData
         var existingCarbs = Set(mergedCarbs.map { Int($0.date) })
 
@@ -495,7 +429,7 @@ extension MainViewController {
         statsCarbData = mergedCarbs
 
         // MARK: Basal
-        statsBasalData.removeAll { $0.date < horizonCutoff }
+        statsBasalData.removeAll { $0.date < horizonCutoff || ($0.date >= replacementStart && $0.date <= now) }
         var mergedBasal = statsBasalData
         var existingBasal = Set(mergedBasal.map { Int($0.date) })
 
@@ -513,7 +447,7 @@ extension MainViewController {
         statsBasalData = mergedBasal
 
         // MARK: BG Checks
-        statsBGCheckData.removeAll { $0 < horizonCutoff }
+        statsBGCheckData.removeAll { $0 < horizonCutoff || ($0 >= replacementStart && $0 <= now) }
         var mergedBGChecks = statsBGCheckData
         var existingBGChecks = Set(mergedBGChecks.map { Int($0) })
 
